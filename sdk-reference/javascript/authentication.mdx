@@ -1,0 +1,68 @@
+---
+title: "Authentication"
+description: "Manage API keys and client setup in the Fish Audio JavaScript SDK"
+icon: "key"
+---
+
+import Prerequisites from '/snippets/prerequisites.mdx';
+
+## Prerequisites
+
+<Prerequisites />
+
+## Client Initialization
+
+Initialize a `FishAudioClient` with your API key to start using the SDK:
+
+```typescript
+import { FishAudioClient } from "fish-audio";
+
+// Initialize with your API key
+const fishAudio = new FishAudioClient({ apiKey: "your_api_key" });
+```
+
+### Using Environment Variables
+
+For better security, store your API key in environment variables:
+
+<Tabs>
+  <Tab title="Using process.env">
+    Set the environment variable in your shell:
+    ```bash
+    export FISH_API_KEY=your_api_key_here
+    ```
+    Then initialize immediately:
+    ```typescript
+    import { FishAudioClient } from "fish-audio";
+
+    const fishAudio = new FishAudioClient();
+    ```
+  </Tab>
+  <Tab title="Using dotenv">
+    ```typescript
+    import { config } from "dotenv";
+    import { FishAudioClient } from "fish-audio";
+
+    // Load environment variables from .env file
+    config();
+
+    const fishAudio = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+    ```
+
+    Create a `.env` file in your project root:
+    ```bash
+    FISH_API_KEY=your_api_key_here
+    ```
+  </Tab>
+</Tabs>
+
+### Custom Endpoints
+
+If you need to use a proxy or custom endpoint:
+
+```typescript
+const fishAudio = new FishAudioClient({
+  apiKey: "your_api_key",
+  baseUrl: "https://your-proxy-domain.com",
+});
+```

@@ -1,0 +1,179 @@
+---
+title: "Text to Speech"
+description: "Convert text to natural speech with Fish Audio JavaScript SDK"
+icon: "microphone"
+---
+
+import Prerequisites from '/snippets/prerequisites.mdx';
+
+## Prerequisites
+
+<Prerequisites />
+
+## Basic Usage
+
+Generate speech from text:
+
+```typescript
+import { FishAudioClient, play } from "fish-audio";
+
+const fishAudio = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+const audio = await fishAudio.textToSpeech.convert({
+  text: "Hello, world!",
+});
+
+await play(audio);
+```
+
+## Using Voice Models
+
+Specify a voice model for consistent voice generation:
+
+```typescript
+import { FishAudioClient } from "fish-audio";
+
+const fishAudio = new FishAudioClient();
+
+const audio = await fishAudio.textToSpeech.convert({
+  text: "This is my custom voice",
+  reference_id: "your_model_id", // Your model ID from fish.audio
+});
+
+await play(audio);
+```
+
+### Getting Model IDs
+
+The `reference_id` is the model ID from the URL when viewing a model on Fish Audio:
+
+- Model URL: `https://fish.audio/m/802e3bc2b27e49c2995d23ef70e6ac89`
+- Reference ID: `802e3bc2b27e49c2995d23ef70e6ac89`
+
+You can also get model IDs programmatically:
+
+```typescript
+// List your models
+const results = await fishAudio.voices.search({ self: true });
+for (const model of results.items ?? []) {
+  console.log(`${model.title}: ${model._id}`);
+}
+
+// Get specific model details
+const model = await fishAudio.voices.get("your_model_id");
+console.log(`Model: ${model.title}, ID: ${model._id}`);
+```
+
+## Emotions
+
+Add emotional expressions to your text:
+
+```typescript
+import type { TTSRequest } from "fish-audio";
+
+const text = `
+(happy) I'm excited to share this!
+(sad) Unfortunately, it didn't work out.
+(whispering) This is a secret.
+`;
+
+const request: TTSRequest = { text, reference_id: "model_id" };
+```
+
+Common emotions: `(happy)`, `(sad)`, `(angry)`, `(excited)`, `(calm)`, `(surprised)`, `(whispering)`, `(shouting)`, `(laughing)`, `(sighing)`
+
+For more advanced control over speech generation, including phoneme-level control and additional paralanguage features, see [Fine-grained Control](/developer-platform/core-features/fine-grained-control).
+
+## Audio Formats
+
+Choose output format based on your needs:
+
+```typescript
+// MP3 (default)
+await fishAudio.textToSpeech.convert({ text: "...", format: "mp3", mp3_bitrate: 192 });
+
+// WAV - uncompressed
+await fishAudio.textToSpeech.convert({ text: "...", format: "wav", sample_rate: 44100 });
+
+// Opus - efficient for streaming
+await fishAudio.textToSpeech.convert({ text: "...", format: "opus", opus_bitrate: 48 });
+
+// PCM - raw audio data
+await fishAudio.textToSpeech.convert({ text: "...", format: "pcm", sample_rate: 16000 });
+```
+
+## Prosody Control
+
+Adjust speech speed and volume:
+
+```typescript
+const audio = await fishAudio.textToSpeech.convert({
+  text: "Adjusted speech",
+  prosody: {
+    speed: 1.2,  // 0.5 - 2.0
+    volume: 5,   // -20 - 20
+  },
+});
+```
+
+## Advanced Parameters
+
+Fine-tune generation:
+
+```typescript
+const audio = await client.textToSpeech.convert({
+  text: "Your text here",
+  chunk_length: 200,    // Characters per chunk (100-300)
+  normalize: true,      // Normalize text
+  latency: "balanced",  // "normal" or "balanced"
+  temperature: 0.7,     // Randomness (0.0-1.0)
+  top_p: 0.7,           // Token selection (0.0-1.0)
+});
+```
+
+## Streaming
+
+For real-time streaming, see the [WebSocket guide](/sdk-reference/javascript/websocket).
+
+## Error Handling
+
+Handle common errors:
+
+```typescript
+async function generateWithRetry(request: Record<string, unknown>, maxRetries = 3) {
+  const fishAudio = new FishAudioClient();
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fishAudio.textToSpeech.convert(request);
+    } catch (e: any) {
+      const status = e?.status || e?.response?.status;
+      if (status === 429) await new Promise(r => setTimeout(r, 2 ** attempt * 1000));
+      else if (status === 401) throw new Error("Invalid API key");
+      else throw e;
+    }
+  }
+}
+```
+
+## Request Parameters
+
+| Parameter      | Type     | Description          | Default    |
+|----------------|----------|----------------------|------------|
+| `text`         | string   | Text to convert      | Required   |
+| `reference_id` | string   | Voice model ID       | None       |
+| `references`   | object[] | Reference audio      | []         |
+| `format`       | string   | Audio format         | "mp3"      |
+| `chunk_length` | number   | Chunk size (100-300) | 200        |
+| `normalize`    | boolean  | Normalize text       | true       |
+| `latency`      | string   | Speed vs quality     | "balanced" |
+| `prosody`      | object   | Speed/volume         | None       |
+| `temperature`  | number   | Randomness           | 0.7        |
+| `top_p`        | number   | Token selection      | 0.7        |
+
+## Next Steps
+
+- [Fine-grained control](/developer-platform/core-features/fine-grained-control) for phoneme-level control and paralanguage
+- [Voice cloning](/sdk-reference/javascript/voice-cloning) for custom voices
+- [WebSocket streaming](/sdk-reference/javascript/websocket) for real-time apps
+- [Best practices](/resources/best-practices/text-to-speech) for production use
+- [API reference](/api-reference/endpoint/openapi-v1/text-to-speech) for direct API calls
