@@ -1,0 +1,167 @@
+---
+title: "WebSocket"
+description: "Real-time streaming with Fish Audio JavaScript SDK"
+icon: "bolt"
+---
+
+import Prerequisites from '/snippets/prerequisites.mdx';
+
+## Prerequisites
+
+<Prerequisites />
+
+## Overview
+
+WebSocket streaming enables real-time text-to-speech generation, perfect for conversational AI, live captioning, and streaming applications.
+
+## Basic Streaming
+
+Stream text and receive audio in real-time:
+
+```typescript
+import { FishAudioClient, RealtimeEvents } from "fish-audio";
+import { writeFile } from "fs/promises";
+import path from "path";
+
+// Simple async generator that yields text chunks
+async function* makeTextStream() {
+  const chunks = [
+    "Hello from Fish Audio! ",
+    "This is a realtime text-to-speech test. ",
+    "We are streaming multiple chunks over WebSocket.",
+  ];
+  for (const chunk of chunks) {
+    yield chunk;
+  }
+}
+
+const fishAudio = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+// For realtime, set text to "" and stream the content via makeTextStream
+const request = { text: "" };
+
+const connection = await fishAudio.textToSpeech.convertRealtime(request, makeTextStream());
+
+// Collect audio and write to a file when the stream ends
+const chunks: Buffer[] = [];
+connection.on(RealtimeEvents.OPEN, () => console.log("WebSocket opened"));
+connection.on(RealtimeEvents.AUDIO_CHUNK, (audio: unknown): void => {
+  if (audio instanceof Uint8Array || Buffer.isBuffer(audio)) {
+    chunks.push(Buffer.from(audio));
+  }
+});
+connection.on(RealtimeEvents.ERROR, (err) => console.error("WebSocket error:", err));
+connection.on(RealtimeEvents.CLOSE, async () => {
+  const outPath = path.resolve(process.cwd(), "out.mp3");
+  await writeFile(outPath, Buffer.concat(chunks));
+  console.log("Saved to", outPath);
+});
+```
+
+<Tip>
+Set `text: ""` in the request when streaming. The actual text comes from your text stream generator.
+</Tip>
+
+## Using Voice Models
+
+Stream with a specific voice:
+
+```typescript
+const request = {
+  text: "",                // Empty for streaming
+  reference_id: "your_model_id",
+  format: "mp3",
+};
+
+const conn = await fishAudio.textToSpeech.convertRealtime(request, makeTextStream());
+conn.on(RealtimeEvents.AUDIO_CHUNK, () => { /* handle audio */ });
+```
+
+## Dynamic Text Generation
+
+Stream text as it's generated:
+
+```typescript
+async function* generateText() {
+  const responses = [
+    "Processing your request...",
+    "Here's what I found:",
+    "The answer is 42.",
+  ];
+  for (const response of responses) {
+    for (const word of response.split(" ")) {
+      yield word + " ";
+      await new Promise(r => setTimeout(r, 20));
+    }
+  }
+}
+
+await fishAudio.textToSpeech.convertRealtime({ text: "" }, generateText());
+```
+
+## Line-by-Line Processing
+
+Stream text line by line:
+
+```typescript
+import { createReadStream } from "fs";
+import readline from "readline";
+
+async function* readFileLines(filepath: string) {
+  const rl = readline.createInterface({ input: createReadStream(filepath) });
+  for await (const line of rl) {
+    yield line.trim() + " ";
+  }
+}
+
+await fishAudio.textToSpeech.convertRealtime({ text: "" }, readFileLines("story.txt"));
+```
+
+## Errors
+
+Handle connection errors via event listeners:
+
+```typescript
+connection.on(RealtimeEvents.ERROR, (err) => {
+  console.error("WebSocket error:", err);
+  // Fallback to regular TTS or retry
+});
+```
+
+## Configuration
+
+Customize WebSocket behavior by configuring the client:
+
+```typescript
+// Custom endpoint
+const fishAudio = new FishAudioClient({
+  apiKey: process.env.FISH_API_KEY,
+  baseUrl: "https://api.fish.audio", // Use a proxy/custom endpoint if needed
+});
+
+// Select backend model
+const conn = await fishAudio.textToSpeech.convertRealtime(
+  request,
+  makeTextStream(),
+  backend: "s1"
+);
+```
+
+## Best Practices
+
+1. **Chunk Size**: Yield text in natural phrases for best prosody
+2. **Buffer Management**: Process audio chunks immediately to avoid memory buildup
+3. **Connection Reuse**: Keep WebSocket sessions alive for multiple streams
+4. **Error Recovery**: Implement retry logic for connection failures
+5. **Format Selection**: Use PCM for real-time playback, MP3 for storage
+
+## Events
+
+The connection emits these events:
+
+| Event                 | Description                          |
+|-----------------------|--------------------------------------|
+| `OPEN`                | WebSocket connection established     |
+| `AUDIO_CHUNK`         | Audio chunk received (Uint8Array)    |
+| `ERROR`               | Error occurred on the connection     |
+| `CLOSE`               | Connection closed                    |

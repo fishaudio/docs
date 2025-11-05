@@ -1,0 +1,161 @@
+---
+title: "Speech to Text"
+description: "Convert audio to text with Fish Audio JavaScript SDK"
+icon: "microphone-lines"
+---
+
+import Prerequisites from '/snippets/prerequisites.mdx';
+
+## Prerequisites
+
+<Prerequisites />
+
+## Basic Usage
+
+Transcribe audio to text:
+
+```typescript
+import { FishAudioClient } from "fish-audio";
+import { createReadStream } from "fs";
+
+const fishAudio = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+const result = await fishAudio.speechToText.convert({
+  audio: createReadStream("audio.mp3"),
+});
+
+console.log(result.text);
+console.log("Duration (s):", result.duration);
+```
+
+## Language Specification
+
+Improve accuracy by specifying the language:
+
+```typescript
+// English transcription
+await fishAudio.speechToText.convert({
+  audio: createReadStream("audio.mp3"),
+  language: "en"
+});
+
+// Chinese transcription
+await fishAudio.speechToText.convert({
+  audio: createReadStream("audio.mp3"),
+  language: "zh"
+});
+```
+
+Common language codes: `en` (English), `zh` (Chinese), `es` (Spanish), `fr` (French), `de` (German), `ja` (Japanese), `ko` (Korean), `pt` (Portuguese)
+
+<Tip>
+Automatic language detection works well, but specifying the language improves accuracy and speed.
+</Tip>
+
+## Working with Segments
+
+Get detailed timing for each segment:
+
+```typescript
+const response = await fishAudio.speechToText.convert({ audio: createReadStream("audio.mp3") });
+
+// Full transcription
+console.log(response.text);
+
+// Segment details
+for (const seg of response.segments ?? []) {
+  console.log(`[${seg.start.toFixed(2)}s - ${seg.end.toFixed(2)}s] ${seg.text}`);
+}
+```
+
+## Timestamps Control
+
+Control timestamp generation:
+
+```typescript
+// Include timestamps (default)
+await fishAudio.speechToText.convert({ audio: createReadStream("audio.mp3"), ignore_timestamps: false });
+
+// Skip timestamp processing for faster results
+await fishAudio.speechToText.convert({ audio: createReadStream("audio.mp3"), ignore_timestamps: true });
+```
+
+<Note>
+`ignore_timestamps: false` (default) includes segment timestamps. Set to `true` to skip timestamp processing for faster transcription when you only need the text.
+</Note>
+
+## Audio Formats
+
+Supported audio formats:
+- MP3 (recommended)
+- WAV
+- M4A
+- OGG
+- FLAC
+- AAC
+
+File requirements:
+- Maximum size: 100MB
+- Maximum duration: 60 minutes
+- Sample rate: 16kHz or higher recommended
+
+## Transcribing TTS Output
+
+Transcribe generated speech:
+
+```typescript
+import { FishAudioClient } from "fish-audio";
+
+const fishAudio = new FishAudioClient();
+
+// Generate speech
+const ttsAudio = await fishAudio.textToSpeech.convert({ text: "Hello, this is a test" });
+
+// Transcribe it
+const asr = await fishAudio.speechToText.convert({ audio: ttsAudio });
+console.log(asr.text);
+```
+
+## Error Handling
+
+Handle common errors:
+
+```typescript
+try {
+  await fishAudio.speechToText.convert({ audio: createReadStream("audio.mp3") });
+} catch (e: any) {
+  const status = e?.status || e?.response?.status;
+  if (status === 413) console.error("Audio file too large (max 100MB)");
+  else if (status === 400) console.error("Invalid audio format");
+  else throw e;
+}
+```
+
+## Response Structure
+
+The ASR response includes:
+
+| Field      | Type              | Description                    |
+|------------|-------------------|--------------------------------|
+| `text`     | string            | Complete transcription         |
+| `duration` | number            | Audio duration (seconds)       |
+| `segments` | ASRSegment[]      | Timestamped text segments      |
+
+Segment structure:
+| Field   | Type   | Description              |
+|---------|--------|--------------------------|
+| `text`  | string | Segment text             |
+| `start` | number | Start time (seconds)     |
+| `end`   | number | End time (seconds)       |
+
+<Warning>
+Note the timing units: `duration` and segment times are in seconds.
+</Warning>
+
+## Request Parameters
+
+| Parameter           | Type                       | Description                | Default            |
+|---------------------|----------------------------|----------------------------|--------------------|
+| `audio`             | File | Buffer | Readable stream | Audio to transcribe     | Required           |
+| `language`          | string                     | Language code (e.g., "en") | None (auto-detect) |
+| `ignore_timestamps` | boolean                    | Skip timestamp processing  | false              |
