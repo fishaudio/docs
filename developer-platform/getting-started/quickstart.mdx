@@ -121,6 +121,61 @@ Choose your preferred method to generate speech:
       </Step>
     </Steps>
   </Tab>
+
+  <Tab title="JavaScript">
+    <Steps>
+      <Step title="Install the SDK">
+        ```bash
+        npm install fish-audio
+        ```
+
+      </Step>
+
+      <Step title="Generate speech">
+        Create a JavaScript script:
+
+        ```javascript
+        import { FishAudioClient } from "fish-audio";
+        import { writeFile } from "fs/promises";
+
+        const fishAudio = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+        const audio = await fishAudio.textToSpeech.convert({
+          text: "Hello, world!",
+        });
+
+        const buffer = Buffer.from(await new Response(audio).arrayBuffer());
+        await writeFile("welcome.mp3", buffer);
+
+        console.log("✓ Audio saved to welcome.mp3");
+        ```
+      </Step>
+
+      <Step title="Run the script">
+        ```bash
+        node generate_speech.mjs
+        ```
+      </Step>
+
+      <Step title="Play your audio">
+        The audio has been saved as `welcome.mp3`. You can play it by:
+
+        - Double-clicking the file or opening it in any media player
+        - Or using the command line:
+
+        ```bash
+        # On macOS
+        afplay welcome.mp3
+
+        # On Linux
+        mpg123 welcome.mp3
+
+        # On Windows
+        start welcome.mp3
+        ```
+      </Step>
+    </Steps>
+  </Tab>
 </Tabs>
 
 ## Customizing Your Voice
@@ -182,6 +237,25 @@ Then generate speech with your chosen voice:
           backend='s1'
         ):
             f.write(chunk)
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { FishAudioClient } from "fish-audio";
+    import { writeFile } from "fs/promises";
+
+    const fishAudio = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+    const audio = await fishAudio.textToSpeech.convert({
+      text: "This is a custom voice from Fish Audio! You can explore hundreds of different voices on the platform, or even create your own.",
+      reference_id: process.env.REFERENCE_ID,
+    });
+
+    const buffer = Buffer.from(await new Response(audio).arrayBuffer());
+    await writeFile("custom_voice.mp3", buffer);
+
+    console.log("✓ Audio saved to custom_voice.mp3");
     ```
   </Tab>
 </Tabs>
