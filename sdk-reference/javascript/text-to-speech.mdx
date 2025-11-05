@@ -131,6 +131,17 @@ const audio = await client.textToSpeech.convert({
 });
 ```
 
+## Choosing Backend
+
+Our state-of-the-art [S1 model](/developer-platform/models-pricing/models-overview)
+is the default backend model for TTS. Optionally specify the model via the second argument (`backend: Backends`).
+
+```typescript
+const audio = await fishAudio.textToSpeech.convert({
+  text: "Hello, world!",
+}, "s1");
+```
+
 ## Streaming
 
 For real-time streaming, see the [WebSocket guide](/sdk-reference/javascript/websocket).
