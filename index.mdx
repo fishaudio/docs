@@ -4,8 +4,15 @@ description: "Meet the next generation of industry leading AI voice generation, 
 mode: "custom"
 ---
 
+import { useEffect } from "react";
 import { TypingEffect } from '/snippets/typing-effect.jsx';
 
+export default function Home() {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  return (
 <div className="mint-mx-auto mint-px-4">
   <div className="mint-text-center mint-mx-auto mint-max-w-3xl mint-py-16">
     <TypingEffect />
@@ -28,6 +35,18 @@ import { TypingEffect } from '/snippets/typing-effect.jsx';
         Try Playground
       </a>
     </div>
+  </div>
+
+  <div className="mint-pb-4 mint-text-center mint-space-x-12">
+    <a href="/changelog" className="mint-text-sm mint-text-gray-500 hover:mint-text-gray-700 dark:mint-text-gray-500 dark:hover:mint-text-gray-300 mint-inline-flex mint-items-center mint-gap-1">
+      Changelog
+    </a>
+    <a href="/roadmap" className="mint-text-sm mint-text-gray-500 hover:mint-text-gray-700 dark:mint-text-gray-500 dark:hover:mint-text-gray-300 mint-inline-flex mint-items-center mint-gap-1">
+      Roadmap
+    </a>
+    <a href="/contributing" className="mint-text-sm mint-text-gray-500 hover:mint-text-gray-700 dark:mint-text-gray-500 dark:hover:mint-text-gray-300 mint-inline-flex mint-items-center mint-gap-1">
+      Contributing
+    </a>
   </div>
 
   <div className="mint-mx-auto mint-max-w-6xl mint-space-y-12">
@@ -58,11 +77,6 @@ import { TypingEffect } from '/snippets/typing-effect.jsx';
           Switch from ElevenLabs, OpenAI, or other TTS providers.
         </Card>
       </Columns>
-      <div className="mint-mt-4 mint-text-center">
-        <a href="/roadmap" className="mint-text-sm mint-text-gray-500 hover:mint-text-gray-700 dark:mint-text-gray-500 dark:hover:mint-text-gray-300 mint-inline-flex mint-items-center mint-gap-1">
-          View our Roadmap
-        </a>
-      </div>
     </div>
 
     <div>
@@ -106,3 +120,5 @@ import { TypingEffect } from '/snippets/typing-effect.jsx';
     </p>
   </div>
 </div>
+  );
+}
