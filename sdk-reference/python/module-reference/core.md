@@ -4,6 +4,39 @@
 
 OMIT sentinel for distinguishing None from not-provided parameters.
 
+<a id="fishaudio.core.request_options"></a>
+
+# fishaudio.core.request\_options
+
+Request-level options for API calls.
+
+<a id="fishaudio.core.request_options.RequestOptions"></a>
+
+## RequestOptions Objects
+
+```python
+class RequestOptions()
+```
+
+Options that can be provided on a per-request basis to override client defaults.
+
+**Attributes**:
+
+- `timeout` - Override the client's default timeout (in seconds)
+- `max_retries` - Override the client's default max retries
+- `additional_headers` - Additional headers to include in the request
+- `additional_query_params` - Additional query parameters to include
+
+<a id="fishaudio.core.request_options.RequestOptions.get_timeout"></a>
+
+#### get\_timeout
+
+```python
+def get_timeout() -> Optional[httpx.Timeout]
+```
+
+Convert timeout to httpx.Timeout if set.
+
 <a id="fishaudio.core.client_wrapper"></a>
 
 # fishaudio.core.client\_wrapper
@@ -143,37 +176,4 @@ async def close() -> None
 ```
 
 Close the HTTP client.
-
-<a id="fishaudio.core.request_options"></a>
-
-# fishaudio.core.request\_options
-
-Request-level options for API calls.
-
-<a id="fishaudio.core.request_options.RequestOptions"></a>
-
-## RequestOptions Objects
-
-```python
-class RequestOptions()
-```
-
-Options that can be provided on a per-request basis to override client defaults.
-
-**Attributes**:
-
-- `timeout` - Override the client's default timeout (in seconds)
-- `max_retries` - Override the client's default max retries
-- `additional_headers` - Additional headers to include in the request
-- `additional_query_params` - Additional query parameters to include
-
-<a id="fishaudio.core.request_options.RequestOptions.get_timeout"></a>
-
-#### get\_timeout
-
-```python
-def get_timeout() -> Optional[httpx.Timeout]
-```
-
-Convert timeout to httpx.Timeout if set.
 

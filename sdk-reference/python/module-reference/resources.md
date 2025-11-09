@@ -1,397 +1,3 @@
-<a id="fishaudio.resources.realtime"></a>
-
-# fishaudio.resources.realtime
-
-Real-time WebSocket streaming helpers.
-
-<a id="fishaudio.resources.realtime.iter_websocket_audio"></a>
-
-#### iter\_websocket\_audio
-
-```python
-def iter_websocket_audio(ws) -> Iterator[bytes]
-```
-
-Process WebSocket audio messages (sync).
-
-Receives messages from WebSocket, yields audio chunks, handles errors.
-Unknown events are ignored and iteration continues.
-
-**Arguments**:
-
-- `ws` - WebSocket connection from httpx_ws.connect_ws
-  
-
-**Yields**:
-
-  Audio bytes
-  
-
-**Raises**:
-
-- `WebSocketError` - On disconnect or error finish event
-
-<a id="fishaudio.resources.realtime.aiter_websocket_audio"></a>
-
-#### aiter\_websocket\_audio
-
-```python
-async def aiter_websocket_audio(ws) -> AsyncIterator[bytes]
-```
-
-Process WebSocket audio messages (async).
-
-Receives messages from WebSocket, yields audio chunks, handles errors.
-Unknown events are ignored and iteration continues.
-
-**Arguments**:
-
-- `ws` - WebSocket connection from httpx_ws.aconnect_ws
-  
-
-**Yields**:
-
-  Audio bytes
-  
-
-**Raises**:
-
-- `WebSocketError` - On disconnect or error finish event
-
-<a id="fishaudio.resources.tts"></a>
-
-# fishaudio.resources.tts
-
-TTS (Text-to-Speech) namespace client.
-
-<a id="fishaudio.resources.tts.TTSClient"></a>
-
-## TTSClient Objects
-
-```python
-class TTSClient()
-```
-
-Synchronous TTS operations.
-
-<a id="fishaudio.resources.tts.TTSClient.convert"></a>
-
-#### convert
-
-```python
-def convert(
-        *,
-        text: str,
-        config: TTSConfig = TTSConfig(),
-        model: Model = "s1",
-        request_options: Optional[RequestOptions] = None) -> Iterator[bytes]
-```
-
-Convert text to speech.
-
-**Arguments**:
-
-- `text` - Text to synthesize
-- `config` - TTS configuration (audio settings, voice, model parameters)
-- `model` - TTS model to use
-- `request_options` - Request-level overrides
-  
-
-**Returns**:
-
-  Iterator of audio bytes
-  
-
-**Example**:
-
-    ```python
-    from fishaudio import FishAudio, TTSConfig
-
-    client = FishAudio(api_key="...")
-
-    # Simple usage with defaults
-    audio = client.tts.convert(text="Hello world")
-
-    # Custom configuration
-    config = TTSConfig(format="wav", mp3_bitrate=192)
-    audio = client.tts.convert(text="Hello world", config=config)
-
-    with open("output.mp3", "wb") as f:
-        for chunk in audio:
-            f.write(chunk)
-    ```
-
-<a id="fishaudio.resources.tts.TTSClient.stream_websocket"></a>
-
-#### stream\_websocket
-
-```python
-def stream_websocket(text_stream: Iterable[Union[str, TextEvent, FlushEvent]],
-                     *,
-                     config: TTSConfig = TTSConfig(),
-                     model: Model = "s1",
-                     max_workers: int = 10) -> Iterator[bytes]
-```
-
-Stream text and receive audio in real-time via WebSocket.
-
-Perfect for conversational AI, live captioning, and streaming applications.
-
-**Arguments**:
-
-- `text_stream` - Iterator of text chunks to stream
-- `config` - TTS configuration (audio settings, voice, model parameters)
-- `model` - TTS model to use
-- `max_workers` - ThreadPoolExecutor workers for concurrent sender
-  
-
-**Returns**:
-
-  Iterator of audio bytes
-  
-
-**Example**:
-
-    ```python
-    from fishaudio import FishAudio, TTSConfig
-
-    client = FishAudio(api_key="...")
-
-    def text_generator():
-        yield "Hello, "
-        yield "this is "
-        yield "streaming text!"
-
-    # Simple usage with defaults
-    with open("output.mp3", "wb") as f:
-        for audio_chunk in client.tts.stream_websocket(text_generator()):
-            f.write(audio_chunk)
-
-    # Custom configuration
-    config = TTSConfig(format="wav", latency="normal")
-    with open("output.wav", "wb") as f:
-        for audio_chunk in client.tts.stream_websocket(text_generator(), config=config):
-            f.write(audio_chunk)
-    ```
-
-<a id="fishaudio.resources.tts.AsyncTTSClient"></a>
-
-## AsyncTTSClient Objects
-
-```python
-class AsyncTTSClient()
-```
-
-Asynchronous TTS operations.
-
-<a id="fishaudio.resources.tts.AsyncTTSClient.convert"></a>
-
-#### convert
-
-```python
-async def convert(*,
-                  text: str,
-                  config: TTSConfig = TTSConfig(),
-                  model: Model = "s1",
-                  request_options: Optional[RequestOptions] = None)
-```
-
-Convert text to speech (async).
-
-**Arguments**:
-
-- `text` - Text to synthesize
-- `config` - TTS configuration (audio settings, voice, model parameters)
-- `model` - TTS model to use
-- `request_options` - Request-level overrides
-  
-
-**Returns**:
-
-  Async iterator of audio bytes
-  
-
-**Example**:
-
-    ```python
-    from fishaudio import AsyncFishAudio, TTSConfig
-
-    client = AsyncFishAudio(api_key="...")
-
-    # Simple usage with defaults
-    audio = await client.tts.convert(text="Hello world")
-
-    # Custom configuration
-    config = TTSConfig(format="wav", mp3_bitrate=192)
-    audio = await client.tts.convert(text="Hello world", config=config)
-
-    async with aiofiles.open("output.mp3", "wb") as f:
-        async for chunk in audio:
-            await f.write(chunk)
-    ```
-
-<a id="fishaudio.resources.tts.AsyncTTSClient.stream_websocket"></a>
-
-#### stream\_websocket
-
-```python
-async def stream_websocket(text_stream: AsyncIterable[Union[str, TextEvent,
-                                                            FlushEvent]],
-                           *,
-                           config: TTSConfig = TTSConfig(),
-                           model: Model = "s1")
-```
-
-Stream text and receive audio in real-time via WebSocket (async).
-
-Perfect for conversational AI, live captioning, and streaming applications.
-
-**Arguments**:
-
-- `text_stream` - Async iterator of text chunks to stream
-- `config` - TTS configuration (audio settings, voice, model parameters)
-- `model` - TTS model to use
-  
-
-**Returns**:
-
-  Async iterator of audio bytes
-  
-
-**Example**:
-
-    ```python
-    from fishaudio import AsyncFishAudio, TTSConfig
-
-    client = AsyncFishAudio(api_key="...")
-
-    async def text_generator():
-        yield "Hello, "
-        yield "this is "
-        yield "async streaming!"
-
-    # Simple usage with defaults
-    async with aiofiles.open("output.mp3", "wb") as f:
-        async for audio_chunk in client.tts.stream_websocket(text_generator()):
-            await f.write(audio_chunk)
-
-    # Custom configuration
-    config = TTSConfig(format="wav", latency="normal")
-    async with aiofiles.open("output.wav", "wb") as f:
-        async for audio_chunk in client.tts.stream_websocket(text_generator(), config=config):
-            await f.write(audio_chunk)
-    ```
-
-<a id="fishaudio.resources.asr"></a>
-
-# fishaudio.resources.asr
-
-ASR (Automatic Speech Recognition) namespace client.
-
-<a id="fishaudio.resources.asr.ASRClient"></a>
-
-## ASRClient Objects
-
-```python
-class ASRClient()
-```
-
-Synchronous ASR operations.
-
-<a id="fishaudio.resources.asr.ASRClient.transcribe"></a>
-
-#### transcribe
-
-```python
-def transcribe(
-        *,
-        audio: bytes,
-        language: Optional[str] = OMIT,
-        include_timestamps: bool = True,
-        request_options: Optional[RequestOptions] = None) -> ASRResponse
-```
-
-Transcribe audio to text.
-
-**Arguments**:
-
-- `audio` - Audio file bytes
-- `language` - Language code (e.g., "en", "zh"). Auto-detected if not provided.
-- `include_timestamps` - Whether to include timestamp information for segments
-- `request_options` - Request-level overrides
-  
-
-**Returns**:
-
-  ASRResponse with transcription text, duration, and segments
-  
-
-**Example**:
-
-    ```python
-    client = FishAudio(api_key="...")
-
-    with open("audio.mp3", "rb") as f:
-        audio_bytes = f.read()
-
-    result = client.asr.transcribe(audio=audio_bytes, language="en")
-    print(result.text)
-    for segment in result.segments:
-        print(f"{segment.start}-{segment.end}: {segment.text}")
-    ```
-
-<a id="fishaudio.resources.asr.AsyncASRClient"></a>
-
-## AsyncASRClient Objects
-
-```python
-class AsyncASRClient()
-```
-
-Asynchronous ASR operations.
-
-<a id="fishaudio.resources.asr.AsyncASRClient.transcribe"></a>
-
-#### transcribe
-
-```python
-async def transcribe(
-        *,
-        audio: bytes,
-        language: Optional[str] = OMIT,
-        include_timestamps: bool = True,
-        request_options: Optional[RequestOptions] = None) -> ASRResponse
-```
-
-Transcribe audio to text (async).
-
-**Arguments**:
-
-- `audio` - Audio file bytes
-- `language` - Language code (e.g., "en", "zh"). Auto-detected if not provided.
-- `include_timestamps` - Whether to include timestamp information for segments
-- `request_options` - Request-level overrides
-  
-
-**Returns**:
-
-  ASRResponse with transcription text, duration, and segments
-  
-
-**Example**:
-
-    ```python
-    client = AsyncFishAudio(api_key="...")
-
-    async with aiofiles.open("audio.mp3", "rb") as f:
-        audio_bytes = await f.read()
-
-    result = await client.asr.transcribe(audio=audio_bytes, language="en")
-    print(result.text)
-    for segment in result.segments:
-        print(f"{segment.start}-{segment.end}: {segment.text}")
-    ```
-
 <a id="fishaudio.resources.voices"></a>
 
 # fishaudio.resources.voices
@@ -706,6 +312,290 @@ async def delete(voice_id: str,
 
 Delete a voice (async). See sync version for details.
 
+<a id="fishaudio.resources.realtime"></a>
+
+# fishaudio.resources.realtime
+
+Real-time WebSocket streaming helpers.
+
+<a id="fishaudio.resources.realtime.iter_websocket_audio"></a>
+
+#### iter\_websocket\_audio
+
+```python
+def iter_websocket_audio(ws) -> Iterator[bytes]
+```
+
+Process WebSocket audio messages (sync).
+
+Receives messages from WebSocket, yields audio chunks, handles errors.
+Unknown events are ignored and iteration continues.
+
+**Arguments**:
+
+- `ws` - WebSocket connection from httpx_ws.connect_ws
+  
+
+**Yields**:
+
+  Audio bytes
+  
+
+**Raises**:
+
+- `WebSocketError` - On disconnect or error finish event
+
+<a id="fishaudio.resources.realtime.aiter_websocket_audio"></a>
+
+#### aiter\_websocket\_audio
+
+```python
+async def aiter_websocket_audio(ws) -> AsyncIterator[bytes]
+```
+
+Process WebSocket audio messages (async).
+
+Receives messages from WebSocket, yields audio chunks, handles errors.
+Unknown events are ignored and iteration continues.
+
+**Arguments**:
+
+- `ws` - WebSocket connection from httpx_ws.aconnect_ws
+  
+
+**Yields**:
+
+  Audio bytes
+  
+
+**Raises**:
+
+- `WebSocketError` - On disconnect or error finish event
+
+<a id="fishaudio.resources.tts"></a>
+
+# fishaudio.resources.tts
+
+TTS (Text-to-Speech) namespace client.
+
+<a id="fishaudio.resources.tts.TTSClient"></a>
+
+## TTSClient Objects
+
+```python
+class TTSClient()
+```
+
+Synchronous TTS operations.
+
+<a id="fishaudio.resources.tts.TTSClient.convert"></a>
+
+#### convert
+
+```python
+def convert(
+        *,
+        text: str,
+        config: TTSConfig = TTSConfig(),
+        model: Model = "s1",
+        request_options: Optional[RequestOptions] = None) -> Iterator[bytes]
+```
+
+Convert text to speech.
+
+**Arguments**:
+
+- `text` - Text to synthesize
+- `config` - TTS configuration (audio settings, voice, model parameters)
+- `model` - TTS model to use
+- `request_options` - Request-level overrides
+  
+
+**Returns**:
+
+  Iterator of audio bytes
+  
+
+**Example**:
+
+    ```python
+    from fishaudio import FishAudio, TTSConfig
+
+    client = FishAudio(api_key="...")
+
+    # Simple usage with defaults
+    audio = client.tts.convert(text="Hello world")
+
+    # Custom configuration
+    config = TTSConfig(format="wav", mp3_bitrate=192)
+    audio = client.tts.convert(text="Hello world", config=config)
+
+    with open("output.mp3", "wb") as f:
+        for chunk in audio:
+            f.write(chunk)
+    ```
+
+<a id="fishaudio.resources.tts.TTSClient.stream_websocket"></a>
+
+#### stream\_websocket
+
+```python
+def stream_websocket(text_stream: Iterable[Union[str, TextEvent, FlushEvent]],
+                     *,
+                     config: TTSConfig = TTSConfig(),
+                     model: Model = "s1",
+                     max_workers: int = 10) -> Iterator[bytes]
+```
+
+Stream text and receive audio in real-time via WebSocket.
+
+Perfect for conversational AI, live captioning, and streaming applications.
+
+**Arguments**:
+
+- `text_stream` - Iterator of text chunks to stream
+- `config` - TTS configuration (audio settings, voice, model parameters)
+- `model` - TTS model to use
+- `max_workers` - ThreadPoolExecutor workers for concurrent sender
+  
+
+**Returns**:
+
+  Iterator of audio bytes
+  
+
+**Example**:
+
+    ```python
+    from fishaudio import FishAudio, TTSConfig
+
+    client = FishAudio(api_key="...")
+
+    def text_generator():
+        yield "Hello, "
+        yield "this is "
+        yield "streaming text!"
+
+    # Simple usage with defaults
+    with open("output.mp3", "wb") as f:
+        for audio_chunk in client.tts.stream_websocket(text_generator()):
+            f.write(audio_chunk)
+
+    # Custom configuration
+    config = TTSConfig(format="wav", latency="normal")
+    with open("output.wav", "wb") as f:
+        for audio_chunk in client.tts.stream_websocket(text_generator(), config=config):
+            f.write(audio_chunk)
+    ```
+
+<a id="fishaudio.resources.tts.AsyncTTSClient"></a>
+
+## AsyncTTSClient Objects
+
+```python
+class AsyncTTSClient()
+```
+
+Asynchronous TTS operations.
+
+<a id="fishaudio.resources.tts.AsyncTTSClient.convert"></a>
+
+#### convert
+
+```python
+async def convert(*,
+                  text: str,
+                  config: TTSConfig = TTSConfig(),
+                  model: Model = "s1",
+                  request_options: Optional[RequestOptions] = None)
+```
+
+Convert text to speech (async).
+
+**Arguments**:
+
+- `text` - Text to synthesize
+- `config` - TTS configuration (audio settings, voice, model parameters)
+- `model` - TTS model to use
+- `request_options` - Request-level overrides
+  
+
+**Returns**:
+
+  Async iterator of audio bytes
+  
+
+**Example**:
+
+    ```python
+    from fishaudio import AsyncFishAudio, TTSConfig
+
+    client = AsyncFishAudio(api_key="...")
+
+    # Simple usage with defaults
+    audio = await client.tts.convert(text="Hello world")
+
+    # Custom configuration
+    config = TTSConfig(format="wav", mp3_bitrate=192)
+    audio = await client.tts.convert(text="Hello world", config=config)
+
+    async with aiofiles.open("output.mp3", "wb") as f:
+        async for chunk in audio:
+            await f.write(chunk)
+    ```
+
+<a id="fishaudio.resources.tts.AsyncTTSClient.stream_websocket"></a>
+
+#### stream\_websocket
+
+```python
+async def stream_websocket(text_stream: AsyncIterable[Union[str, TextEvent,
+                                                            FlushEvent]],
+                           *,
+                           config: TTSConfig = TTSConfig(),
+                           model: Model = "s1")
+```
+
+Stream text and receive audio in real-time via WebSocket (async).
+
+Perfect for conversational AI, live captioning, and streaming applications.
+
+**Arguments**:
+
+- `text_stream` - Async iterator of text chunks to stream
+- `config` - TTS configuration (audio settings, voice, model parameters)
+- `model` - TTS model to use
+  
+
+**Returns**:
+
+  Async iterator of audio bytes
+  
+
+**Example**:
+
+    ```python
+    from fishaudio import AsyncFishAudio, TTSConfig
+
+    client = AsyncFishAudio(api_key="...")
+
+    async def text_generator():
+        yield "Hello, "
+        yield "this is "
+        yield "async streaming!"
+
+    # Simple usage with defaults
+    async with aiofiles.open("output.mp3", "wb") as f:
+        async for audio_chunk in client.tts.stream_websocket(text_generator()):
+            await f.write(audio_chunk)
+
+    # Custom configuration
+    config = TTSConfig(format="wav", latency="normal")
+    async with aiofiles.open("output.wav", "wb") as f:
+        async for audio_chunk in client.tts.stream_websocket(text_generator(), config=config):
+            await f.write(audio_chunk)
+    ```
+
 <a id="fishaudio.resources.account"></a>
 
 # fishaudio.resources.account
@@ -848,5 +738,115 @@ Get package information (async).
     client = AsyncFishAudio(api_key="...")
     package = await client.account.get_package()
     print(f"Balance: {package.balance}/{package.total}")
+    ```
+
+<a id="fishaudio.resources.asr"></a>
+
+# fishaudio.resources.asr
+
+ASR (Automatic Speech Recognition) namespace client.
+
+<a id="fishaudio.resources.asr.ASRClient"></a>
+
+## ASRClient Objects
+
+```python
+class ASRClient()
+```
+
+Synchronous ASR operations.
+
+<a id="fishaudio.resources.asr.ASRClient.transcribe"></a>
+
+#### transcribe
+
+```python
+def transcribe(
+        *,
+        audio: bytes,
+        language: Optional[str] = OMIT,
+        include_timestamps: bool = True,
+        request_options: Optional[RequestOptions] = None) -> ASRResponse
+```
+
+Transcribe audio to text.
+
+**Arguments**:
+
+- `audio` - Audio file bytes
+- `language` - Language code (e.g., "en", "zh"). Auto-detected if not provided.
+- `include_timestamps` - Whether to include timestamp information for segments
+- `request_options` - Request-level overrides
+  
+
+**Returns**:
+
+  ASRResponse with transcription text, duration, and segments
+  
+
+**Example**:
+
+    ```python
+    client = FishAudio(api_key="...")
+
+    with open("audio.mp3", "rb") as f:
+        audio_bytes = f.read()
+
+    result = client.asr.transcribe(audio=audio_bytes, language="en")
+    print(result.text)
+    for segment in result.segments:
+        print(f"{segment.start}-{segment.end}: {segment.text}")
+    ```
+
+<a id="fishaudio.resources.asr.AsyncASRClient"></a>
+
+## AsyncASRClient Objects
+
+```python
+class AsyncASRClient()
+```
+
+Asynchronous ASR operations.
+
+<a id="fishaudio.resources.asr.AsyncASRClient.transcribe"></a>
+
+#### transcribe
+
+```python
+async def transcribe(
+        *,
+        audio: bytes,
+        language: Optional[str] = OMIT,
+        include_timestamps: bool = True,
+        request_options: Optional[RequestOptions] = None) -> ASRResponse
+```
+
+Transcribe audio to text (async).
+
+**Arguments**:
+
+- `audio` - Audio file bytes
+- `language` - Language code (e.g., "en", "zh"). Auto-detected if not provided.
+- `include_timestamps` - Whether to include timestamp information for segments
+- `request_options` - Request-level overrides
+  
+
+**Returns**:
+
+  ASRResponse with transcription text, duration, and segments
+  
+
+**Example**:
+
+    ```python
+    client = AsyncFishAudio(api_key="...")
+
+    async with aiofiles.open("audio.mp3", "rb") as f:
+        audio_bytes = await f.read()
+
+    result = await client.asr.transcribe(audio=audio_bytes, language="en")
+    print(result.text)
+    for segment in result.segments:
+        print(f"{segment.start}-{segment.end}: {segment.text}")
     ```
 

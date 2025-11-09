@@ -1,3 +1,41 @@
+<a id="fishaudio.types.voices"></a>
+
+# fishaudio.types.voices
+
+Voice and model management types.
+
+<a id="fishaudio.types.voices.Sample"></a>
+
+## Sample Objects
+
+```python
+class Sample(BaseModel)
+```
+
+A sample audio for a voice model.
+
+<a id="fishaudio.types.voices.Author"></a>
+
+## Author Objects
+
+```python
+class Author(BaseModel)
+```
+
+Voice model author information.
+
+<a id="fishaudio.types.voices.Voice"></a>
+
+## Voice Objects
+
+```python
+class Voice(BaseModel)
+```
+
+A voice model
+
+Represents a TTS voice that can be used for synthesis.
+
 <a id="fishaudio.types.tts"></a>
 
 # fishaudio.types.tts
@@ -90,6 +128,32 @@ class CloseEvent(BaseModel)
 
 WebSocket close event.
 
+<a id="fishaudio.types.account"></a>
+
+# fishaudio.types.account
+
+Account-related types (credits, packages, etc.).
+
+<a id="fishaudio.types.account.Credits"></a>
+
+## Credits Objects
+
+```python
+class Credits(BaseModel)
+```
+
+User's API credit balance.
+
+<a id="fishaudio.types.account.Package"></a>
+
+## Package Objects
+
+```python
+class Package(BaseModel)
+```
+
+User's prepaid package information.
+
 <a id="fishaudio.types.asr"></a>
 
 # fishaudio.types.asr
@@ -137,68 +201,4 @@ class PaginatedResponse(BaseModel, Generic[T])
 ```
 
 Generic paginated response.
-
-<a id="fishaudio.types.voices"></a>
-
-# fishaudio.types.voices
-
-Voice and model management types.
-
-<a id="fishaudio.types.voices.Sample"></a>
-
-## Sample Objects
-
-```python
-class Sample(BaseModel)
-```
-
-A sample audio for a voice model.
-
-<a id="fishaudio.types.voices.Author"></a>
-
-## Author Objects
-
-```python
-class Author(BaseModel)
-```
-
-Voice model author information.
-
-<a id="fishaudio.types.voices.Voice"></a>
-
-## Voice Objects
-
-```python
-class Voice(BaseModel)
-```
-
-A voice model
-
-Represents a TTS voice that can be used for synthesis.
-
-<a id="fishaudio.types.account"></a>
-
-# fishaudio.types.account
-
-Account-related types (credits, packages, etc.).
-
-<a id="fishaudio.types.account.Credits"></a>
-
-## Credits Objects
-
-```python
-class Credits(BaseModel)
-```
-
-User's API credit balance.
-
-<a id="fishaudio.types.account.Package"></a>
-
-## Package Objects
-
-```python
-class Package(BaseModel)
-```
-
-User's prepaid package information.
 
