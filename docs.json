@@ -15,36 +15,106 @@
         "pages": ["index", "changelog", "roadmap", "contributing"]
       },
       {
-        "tab": "Developer Platform",
+        "tab": "Developer Guide",
         "groups": [
           {
             "group": "Getting Started",
             "pages": [
-              "developer-platform/getting-started/introduction",
-              "developer-platform/getting-started/quickstart",
-              "developer-platform/getting-started/calhacks"
+              "developer-guide/getting-started/introduction",
+              "developer-guide/getting-started/quickstart",
+              "developer-guide/getting-started/calhacks"
             ]
           },
           {
             "group": "Models & Pricing",
             "pages": [
-              "developer-platform/models-pricing/models-overview",
-              "developer-platform/models-pricing/choosing-a-model",
-              "developer-platform/models-pricing/deprecations",
-              "developer-platform/models-pricing/pricing-and-rate-limits"
+              "developer-guide/models-pricing/models-overview",
+              "developer-guide/models-pricing/choosing-a-model",
+              "developer-guide/models-pricing/deprecations",
+              "developer-guide/models-pricing/pricing-and-rate-limits"
             ]
           },
           {
             "group": "Core Features",
             "pages": [
-              "developer-platform/core-features/emotions",
-              "developer-platform/core-features/fine-grained-control"
+              "developer-guide/core-features/emotions",
+              "developer-guide/core-features/fine-grained-control"
             ]
           },
           {
-            "group": "API Reference",
+            "group": "SDK Guide",
             "pages": [
-              "api-reference/introduction",
+              {
+                "group": "Python SDK",
+                "icon": "python",
+                "pages": [
+                  "developer-guide/sdk-guide/python/installation",
+                  "developer-guide/sdk-guide/python/authentication",
+                  "developer-guide/sdk-guide/python/text-to-speech",
+                  "developer-guide/sdk-guide/python/voice-cloning",
+                  "developer-guide/sdk-guide/python/speech-to-text",
+                  "developer-guide/sdk-guide/python/websocket"
+                ]
+              },
+              {
+                "group": "JavaScript SDK",
+                "icon": "js",
+                "pages": [
+                  "developer-guide/sdk-guide/javascript/installation",
+                  "developer-guide/sdk-guide/javascript/authentication",
+                  "developer-guide/sdk-guide/javascript/text-to-speech",
+                  "developer-guide/sdk-guide/javascript/voice-cloning",
+                  "developer-guide/sdk-guide/javascript/speech-to-text",
+                  "developer-guide/sdk-guide/javascript/websocket"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Self-Hosting",
+            "pages": [
+              "developer-guide/self-hosting/local-setup",
+              "developer-guide/self-hosting/docker-deployment",
+              "developer-guide/self-hosting/running-inference"
+            ]
+          },
+          {
+            "group": "Advanced Features",
+            "pages": []
+          },
+          {
+            "group": "Integrations",
+            "pages": []
+          },
+          {
+            "group": "Best Practices",
+            "pages": []
+          },
+          {
+            "group": "Safety & Ethics",
+            "pages": []
+          },
+          {
+            "group": "Other",
+            "pages": [
+              "developer-guide/migration",
+              "developer-guide/sdks-tools/coding-agents"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/introduction"
+            ]
+          },
+          {
+            "group": "REST API",
+            "pages": [
               {
                 "group": "Wallet",
                 "icon": "wallet",
@@ -75,76 +145,29 @@
             ]
           },
           {
-            "group": "SDKs & Tools",
+            "group": "Python SDK",
+            "icon": "python",
             "pages": [
+              "api-reference/sdk/python/overview",
               {
-                "group": "Python SDK",
-                "icon": "python",
+                "group": "Reference",
+                "icon": "book-open",
                 "pages": [
-                  "sdk-reference/python/installation",
-                  "sdk-reference/python/authentication",
-                  "sdk-reference/python/text-to-speech",
-                  "sdk-reference/python/voice-cloning",
-                  "sdk-reference/python/speech-to-text",
-                  "sdk-reference/python/websocket",
-                  {
-                    "group": "Module Reference",
-                    "pages": [
-                      "sdk-reference/python/module-reference/client",
-                      "sdk-reference/python/module-reference/resources",
-                      "sdk-reference/python/module-reference/types",
-                      "sdk-reference/python/module-reference/core",
-                      "sdk-reference/python/module-reference/utils",
-                      "sdk-reference/python/module-reference/exceptions",
-                      "sdk-reference/python/module-reference/fish_audio_sdk"
-                    ]
-                  }
-                ]
-              },
-              {
-                "group": "JavaScript SDK",
-                "icon": "js",
-                "pages": [
-                  "sdk-reference/javascript/installation",
-                  "sdk-reference/javascript/authentication",
-                  "sdk-reference/javascript/text-to-speech",
-                  "sdk-reference/javascript/voice-cloning",
-                  "sdk-reference/javascript/speech-to-text",
-                  "sdk-reference/javascript/websocket",
-                  "sdk-reference/javascript/api-reference"
+                  "api-reference/sdk/python/client",
+                  "api-reference/sdk/python/resources",
+                  "api-reference/sdk/python/types",
+                  "api-reference/sdk/python/core",
+                  "api-reference/sdk/python/utils",
+                  "api-reference/sdk/python/exceptions"
                 ]
               }
             ]
           },
           {
-            "group": "Self-Hosting",
+            "group": "JavaScript SDK",
+            "icon": "js",
             "pages": [
-              "developer-platform/self-hosting/local-setup",
-              "developer-platform/self-hosting/docker-deployment",
-              "developer-platform/self-hosting/running-inference"
-            ]
-          },
-          {
-            "group": "Advanced Features",
-            "pages": []
-          },
-          {
-            "group": "Integrations",
-            "pages": []
-          },
-          {
-            "group": "Best Practices",
-            "pages": []
-          },
-          {
-            "group": "Safety & Ethics",
-            "pages": []
-          },
-          {
-            "group": "Other",
-            "pages": [
-              "developer-platform/migration",
-              "developer-platform/sdks-tools/coding-agents"
+              "api-reference/sdk/javascript/api-reference"
             ]
           }
         ]
@@ -223,6 +246,9 @@
       "label": "Sign Up",
       "href": "https://fish.audio/auth/?redirect=/app/"
     }
+  },
+  "interaction": {
+    "drilldown": true
   },
   "contextual": {
     "options": [
