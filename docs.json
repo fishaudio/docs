@@ -53,8 +53,7 @@
                   "docs/sdk-reference/python/text-to-speech",
                   "docs/sdk-reference/python/voice-cloning",
                   "docs/sdk-reference/python/speech-to-text",
-                  "docs/sdk-reference/python/websocket",
-                  "docs/sdk-reference/python/api-reference"
+                  "docs/sdk-reference/python/websocket"
                 ]
               },
               {
@@ -66,8 +65,7 @@
                   "docs/sdk-reference/javascript/text-to-speech",
                   "docs/sdk-reference/javascript/voice-cloning",
                   "docs/sdk-reference/javascript/speech-to-text",
-                  "docs/sdk-reference/javascript/websocket",
-                  "docs/sdk-reference/javascript/api-reference"
+                  "docs/sdk-reference/javascript/websocket"
                 ]
               }
             ]
@@ -131,34 +129,70 @@
       },
       {
         "tab": "API Reference",
-        "pages": [
-          "api-reference/introduction",
-          "api-reference/emotion-reference",
+        "groups": [
           {
-            "group": "Wallet",
-            "icon": "wallet",
+            "group": "API Reference",
             "pages": [
-              "api-reference/endpoint/wallet/get-api-credit",
-              "api-reference/endpoint/wallet/get-user-package"
+              "api-reference/introduction",
+              "api-reference/emotion-reference"
             ]
           },
           {
-            "group": "Voice Models",
-            "icon": "cube",
+            "group": "REST API",
             "pages": [
-              "api-reference/endpoint/model/list-models",
-              "api-reference/endpoint/model/create-model",
-              "api-reference/endpoint/model/get-model",
-              "api-reference/endpoint/model/delete-model",
-              "api-reference/endpoint/model/update-model"
+              {
+                "group": "Wallet",
+                "icon": "wallet",
+                "pages": [
+                  "api-reference/endpoint/wallet/get-api-credit",
+                  "api-reference/endpoint/wallet/get-user-package"
+                ]
+              },
+              {
+                "group": "Voice Models",
+                "icon": "cube",
+                "pages": [
+                  "api-reference/endpoint/model/list-models",
+                  "api-reference/endpoint/model/create-model",
+                  "api-reference/endpoint/model/get-model",
+                  "api-reference/endpoint/model/delete-model",
+                  "api-reference/endpoint/model/update-model"
+                ]
+              },
+              {
+                "group": "TTS & ASR (v1)",
+                "icon": "code",
+                "pages": [
+                  "api-reference/endpoint/openapi-v1/text-to-speech",
+                  "api-reference/endpoint/openapi-v1/speech-to-text"
+                ]
+              }
             ]
           },
           {
-            "group": "TTS & ASR (v1)",
-            "icon": "code",
+            "group": "Python SDK",
+            "icon": "python",
             "pages": [
-              "api-reference/endpoint/openapi-v1/text-to-speech",
-              "api-reference/endpoint/openapi-v1/speech-to-text"
+              "api-reference/sdk/python/overview",
+              {
+                "group": "Reference",
+                "icon": "book-open",
+                "pages": [
+                  "api-reference/sdk/python/client",
+                  "api-reference/sdk/python/resources",
+                  "api-reference/sdk/python/types",
+                  "api-reference/sdk/python/core",
+                  "api-reference/sdk/python/utils",
+                  "api-reference/sdk/python/exceptions"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "JavaScript SDK",
+            "icon": "js",
+            "pages": [
+              "api-reference/sdk/javascript/api-reference"
             ]
           }
         ]
@@ -185,6 +219,9 @@
       "label": "Sign Up",
       "href": "https://fish.audio/auth/?redirect=/app/"
     }
+  },
+  "interaction": {
+    "drilldown": true
   },
   "contextual": {
     "options": [
@@ -276,7 +313,7 @@
     },
     {
       "source": "/developer-guide/sdk-guide/python/api-reference",
-      "destination": "/docs/sdk-reference/python/api-reference"
+      "destination": "/api-reference/sdk/python/overview"
     },
     {
       "source": "/developer-guide/sdk-guide/javascript/installation",
@@ -304,7 +341,7 @@
     },
     {
       "source": "/developer-guide/sdk-guide/javascript/api-reference",
-      "destination": "/docs/sdk-reference/javascript/api-reference"
+      "destination": "/api-reference/sdk/javascript/api-reference"
     },
     {
       "source": "/developer-guide/self-hosting/local-setup",
