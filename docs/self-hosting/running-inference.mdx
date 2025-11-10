@@ -1,0 +1,412 @@
+---
+title: "Running Inference"
+description: "Generate speech using self-hosted Fish Audio models"
+icon: "play"
+---
+
+Fish Audio supports multiple inference methods: command line, HTTP API, WebUI, and GUI. Choose the method that best fits your workflow.
+
+<Note>
+This guide assumes you have already [installed Fish Audio locally](/docs/self-hosting/local-setup) or [set up Docker deployment](/docs/self-hosting/docker-deployment).
+</Note>
+
+## Download Weights
+
+Before running inference, download the required model weights from Hugging Face:
+
+```bash
+# Install Hugging Face CLI (if not already installed)
+pip install huggingface_hub[cli]
+# or
+uv tool install huggingface_hub[cli]
+
+# Download OpenAudio S1-mini weights
+hf download fishaudio/openaudio-s1-mini --local-dir checkpoints/openaudio-s1-mini
+```
+
+<Info>
+**OpenAudio S1-mini** is the open-source distilled version (0.5B parameters) optimized for local deployment. The full **S1** model (4B parameters) is available exclusively on [Fish Audio cloud](https://fish.audio).
+</Info>
+
+## Command Line Inference
+
+Command line inference provides maximum control and is ideal for scripting and batch processing.
+
+### Step 1: Extract VQ Tokens from Reference Audio
+
+First, encode your reference audio to get voice characteristics:
+
+```bash
+python fish_speech/models/dac/inference.py \
+    -i "reference_audio.wav" \
+    --checkpoint-path "checkpoints/openaudio-s1-mini/codec.pth"
+```
+
+This generates two files:
+- `fake.npy` - VQ tokens representing voice characteristics
+- `fake.wav` - Reconstructed audio for verification
+
+<Tip>
+**Skip this step if you want random voice generation** - the model can generate speech without reference audio.
+</Tip>
+
+### Step 2: Generate Semantic Tokens from Text
+
+Convert your text to semantic tokens using the language model:
+
+```bash
+python fish_speech/models/text2semantic/inference.py \
+    --text "The text you want to convert to speech" \
+    --prompt-text "Transcription of your reference audio" \
+    --prompt-tokens "fake.npy" \
+    --compile
+```
+
+**Parameters:**
+- `--text`: The text to synthesize
+- `--prompt-text`: Transcription of the reference audio (for voice cloning)
+- `--prompt-tokens`: Path to VQ tokens from Step 1 (for voice cloning)
+- `--compile`: Enable kernel fusion for faster inference (~10x speedup on RTX 4090)
+
+<Note>
+For random voice generation, omit `--prompt-text` and `--prompt-tokens` parameters.
+</Note>
+
+This creates a file named `codes_N.npy` (where N starts from 0) containing semantic tokens.
+
+<Warning>
+For GPUs that don't support bf16 (bfloat16), add the `--half` flag to use fp16 instead.
+</Warning>
+
+### Step 3: Generate Audio from Semantic Tokens
+
+Finally, convert semantic tokens to audio:
+
+```bash
+python fish_speech/models/dac/inference.py \
+    -i "codes_0.npy"
+```
+
+This generates the final audio file.
+
+### Full Example
+
+Here's a complete workflow for voice cloning:
+
+```bash
+# 1. Encode reference audio
+python fish_speech/models/dac/inference.py \
+    -i "my_voice.wav" \
+    --checkpoint-path "checkpoints/openaudio-s1-mini/codec.pth"
+
+# 2. Generate semantic tokens
+python fish_speech/models/text2semantic/inference.py \
+    --text "Hello, this is a test of voice cloning." \
+    --prompt-text "This is my reference voice recording." \
+    --prompt-tokens "fake.npy" \
+    --compile
+
+# 3. Generate final audio
+python fish_speech/models/dac/inference.py \
+    -i "codes_0.npy"
+```
+
+## HTTP API Inference
+
+The HTTP API provides a programmatic interface for integrations and production deployments.
+
+### Start API Server
+
+```bash
+# With local installation
+python -m tools.api_server \
+    --listen 0.0.0.0:8080 \
+    --llama-checkpoint-path "checkpoints/openaudio-s1-mini" \
+    --decoder-checkpoint-path "checkpoints/openaudio-s1-mini/codec.pth" \
+    --decoder-config-name modded_dac_vq
+
+# With UV
+uv run tools/api_server.py \
+    --listen 0.0.0.0:8080 \
+    --llama-checkpoint-path "checkpoints/openaudio-s1-mini" \
+    --decoder-checkpoint-path "checkpoints/openaudio-s1-mini/codec.pth" \
+    --decoder-config-name modded_dac_vq
+```
+
+<Tip>
+Add the `--compile` flag to enable torch.compile optimization for faster inference.
+</Tip>
+
+### Access API Documentation
+
+Once the server is running, access the interactive API documentation at:
+
+```
+http://localhost:8080/docs
+```
+
+The API provides endpoints for:
+- Text-to-speech synthesis
+- Voice cloning with reference audio
+- Batch processing
+- Model information
+
+### Example API Request
+
+```bash
+curl -X POST "http://localhost:8080/v1/tts" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Hello, this is a test",
+    "reference_audio": "base64_encoded_audio",
+    "reference_text": "Reference transcription"
+  }'
+```
+
+## WebUI Inference
+
+The WebUI provides an intuitive interface for interactive testing and development.
+
+### Start WebUI
+
+```bash
+# With all parameters
+python -m tools.run_webui \
+    --llama-checkpoint-path "checkpoints/openaudio-s1-mini" \
+    --decoder-checkpoint-path "checkpoints/openaudio-s1-mini/codec.pth" \
+    --decoder-config-name modded_dac_vq
+
+# Or use defaults (auto-detects models in checkpoints/)
+python -m tools.run_webui
+```
+
+<Tip>
+Add the `--compile` flag for faster inference during interactive sessions.
+</Tip>
+
+### Access WebUI
+
+The WebUI starts on port 7860 by default. Access it at:
+
+```
+http://localhost:7860
+```
+
+### Configure with Environment Variables
+
+Customize the WebUI using Gradio environment variables:
+
+```bash
+# Enable public sharing
+GRADIO_SHARE=1 python -m tools.run_webui
+
+# Change server port
+GRADIO_SERVER_PORT=8080 python -m tools.run_webui
+
+# Change server name
+GRADIO_SERVER_NAME=0.0.0.0 python -m tools.run_webui
+```
+
+### Using Reference Audio Library
+
+For faster workflow, pre-save reference audio:
+
+1. Create a `references/` directory in the project root
+2. Create subdirectories named by voice ID: `references/<voice_id>/`
+3. Place files in each subdirectory:
+   - `sample.wav` - Reference audio file
+   - `sample.lab` - Text transcription of the audio
+
+Example structure:
+```
+references/
+├── alice/
+│   ├── sample.wav
+│   └── sample.lab
+└── bob/
+    ├── sample.wav
+    └── sample.lab
+```
+
+These references will appear as selectable options in the WebUI.
+
+## GUI Inference
+
+For users who prefer a native desktop application, a PyQt6-based GUI is available.
+
+### Download GUI Client
+
+Download the latest release from the [Fish Speech GUI repository](https://github.com/AnyaCoder/fish-speech-gui/releases).
+
+**Supported platforms:**
+- Linux
+- Windows
+- macOS
+
+### Connect to API Server
+
+The GUI client connects to a running API server (see [HTTP API Inference](#http-api-inference) above).
+
+1. Start the API server
+2. Launch the GUI client
+3. Configure the API endpoint (default: `http://localhost:8080`)
+
+## Docker Inference
+
+If you're using Docker deployment, refer to the [Docker Deployment guide](/docs/self-hosting/docker-deployment) for detailed instructions on:
+
+- Running pre-built WebUI containers
+- Running pre-built API server containers
+- Customizing container configuration
+- Volume mounts for models and references
+
+Quick example:
+
+```bash
+# Start WebUI with Docker
+docker run -d \
+    --name fish-speech-webui \
+    --gpus all \
+    -p 7860:7860 \
+    -v ./checkpoints:/app/checkpoints \
+    -v ./references:/app/references \
+    -e COMPILE=1 \
+    fishaudio/fish-speech:latest-webui-cuda
+```
+
+## Performance Optimization
+
+### Enable Compilation
+
+Torch compilation provides ~10x speedup on compatible GPUs:
+
+```bash
+# Add --compile flag to any inference command
+python -m tools.api_server --compile ...
+```
+
+<Warning>
+Compilation requires:
+- CUDA-compatible GPU
+- Triton library (not supported on Windows/macOS)
+- First run will be slow due to compilation overhead
+</Warning>
+
+### Use Mixed Precision
+
+For GPUs without bf16 support, use fp16:
+
+```bash
+python fish_speech/models/text2semantic/inference.py --half ...
+```
+
+### Batch Processing
+
+For multiple audio generations, use batch processing to amortize model loading overhead:
+
+```python
+# Example batch processing script
+import fish_speech
+
+model = fish_speech.load_model("checkpoints/openaudio-s1-mini")
+
+texts = ["First sentence", "Second sentence", "Third sentence"]
+for text in texts:
+    audio = model.synthesize(text)
+    audio.save(f"output_{texts.index(text)}.wav")
+```
+
+## Emotion Control
+
+OpenAudio S1 supports emotional markers for expressive speech synthesis:
+
+### Basic Emotions
+
+```
+(angry) (sad) (excited) (surprised) (satisfied) (delighted)
+(scared) (worried) (upset) (nervous) (frustrated) (depressed)
+(empathetic) (embarrassed) (disgusted) (moved) (proud) (relaxed)
+(grateful) (confident) (interested) (curious) (confused) (joyful)
+```
+
+### Advanced Emotions
+
+```
+(disdainful) (unhappy) (anxious) (hysterical) (indifferent)
+(impatient) (guilty) (scornful) (panicked) (furious) (reluctant)
+(keen) (disapproving) (negative) (denying) (astonished) (serious)
+(sarcastic) (conciliative) (comforting) (sincere) (sneering)
+(hesitating) (yielding) (painful) (awkward) (amused)
+```
+
+### Tone Markers
+
+```
+(in a hurry tone) (shouting) (screaming) (whispering) (soft tone)
+```
+
+### Special Effects
+
+```
+(laughing) (chuckling) (sobbing) (crying loudly) (sighing) (panting)
+(groaning) (crowd laughing) (background laughter) (audience laughing)
+```
+
+### Example Usage
+
+```bash
+python fish_speech/models/text2semantic/inference.py \
+    --text "(excited)This is amazing! (laughing)Ha ha ha!" \
+    --compile
+```
+
+<Info>
+Emotion control is currently supported for English, Chinese, and Japanese. More languages coming soon!
+</Info>
+
+For more details, see the [Emotion Reference](/api-reference/emotion-reference).
+
+## Troubleshooting
+
+### Out of Memory Errors
+
+If you encounter CUDA out of memory errors:
+
+1. Reduce input text length
+2. Use `--half` flag for fp16 inference
+3. Close other GPU applications
+4. Use a smaller batch size
+
+### Slow Inference
+
+To improve speed:
+
+1. Enable `--compile` flag
+2. Verify GPU is being used (check with `nvidia-smi`)
+3. Ensure CUDA version matches PyTorch installation
+4. Use fp16 instead of bf16 on older GPUs
+
+### Poor Audio Quality
+
+For better quality:
+
+1. Use high-quality reference audio (clear, no background noise)
+2. Ensure reference text accurately matches reference audio
+3. Use 10-30 seconds of reference audio
+4. See [Voice Cloning Best Practices](/docs/best-practices/voice-cloning)
+
+### Model Loading Errors
+
+If models fail to load:
+
+1. Verify model weights are downloaded completely
+2. Check checkpoint paths are correct
+3. Ensure sufficient disk space
+4. Re-download weights if corrupted
+
+## Next Steps
+
+- **[Emotion Control Best Practices](/docs/best-practices/emotion-control)** - Master expressive speech
+- **[Voice Cloning Best Practices](/docs/best-practices/voice-cloning)** - Optimize voice cloning quality
+- **[API Reference](/api-reference/introduction)** - Integrate with your applications
+- **[Cloud API](https://fish.audio)** - Compare with managed service performance

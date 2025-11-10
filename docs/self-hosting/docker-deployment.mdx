@@ -1,0 +1,336 @@
+---
+title: "Docker Deployment"
+description: "Deploy Fish Audio models using Docker containers"
+icon: "docker"
+---
+
+Fish Audio provides Docker images for both WebUI and API server deployments. You can use pre-built images from Docker Hub or build custom images locally.
+
+## Prerequisites
+
+Before deploying with Docker, ensure you have:
+
+- **Docker** and **Docker Compose** installed
+- **NVIDIA Docker runtime** (for GPU support)
+- At least **12GB GPU memory** for CUDA inference
+- Downloaded model weights (see [Running Inference](/docs/self-hosting/running-inference#download-weights))
+
+## Pre-built Images
+
+Fish Audio provides ready-to-use Docker images on Docker Hub:
+
+| Image | Description | Best For |
+|-------|-------------|----------|
+| `fishaudio/fish-speech:latest-webui-cuda` | WebUI with CUDA support | Interactive development with GPU |
+| `fishaudio/fish-speech:latest-webui-cpu` | WebUI CPU-only | Testing without GPU |
+| `fishaudio/fish-speech:latest-server-cuda` | API server with CUDA | Production deployments with GPU |
+| `fishaudio/fish-speech:latest-server-cpu` | API server CPU-only | Low-traffic CPU deployments |
+
+<Note>
+For production use, we recommend using specific version tags instead of `latest` to ensure consistency across deployments.
+</Note>
+
+## Quick Start with Docker Run
+
+The fastest way to get started is using `docker run`:
+
+### WebUI Deployment
+
+```bash
+# Create directories for model weights and reference audio
+mkdir -p checkpoints references
+
+# Start WebUI with CUDA support (recommended)
+docker run -d \
+    --name fish-speech-webui \
+    --gpus all \
+    -p 7860:7860 \
+    -v ./checkpoints:/app/checkpoints \
+    -v ./references:/app/references \
+    -e COMPILE=1 \
+    fishaudio/fish-speech:latest-webui-cuda
+
+# For CPU-only deployment
+docker run -d \
+    --name fish-speech-webui-cpu \
+    -p 7860:7860 \
+    -v ./checkpoints:/app/checkpoints \
+    -v ./references:/app/references \
+    fishaudio/fish-speech:latest-webui-cpu
+```
+
+Access the WebUI at `http://localhost:7860`
+
+### API Server Deployment
+
+```bash
+# Start API server with CUDA support
+docker run -d \
+    --name fish-speech-server \
+    --gpus all \
+    -p 8080:8080 \
+    -v ./checkpoints:/app/checkpoints \
+    -v ./references:/app/references \
+    -e COMPILE=1 \
+    fishaudio/fish-speech:latest-server-cuda
+
+# For CPU-only deployment
+docker run -d \
+    --name fish-speech-server-cpu \
+    -p 8080:8080 \
+    -v ./checkpoints:/app/checkpoints \
+    -v ./references:/app/references \
+    fishaudio/fish-speech:latest-server-cpu
+```
+
+Access the API documentation at `http://localhost:8080`
+
+<Tip>
+Enable the `COMPILE=1` environment variable for ~10x faster inference on CUDA deployments. This uses `torch.compile` to optimize the model.
+</Tip>
+
+## Docker Compose Deployment
+
+For development or customization, Docker Compose provides easier configuration management:
+
+### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/fishaudio/fish-speech.git
+cd fish-speech
+```
+
+### Start Services
+
+```bash
+# Start WebUI with CUDA
+docker compose --profile webui up
+
+# Start WebUI with compile optimization
+COMPILE=1 docker compose --profile webui up
+
+# Start API server
+docker compose --profile server up
+
+# Start API server with compile optimization
+COMPILE=1 docker compose --profile server up
+
+# For CPU-only deployment
+BACKEND=cpu docker compose --profile webui up
+```
+
+<Tip>
+Run containers in detached mode by adding the `-d` flag: `docker compose --profile webui up -d`
+</Tip>
+
+### Environment Variables
+
+Customize deployment using environment variables or a `.env` file:
+
+```bash
+# .env file example
+BACKEND=cuda              # or cpu
+COMPILE=1                 # Enable compile optimization
+GRADIO_PORT=7860         # WebUI port
+API_PORT=8080            # API server port
+UV_VERSION=0.8.15        # UV package manager version
+```
+
+## Manual Docker Build
+
+For advanced users who need custom configurations:
+
+### Build WebUI Image
+
+```bash
+# Build with CUDA support
+docker build \
+    --platform linux/amd64 \
+    -f docker/Dockerfile \
+    --build-arg BACKEND=cuda \
+    --build-arg CUDA_VER=12.6.0 \
+    --build-arg UV_EXTRA=cu126 \
+    --target webui \
+    -t fish-speech-webui:cuda .
+
+# Build CPU-only (supports multi-platform)
+docker build \
+    --platform linux/amd64,linux/arm64 \
+    -f docker/Dockerfile \
+    --build-arg BACKEND=cpu \
+    --target webui \
+    -t fish-speech-webui:cpu .
+```
+
+### Build API Server Image
+
+```bash
+# Build with CUDA support
+docker build \
+    --platform linux/amd64 \
+    -f docker/Dockerfile \
+    --build-arg BACKEND=cuda \
+    --build-arg CUDA_VER=12.6.0 \
+    --build-arg UV_EXTRA=cu126 \
+    --target server \
+    -t fish-speech-server:cuda .
+```
+
+### Build Development Image
+
+```bash
+# Build development image with all tools
+docker build \
+    --platform linux/amd64 \
+    -f docker/Dockerfile \
+    --build-arg BACKEND=cuda \
+    --target dev \
+    -t fish-speech-dev:cuda .
+```
+
+### Build Arguments
+
+| Argument | Options | Default | Description |
+|----------|---------|---------|-------------|
+| `BACKEND` | `cuda`, `cpu` | `cuda` | Compute backend |
+| `CUDA_VER` | `12.6.0`, etc. | `12.6.0` | CUDA version |
+| `UV_EXTRA` | `cu126`, `cu128`, `cu129` | `cu126` | UV extra for CUDA |
+| `UBUNTU_VER` | `24.04`, etc. | `24.04` | Ubuntu base version |
+| `PY_VER` | `3.12`, etc. | `3.12` | Python version |
+
+## Volume Mounts
+
+Both Docker run and Compose methods require these volume mounts:
+
+| Host Path | Container Path | Purpose |
+|-----------|----------------|---------|
+| `./checkpoints` | `/app/checkpoints` | Model weights directory |
+| `./references` | `/app/references` | Reference audio files for voice cloning |
+
+<Warning>
+Ensure model weights are downloaded and placed in the `./checkpoints` directory before starting containers. See [Running Inference](/docs/self-hosting/running-inference#download-weights) for download instructions.
+</Warning>
+
+## Environment Variables Reference
+
+### WebUI Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `GRADIO_SERVER_NAME` | `0.0.0.0` | WebUI server host |
+| `GRADIO_SERVER_PORT` | `7860` | WebUI server port |
+| `GRADIO_SHARE` | `false` | Enable Gradio public sharing |
+
+### API Server Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `API_SERVER_NAME` | `0.0.0.0` | API server host |
+| `API_SERVER_PORT` | `8080` | API server port |
+
+### Model Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LLAMA_CHECKPOINT_PATH` | `checkpoints/openaudio-s1-mini` | Path to model weights |
+| `DECODER_CHECKPOINT_PATH` | `checkpoints/openaudio-s1-mini/codec.pth` | Path to decoder weights |
+| `DECODER_CONFIG_NAME` | `modded_dac_vq` | Decoder configuration name |
+
+### Performance Optimization
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `COMPILE` | `0` | Enable torch.compile for ~10x speedup (CUDA only) |
+
+## Container Management
+
+### View Logs
+
+```bash
+# Docker run
+docker logs fish-speech-webui
+
+# Docker Compose
+docker compose logs webui
+```
+
+### Stop Containers
+
+```bash
+# Docker run
+docker stop fish-speech-webui
+
+# Docker Compose
+docker compose down
+```
+
+### Update Images
+
+```bash
+# Pull latest images
+docker pull fishaudio/fish-speech:latest-webui-cuda
+
+# Restart containers with new image
+docker compose --profile webui up -d
+```
+
+## GPU Support
+
+### Prerequisites
+
+Install NVIDIA Container Toolkit:
+
+```bash
+# Ubuntu/Debian
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | \
+    sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+
+sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
+sudo systemctl restart docker
+```
+
+### Verify GPU Access
+
+```bash
+docker run --rm --gpus all nvidia/cuda:12.6.0-base-ubuntu24.04 nvidia-smi
+```
+
+<Warning>
+GPU support requires NVIDIA Docker runtime. For CPU-only deployment, remove the `--gpus all` flag and use CPU images.
+</Warning>
+
+## Troubleshooting
+
+### Container Won't Start
+
+Check logs for errors:
+```bash
+docker logs fish-speech-webui
+```
+
+Common issues:
+- Missing model weights in `./checkpoints`
+- Port already in use (change port mapping)
+- Insufficient GPU memory
+
+### GPU Not Detected
+
+Verify NVIDIA Docker runtime is installed:
+```bash
+docker run --rm --gpus all nvidia/cuda:12.6.0-base-ubuntu24.04 nvidia-smi
+```
+
+### Performance Issues
+
+1. Enable compile optimization: `COMPILE=1`
+2. Ensure GPU is being used (check with `nvidia-smi`)
+3. Verify sufficient GPU memory is available
+
+## Next Steps
+
+- **[Run inference](/docs/self-hosting/running-inference)** - Learn how to generate speech
+- **[Download models](https://huggingface.co/fishaudio)** - Get pre-trained weights
+- **[API documentation](/api-reference/introduction)** - Integrate with your applications

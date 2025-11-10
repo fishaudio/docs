@@ -1,0 +1,241 @@
+---
+title: "API Reference"
+description: "Complete reference for Fish Audio Python SDK"
+icon: "book"
+---
+
+## Session Methods
+
+### tts()
+Generate speech from text.
+
+```python
+for chunk in session.tts(request, backend="speech-1.5"):
+    f.write(chunk)
+```
+
+**Parameters:** `request` (TTSRequest), `backend` (str, default "speech-1.5")
+**Returns:** Generator[bytes]
+
+### asr()
+Transcribe audio to text.
+
+```python
+response = session.asr(request)
+```
+
+**Parameters:** `request` (ASRRequest)
+**Returns:** ASRResponse
+
+### list_models()
+List available voice models.
+
+```python
+models = session.list_models(self_only=True, page_size=10)
+```
+
+**Parameters:** `page_size`, `page_number`, `title`, `tag`, `self_only`, `author_id`, `language`, `sort_by`
+**Returns:** PaginatedResponse[ModelEntity]
+
+### get_model()
+Get model details.
+
+```python
+model = session.get_model("model_id")
+```
+
+**Parameters:** `model_id` (str)
+**Returns:** ModelEntity
+
+### create_model()
+Create a new voice model.
+
+```python
+model = session.create_model(
+    title="My Voice",
+    voices=[audio_bytes],
+    texts=["Sample text"]
+)
+```
+
+**Parameters:** `title`, `voices`, `texts`, `description`, `visibility`, `tags`, `enhance_audio_quality`
+**Returns:** ModelEntity
+
+### update_model()
+Update model metadata.
+
+```python
+session.update_model("model_id", title="New Title")
+```
+
+**Parameters:** `model_id`, `title`, `description`, `visibility`, `tags`
+**Returns:** None
+
+### delete_model()
+Delete a model.
+
+```python
+session.delete_model("model_id")
+```
+
+**Parameters:** `model_id` (str)
+**Returns:** None
+
+### get_api_credit()
+Check API credit balance.
+
+```python
+credit = session.get_api_credit()
+```
+
+**Returns:** APICreditEntity
+
+### get_package()
+Get subscription package details.
+
+```python
+package = session.get_package()
+```
+
+**Returns:** PackageEntity
+
+## Request Classes
+
+### TTSRequest
+Text-to-speech parameters.
+
+```python
+TTSRequest(
+    text="Hello",
+    reference_id="model_id",
+    references=[ReferenceAudio(audio=bytes, text="sample")],
+    format="mp3",
+    prosody=Prosody(speed=1.0, volume=0)
+)
+```
+
+**Fields:** `text`, `reference_id`, `references`, `format`, `mp3_bitrate`, `opus_bitrate`, `sample_rate`, `prosody`, `latency`, `chunk_length`, `normalize`, `temperature`, `top_p`
+
+### ASRRequest
+Speech-to-text parameters.
+
+```python
+ASRRequest(audio=audio_bytes, language="en")
+```
+
+**Fields:** `audio` (bytes), `language` (str), `ignore_timestamps` (bool)
+
+### ReferenceAudio
+Reference audio for voice cloning.
+
+```python
+ReferenceAudio(audio=audio_bytes, text="spoken text")
+```
+
+**Fields:** `audio` (bytes), `text` (str)
+
+### Prosody
+Speed and volume control.
+
+```python
+Prosody(speed=1.2, volume=5)
+```
+
+**Fields:** `speed` (0.5-2.0), `volume` (-20 to 20)
+
+## Response Classes
+
+### ASRResponse
+Transcription result.
+
+```python
+response.text  # Complete transcription
+response.duration  # Duration in milliseconds
+response.segments  # List of ASRSegment
+```
+
+### ASRSegment
+Timestamped text segment.
+
+**Fields:** `text` (str), `start` (float, seconds), `end` (float, seconds)
+
+### ModelEntity
+Voice model information.
+
+**Fields:** `id`, `title`, `description`, `visibility`, `created_at`, `updated_at`, `tags`
+
+### PaginatedResponse
+Paginated list response.
+
+**Fields:** `items` (list), `total` (int), `page_size` (int), `page_number` (int)
+
+### APICreditEntity
+API credit balance.
+
+**Fields:** `balance` (float)
+
+### PackageEntity
+Subscription package.
+
+**Fields:** `name` (str), `expires_at` (str)
+
+## WebSocket Classes
+
+### WebSocketSession
+Synchronous WebSocket client.
+
+```python
+ws = WebSocketSession("api_key")
+with ws:
+    for chunk in ws.tts(request, text_stream()):
+        # Process chunk
+```
+
+**Parameters:** `apikey`, `base_url`, `max_workers` (default 10)
+
+### AsyncWebSocketSession
+Asynchronous WebSocket client.
+
+```python
+ws = AsyncWebSocketSession("api_key")
+async with ws:
+    async for chunk in ws.tts(request, text_stream()):
+        # Process chunk
+```
+
+**Parameters:** `apikey`, `base_url`
+
+## Event Classes
+
+### StartEvent
+Stream start event.
+
+**Fields:** `event` ("start"), `request` (TTSRequest)
+
+### TextEvent
+Text chunk event.
+
+**Fields:** `event` ("text"), `text` (str)
+
+### CloseEvent
+Stream close event.
+
+**Fields:** `event` ("stop")
+
+## Exceptions
+
+### HttpCodeErr
+HTTP error with status code.
+
+```python
+except HttpCodeErr as e:
+    print(f"Error {e.status}: {e.message}")
+```
+
+### WebSocketErr
+WebSocket connection error.
+
+```python
+except WebSocketErr:
+    print("Connection failed")
+```
