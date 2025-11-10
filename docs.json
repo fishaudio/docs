@@ -11,106 +11,89 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Welcome",
-        "pages": ["index", "changelog", "roadmap", "contributing"]
-      },
-      {
-        "tab": "Developer Platform",
+        "tab": "Docs",
         "groups": [
           {
             "group": "Getting Started",
             "pages": [
-              "developer-platform/getting-started/introduction",
-              "developer-platform/getting-started/quickstart",
-              "developer-platform/getting-started/calhacks"
+              "docs/getting-started/introduction",
+              "docs/getting-started/quickstart",
+              "docs/getting-started/calhacks",
+              "docs/getting-started/changelog"
             ]
           },
           {
             "group": "Models & Pricing",
             "pages": [
-              "developer-platform/models-pricing/models-overview",
-              "developer-platform/models-pricing/choosing-a-model",
-              "developer-platform/models-pricing/deprecations",
-              "developer-platform/models-pricing/pricing-and-rate-limits"
+              "docs/models-pricing/models-overview",
+              "docs/models-pricing/choosing-a-model",
+              "docs/models-pricing/deprecations",
+              "docs/models-pricing/pricing-and-rate-limits"
             ]
           },
           {
             "group": "Core Features",
             "pages": [
-              "developer-platform/core-features/emotions",
-              "developer-platform/core-features/fine-grained-control"
+              "docs/core-features/text-to-speech",
+              "docs/core-features/emotions",
+              "docs/core-features/fine-grained-control",
+              "docs/core-features/creating-models",
+              "docs/core-features/speech-to-text"
             ]
           },
           {
-            "group": "API Reference",
-            "pages": [
-              "api-reference/introduction",
-              {
-                "group": "Wallet",
-                "icon": "wallet",
-                "pages": [
-                  "api-reference/endpoint/wallet/get-api-credit",
-                  "api-reference/endpoint/wallet/get-user-package"
-                ]
-              },
-              {
-                "group": "Voice Models",
-                "icon": "cube",
-                "pages": [
-                  "api-reference/endpoint/model/list-models",
-                  "api-reference/endpoint/model/create-model",
-                  "api-reference/endpoint/model/get-model",
-                  "api-reference/endpoint/model/delete-model",
-                  "api-reference/endpoint/model/update-model"
-                ]
-              },
-              {
-                "group": "TTS & ASR (v1)",
-                "icon": "code",
-                "pages": [
-                  "api-reference/endpoint/openapi-v1/text-to-speech",
-                  "api-reference/endpoint/openapi-v1/speech-to-text"
-                ]
-              }
-            ]
-          },
-          {
-            "group": "SDKs & Tools",
+            "group": "Developer SDKs",
             "pages": [
               {
                 "group": "Python SDK",
                 "icon": "python",
                 "pages": [
-                  "sdk-reference/python/installation",
-                  "sdk-reference/python/authentication",
-                  "sdk-reference/python/text-to-speech",
-                  "sdk-reference/python/voice-cloning",
-                  "sdk-reference/python/speech-to-text",
-                  "sdk-reference/python/websocket",
-                  "sdk-reference/python/api-reference"
+                  "docs/sdk-reference/python/installation",
+                  "docs/sdk-reference/python/authentication",
+                  "docs/sdk-reference/python/text-to-speech",
+                  "docs/sdk-reference/python/voice-cloning",
+                  "docs/sdk-reference/python/speech-to-text",
+                  "docs/sdk-reference/python/websocket",
+                  "docs/sdk-reference/python/api-reference"
                 ]
               },
               {
                 "group": "JavaScript SDK",
                 "icon": "js",
                 "pages": [
-                  "sdk-reference/javascript/installation",
-                  "sdk-reference/javascript/authentication",
-                  "sdk-reference/javascript/text-to-speech",
-                  "sdk-reference/javascript/voice-cloning",
-                  "sdk-reference/javascript/speech-to-text",
-                  "sdk-reference/javascript/websocket",
-                  "sdk-reference/javascript/api-reference"
+                  "docs/sdk-reference/javascript/installation",
+                  "docs/sdk-reference/javascript/authentication",
+                  "docs/sdk-reference/javascript/text-to-speech",
+                  "docs/sdk-reference/javascript/voice-cloning",
+                  "docs/sdk-reference/javascript/speech-to-text",
+                  "docs/sdk-reference/javascript/websocket",
+                  "docs/sdk-reference/javascript/api-reference"
                 ]
               }
             ]
           },
           {
+            "group": "Best Practices",
+            "pages": [  
+              "docs/best-practices/voice-cloning",
+              "docs/best-practices/emotion-control",
+              "docs/best-practices/real-time-streaming"
+            ]
+          },
+          {
+            "group": "Product Guides",
+            "pages": [
+              "docs/products/tts",
+              "docs/products/voice-cloning",
+              "docs/products/story-studio"
+            ]
+          },
+          {
             "group": "Self-Hosting",
             "pages": [
-              "developer-platform/self-hosting/local-setup",
-              "developer-platform/self-hosting/docker-deployment",
-              "developer-platform/self-hosting/running-inference"
+              "docs/self-hosting/local-setup",
+              "docs/self-hosting/docker-deployment",
+              "docs/self-hosting/running-inference"
             ]
           },
           {
@@ -130,67 +113,57 @@
             "pages": []
           },
           {
-            "group": "Other",
+            "group": "Tutorials",
             "pages": [
-              "developer-platform/migration",
-              "developer-platform/sdks-tools/coding-agents"
+              "docs/tutorials/tutorials"
+            ]
+          },
+          {
+            "group": "Resources",
+            "pages": [
+              "docs/resources/migration",
+              "docs/resources/coding-agents",
+              "docs/resources/roadmap",
+              "docs/resources/contributing"
             ]
           }
         ]
       },
       {
-        "tab": "Web Products",
-        "pages": ["products/tts", "products/voice-cloning", "products/story-studio"]
-      },
-      {
-        "tab": "Resources",
-        "groups": [
+        "tab": "API Reference",
+        "pages": [
+          "api-reference/introduction",
+          "api-reference/emotion-reference",
           {
-            "group": "Tutorials",
+            "group": "Wallet",
+            "icon": "wallet",
             "pages": [
-              "resources/tutorials"
+              "api-reference/endpoint/wallet/get-api-credit",
+              "api-reference/endpoint/wallet/get-user-package"
             ]
           },
           {
-            "group": "Reference",
+            "group": "Voice Models",
+            "icon": "cube",
             "pages": [
-              "resources/emotion-reference",
-              "brand"
+              "api-reference/endpoint/model/list-models",
+              "api-reference/endpoint/model/create-model",
+              "api-reference/endpoint/model/get-model",
+              "api-reference/endpoint/model/delete-model",
+              "api-reference/endpoint/model/update-model"
             ]
           },
           {
-            "group": "Best Practices",
+            "group": "TTS & ASR (v1)",
+            "icon": "code",
             "pages": [
-              "resources/best-practices/text-to-speech",
-              "resources/best-practices/speech-to-text",
-              "resources/best-practices/voice-cloning",
-              "resources/best-practices/creating-models",
-              "resources/best-practices/emotion-control",
-              "resources/best-practices/real-time-streaming"
+              "api-reference/endpoint/openapi-v1/text-to-speech",
+              "api-reference/endpoint/openapi-v1/speech-to-text"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Playground",
-          "href": "https://fish.audio",
-          "icon": "play"
-        },
-        {
-          "anchor": "Discover Voices",
-          "href": "https://fish.audio/discovery/",
-          "icon": "compass"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://openaudio.com",
-          "icon": "newspaper"
-        }
-      ]
-    }
+    ]
   },
   "logo": {
     "light": "/logo/light.png",
@@ -199,12 +172,12 @@
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "mailto:support@fish.audio"
+        "label": "Community",
+        "href": "https://discord.gg/dF9Db2Tt3Y"
       },
       {
-        "label": "Login",
-        "href": "https://fish.audio/auth/?redirect=/app/"
+        "label": "Support",
+        "href": "mailto:support@fish.audio"
       }
     ],
     "primary": {
@@ -228,6 +201,197 @@
   "fonts": {
     "family": "Onest"
   },
+  "redirects": [
+    {
+      "source": "/changelog",
+      "destination": "/docs/getting-started/changelog"
+    },
+    {
+      "source": "/roadmap",
+      "destination": "/docs/resources/roadmap"
+    },
+    {
+      "source": "/contributing",
+      "destination": "/docs/resources/contributing"
+    },
+    {
+      "source": "/developer-guide/getting-started/introduction",
+      "destination": "/docs/getting-started/introduction"
+    },
+    {
+      "source": "/developer-guide/getting-started/quickstart",
+      "destination": "/docs/getting-started/quickstart"
+    },
+    {
+      "source": "/developer-guide/getting-started/calhacks",
+      "destination": "/docs/getting-started/calhacks"
+    },
+    {
+      "source": "/developer-guide/models-pricing/models-overview",
+      "destination": "/docs/models-pricing/models-overview"
+    },
+    {
+      "source": "/developer-guide/models-pricing/choosing-a-model",
+      "destination": "/docs/models-pricing/choosing-a-model"
+    },
+    {
+      "source": "/developer-guide/models-pricing/deprecations",
+      "destination": "/docs/models-pricing/deprecations"
+    },
+    {
+      "source": "/developer-guide/models-pricing/pricing-and-rate-limits",
+      "destination": "/docs/models-pricing/pricing-and-rate-limits"
+    },
+    {
+      "source": "/developer-guide/core-features/emotions",
+      "destination": "/docs/core-features/emotions"
+    },
+    {
+      "source": "/developer-guide/core-features/fine-grained-control",
+      "destination": "/docs/core-features/fine-grained-control"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/python/installation",
+      "destination": "/docs/sdk-reference/python/installation"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/python/authentication",
+      "destination": "/docs/sdk-reference/python/authentication"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/python/text-to-speech",
+      "destination": "/docs/sdk-reference/python/text-to-speech"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/python/voice-cloning",
+      "destination": "/docs/sdk-reference/python/voice-cloning"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/python/speech-to-text",
+      "destination": "/docs/sdk-reference/python/speech-to-text"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/python/websocket",
+      "destination": "/docs/sdk-reference/python/websocket"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/python/api-reference",
+      "destination": "/docs/sdk-reference/python/api-reference"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/javascript/installation",
+      "destination": "/docs/sdk-reference/javascript/installation"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/javascript/authentication",
+      "destination": "/docs/sdk-reference/javascript/authentication"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/javascript/text-to-speech",
+      "destination": "/docs/sdk-reference/javascript/text-to-speech"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/javascript/voice-cloning",
+      "destination": "/docs/sdk-reference/javascript/voice-cloning"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/javascript/speech-to-text",
+      "destination": "/docs/sdk-reference/javascript/speech-to-text"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/javascript/websocket",
+      "destination": "/docs/sdk-reference/javascript/websocket"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/javascript/api-reference",
+      "destination": "/docs/sdk-reference/javascript/api-reference"
+    },
+    {
+      "source": "/developer-guide/self-hosting/local-setup",
+      "destination": "/docs/self-hosting/local-setup"
+    },
+    {
+      "source": "/developer-guide/self-hosting/docker-deployment",
+      "destination": "/docs/self-hosting/docker-deployment"
+    },
+    {
+      "source": "/developer-guide/self-hosting/running-inference",
+      "destination": "/docs/self-hosting/running-inference"
+    },
+    {
+      "source": "/developer-guide/migration",
+      "destination": "/docs/resources/migration"
+    },
+    {
+      "source": "/developer-guide/sdks-tools/coding-agents",
+      "destination": "/docs/resources/coding-agents"
+    },
+    {
+      "source": "/products/tts",
+      "destination": "/docs/products/tts"
+    },
+    {
+      "source": "/products/voice-cloning",
+      "destination": "/docs/products/voice-cloning"
+    },
+    {
+      "source": "/products/story-studio",
+      "destination": "/docs/products/story-studio"
+    },
+    {
+      "source": "/tutorials/tutorials",
+      "destination": "/docs/tutorials/tutorials"
+    },
+    {
+      "source": "/resources/migration",
+      "destination": "/docs/resources/migration"
+    },
+    {
+      "source": "/resources/coding-agents",
+      "destination": "/docs/resources/coding-agents"
+    },
+    {
+      "source": "/resources/roadmap",
+      "destination": "/docs/resources/roadmap"
+    },
+    {
+      "source": "/resources/contributing",
+      "destination": "/docs/resources/contributing"
+    },
+    {
+      "source": "/resources/tutorials",
+      "destination": "/docs/tutorials/tutorials"
+    }
+,
+    {
+      "source": "/resources/emotion-reference",
+      "destination": "/api-reference/emotion-reference"
+    },
+    {
+      "source": "/resources/best-practices/text-to-speech",
+      "destination": "/docs/core-features/text-to-speech"
+    },
+    {
+      "source": "/resources/best-practices/speech-to-text",
+      "destination": "/docs/core-features/speech-to-text"
+    },
+    {
+      "source": "/resources/best-practices/voice-cloning",
+      "destination": "/docs/best-practices/voice-cloning"
+    },
+    {
+      "source": "/resources/best-practices/creating-models",
+      "destination": "/docs/core-features/creating-models"
+    },
+    {
+      "source": "/resources/best-practices/emotion-control",
+      "destination": "/docs/best-practices/emotion-control"
+    },
+    {
+      "source": "/resources/best-practices/real-time-streaming",
+      "destination": "/docs/best-practices/real-time-streaming"
+    }
+  ],
   "footer": {
     "socials": {
       "website": "https://fish.audio",
