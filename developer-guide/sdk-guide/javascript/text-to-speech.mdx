@@ -82,7 +82,7 @@ const request: TTSRequest = { text, reference_id: "model_id" };
 
 Common emotions: `(happy)`, `(sad)`, `(angry)`, `(excited)`, `(calm)`, `(surprised)`, `(whispering)`, `(shouting)`, `(laughing)`, `(sighing)`
 
-For more advanced control over speech generation, including phoneme-level control and additional paralanguage features, see [Fine-grained Control](/docs/core-features/fine-grained-control).
+For more advanced control over speech generation, including phoneme-level control and additional paralanguage features, see [Fine-grained Control](/developer-guide/core-features/fine-grained-control).
 
 ## Audio Formats
 
@@ -133,7 +133,7 @@ const audio = await client.textToSpeech.convert({
 
 ## Choosing Backend
 
-Our state-of-the-art [S1 model](/docs/models-pricing/models-overview)
+Our state-of-the-art [S1 model](/developer-guide/models-pricing/models-overview)
 is the default backend model for TTS. Optionally specify the model via the second argument (`backend: Backends`).
 
 ```typescript
@@ -144,7 +144,7 @@ const audio = await fishAudio.textToSpeech.convert({
 
 ## Streaming
 
-For real-time streaming, see the [WebSocket guide](/docs/sdk-reference/javascript/websocket).
+For real-time streaming, see the [WebSocket guide](/developer-guide/sdk-guide/javascript/websocket).
 
 ## Error Handling
 
@@ -183,8 +183,8 @@ async function generateWithRetry(request: Record<string, unknown>, maxRetries = 
 
 ## Next Steps
 
-- [Fine-grained control](/docs/core-features/fine-grained-control) for phoneme-level control and paralanguage
-- [Voice cloning](/docs/sdk-reference/javascript/voice-cloning) for custom voices
-- [WebSocket streaming](/docs/sdk-reference/javascript/websocket) for real-time apps
-- [Guide and Best Practices](/docs/core-features/text-to-speech) for production use
+- [Fine-grained control](/developer-guide/core-features/fine-grained-control) for phoneme-level control and paralanguage
+- [Voice cloning](/developer-guide/sdk-guide/javascript/voice-cloning) for custom voices
+- [WebSocket streaming](/developer-guide/sdk-guide/javascript/websocket) for real-time apps
+- [Guide and Best Practices](/developer-guide/core-features/text-to-speech) for production use
 - [API reference](/api-reference/endpoint/openapi-v1/text-to-speech) for direct API calls

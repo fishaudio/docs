@@ -13,7 +13,7 @@ Before deploying with Docker, ensure you have:
 - **Docker** and **Docker Compose** installed
 - **NVIDIA Docker runtime** (for GPU support)
 - At least **12GB GPU memory** for CUDA inference
-- Downloaded model weights (see [Running Inference](/docs/self-hosting/running-inference#download-weights))
+- Downloaded model weights (see [Running Inference](/developer-guide/self-hosting/running-inference#download-weights))
 
 ## Pre-built Images
 
@@ -209,7 +209,7 @@ Both Docker run and Compose methods require these volume mounts:
 | `./references` | `/app/references` | Reference audio files for voice cloning |
 
 <Warning>
-Ensure model weights are downloaded and placed in the `./checkpoints` directory before starting containers. See [Running Inference](/docs/self-hosting/running-inference#download-weights) for download instructions.
+Ensure model weights are downloaded and placed in the `./checkpoints` directory before starting containers. See [Running Inference](/developer-guide/self-hosting/running-inference#download-weights) for download instructions.
 </Warning>
 
 ## Environment Variables Reference
@@ -331,6 +331,6 @@ docker run --rm --gpus all nvidia/cuda:12.6.0-base-ubuntu24.04 nvidia-smi
 
 ## Next Steps
 
-- **[Run inference](/docs/self-hosting/running-inference)** - Learn how to generate speech
+- **[Run inference](/developer-guide/self-hosting/running-inference)** - Learn how to generate speech
 - **[Download models](https://huggingface.co/fishaudio)** - Get pre-trained weights
 - **[API documentation](/api-reference/introduction)** - Integrate with your applications
