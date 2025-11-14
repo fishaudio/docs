@@ -1,6 +1,6 @@
 ---
-title: "Text to Speech"
-description: "Convert text to natural speech with Fish Audio Python SDK"
+title: "Text-to-Speech"
+description: "Generate natural-sounding speech with the Fish Audio Python SDK"
 icon: "microphone"
 ---
 
@@ -10,196 +10,852 @@ import Prerequisites from '/snippets/prerequisites.mdx';
 
 <Prerequisites />
 
+## Understanding TTS Methods
+
+The SDK provides three methods for text-to-speech generation, each optimized for different use cases:
+
+| Method | Returns | Best For |
+|--------|---------|----------|
+| `convert()` | Complete audio bytes | Most use cases - simple, gets full audio at once |
+| `stream()` | `AudioStream` | Chunk-by-chunk processing, memory-efficient transfer |
+| `stream_websocket()` | Audio bytes iterator | Real-time streaming with dynamic text (LLM responses, conversational AI) |
+
+<Tip>
+Use `convert()` for most use cases. Use `stream()` for memory efficiency when handling large files. Use `stream_websocket()` when text is generated dynamically in real-time.
+</Tip>
+
 ## Basic Usage
 
-Generate speech from text:
+Generate speech from text with a single function call:
 
-```python
-from fish_audio_sdk import Session, TTSRequest
+<CodeGroup>
+```python Synchronous focus={6-9}
+from fishaudio import FishAudio
+from fishaudio.utils import save, play
 
-session = Session("your_api_key")
+client = FishAudio()
 
-# Generate and save audio
-with open("output.mp3", "wb") as f:
-    for chunk in session.tts(TTSRequest(
-        text="Hello, world!"
-    )):
-        f.write(chunk)
+# Generate speech (returns bytes)
+audio = client.tts.convert(text="Hello, welcome to Fish Audio!")
+
+# Play or save the audio
+play(audio)
+save(audio, "output.mp3")
 ```
+
+```python Asynchronous focus={8-11}
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.utils import save, play
+
+async def main():
+    client = AsyncFishAudio()
+
+    # Generate speech (returns bytes)
+    audio = await client.tts.convert(text="Hello, welcome to Fish Audio!")
+
+    # Play or save the audio
+    play(audio)
+    save(audio, "output.mp3")
+
+asyncio.run(main())
+```
+</CodeGroup>
 
 ## Using Voice Models
 
-Specify a voice model for consistent voice generation:
+Specify a voice model for consistent voice characteristics:
 
-```python
-request = TTSRequest(
-    text="This is my custom voice",
-    reference_id="your_model_id"  # Your model ID from fish.audio
+<CodeGroup>
+```python Synchronous focus={6-10}
+from fishaudio import FishAudio
+from fishaudio.utils import play
+
+client = FishAudio()
+
+# Use a specific voice
+audio = client.tts.convert(
+    text="This uses a specific voice model",
+    reference_id="bf322df2096a46f18c579d0baa36f41d"  # Adrian
 )
-
-with open("custom_voice.mp3", "wb") as f:
-    for chunk in session.tts(request):
-        f.write(chunk)
+play(audio)
 ```
 
-### Getting Model IDs
+```python Asynchronous focus={8-12}
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.utils import play
 
-The `reference_id` is the model ID from the URL when viewing a model on Fish Audio:
+async def main():
+    client = AsyncFishAudio()
 
-- Model URL: `https://fish.audio/m/802e3bc2b27e49c2995d23ef70e6ac89`
-- Reference ID: `802e3bc2b27e49c2995d23ef70e6ac89`
+    # Use a specific voice
+    audio = await client.tts.convert(
+        text="This uses a specific voice model",
+        reference_id="bf322df2096a46f18c579d0baa36f41d"  # Adrian
+    )
+    play(audio)
 
-You can also get model IDs programmatically:
+asyncio.run(main())
+```
+</CodeGroup>
 
-```python
-# List your models
-models = session.list_models(self_only=True)
-for model in models.items:
-    print(f"{model.title}: {model.id}")
+### Finding Voice Models
 
-# Get specific model details
-model = session.get_model("your_model_id")
-print(f"Model: {model.title}, ID: {model.id}")
+Get voice model IDs from the Fish Audio website or programmatically:
+
+<CodeGroup>
+```python Synchronous focus={5-16}
+from fishaudio import FishAudio
+from fishaudio.utils import play
+
+client = FishAudio()
+
+# List available voices
+voices = client.voices.list(language="en", tags="male")
+
+for voice in voices.items:
+    print(f"{voice.title}: {voice.id}")
+
+# Use a voice from the list
+audio = client.tts.convert(
+    text="Generated with discovered voice",
+    reference_id=voices.items[0].id
+)
+play(audio)
 ```
 
-## Emotions
+```python Asynchronous focus={7-18}
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.utils import play
 
-Add emotional expressions to your text:
+async def main():
+    client = AsyncFishAudio()
 
-```python
+    # List available voices
+    voices = await client.voices.list(language="en", tags="male")
+
+    for voice in voices.items:
+        print(f"{voice.title}: {voice.id}")
+
+    # Use a voice from the list
+    audio = await client.tts.convert(
+        text="Generated with discovered voice",
+        reference_id=voices.items[0].id
+    )
+    play(audio)
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+Learn more in the [Voice Cloning guide](/developer-guide/sdk-guide/python/voice-cloning).
+
+## Emotions and Expressions
+
+Add emotional expressions to make speech more natural:
+
+<CodeGroup>
+```python Synchronous focus={5-16}
+from fishaudio import FishAudio
+from fishaudio.utils import play
+
+client = FishAudio()
+
 text = """
-(happy) I'm excited to share this!
+(happy) I'm excited to announce this!
 (sad) Unfortunately, it didn't work out.
-(whispering) This is a secret.
+(angry) This is so frustrating!
+(calm) Let me explain the details.
 """
 
-request = TTSRequest(text=text, reference_id="model_id")
+audio = client.tts.convert(
+    text=text,
+    reference_id="933563129e564b19a115bedd57b7406a"  # Sarah
+)
+play(audio)
 ```
 
-Common emotions: `(happy)`, `(sad)`, `(angry)`, `(excited)`, `(calm)`, `(surprised)`, `(whispering)`, `(shouting)`, `(laughing)`, `(sighing)`
+```python Asynchronous focus={7-18}
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.utils import play
 
-For more advanced control over speech generation, including phoneme-level control and additional paralanguage features, see [Fine-grained Control](/developer-guide/core-features/fine-grained-control).
+async def main():
+    client = AsyncFishAudio()
+
+    text = """
+    (happy) I'm excited to announce this!
+    (sad) Unfortunately, it didn't work out.
+    (angry) This is so frustrating!
+    (calm) Let me explain the details.
+    """
+
+    audio = await client.tts.convert(
+        text=text,
+        reference_id="933563129e564b19a115bedd57b7406a"  # Sarah
+    )
+    play(audio)
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+See the [Emotion Reference](/api-reference/emotion-reference) for all available emotions and [Fine-grained Control](/developer-guide/core-features/fine-grained-control) for advanced usage.
 
 ## Audio Formats
 
-Choose output format based on your needs:
+Choose the output format based on your needs:
 
-```python
-# MP3 (default)
-TTSRequest(text="...", format="mp3", mp3_bitrate=192)
+<CodeGroup>
+```python Synchronous focus={5-21}
+from fishaudio import FishAudio
 
-# WAV - uncompressed
-TTSRequest(text="...", format="wav", sample_rate=44100)
+client = FishAudio()
 
-# Opus - efficient for streaming
-TTSRequest(text="...", format="opus", opus_bitrate=48)
+# MP3 (default) - good balance of quality and size
+audio = client.tts.convert(
+    text="MP3 format",
+    format="mp3"
+)
 
-# PCM - raw audio data
-TTSRequest(text="...", format="pcm", sample_rate=16000)
+# WAV - uncompressed, highest quality
+audio = client.tts.convert(
+    text="WAV format",
+    format="wav"
+)
+
+# PCM - raw audio data for streaming
+audio = client.tts.convert(
+    text="PCM format",
+    format="pcm"
+)
 ```
+
+```python Asynchronous focus={7-23}
+import asyncio
+from fishaudio import AsyncFishAudio
+
+async def main():
+    client = AsyncFishAudio()
+
+    # MP3 (default) - good balance of quality and size
+    audio = await client.tts.convert(
+        text="MP3 format",
+        format="mp3"
+    )
+
+    # WAV - uncompressed, highest quality
+    audio = await client.tts.convert(
+        text="WAV format",
+        format="wav"
+    )
+
+    # PCM - raw audio data for streaming
+    audio = await client.tts.convert(
+        text="PCM format",
+        format="pcm"
+    )
+
+asyncio.run(main())
+```
+</CodeGroup>
 
 ## Prosody Control
 
-Adjust speech speed and volume:
+Adjust speech speed and volume for natural-sounding output:
 
-```python
-from fish_audio_sdk import Prosody
+<CodeGroup>
+```python Synchronous focus={6-10}
+from fishaudio import FishAudio
+from fishaudio.utils import play
 
-request = TTSRequest(
-    text="Adjusted speech",
-    prosody=Prosody(
-        speed=1.2,  # 20% faster (0.5-2.0)
-        volume=5    # Louder (-20 to 20)
+client = FishAudio()
+
+# Simple speed adjustment
+audio = client.tts.convert(
+    text="This will be spoken faster",
+    speed=1.5  # 1.5x speed (range: 0.5-2.0)
+)
+play(audio)
+```
+
+```python Asynchronous focus={8-12}
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.utils import play
+
+async def main():
+    client = AsyncFishAudio()
+
+    # Simple speed adjustment
+    audio = await client.tts.convert(
+        text="This will be spoken faster",
+        speed=1.5  # 1.5x speed (range: 0.5-2.0)
+    )
+    play(audio)
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+For combined speed and volume control, use `TTSConfig` with `Prosody`:
+
+<CodeGroup>
+```python Synchronous focus={7-17}
+from fishaudio import FishAudio
+from fishaudio.types import TTSConfig, Prosody
+from fishaudio.utils import play
+
+client = FishAudio()
+
+# Configure prosody with TTSConfig
+audio = client.tts.convert(
+    text="Adjusted speech with custom speed and volume",
+    config=TTSConfig(
+        prosody=Prosody(
+            speed=1.2,   # 20% faster
+            volume=5     # Louder (range: -20 to 20)
+        )
     )
 )
+play(audio)
 ```
 
-## Advanced Parameters
+```python Asynchronous focus={9-19}
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.types import TTSConfig, Prosody
+from fishaudio.utils import play
 
-Fine-tune generation:
+async def main():
+    client = AsyncFishAudio()
 
-```python
-request = TTSRequest(
-    text="Your text here",
-    chunk_length=200,      # Characters per chunk (100-300)
-    normalize=True,        # Normalize text
-    latency="balanced",    # "normal" or "balanced"
-    temperature=0.7,       # Randomness (0.0-1.0)
-    top_p=0.7             # Token selection (0.0-1.0)
+    # Configure prosody with TTSConfig
+    audio = await client.tts.convert(
+        text="Adjusted speech with custom speed and volume",
+        config=TTSConfig(
+            prosody=Prosody(
+                speed=1.2,   # 20% faster
+                volume=5     # Louder (range: -20 to 20)
+            )
+        )
+    )
+    play(audio)
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+## Reusable TTS Configuration
+
+Create a configuration once and reuse it across multiple generations:
+
+<CodeGroup>
+```python Synchronous focus={5-18}
+from fishaudio import FishAudio
+from fishaudio.types import TTSConfig, Prosody
+
+client = FishAudio()
+
+# Define config once
+my_config = TTSConfig(
+    prosody=Prosody(speed=1.2, volume=-5),
+    reference_id="bf322df2096a46f18c579d0baa36f41d",  # Adrian
+    format="wav",
+    latency="balanced"
 )
+
+# Reuse across multiple generations
+audio1 = client.tts.convert(text="Welcome to our product demonstration.", config=my_config)
+audio2 = client.tts.convert(text="Let me show you the key features.", config=my_config)
+audio3 = client.tts.convert(text="Thank you for watching this tutorial.", config=my_config)
 ```
 
-## Streaming
+```python Asynchronous focus={7-20}
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.types import TTSConfig, Prosody
 
-Process audio in real-time:
+async def main():
+    client = AsyncFishAudio()
 
-```python
-import pyaudio
+    # Define config once
+    my_config = TTSConfig(
+        prosody=Prosody(speed=1.2, volume=-5),
+        reference_id="bf322df2096a46f18c579d0baa36f41d",  # Adrian
+        format="wav",
+        latency="balanced"
+    )
 
-# Setup playback
-p = pyaudio.PyAudio()
-stream = p.open(
-    format=pyaudio.paInt16,
-    channels=1,
-    rate=44100,
-    output=True
+    # Reuse across multiple generations
+    audio1 = await client.tts.convert(text="Welcome to our product demonstration.", config=my_config)
+    audio2 = await client.tts.convert(text="Let me show you the key features.", config=my_config)
+    audio3 = await client.tts.convert(text="Thank you for watching this tutorial.", config=my_config)
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+## Chunk-by-Chunk Streaming
+
+Use `stream()` for memory-efficient transfer and progressive download. Chunks are network transmission units (not semantic audio segments):
+
+<CodeGroup>
+```python Synchronous focus={5-8}
+from fishaudio import FishAudio
+
+client = FishAudio()
+
+# Collect all chunks efficiently
+audio_stream = client.tts.stream(text="Long text here")
+audio = audio_stream.collect()  # Returns complete audio as bytes
+```
+
+```python Asynchronous focus={7-10}
+import asyncio
+from fishaudio import AsyncFishAudio
+
+async def main():
+    client = AsyncFishAudio()
+
+    # Collect all chunks efficiently
+    audio_stream = await client.tts.stream(text="Long text here")
+    audio = await audio_stream.collect()  # Returns complete audio as bytes
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+For streaming to files or network without buffering in memory:
+
+<CodeGroup>
+```python Synchronous focus={5-9}
+from fishaudio import FishAudio
+
+client = FishAudio()
+
+# Stream directly to file (memory efficient for large audio)
+audio_stream = client.tts.stream(text="Very long text...")
+with open("output.mp3", "wb") as f:
+    for chunk in audio_stream:
+        f.write(chunk)  # Write each chunk as it arrives
+```
+
+```python Asynchronous focus={7-11}
+import asyncio
+from fishaudio import AsyncFishAudio
+
+async def main():
+    client = AsyncFishAudio()
+
+    # Stream directly to file (memory efficient for large audio)
+    audio_stream = await client.tts.stream(text="Very long text...")
+    with open("output.mp3", "wb") as f:
+        async for chunk in audio_stream:
+            f.write(chunk)  # Write each chunk as it arrives
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+<Note>
+Use `stream()` when you have complete text upfront. For real-time streaming with dynamically generated text (LLMs, live captions), use `stream_websocket()` instead.
+</Note>
+
+## Real-time WebSocket Streaming
+
+For real-time applications where text is generated dynamically, use `stream_websocket()`. This is perfect for LLM integrations, conversational AI, and live captions:
+
+### Basic WebSocket Streaming
+
+<CodeGroup>
+```python Synchronous focus={5-15}
+from fishaudio import FishAudio
+from fishaudio.utils import play
+
+client = FishAudio()
+
+# Stream dynamically generated text
+def text_chunks():
+    yield "Hello, "
+    yield "this is "
+    yield "streaming text!"
+
+audio_stream = client.tts.stream_websocket(
+    text_chunks(),
+    latency="balanced"
 )
 
-# Stream audio
-for chunk in session.tts(TTSRequest(
-    text="Streaming audio",
-    format="pcm",
-    sample_rate=44100
-)):
-    stream.write(chunk)
-
-stream.close()
-p.terminate()
+play(audio_stream)
 ```
+
+```python Asynchronous focus={7-16}
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.utils import play
+
+async def main():
+    client = AsyncFishAudio()
+
+    # Stream dynamically generated text
+    async def text_chunks():
+        yield "Hello, "
+        yield "this is "
+        yield "streaming text!"
+
+    audio_stream = await client.tts.stream_websocket(
+        text_chunks(),
+        latency="balanced"
+    )
+
+    play(audio_stream)
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+### Understanding `FlushEvent`
+
+The `FlushEvent` forces the TTS engine to immediately generate audio from the accumulated text buffer. This is useful when you want to ensure audio is generated at specific points, even if the buffer hasn't reached the optimal chunk size.
+
+<CodeGroup>
+```python Synchronous focus={6-18}
+from fishaudio import FishAudio
+from fishaudio.types import FlushEvent
+
+client = FishAudio()
+
+# Use FlushEvent to force immediate generation
+def text_with_flush():
+    yield "This is the first sentence. "
+    yield "This is the second sentence. "
+    yield FlushEvent()  # Force audio generation NOW
+    yield "This starts a new segment. "
+    yield "And continues here."
+    yield FlushEvent()  # Force final generation
+
+audio_stream = client.tts.stream_websocket(text_with_flush())
+
+# Process each audio chunk as it arrives
+for chunk in audio_stream:
+    print(f"Received audio chunk: {len(chunk)} bytes")
+```
+
+```python Asynchronous focus={8-20}
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.types import FlushEvent
+
+async def main():
+    client = AsyncFishAudio()
+
+    # Use FlushEvent to force immediate generation
+    async def text_with_flush():
+        yield "This is the first sentence. "
+        yield "This is the second sentence. "
+        yield FlushEvent()  # Force audio generation NOW
+        yield "This starts a new segment. "
+        yield "And continues here."
+        yield FlushEvent()  # Force final generation
+
+    audio_stream = await client.tts.stream_websocket(text_with_flush())
+
+    # Process each audio chunk as it arrives
+    async for chunk in audio_stream:
+        print(f"Received audio chunk: {len(chunk)} bytes")
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+<Tip>
+Without `FlushEvent`, the engine automatically generates audio when the buffer reaches an optimal size. Use `FlushEvent` to control exactly when audio should be generated, which can reduce perceived latency in interactive applications.
+</Tip>
+
+### `TextEvent` vs Plain Strings
+
+You can yield plain strings (recommended for simplicity) or use `TextEvent` for explicit control:
+
+<CodeGroup>
+```python Synchronous focus={6-17}
+from fishaudio import FishAudio
+from fishaudio.types import TextEvent
+
+client = FishAudio()
+
+# Both approaches are equivalent
+def text_as_strings():
+    yield "Hello, "
+    yield "world!"
+
+def text_as_events():
+    yield TextEvent(text="Hello, ")
+    yield TextEvent(text="world!")
+
+# Use whichever style you prefer
+audio1 = client.tts.stream_websocket(text_as_strings())
+audio2 = client.tts.stream_websocket(text_as_events())
+```
+
+```python Asynchronous focus={8-19}
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.types import TextEvent
+
+async def main():
+    client = AsyncFishAudio()
+
+    # Both approaches are equivalent
+    async def text_as_strings():
+        yield "Hello, "
+        yield "world!"
+
+    async def text_as_events():
+        yield TextEvent(text="Hello, ")
+        yield TextEvent(text="world!")
+
+    # Use whichever style you prefer
+    audio1 = await client.tts.stream_websocket(text_as_strings())
+    audio2 = await client.tts.stream_websocket(text_as_events())
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+### LLM Integration Pattern
+
+WebSocket streaming shines when integrating with LLM streaming responses. The TTS engine acts as an accumulator, buffering text until it has enough to generate natural-sounding audio:
+
+<CodeGroup>
+```python Synchronous focus={5-19}
+from fishaudio import FishAudio
+from fishaudio.utils import play
+
+client = FishAudio()
+
+# Simulate streaming LLM response
+def llm_stream():
+    """Simulates text chunks from an LLM"""
+    tokens = [
+        "The ", "weather ", "today ", "is ", "sunny ",
+        "with ", "clear ", "skies. ", "Perfect ",
+        "for ", "outdoor ", "activities!"
+    ]
+    for token in tokens:
+        yield token
+
+# Stream to speech in real-time
+audio_stream = client.tts.stream_websocket(llm_stream())
+play(audio_stream)
+```
+
+```python Asynchronous focus={7-21}
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.utils import play
+
+async def main():
+    client = AsyncFishAudio()
+
+    # Simulate streaming LLM response
+    async def llm_stream():
+        """Simulates text chunks from an LLM"""
+        tokens = [
+            "The ", "weather ", "today ", "is ", "sunny ",
+            "with ", "clear ", "skies. ", "Perfect ",
+            "for ", "outdoor ", "activities!"
+        ]
+        for token in tokens:
+            yield token
+
+    # Stream to speech in real-time
+    audio_stream = await client.tts.stream_websocket(llm_stream())
+    play(audio_stream)
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+<Note>
+The WebSocket connection automatically buffers incoming text and generates audio when it has accumulated enough context for natural-sounding speech. You don't need to manually batch tokens unless you want to force generation at specific points using `FlushEvent`.
+</Note>
+
+Learn more in the [WebSocket Streaming guide](/developer-guide/sdk-guide/python/websocket).
+
+## Advanced Configuration
+
+Comprehensive `TTSConfig` with all available parameters:
+
+```python focus={3-24}
+from fishaudio.types import TTSConfig, Prosody
+
+# All TTSConfig parameters
+config = TTSConfig(
+    # Audio output settings
+    format="mp3",
+    sample_rate=44100,         # Custom sample rate (optional)
+    mp3_bitrate=192,           # 64, 128, or 192 kbps
+    opus_bitrate=64,           # For Opus format: -1000, 24, 32, 48, or 64
+    normalize=True,            # Normalize audio levels
+
+    # Generation settings
+    chunk_length=200,          # Characters per chunk (100-300)
+    latency="balanced",        # "normal" or "balanced"
+
+    # Voice/style settings
+    reference_id="bf322df2096a46f18c579d0baa36f41d",  # Adrian
+    prosody=Prosody(speed=1.1, volume=0),
+    # references=[ReferenceAudio(...)]  # For instant cloning
+
+    # Model parameters
+    temperature=0.7,           # Randomness (0.0-1.0)
+    top_p=0.7                  # Token selection (0.0-1.0)
+)
+
+# Use with any client
+audio = client.tts.convert(text="Your text here", config=config)
+```
+
+<Tip>
+`TTSConfig` works the same for both sync and async clients. See [TTSConfig API Reference](/api-reference/sdk/python/types#ttsconfig-objects) for detailed documentation on each parameter and their defaults.
+</Tip>
 
 ## Error Handling
 
-Handle common errors:
+Handle common TTS errors gracefully:
 
 ```python
-from fish_audio_sdk.exceptions import HttpCodeErr
+from fishaudio import FishAudio
+from fishaudio.exceptions import (
+    RateLimitError,
+    ValidationError,
+    NotFoundError,
+    FishAudioError
+)
 import time
 
-def generate_with_retry(request, max_retries=3):
-    for attempt in range(max_retries):
-        try:
-            audio = b""
-            for chunk in session.tts(request):
-                audio += chunk
-            return audio
-        except HttpCodeErr as e:
-            if e.status_code == 429:  # Rate limit
-                time.sleep(2 ** attempt)
-            elif e.status_code == 401:
-                raise Exception("Invalid API key")
-            else:
-                raise e
+client = FishAudio()
+
+try:
+    audio = client.tts.convert(
+        text="Your text here",
+        reference_id="voice_id"
+    )
+except RateLimitError:
+    print("Rate limit exceeded. Please wait before retrying.")
+    time.sleep(60)  # Wait before retry
+except NotFoundError:
+    print("Voice model not found. Check the reference_id")
+except ValidationError as e:
+    print(f"Invalid request: {e}")
+except FishAudioError as e:
+    print(f"API error: {e}")
 ```
 
-## Request Parameters
+## Best Practices
 
-| Parameter      | Type    | Description          | Default    |
-|----------------|---------|----------------------|------------|
-| `text`         | str     | Text to convert      | Required   |
-| `reference_id` | str     | Voice model ID       | None       |
-| `references`   | list    | Reference audio      | []         |
-| `format`       | str     | Audio format         | "mp3"      |
-| `chunk_length` | int     | Chunk size (100-300) | 200        |
-| `normalize`    | bool    | Normalize text       | True       |
-| `latency`      | str     | Speed vs quality     | "balanced" |
-| `prosody`      | Prosody | Speed/volume         | None       |
-| `temperature`  | float   | Randomness           | 0.7        |
-| `top_p`        | float   | Token selection      | 0.7        |
+<AccordionGroup>
+<Accordion title="Chunk long text appropriately">
+For long texts, adjust `chunk_length` in `TTSConfig`:
+
+```python
+from fishaudio import FishAudio
+from fishaudio.types import TTSConfig
+
+client = FishAudio()
+
+audio = client.tts.convert(
+    text="Very long text...",
+    config=TTSConfig(chunk_length=250)  # Larger chunks for efficiency
+)
+```
+</Accordion>
+
+<Accordion title="Cache frequently used audio">
+If you generate the same speech repeatedly, cache the results:
+
+```python
+import os
+from fishaudio import FishAudio
+from fishaudio.utils import save
+
+client = FishAudio()
+
+def get_or_generate_speech(text, cache_file):
+    if os.path.exists(cache_file):
+        with open(cache_file, "rb") as f:
+            return f.read()
+
+    audio = client.tts.convert(text=text)
+    save(audio, cache_file)
+    return audio
+```
+</Accordion>
+
+<Accordion title="Handle rate limits gracefully">
+Implement exponential backoff for rate limits:
+
+```python
+from fishaudio import FishAudio
+from fishaudio.exceptions import RateLimitError
+import time
+
+client = FishAudio()
+
+def generate_with_retry(text, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            return client.tts.convert(text=text)
+        except RateLimitError as e:
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)  # Exponential backoff
+            else:
+                raise
+```
+</Accordion>
+
+<Accordion title="Use appropriate latency modes">
+Balance speed vs quality based on your use case:
+
+```python
+from fishaudio import FishAudio
+
+client = FishAudio()
+
+# For real-time applications
+audio = client.tts.convert(text="Fast response", latency="balanced")
+
+# For highest quality
+audio = client.tts.convert(text="Best quality", latency="normal")
+```
+</Accordion>
+</AccordionGroup>
 
 ## Next Steps
 
-- [Fine-grained control](/developer-guide/core-features/fine-grained-control) for phoneme-level control and paralanguage
-- [Voice cloning](/developer-guide/sdk-guide/python/voice-cloning) for custom voices
-- [WebSocket streaming](/developer-guide/sdk-guide/python/websocket) for real-time apps
-- [Guide and Best Practices](/developer-guide/core-features/text-to-speech) for production use
-- [API reference](/api-reference/endpoint/openapi-v1/text-to-speech) for direct API calls
+<CardGroup cols={2}>
+<Card title="Voice Cloning" icon="clone" href="/developer-guide/sdk-guide/python/voice-cloning">
+  Create custom voice models
+</Card>
+
+<Card title="WebSocket Streaming" icon="bolt" href="/developer-guide/sdk-guide/python/websocket">
+  Real-time audio streaming
+</Card>
+
+<Card title="Fine-grained Control" icon="sliders" href="/developer-guide/core-features/fine-grained-control">
+  Phoneme-level control and paralanguage
+</Card>
+
+<Card title="Best Practices" icon="lightbulb" href="/developer-guide/best-practices/">
+  Production tips and optimization
+</Card>
+</CardGroup>
+
+## Related Resources
+
+- [TTS API Reference](/api-reference/sdk/python/resources#tts) - Complete API documentation
+- [Audio Formats Guide](/developer-guide/core-features/text-to-speech#audio-formats) - Format comparison
+- [Emotion Reference](/api-reference/emotion-reference) - All available emotions
+- [Utils Reference](/api-reference/sdk/python/utils) - Audio utilities

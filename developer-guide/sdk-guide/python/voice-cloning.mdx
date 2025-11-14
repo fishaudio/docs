@@ -1,6 +1,6 @@
 ---
 title: "Voice Cloning"
-description: "Clone voices using reference audio with Fish Audio Python SDK"
+description: "Clone voices and create custom voice models with the Fish Audio Python SDK"
 icon: "clone"
 ---
 
@@ -10,203 +10,498 @@ import Prerequisites from '/snippets/prerequisites.mdx';
 
 <Prerequisites />
 
-## Overview
+## Instant Voice Cloning
 
-Voice cloning allows you to generate speech that matches a specific voice using reference audio. Fish Audio supports two approaches:
-- Using pre-trained voice models (reference_id)
-- Providing reference audio directly in your request
+Clone a voice on-the-fly without creating a persistent model using reference audio:
 
-<Tip>
-Use `reference_id` when you'll reuse a voice multiple times - it's faster and more efficient. Use `references` for one-off voice cloning or testing different voices without creating models.
-</Tip>
+<CodeGroup>
+```python Synchronous focus={6-15}
+from fishaudio import FishAudio
+from fishaudio.types import ReferenceAudio
+from fishaudio.utils import play
 
-## Using Reference Audio
+client = FishAudio()
 
-Clone a voice by providing reference audio directly:
-
-```python
-from fish_audio_sdk import Session, TTSRequest, ReferenceAudio
-
-session = Session("your_api_key")
-
-# Load reference audio
-with open("voice_sample.wav", "rb") as f:
-    audio_data = f.read()
-
-request = TTSRequest(
-    text="This will sound like the reference voice",
-    references=[
-        ReferenceAudio(
-            audio=audio_data,
+# Clone from reference audio
+with open("reference_voice.wav", "rb") as f:
+    audio = client.tts.convert(
+        text="This will sound like the reference voice",
+        references=[ReferenceAudio(
+            audio=f.read(),
             text="Text spoken in the reference audio"
-        )
-    ]
-)
-
-# Generate speech
-with open("cloned_voice.mp3", "wb") as f:
-    for chunk in session.tts(request):
-        f.write(chunk)
+        )]
+    )
+play(audio)
 ```
 
-## Multiple References
+```python Asynchronous focus={8-17}
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.types import ReferenceAudio
+from fishaudio.utils import play
+
+async def main():
+    client = AsyncFishAudio()
+
+    # Clone from reference audio
+    with open("reference_voice.wav", "rb") as f:
+        audio = await client.tts.convert(
+            text="This will sound like the reference voice",
+            references=[ReferenceAudio(
+                audio=f.read(),
+                text="Text spoken in the reference audio"
+            )]
+        )
+    play(audio)
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+<Note>
+Instant voice cloning is perfect for one-time use cases. For repeated use of the same voice, create a persistent voice model instead.
+</Note>
+
+## Multiple Reference Samples
 
 Improve voice quality by providing multiple reference samples:
 
-```python
-references = []
+<CodeGroup>
+```python Synchronous focus={6-21}
+from fishaudio import FishAudio
+from fishaudio.types import ReferenceAudio
+from fishaudio.utils import play
 
-# Add multiple voice samples
-for i in range(3):
-    with open(f"sample_{i}.wav", "rb") as f:
+client = FishAudio()
+
+# Load multiple reference samples
+references = []
+samples = [
+    ("sample1.wav", "First sample transcript"),
+    ("sample2.wav", "Second sample transcript"),
+    ("sample3.wav", "Third sample transcript")
+]
+
+for audio_file, transcript in samples:
+    with open(audio_file, "rb") as f:
         references.append(ReferenceAudio(
             audio=f.read(),
-            text=f"Text from sample {i}"
+            text=transcript
         ))
 
-request = TTSRequest(
-    text="Better voice quality with multiple references",
+# Generate with multiple references
+audio = client.tts.convert(
+    text="This voice is trained on multiple samples",
     references=references
 )
+play(audio)
 ```
 
-## Creating Voice Models
+```python Asynchronous focus={8-23}
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.types import ReferenceAudio
+from fishaudio.utils import play
 
-For repeated use, create a persistent voice model:
+async def main():
+    client = AsyncFishAudio()
 
-```python
-# Create a voice model from samples
+    # Load multiple reference samples
+    references = []
+    samples = [
+        ("sample1.wav", "First sample transcript"),
+        ("sample2.wav", "Second sample transcript"),
+        ("sample3.wav", "Third sample transcript")
+    ]
+
+    for audio_file, transcript in samples:
+        with open(audio_file, "rb") as f:
+            references.append(ReferenceAudio(
+                audio=f.read(),
+                text=transcript
+            ))
+
+    # Generate with multiple references
+    audio = await client.tts.convert(
+        text="This voice is trained on multiple samples",
+        references=references
+    )
+    play(audio)
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+## Creating Persistent Voice Models
+
+Create a reusable voice model for consistent voice characteristics:
+
+<CodeGroup>
+```python Synchronous focus={5-20}
+from fishaudio import FishAudio
+
+client = FishAudio()
+
+# Prepare voice samples
+voice_samples = []
+with open("voice1.wav", "rb") as f1:
+    voice_samples.append(f1.read())
+with open("voice2.wav", "rb") as f2:
+    voice_samples.append(f2.read())
+
+# Create voice model
+voice = client.voices.create(
+    title="My Custom Voice",
+    voices=voice_samples,
+    description="A custom voice for my project",
+    tags=["custom", "english"],
+    visibility="private"
+)
+
+print(f"Created voice: {voice.id}")
+```
+
+```python Asynchronous focus={7-22}
+import asyncio
+from fishaudio import AsyncFishAudio
+
+async def main():
+    client = AsyncFishAudio()
+
+    # Prepare voice samples
+    voice_samples = []
+    with open("voice1.wav", "rb") as f1:
+        voice_samples.append(f1.read())
+    with open("voice2.wav", "rb") as f2:
+        voice_samples.append(f2.read())
+
+    # Create voice model
+    voice = await client.voices.create(
+        title="My Custom Voice",
+        voices=voice_samples,
+        description="A custom voice for my project",
+        tags=["custom", "english"],
+        visibility="private"
+    )
+
+    print(f"Created voice: {voice.id}")
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+### With Transcripts
+
+Providing transcripts is faster and more accurate than automatic transcription. When you provide transcripts, the system skips running ASR (speech recognition), resulting in better performance and quality:
+
+<CodeGroup>
+```python Synchronous focus={5-27}
+from fishaudio import FishAudio
+
+client = FishAudio()
+
+# Voice samples with transcripts
+samples = [
+    ("voice1.wav", "This is the first sample"),
+    ("voice2.wav", "This is the second sample"),
+    ("voice3.wav", "This is the third sample")
+]
+
 voices = []
 texts = []
 
-for i in range(3):
-    with open(f"voice_{i}.wav", "rb") as f:
+for audio_file, transcript in samples:
+    with open(audio_file, "rb") as f:
         voices.append(f.read())
-        texts.append(f"Sample text {i}")
+    texts.append(transcript)
 
-model = session.create_model(
-    title="My Custom Voice",
-    description="Voice cloned from samples",
+# Create voice with transcripts
+voice = client.voices.create(
+    title="High Quality Voice",
     voices=voices,
     texts=texts,
-    visibility="private"  # or "public", "unlist"
+    description="Voice with accurate transcripts",
+    enhance_audio_quality=True
 )
 
-print(f"Created model: {model.id}")
-
-# Use the model
-request = TTSRequest(
-    text="Using my saved voice model",
-    reference_id=model.id
-)
+print(f"Created voice: {voice.id}")
 ```
 
-## Best Practices
+```python Asynchronous focus={7-29}
+import asyncio
+from fishaudio import AsyncFishAudio
 
-### Audio Quality
+async def main():
+    client = AsyncFishAudio()
 
-For best results, reference audio should:
-- Be 10-30 seconds long per sample
-- Have clear speech without background noise
-- Match the language you'll generate
-- Include varied intonation and emotion
+    # Voice samples with transcripts
+    samples = [
+        ("voice1.wav", "This is the first sample"),
+        ("voice2.wav", "This is the second sample"),
+        ("voice3.wav", "This is the third sample")
+    ]
 
-### Sample Text
+    voices = []
+    texts = []
 
-The text parameter in ReferenceAudio should:
-- Match exactly what's spoken in the audio
-- Include punctuation for proper prosody
-- Be in the same language as generation
+    for audio_file, transcript in samples:
+        with open(audio_file, "rb") as f:
+            voices.append(f.read())
+        texts.append(transcript)
 
-### Performance Tips
-
-1. **Pre-upload models** for frequently used voices
-2. **Use 2-3 reference samples** for optimal quality
-3. **Keep samples under 30 seconds** each
-4. **Normalize audio levels** before uploading
-
-## Audio Format Requirements
-
-Supported formats for reference audio:
-- WAV (recommended)
-- MP3
-- M4A
-- Other common audio formats
-
-Sample rates:
-- 16kHz minimum
-- 44.1kHz recommended
-- Mono or stereo (converted to mono)
-
-## Example: Voice Bank
-
-Build a library of cloned voices:
-
-```python
-def create_voice_bank():
-    voice_bank = {}
-
-    # List existing models
-    models = session.list_models(self_only=True)
-    for model in models.items:
-        voice_bank[model.title] = model.id
-
-    return voice_bank
-
-def generate_with_voice(text, voice_name):
-    voice_bank = create_voice_bank()
-
-    if voice_name not in voice_bank:
-        print(f"Voice '{voice_name}' not found")
-        return
-
-    request = TTSRequest(
-        text=text,
-        reference_id=voice_bank[voice_name]
+    # Create voice with transcripts
+    voice = await client.voices.create(
+        title="High Quality Voice",
+        voices=voices,
+        texts=texts,
+        description="Voice with accurate transcripts",
+        enhance_audio_quality=True
     )
 
-    with open(f"{voice_name}_output.mp3", "wb") as f:
-        for chunk in session.tts(request):
-            f.write(chunk)
+    print(f"Created voice: {voice.id}")
+
+asyncio.run(main())
 ```
+</CodeGroup>
 
-## Combining with Emotions
+### Audio Quality Enhancement
 
-Add emotions to cloned voices:
+Enable automatic audio enhancement to clean up noisy reference audio:
 
 ```python
-request = TTSRequest(
-    text="(happy) This is exciting news! (calm) Let me explain the details.",
-    reference_id="your_model_id"
-)
-
-# Or with direct references
-request = TTSRequest(
-    text="(excited) Amazing discovery!",
-    references=[reference_audio]
+voice = client.voices.create(
+    title="Enhanced Voice",
+    voices=voice_samples,
+    enhance_audio_quality=True  # Clean up background noise and normalize levels
 )
 ```
 
-## Error Handling
+<Note>
+Audio enhancement helps process noisy or lower-quality reference audio. If your audio is already clean and well-recorded, this may not provide additional benefit.
+</Note>
 
-Common issues and solutions:
+## Managing Voice Models
 
-```python
-try:
-    request = TTSRequest(
-        text="Test speech",
-        references=[reference_audio]
+### List Voices
+
+Discover available voices with filtering:
+
+<CodeGroup>
+```python Synchronous focus={5-11}
+from fishaudio import FishAudio
+
+client = FishAudio()
+
+# List all voices
+voices = client.voices.list(page_size=20)
+print(f"Total voices: {voices.total}")
+
+for voice in voices.items:
+    print(f"{voice.title}: {voice.id}")
+```
+
+```python Asynchronous focus={7-13}
+import asyncio
+from fishaudio import AsyncFishAudio
+
+async def main():
+    client = AsyncFishAudio()
+
+    # List all voices
+    voices = await client.voices.list(page_size=20)
+    print(f"Total voices: {voices.total}")
+
+    for voice in voices.items:
+        print(f"{voice.title}: {voice.id}")
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+### Filter by Tags and Language
+
+<CodeGroup>
+```python Synchronous focus={5-21}
+from fishaudio import FishAudio
+
+client = FishAudio()
+
+# Filter by tags
+male_voices = client.voices.list(
+    tags=["male", "english"],
+    page_size=10
+)
+
+# Filter by language
+chinese_voices = client.voices.list(
+    language="zh",
+    page_size=10
+)
+
+# Get only your own voices
+my_voices = client.voices.list(
+    self_only=True,
+    page_size=20
+)
+```
+
+```python Asynchronous focus={7-23}
+import asyncio
+from fishaudio import AsyncFishAudio
+
+async def main():
+    client = AsyncFishAudio()
+
+    # Filter by tags
+    male_voices = await client.voices.list(
+        tags=["male", "english"],
+        page_size=10
     )
 
-    for chunk in session.tts(request):
-        # Process audio
-        pass
+    # Filter by language
+    chinese_voices = await client.voices.list(
+        language="zh",
+        page_size=10
+    )
 
-except Exception as e:
-    if "Invalid audio format" in str(e):
-        print("Check audio format - use WAV or MP3")
-    elif "Audio too short" in str(e):
-        print("Reference audio should be at least 10 seconds")
-    else:
-        raise e
+    # Get only your own voices
+    my_voices = await client.voices.list(
+        self_only=True,
+        page_size=20
+    )
+
+asyncio.run(main())
 ```
+</CodeGroup>
+
+### Get Voice Details
+
+<CodeGroup>
+```python Synchronous focus={5-11}
+from fishaudio import FishAudio
+
+client = FishAudio()
+
+# Get specific voice
+voice = client.voices.get("bf322df2096a46f18c579d0baa36f41d")  # Adrian
+
+print(f"Title: {voice.title}")
+print(f"Description: {voice.description}")
+print(f"Tags: {voice.tags}")
+print(f"Languages: {voice.languages}")
+```
+
+```python Asynchronous focus={7-13}
+import asyncio
+from fishaudio import AsyncFishAudio
+
+async def main():
+    client = AsyncFishAudio()
+
+    # Get specific voice
+    voice = await client.voices.get("bf322df2096a46f18c579d0baa36f41d")  # Adrian
+
+    print(f"Title: {voice.title}")
+    print(f"Description: {voice.description}")
+    print(f"Tags: {voice.tags}")
+    print(f"Languages: {voice.languages}")
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+### Update Voice Metadata
+
+<CodeGroup>
+```python Synchronous focus={5-11}
+from fishaudio import FishAudio
+
+client = FishAudio()
+
+# Update voice information
+client.voices.update(
+    "bf322df2096a46f18c579d0baa36f41d",  # Adrian
+    title="Updated Voice Name",
+    description="Updated description",
+    visibility="public",  # "public", "unlist", or "private"
+    tags=["updated", "english", "male"]
+)
+```
+
+```python Asynchronous focus={7-13}
+import asyncio
+from fishaudio import AsyncFishAudio
+
+async def main():
+    client = AsyncFishAudio()
+
+    # Update voice information
+    await client.voices.update(
+        "bf322df2096a46f18c579d0baa36f41d",  # Adrian
+        title="Updated Voice Name",
+        description="Updated description",
+        visibility="public",  # "public", "unlist", or "private"
+        tags=["updated", "english", "male"]
+    )
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+### Delete Voice
+
+<CodeGroup>
+```python Synchronous focus={5-7}
+from fishaudio import FishAudio
+
+client = FishAudio()
+
+# Delete a voice model
+client.voices.delete("bf322df2096a46f18c579d0baa36f41d")  # Adrian
+print("Voice deleted successfully")
+```
+
+```python Asynchronous focus={7-9}
+import asyncio
+from fishaudio import AsyncFishAudio
+
+async def main():
+    client = AsyncFishAudio()
+
+    # Delete a voice model
+    await client.voices.delete("bf322df2096a46f18c579d0baa36f41d")  # Adrian
+    print("Voice deleted successfully")
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+<Warning>
+Deleting a voice is permanent and cannot be undone. Make sure you have backups of any important voice models.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+<Card title="Text-to-Speech" icon="microphone" href="/developer-guide/sdk-guide/python/text-to-speech">
+  Use cloned voices for speech generation
+</Card>
+
+<Card title="WebSocket Streaming" icon="bolt" href="/developer-guide/sdk-guide/python/websocket">
+  Stream audio with custom voices in real-time
+</Card>
+
+<Card title="Voices API Reference" icon="book" href="/api-reference/sdk/python/resources#voices">
+  Complete voice management API documentation
+</Card>
+
+<Card title="Best Practices" icon="lightbulb" href="/developer-guide/best-practices/">
+  Production tips and optimization strategies
+</Card>
+</CardGroup>
+
+## Related Resources
+
+- [Voice Types Reference](/api-reference/sdk/python/types#voices) - Voice model data structures
+- [Audio Formats Guide](/developer-guide/core-features/text-to-speech#audio-formats) - Supported audio formats
+- [Fine-grained Control](/developer-guide/core-features/fine-grained-control) - Advanced voice customization

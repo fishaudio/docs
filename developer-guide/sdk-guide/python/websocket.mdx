@@ -1,6 +1,6 @@
 ---
-title: "WebSocket"
-description: "Real-time streaming with Fish Audio Python SDK"
+title: "WebSocket Streaming"
+description: "Stream text-to-speech in real-time with WebSocket connections"
 icon: "bolt"
 ---
 
@@ -12,257 +12,199 @@ import Prerequisites from '/snippets/prerequisites.mdx';
 
 ## Overview
 
-WebSocket streaming enables real-time text-to-speech generation, perfect for conversational AI, live captioning, and streaming applications.
+Use `stream_websocket()` for real-time text streaming with LLMs and live captions. The connection automatically buffers incoming text and generates audio as it becomes available.
 
-## Basic Streaming
+## Basic Usage
 
-Stream text and receive audio in real-time:
+Stream text chunks and receive audio in real-time:
 
-```python
-from fish_audio_sdk import WebSocketSession, TTSRequest
+<CodeGroup>
+```python Synchronous focus={5-17}
+from fishaudio import FishAudio
+from fishaudio.utils import play
 
-# Create WebSocket session
-ws_session = WebSocketSession("your_api_key")
+client = FishAudio()
 
 # Define text generator
-def text_stream():
+def text_chunks():
     yield "Hello, "
     yield "this is "
-    yield "streaming text!"
+    yield "real-time "
+    yield "streaming!"
 
-# Stream and save audio
-with ws_session:
-    with open("output.mp3", "wb") as f:
-        for audio_chunk in ws_session.tts(
-            TTSRequest(text=""),  # Empty text for streaming
-            text_stream()
-        ):
-            f.write(audio_chunk)
-```
-
-<Tip>
-Set `text=""` in TTSRequest when streaming. The actual text comes from your text_stream generator.
-</Tip>
-
-## Using Voice Models
-
-Stream with a specific voice:
-
-```python
-request = TTSRequest(
-    text="",  # Empty for streaming
-    reference_id="your_model_id",
-    format="mp3"
+# Stream audio via WebSocket
+audio_stream = client.tts.stream_websocket(
+    text_chunks(),
+    latency="balanced"  # Use "balanced" for real-time, "normal" for quality
 )
 
-def text_stream():
-    yield "This uses "
-    yield "my custom voice!"
-
-with ws_session:
-    for audio_chunk in ws_session.tts(request, text_stream()):
-        # Process audio chunks
-        pass
+# Play streamed audio
+play(audio_stream)
 ```
 
-## Real-Time Playback
-
-Stream audio directly to speakers:
-
-```python
-import pyaudio
-
-# Setup audio playback
-p = pyaudio.PyAudio()
-stream = p.open(
-    format=pyaudio.paInt16,
-    channels=1,
-    rate=44100,
-    output=True
-)
-
-# Stream text to speech
-with ws_session:
-    for audio_chunk in ws_session.tts(
-        TTSRequest(text="", format="pcm", sample_rate=44100),
-        text_stream()
-    ):
-        stream.write(audio_chunk)
-
-stream.close()
-p.terminate()
-```
-
-## Dynamic Text Generation
-
-Stream text as it's generated:
-
-```python
-def generate_text():
-    # Simulate dynamic text generation
-    responses = [
-        "Processing your request...",
-        "Here's what I found:",
-        "The answer is 42."
-    ]
-
-    for response in responses:
-        # Split into smaller chunks for smoother streaming
-        words = response.split()
-        for word in words:
-            yield word + " "
-
-with ws_session:
-    for audio_chunk in ws_session.tts(
-        TTSRequest(text=""),
-        generate_text()
-    ):
-        # Process audio in real-time
-        pass
-```
-
-## Async WebSocket
-
-For async applications:
-
-```python
-from fish_audio_sdk import AsyncWebSocketSession
+```python Asynchronous focus={8-20}
 import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.utils import play
 
 async def main():
-    ws_session = AsyncWebSocketSession("your_api_key")
+    client = AsyncFishAudio()
 
-    async def text_stream():
-        yield "Async "
-        await asyncio.sleep(0.1)
+    # Define async text generator
+    async def text_chunks():
+        yield "Hello, "
+        yield "this is "
+        yield "real-time "
         yield "streaming!"
 
-    async with ws_session:
-        buffer = bytearray()
-        async for audio_chunk in ws_session.tts(
-            TTSRequest(text=""),
-            text_stream()
-        ):
-            buffer.extend(audio_chunk)
+    # Stream audio via WebSocket
+    audio_stream = await client.tts.stream_websocket(
+        text_chunks(),
+        latency="balanced"  # Use "balanced" for real-time, "normal" for quality
+    )
 
-        # Save complete audio
-        with open("async_output.mp3", "wb") as f:
-            f.write(buffer)
+    # Play streamed audio
+    play(audio_stream)
 
 asyncio.run(main())
 ```
+</CodeGroup>
 
-## Integration Examples
+<Note>
+For details on audio formats, voice selection, and advanced configuration options like `TTSConfig`, see the [Text-to-Speech guide](/developer-guide/sdk-guide/python/text-to-speech).
+</Note>
 
-### ChatGPT Streaming
+## Using FlushEvent
 
-Stream ChatGPT responses to speech:
+Force immediate audio generation to create pauses:
 
-```python
-import openai
+<CodeGroup>
+```python Synchronous focus={6-12}
+from fishaudio import FishAudio
+from fishaudio.types import FlushEvent
 
-def stream_chatgpt_response(prompt):
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}],
-        stream=True
-    )
+client = FishAudio()
 
-    for chunk in response:
-        if content := chunk.choices[0].delta.get("content"):
-            yield content
+def text_with_flush():
+    yield "First sentence. "
+    yield "Second sentence. "
+    yield FlushEvent()  # Forces generation NOW
+    yield "Third sentence."
 
-with ws_session:
-    for audio_chunk in ws_session.tts(
-        TTSRequest(text=""),
-        stream_chatgpt_response("Tell me a joke")
-    ):
-        # Play or save audio
-        pass
+audio_stream = client.tts.stream_websocket(text_with_flush())
 ```
 
-### Line-by-Line Processing
+```python Asynchronous focus={8-14}
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.types import FlushEvent
 
-Stream text line by line:
+async def main():
+    client = AsyncFishAudio()
 
-```python
-def read_file_lines(filepath):
-    with open(filepath, "r") as f:
-        for line in f:
-            yield line.strip() + " "
+    async def text_with_flush():
+        yield "First sentence. "
+        yield "Second sentence. "
+        yield FlushEvent()  # Forces generation NOW
+        yield "Third sentence."
 
-with ws_session:
-    for audio_chunk in ws_session.tts(
-        TTSRequest(text=""),
-        read_file_lines("story.txt")
-    ):
-        # Process each chunk
-        pass
+    audio_stream = await client.tts.stream_websocket(text_with_flush())
+
+asyncio.run(main())
 ```
+</CodeGroup>
 
-## Error Handling
+<Note>
+See [Text-to-Speech guide](/developer-guide/sdk-guide/python/text-to-speech#understanding-flushevent) for detailed FlushEvent usage and advanced examples.
+</Note>
 
-Handle connection errors:
+## LLM Integration
 
-```python
-from fish_audio_sdk.exceptions import WebSocketErr
+WebSocket streaming is designed for integrating with LLM streaming responses. The TTS engine automatically buffers incoming text chunks and generates audio when it has enough context for natural speech:
 
-try:
-    with ws_session:
-        for audio_chunk in ws_session.tts(
-            TTSRequest(text=""),
-            text_stream()
-        ):
-            # Process audio
-            pass
-except WebSocketErr:
-    print("WebSocket connection failed")
-    # Fallback to regular TTS or retry
-```
+<CodeGroup>
+```python Synchronous focus={5-21}
+from fishaudio import FishAudio
+from fishaudio.utils import play
 
-## Configuration
+client = FishAudio()
 
-Customize WebSocket behavior:
+# Simulate streaming LLM response
+def llm_stream():
+    """Simulates text chunks from an LLM."""
+    tokens = [
+        "The ", "weather ", "today ", "is ", "sunny ",
+        "with ", "clear ", "skies. ", "Perfect ",
+        "for ", "outdoor ", "activities!"
+    ]
+    for token in tokens:
+        yield token
 
-```python
-# Custom endpoint and worker threads
-ws_session = WebSocketSession(
-    apikey="your_api_key",
-    base_url="https://api.fish.audio",
-    max_workers=10  # Thread pool size for sync version
+# Stream to speech in real-time
+audio_stream = client.tts.stream_websocket(
+    llm_stream(),
+    latency="balanced"
 )
-
-# Select backend model
-for audio_chunk in ws_session.tts(
-    TTSRequest(text=""),
-    text_stream(),
-    backend="speech-1.5"  # or "speech-1.6"
-):
-    pass
+play(audio_stream)
 ```
 
-## Best Practices
+```python Asynchronous focus={7-23}
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.utils import play
 
-1. **Chunk Size**: Yield text in natural phrases for best prosody
-2. **Buffer Management**: Process audio chunks immediately to avoid memory buildup
-3. **Connection Reuse**: Keep WebSocket sessions alive for multiple streams
-4. **Error Recovery**: Implement retry logic for connection failures
-5. **Format Selection**: Use PCM for real-time playback, MP3 for storage
+async def main():
+    client = AsyncFishAudio()
 
-## Parameters
+    # Simulate streaming LLM response
+    async def llm_stream():
+        """Simulates text chunks from an LLM."""
+        tokens = [
+            "The ", "weather ", "today ", "is ", "sunny ",
+            "with ", "clear ", "skies. ", "Perfect ",
+            "for ", "outdoor ", "activities!"
+        ]
+        for token in tokens:
+            yield token
 
-### WebSocketSession
+    # Stream to speech in real-time
+    audio_stream = await client.tts.stream_websocket(
+        llm_stream(),
+        latency="balanced"
+    )
+    play(audio_stream)
 
-| Parameter    | Type | Description              | Default                   |
-|--------------|------|--------------------------|---------------------------|
-| `apikey`     | str  | Your API key             | Required                  |
-| `base_url`   | str  | API endpoint             | "https://api.fish.audio"  |
-| `max_workers`| int  | Thread pool size         | 10                        |
+asyncio.run(main())
+```
+</CodeGroup>
 
-### tts() Method
+<Note>
+The WebSocket connection automatically buffers incoming text and generates audio when it has accumulated enough context for natural-sounding speech. You don't need to manually batch tokens unless you want to force generation at specific points using `FlushEvent`.
+</Note>
 
-| Parameter     | Type         | Description        | Default      |
-|---------------|--------------|--------------------| -------------|
-| `request`     | TTSRequest   | TTS configuration  | Required     |
-| `text_stream` | Iterable[str]| Text generator     | Required     |
-| `backend`     | str          | Model version      | "speech-1.5" |
+## Next Steps
+
+<CardGroup cols={2}>
+<Card title="Text-to-Speech" icon="microphone" href="/developer-guide/sdk-guide/python/text-to-speech">
+  Learn about non-streaming TTS options, audio formats, TextEvent vs plain strings, and advanced configuration
+</Card>
+
+<Card title="Voice Cloning" icon="clone" href="/developer-guide/sdk-guide/python/voice-cloning">
+  Use custom voices in streams and learn about voice selection
+</Card>
+
+<Card title="TTS API Reference" icon="book" href="/api-reference/sdk/python/resources#tts">
+  Complete streaming API documentation
+</Card>
+
+<Card title="Best Practices" icon="lightbulb" href="/developer-guide/best-practices/">
+  Production streaming optimization
+</Card>
+</CardGroup>
+
+## Related Resources
+
+- [WebSocket Types](/api-reference/sdk/python/types#tts) - TextEvent, FlushEvent, and more
+- [Utils Reference](/api-reference/sdk/python/utils) - Audio playback utilities
+- [Error Handling](/api-reference/sdk/python/exceptions) - WebSocket exception handling
+- [Fine-grained Control](/developer-guide/core-features/fine-grained-control) - Advanced speech control
