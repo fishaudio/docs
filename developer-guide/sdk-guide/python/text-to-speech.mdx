@@ -16,9 +16,9 @@ The SDK provides three methods for text-to-speech generation, each optimized for
 
 | Method | Returns | Best For |
 |--------|---------|----------|
-| `convert()` | Complete audio bytes | Most use cases - simple, gets full audio at once |
-| `stream()` | `AudioStream` | Chunk-by-chunk processing, memory-efficient transfer |
-| `stream_websocket()` | Audio bytes iterator | Real-time streaming with dynamic text (LLM responses, conversational AI) |
+| [`convert()`](/api-reference/sdk/python/resources#convert) | Complete audio bytes | Most use cases - simple, gets full audio at once |
+| [`stream()`](/api-reference/sdk/python/resources#stream) | `AudioStream` | Chunk-by-chunk processing, memory-efficient transfer |
+| [`stream_websocket()`](/api-reference/sdk/python/resources#stream_websocket) | Audio bytes iterator | Real-time streaming with dynamic text (LLM responses, conversational AI) |
 
 <Tip>
 Use `convert()` for most use cases. Use `stream()` for memory efficiency when handling large files. Use `stream_websocket()` when text is generated dynamically in real-time.
@@ -300,7 +300,7 @@ asyncio.run(main())
 ```
 </CodeGroup>
 
-For combined speed and volume control, use `TTSConfig` with `Prosody`:
+For combined speed and volume control, use [`TTSConfig`](/api-reference/sdk/python/types#ttsconfig-objects) with [`Prosody`](/api-reference/sdk/python/types#prosody-objects):
 
 <CodeGroup>
 ```python Synchronous focus={7-17}
@@ -466,7 +466,7 @@ Use `stream()` when you have complete text upfront. For real-time streaming with
 
 ## Real-time WebSocket Streaming
 
-For real-time applications where text is generated dynamically, use `stream_websocket()`. This is perfect for LLM integrations, conversational AI, and live captions:
+For real-time applications where text is generated dynamically, use [`stream_websocket()`](/api-reference/sdk/python/resources#stream_websocket). This is perfect for LLM integrations, conversational AI, and live captions:
 
 ### Basic WebSocket Streaming
 
@@ -518,7 +518,7 @@ asyncio.run(main())
 
 ### Understanding `FlushEvent`
 
-The `FlushEvent` forces the TTS engine to immediately generate audio from the accumulated text buffer. This is useful when you want to ensure audio is generated at specific points, even if the buffer hasn't reached the optimal chunk size.
+The [`FlushEvent`](/api-reference/sdk/python/types#flushevent-objects) forces the TTS engine to immediately generate audio from the accumulated text buffer. This is useful when you want to ensure audio is generated at specific points, even if the buffer hasn't reached the optimal chunk size.
 
 <CodeGroup>
 ```python Synchronous focus={6-18}
@@ -576,7 +576,7 @@ Without `FlushEvent`, the engine automatically generates audio when the buffer r
 
 ### `TextEvent` vs Plain Strings
 
-You can yield plain strings (recommended for simplicity) or use `TextEvent` for explicit control:
+You can yield plain strings (recommended for simplicity) or use [`TextEvent`](/api-reference/sdk/python/types#textevent-objects) for explicit control:
 
 <CodeGroup>
 ```python Synchronous focus={6-17}
@@ -753,6 +753,8 @@ except ValidationError as e:
 except FishAudioError as e:
     print(f"API error: {e}")
 ```
+
+Common exceptions include [`RateLimitError`](/api-reference/sdk/python/exceptions#ratelimiterror-objects), [`ValidationError`](/api-reference/sdk/python/exceptions#validationerror-objects), [`NotFoundError`](/api-reference/sdk/python/exceptions#notfounderror-objects), and [`FishAudioError`](/api-reference/sdk/python/exceptions#fishaudioerror-objects).
 
 ## Best Practices
 

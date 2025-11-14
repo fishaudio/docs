@@ -12,7 +12,7 @@ import Prerequisites from '/snippets/prerequisites.mdx';
 
 ## Instant Voice Cloning
 
-Clone a voice on-the-fly without creating a persistent model using reference audio:
+Clone a voice on-the-fly without creating a persistent model using [`ReferenceAudio`](/api-reference/sdk/python/types#referenceaudio-objects):
 
 <CodeGroup>
 ```python Synchronous focus={6-15}
@@ -134,7 +134,7 @@ asyncio.run(main())
 
 ## Creating Persistent Voice Models
 
-Create a reusable voice model for consistent voice characteristics:
+Create a reusable voice model for consistent voice characteristics using [`voices.create()`](/api-reference/sdk/python/resources#create):
 
 <CodeGroup>
 ```python Synchronous focus={5-20}
@@ -284,7 +284,7 @@ Audio enhancement helps process noisy or lower-quality reference audio. If your 
 
 ### List Voices
 
-Discover available voices with filtering:
+Discover available voices with filtering using [`voices.list()`](/api-reference/sdk/python/resources#list):
 
 <CodeGroup>
 ```python Synchronous focus={5-11}
@@ -376,6 +376,8 @@ asyncio.run(main())
 
 ### Get Voice Details
 
+Use [`voices.get()`](/api-reference/sdk/python/resources#get) to retrieve voice details:
+
 <CodeGroup>
 ```python Synchronous focus={5-11}
 from fishaudio import FishAudio
@@ -411,6 +413,8 @@ asyncio.run(main())
 </CodeGroup>
 
 ### Update Voice Metadata
+
+Update voice information using [`voices.update()`](/api-reference/sdk/python/resources#update):
 
 <CodeGroup>
 ```python Synchronous focus={5-11}
@@ -449,6 +453,8 @@ asyncio.run(main())
 </CodeGroup>
 
 ### Delete Voice
+
+Remove voice models using [`voices.delete()`](/api-reference/sdk/python/resources#delete):
 
 <CodeGroup>
 ```python Synchronous focus={5-7}

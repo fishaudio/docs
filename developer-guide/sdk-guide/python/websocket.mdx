@@ -12,7 +12,7 @@ import Prerequisites from '/snippets/prerequisites.mdx';
 
 ## Overview
 
-Use `stream_websocket()` for real-time text streaming with LLMs and live captions. The connection automatically buffers incoming text and generates audio as it becomes available.
+Use [`stream_websocket()`](/api-reference/sdk/python/resources#stream_websocket) for real-time text streaming with LLMs and live captions. The connection automatically buffers incoming text and generates audio as it becomes available.
 
 ## Basic Usage
 
@@ -76,7 +76,7 @@ For details on audio formats, voice selection, and advanced configuration option
 
 ## Using FlushEvent
 
-Force immediate audio generation to create pauses:
+Force immediate audio generation to create pauses using [`FlushEvent`](/api-reference/sdk/python/types#flushevent-objects):
 
 <CodeGroup>
 ```python Synchronous focus={6-12}

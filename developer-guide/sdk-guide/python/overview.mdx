@@ -50,7 +50,7 @@ FISH_API_KEY=your_api_key_here
 
 ## Quick Start
 
-Get started with Fish Audio in less than a minute:
+Get started with the [`FishAudio`](/api-reference/sdk/python/client#fishaudio-objects) client in less than a minute:
 
 <CodeGroup>
 ```python Synchronous
@@ -164,7 +164,7 @@ asyncio.run(main())
 ```
 </CodeGroup>
 
-Create reusable configurations with `TTSConfig`. Prosody controls speech characteristics like speed and volume:
+Create reusable configurations with [`TTSConfig`](/api-reference/sdk/python/types#ttsconfig-objects). [`Prosody`](/api-reference/sdk/python/types#prosody-objects) controls speech characteristics like speed and volume:
 
 <CodeGroup>
 ```python Synchronous focus={7-18}
@@ -223,7 +223,7 @@ asyncio.run(main())
 </CodeGroup>
 
 <Tip>
-For chunk-by-chunk processing, use `stream()` which returns an `AudioStream` (iterable). For real-time streaming with dynamic text, see [Real-time Streaming](#real-time-streaming) below.
+For chunk-by-chunk processing, use [`stream()`](/api-reference/sdk/python/resources#stream) which returns an `AudioStream` (iterable). For real-time streaming with dynamic text, see [Real-time Streaming](#real-time-streaming) below.
 </Tip>
 
 Learn more in the [Text-to-Speech guide](/developer-guide/sdk-guide/python/text-to-speech).
@@ -332,7 +332,7 @@ Learn more in the [WebSocket Streaming guide](/developer-guide/sdk-guide/python/
 
 ### Voice Cloning
 
-**Instant voice cloning** - Clone a voice on-the-fly using reference audio:
+**Instant voice cloning** - Clone a voice on-the-fly using [`ReferenceAudio`](/api-reference/sdk/python/types#referenceaudio-objects):
 
 <CodeGroup>
 ```python Synchronous focus={6-12}
@@ -483,7 +483,7 @@ asyncio.run(main())
 </CodeGroup>
 
 <Tip>
-Use `AsyncFishAudio` when:
+Use [`AsyncFishAudio`](/api-reference/sdk/python/client#asyncfishaudio-objects) when:
 - Building async web applications (FastAPI, Sanic, etc.)
 - Processing multiple requests concurrently
 - Integrating with other async libraries
@@ -496,10 +496,10 @@ The SDK organizes functionality into resource clients:
 
 | Resource         | Description        | Key Methods                                           |
 |------------------|--------------------|-------------------------------------------------------|
-| `client.tts`     | Text-to-speech     | `convert()`, `stream()`, `stream_websocket()`         |
-| `client.asr`     | Speech recognition | `transcribe()`                                        |
-| `client.voices`  | Voice management   | `list()`, `get()`, `create()`, `update()`, `delete()` |
-| `client.account` | Account info       | `get_credits()`, `get_package()`                      |
+| [`client.tts`](/api-reference/sdk/python/resources#ttsclient-objects)     | Text-to-speech     | `convert()`, `stream()`, `stream_websocket()`         |
+| [`client.asr`](/api-reference/sdk/python/resources#asrclient-objects)     | Speech recognition | `transcribe()`                                        |
+| [`client.voices`](/api-reference/sdk/python/resources#voicesclient-objects)  | Voice management   | `list()`, `get()`, `create()`, `update()`, `delete()` |
+| [`client.account`](/api-reference/sdk/python/resources#accountclient-objects) | Account info       | `get_credits()`, `get_package()`                      |
 
 ## Utility Functions
 
@@ -517,6 +517,8 @@ play(audio)  # Works in Jupyter, regular Python, etc.
 # Stream audio in real-time (requires mpv)
 stream(audio_iterator)
 ```
+
+Use [`play()`](/api-reference/sdk/python/utils#play) for playback and [`save()`](/api-reference/sdk/python/utils#save) for writing audio files.
 
 Learn more in the [API Reference - Utils](/api-reference/sdk/python/utils).
 
@@ -546,6 +548,8 @@ except ValidationError as e:
 except FishAudioError as e:
     print(f"API error: {e}")
 ```
+
+The SDK includes exceptions for [`AuthenticationError`](/api-reference/sdk/python/exceptions#authenticationerror-objects), [`RateLimitError`](/api-reference/sdk/python/exceptions#ratelimiterror-objects), [`ValidationError`](/api-reference/sdk/python/exceptions#validationerror-objects), and [`FishAudioError`](/api-reference/sdk/python/exceptions#fishaudioerror-objects) for common error scenarios.
 
 Learn more in the [API Reference - Exceptions](/api-reference/sdk/python/exceptions).
 

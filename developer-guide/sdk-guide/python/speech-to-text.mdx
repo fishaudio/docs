@@ -12,7 +12,7 @@ import Prerequisites from '/snippets/prerequisites.mdx';
 
 ## Basic Transcription
 
-Transcribe audio files to text with automatic language detection:
+Transcribe audio files to text with automatic language detection using [`asr.transcribe()`](/api-reference/sdk/python/resources#transcribe):
 
 <CodeGroup>
 ```python Synchronous focus={6-10}
@@ -45,6 +45,8 @@ async def main():
 asyncio.run(main())
 ```
 </CodeGroup>
+
+The [`ASRResponse`](/api-reference/sdk/python/types#asrresponse-objects) object contains the full transcription and segment details.
 
 ## Language Specification
 

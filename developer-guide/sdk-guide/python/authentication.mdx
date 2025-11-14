@@ -12,7 +12,7 @@ import Prerequisites from '/snippets/prerequisites.mdx';
 
 ## Client Initialization
 
-Initialize the Fish Audio client with your API key:
+Initialize the [`FishAudio`](/api-reference/sdk/python/client#fishaudio-objects) client with your API key:
 
 <Tabs>
 <Tab title="Environment Variable (Recommended)">
@@ -105,6 +105,8 @@ try:
 except AuthenticationError:
     print("Authentication failed. Check your API key.")
 ```
+
+Handle [`AuthenticationError`](/api-reference/sdk/python/exceptions#authenticationerror-objects) when verifying authentication. The example uses [`get_credits()`](/api-reference/sdk/python/resources#get_credits) to verify the authentication works.
 
 ## Next Steps
 
