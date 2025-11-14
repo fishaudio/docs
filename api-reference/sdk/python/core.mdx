@@ -37,6 +37,170 @@ def get_timeout() -> Optional[httpx.Timeout]
 
 Convert timeout to httpx.Timeout if set.
 
+<a id="fishaudio.core.iterators"></a>
+
+# fishaudio.core.iterators
+
+Audio stream wrappers with collection utilities.
+
+<a id="fishaudio.core.iterators.AudioStream"></a>
+
+## AudioStream Objects
+
+```python
+class AudioStream()
+```
+
+Wrapper for sync audio byte streams with collection utilities.
+
+This class wraps an iterator of audio bytes and provides a convenient
+`.collect()` method to gather all chunks into a single bytes object.
+
+**Examples**:
+
+    ```python
+    from fishaudio import FishAudio
+
+    client = FishAudio(api_key="...")
+
+    # Collect all audio at once
+    audio = client.tts.stream(text="Hello!").collect()
+
+    # Or stream chunks manually
+    for chunk in client.tts.stream(text="Hello!"):
+        process_chunk(chunk)
+    ```
+
+<a id="fishaudio.core.iterators.AudioStream.__init__"></a>
+
+#### \_\_init\_\_
+
+```python
+def __init__(iterator: Iterator[bytes])
+```
+
+Initialize the audio iterator wrapper.
+
+**Arguments**:
+
+- `iterator` - The underlying iterator of audio bytes
+
+<a id="fishaudio.core.iterators.AudioStream.__iter__"></a>
+
+#### \_\_iter\_\_
+
+```python
+def __iter__() -> Iterator[bytes]
+```
+
+Allow direct iteration over audio chunks.
+
+<a id="fishaudio.core.iterators.AudioStream.collect"></a>
+
+#### collect
+
+```python
+def collect() -> bytes
+```
+
+Collect all audio chunks into a single bytes object.
+
+This consumes the iterator and returns all audio data as bytes.
+After calling this method, the iterator cannot be used again.
+
+**Returns**:
+
+  Complete audio data as bytes
+  
+
+**Examples**:
+
+    ```python
+    audio = client.tts.stream(text="Hello!").collect()
+    with open("output.mp3", "wb") as f:
+        f.write(audio)
+    ```
+
+<a id="fishaudio.core.iterators.AsyncAudioStream"></a>
+
+## AsyncAudioStream Objects
+
+```python
+class AsyncAudioStream()
+```
+
+Wrapper for async audio byte streams with collection utilities.
+
+This class wraps an async iterator of audio bytes and provides a convenient
+`.collect()` method to gather all chunks into a single bytes object.
+
+**Examples**:
+
+    ```python
+    from fishaudio import AsyncFishAudio
+
+    client = AsyncFishAudio(api_key="...")
+
+    # Collect all audio at once
+    stream = await client.tts.stream(text="Hello!")
+    audio = await stream.collect()
+
+    # Or stream chunks manually
+    async for chunk in await client.tts.stream(text="Hello!"):
+        await process_chunk(chunk)
+    ```
+
+<a id="fishaudio.core.iterators.AsyncAudioStream.__init__"></a>
+
+#### \_\_init\_\_
+
+```python
+def __init__(async_iterator: AsyncIterator[bytes])
+```
+
+Initialize the async audio iterator wrapper.
+
+**Arguments**:
+
+- `async_iterator` - The underlying async iterator of audio bytes
+
+<a id="fishaudio.core.iterators.AsyncAudioStream.__aiter__"></a>
+
+#### \_\_aiter\_\_
+
+```python
+def __aiter__() -> AsyncIterator[bytes]
+```
+
+Allow direct async iteration over audio chunks.
+
+<a id="fishaudio.core.iterators.AsyncAudioStream.collect"></a>
+
+#### collect
+
+```python
+async def collect() -> bytes
+```
+
+Collect all audio chunks into a single bytes object.
+
+This consumes the async iterator and returns all audio data as bytes.
+After calling this method, the iterator cannot be used again.
+
+**Returns**:
+
+  Complete audio data as bytes
+  
+
+**Examples**:
+
+    ```python
+    stream = await client.tts.stream(text="Hello!")
+    audio = await stream.collect()
+    with open("output.mp3", "wb") as f:
+        f.write(audio)
+    ```
+
 <a id="fishaudio.core.client_wrapper"></a>
 
 # fishaudio.core.client\_wrapper
