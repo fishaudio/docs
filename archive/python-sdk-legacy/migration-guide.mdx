@@ -4,118 +4,25 @@ description: "Migrate from the legacy Session-based API to the modern client-bas
 icon: "arrow-right-arrow-left"
 ---
 
-import Prerequisites from '/snippets/prerequisites.mdx';
-
 <Note>
-This guide helps you migrate from the legacy `fish_audio_sdk` (Session-based API) to the new `fishaudio` (client-based API).
+This guide helps you migrate from the legacy `fish_audio_sdk` (Session-based API) to the new `fishaudio` (client-based API) available in `fish-audio-sdk` v1.0+.
 </Note>
 
-## Why Migrate?
-
-The new Python SDK offers significant improvements over the legacy API:
-
-<AccordionGroup>
-<Accordion title="Modern Architecture">
-The client-based architecture is more intuitive and consistent with modern Python libraries, providing better code organization and maintainability.
-</Accordion>
-
-<Accordion title="Full Async Support">
-Native asyncio integration with `AsyncFishAudio` enables better performance for concurrent operations and integration with modern async frameworks.
-</Accordion>
-
-<Accordion title="Better Type Safety">
-Comprehensive type hints throughout the SDK provide better IDE support, auto-completion, and early error detection during development.
-</Accordion>
-
-<Accordion title="Improved Developer Experience">
-Built-in utilities for audio playback, streaming, and file management reduce boilerplate code and simplify common tasks.
-</Accordion>
-
-<Accordion title="Enhanced Error Handling">
-More detailed error messages and a well-structured exception hierarchy make debugging and error recovery easier.
-</Accordion>
-
-<Accordion title="Active Development">
-Regular updates, new features, and ongoing support ensure long-term reliability and access to the latest capabilities.
-</Accordion>
-</AccordionGroup>
-
-## Key Architectural Changes
-
-### Session → Client
-
-The fundamental shift is from Session-based to Client-based architecture:
-
-<CodeGroup>
-```python Legacy (Session-based)
-from fish_audio_sdk import Session
-
-# Session object for all operations
-session = Session("your_api_key")
-```
-
-```python New (Client-based)
-from fishaudio import FishAudio
-
-# Client object with resource namespaces
-client = FishAudio(api_key="your_api_key")
-```
-</CodeGroup>
-
-### Resource Namespaces
-
-Operations are organized into logical namespaces:
-
-| Legacy                  | New                      | Description           |
-|-------------------------|--------------------------|------------------------|
-| `session.tts()`         | `client.tts.convert()`   | Text-to-speech        |
-| `session.asr()`         | `client.asr.transcribe()`| Speech-to-text        |
-| `session.create_model()`| `client.voices.create()` | Create voice model    |
-| `session.list_models()` | `client.voices.list()`   | List voice models     |
-| `session.get_model()`   | `client.voices.get()`    | Get voice details     |
-
-### Package Names
-
-<CodeGroup>
-```python Legacy
-# Install legacy package
-pip install fish-audio-sdk
-
-# Import from legacy module
-from fish_audio_sdk import Session, TTSRequest, ASRRequest
-```
-
-```python New
-# Install new package
-pip install fishaudio
-
-# Import from new module
-from fishaudio import FishAudio, AsyncFishAudio
-from fishaudio.types import TTSConfig, ReferenceAudio
-```
-</CodeGroup>
-
-## Migration Steps
+## Quick Migration
 
 <Steps>
-<Step title="Install the new SDK">
-Replace the legacy package with the new SDK:
-
+<Step title="Upgrade the package">
 ```bash
-# Remove legacy package
-pip uninstall fish-audio-sdk
-
-# Install new package
-pip install fishaudio
+pip install --upgrade fish-audio-sdk
 ```
+
+The package name stays the same, but the import changes from `fish_audio_sdk` to `fishaudio`.
 </Step>
 
 <Step title="Update imports">
-Replace legacy imports with new ones:
-
 ```python
 # Before
-from fish_audio_sdk import Session, TTSRequest, ASRRequest, ReferenceAudio
+from fish_audio_sdk import Session, TTSRequest, ASRRequest
 
 # After
 from fishaudio import FishAudio
@@ -124,8 +31,6 @@ from fishaudio.types import TTSConfig, ReferenceAudio
 </Step>
 
 <Step title="Replace Session with Client">
-Change your authentication initialization:
-
 ```python
 # Before
 session = Session("your_api_key")
@@ -138,134 +43,57 @@ client = FishAudio()  # Reads from FISH_API_KEY
 </Step>
 
 <Step title="Update API calls">
-Migrate each API call to the new namespace structure. See detailed examples below.
-</Step>
-
-<Step title="Update error handling">
-Replace legacy exception handling with new exception types:
-
-```python
-# Before
-from fish_audio_sdk.exceptions import HttpCodeErr
-
-# After
-from fishaudio.exceptions import (
-    FishAudioError,
-    RateLimitError,
-    ValidationError,
-    NotFoundError
-)
-```
-</Step>
-
-<Step title="Test thoroughly">
-Run your test suite to ensure all functionality works correctly with the new SDK.
+See the quick reference below for common operations.
 </Step>
 </Steps>
 
-## Side-by-Side Comparisons
+## Key Changes at a Glance
 
-### Client Initialization
+| Legacy | New | Notes |
+|--------|-----|-------|
+| `Session()` | `FishAudio()` | Client-based architecture |
+| `session.tts()` | `client.tts.convert()` | Returns complete audio bytes |
+| `session.asr()` | `client.asr.transcribe()` | Clearer method name |
+| `session.create_model()` | `client.voices.create()` | "Model" → "Voice" terminology |
+| `session.list_models()` | `client.voices.list()` | Resource namespacing |
+| `TTSRequest(...)` | Direct parameters | No request objects |
+| `WebSocketSession` | `client.tts.stream_websocket()` | Integrated into client |
+| `HttpCodeErr` | Specific exceptions | Better error handling |
 
-<CodeGroup>
-```python Legacy
-from fish_audio_sdk import Session
-import os
-
-# Basic initialization
-session = Session("your_api_key")
-
-# With environment variable
-session = Session(os.getenv("FISH_API_KEY"))
-
-# Custom endpoint
-session = Session(
-    apikey="your_api_key",
-    base_url="https://proxy.example.com"
-)
-```
-
-```python New
-from fishaudio import FishAudio
-
-# Basic initialization
-client = FishAudio(api_key="your_api_key")
-
-# With environment variable (automatic)
-client = FishAudio()  # Reads FISH_API_KEY
-
-# Custom endpoint
-client = FishAudio(
-    api_key="your_api_key",
-    base_url="https://proxy.example.com"
-)
-```
-</CodeGroup>
-
-### Text-to-Speech
+## Text-to-Speech Migration
 
 <CodeGroup>
 ```python Legacy
-from fish_audio_sdk import Session, TTSRequest, Prosody
+from fish_audio_sdk import Session, TTSRequest
 
 session = Session("your_api_key")
 
-# Basic TTS
-audio_chunks = []
+# Basic TTS - returns chunks
+audio = b""
 for chunk in session.tts(TTSRequest(text="Hello, world!")):
-    audio_chunks.append(chunk)
+    audio += chunk
 
-audio = b"".join(audio_chunks)
-
-# Save to file
 with open("output.mp3", "wb") as f:
     f.write(audio)
-
-# With voice model
-request = TTSRequest(
-    text="Custom voice",
-    reference_id="model_id",
-    format="mp3",
-    prosody=Prosody(speed=1.2, volume=5)
-)
-
-for chunk in session.tts(request):
-    # Process chunks
-    pass
 ```
 
 ```python New
 from fishaudio import FishAudio
-from fishaudio.utils import save, play
-from fishaudio.types import TTSConfig, Prosody
+from fishaudio.utils import save
 
 client = FishAudio()
 
-# Basic TTS (returns complete audio)
+# Basic TTS - returns complete audio
 audio = client.tts.convert(text="Hello, world!")
-
-# Save and play with utilities
 save(audio, "output.mp3")
-play(audio)
-
-# With voice model
-audio = client.tts.convert(
-    text="Custom voice",
-    reference_id="model_id",
-    format="mp3",
-    speed=1.2,
-    config=TTSConfig(
-        prosody=Prosody(speed=1.2, volume=5)
-    )
-)
 ```
 </CodeGroup>
 
 <Note>
-The new SDK's `convert()` method returns complete audio instead of requiring chunk iteration. Use `stream_websocket()` for streaming use cases.
+The new SDK's `convert()` returns complete audio bytes instead of chunks. Use `stream()` for chunk-by-chunk transfer or `stream_websocket()` for real-time streaming.
 </Note>
 
-### Voice Cloning with Reference Audio
+## Voice Cloning Migration
 
 <CodeGroup>
 ```python Legacy
@@ -273,34 +101,23 @@ from fish_audio_sdk import Session, TTSRequest, ReferenceAudio
 
 session = Session("your_api_key")
 
-# Single reference
+# Instant cloning
 with open("voice.wav", "rb") as f:
-    audio_data = f.read()
-
-request = TTSRequest(
-    text="Cloned voice",
-    references=[
-        ReferenceAudio(
-            audio=audio_data,
-            text="Reference transcript"
-        )
-    ]
-)
-
-audio = b""
-for chunk in session.tts(request):
-    audio += chunk
-
-# Multiple references
-references = []
-for i in range(3):
-    with open(f"sample_{i}.wav", "rb") as f:
-        references.append(ReferenceAudio(
+    request = TTSRequest(
+        text="Cloned voice",
+        references=[ReferenceAudio(
             audio=f.read(),
-            text=f"Transcript {i}"
-        ))
+            text="Reference transcript"
+        )]
+    )
+    audio = b"".join(session.tts(request))
 
-request = TTSRequest(text="Hello", references=references)
+# Create voice model
+model = session.create_model(
+    title="My Voice",
+    voices=[voice_data],
+    texts=["Sample text"]
+)
 ```
 
 ```python New
@@ -309,139 +126,26 @@ from fishaudio.types import ReferenceAudio
 
 client = FishAudio()
 
-# Single reference
+# Instant cloning
 with open("voice.wav", "rb") as f:
     audio = client.tts.convert(
         text="Cloned voice",
-        references=[
-            ReferenceAudio(
-                audio=f.read(),
-                text="Reference transcript"
-            )
-        ]
+        references=[ReferenceAudio(
+            audio=f.read(),
+            text="Reference transcript"
+        )]
     )
 
-# Multiple references
-references = []
-for i in range(3):
-    with open(f"sample_{i}.wav", "rb") as f:
-        references.append(ReferenceAudio(
-            audio=f.read(),
-            text=f"Transcript {i}"
-        ))
-
-audio = client.tts.convert(
-    text="Hello",
-    references=references
-)
-```
-</CodeGroup>
-
-### Creating Voice Models
-
-<CodeGroup>
-```python Legacy
-from fish_audio_sdk import Session
-
-session = Session("your_api_key")
-
-# Load voice samples
-voices = []
-texts = []
-for i in range(3):
-    with open(f"voice_{i}.wav", "rb") as f:
-        voices.append(f.read())
-    texts.append(f"Sample text {i}")
-
-# Create model
-model = session.create_model(
-    title="My Voice",
-    description="Custom voice model",
-    voices=voices,
-    texts=texts,
-    visibility="private"
-)
-
-print(f"Model ID: {model.id}")
-```
-
-```python New
-from fishaudio import FishAudio
-
-client = FishAudio()
-
-# Load voice samples
-voices = []
-texts = []
-for i in range(3):
-    with open(f"voice_{i}.wav", "rb") as f:
-        voices.append(f.read())
-    texts.append(f"Sample text {i}")
-
-# Create model
+# Create voice model
 voice = client.voices.create(
     title="My Voice",
-    description="Custom voice model",
-    voices=voices,
-    texts=texts,
-    visibility="private"
+    voices=[voice_data],
+    texts=["Sample text"]
 )
-
-print(f"Voice ID: {voice.id}")
 ```
 </CodeGroup>
 
-### Managing Voice Models
-
-<CodeGroup>
-```python Legacy
-from fish_audio_sdk import Session
-
-session = Session("your_api_key")
-
-# List models
-models = session.list_models(self_only=True)
-for model in models.items:
-    print(f"{model.title}: {model.id}")
-
-# Get model details
-model = session.get_model("model_id")
-print(model.title)
-
-# Update model (limited support)
-# Not available in legacy SDK
-
-# Delete model (not available in legacy SDK)
-```
-
-```python New
-from fishaudio import FishAudio
-
-client = FishAudio()
-
-# List voices
-voices = client.voices.list(self_only=True, page_size=20)
-for voice in voices.items:
-    print(f"{voice.title}: {voice.id}")
-
-# Get voice details
-voice = client.voices.get("voice_id")
-print(voice.title)
-
-# Update voice
-client.voices.update(
-    "voice_id",
-    title="Updated Title",
-    description="New description",
-    visibility="public"
-)
-
-# Delete voice
-client.voices.delete("voice_id")
-```
-</CodeGroup>
-
-### Speech-to-Text
+## Speech-to-Text Migration
 
 <CodeGroup>
 ```python Legacy
@@ -449,27 +153,17 @@ from fish_audio_sdk import Session, ASRRequest
 
 session = Session("your_api_key")
 
-# Transcribe audio
 with open("audio.mp3", "rb") as f:
-    audio_data = f.read()
-
-response = session.asr(ASRRequest(
-    audio=audio_data,
-    language="en"
-))
+    response = session.asr(ASRRequest(
+        audio=f.read(),
+        language="en"
+    ))
 
 print(response.text)
-print(f"Duration: {response.duration}ms")
 
-# Process segments
+# Timestamps in SECONDS
 for segment in response.segments:
-    print(f"[{segment.start}s - {segment.end}s]: {segment.text}")
-
-# Without timestamps
-response = session.asr(ASRRequest(
-    audio=audio_data,
-    ignore_timestamps=True
-))
+    print(f"[{segment.start}s - {segment.end}s]")
 ```
 
 ```python New
@@ -477,7 +171,6 @@ from fishaudio import FishAudio
 
 client = FishAudio()
 
-# Transcribe audio
 with open("audio.mp3", "rb") as f:
     result = client.asr.transcribe(
         audio=f.read(),
@@ -485,318 +178,53 @@ with open("audio.mp3", "rb") as f:
     )
 
 print(result.text)
-print(f"Duration: {result.duration}ms")
 
-# Process segments (always included)
+# Timestamps in MILLISECONDS
 for segment in result.segments:
-    print(f"[{segment.start}ms - {segment.end}ms]: {segment.text}")
-
-# Segments are always included in new SDK
-# Use include_timestamps parameter if needed
-result = client.asr.transcribe(
-    audio=audio_bytes,
-    include_timestamps=True
-)
+    print(f"[{segment.start}ms - {segment.end}ms]")
 ```
 </CodeGroup>
 
 <Warning>
-The legacy SDK uses seconds for segment timestamps, while the new SDK uses milliseconds. Update your timestamp handling accordingly.
+ASR timestamps changed from seconds to milliseconds. Divide by 1000 to convert: `seconds = segment.start / 1000`
 </Warning>
 
-### WebSocket Streaming
+## WebSocket Streaming Migration
 
 <CodeGroup>
 ```python Legacy
 from fish_audio_sdk import WebSocketSession, TTSRequest
 
-# Create WebSocket session
 ws_session = WebSocketSession("your_api_key")
 
-# Define text generator
 def text_stream():
     yield "Hello, "
-    yield "streaming "
-    yield "world!"
-
-# Stream audio
-with ws_session:
-    with open("output.mp3", "wb") as f:
-        for audio_chunk in ws_session.tts(
-            TTSRequest(text=""),  # Empty text
-            text_stream()
-        ):
-            f.write(audio_chunk)
-
-# With voice model
-request = TTSRequest(
-    text="",
-    reference_id="model_id",
-    format="mp3"
-)
+    yield "streaming!"
 
 with ws_session:
-    for chunk in ws_session.tts(request, text_stream()):
-        # Process chunks
+    for chunk in ws_session.tts(TTSRequest(text=""), text_stream()):
+        # Process audio chunks
         pass
 ```
 
 ```python New
 from fishaudio import FishAudio
-from fishaudio.utils import play
 
 client = FishAudio()
 
-# Define text generator
 def text_chunks():
     yield "Hello, "
-    yield "streaming "
-    yield "world!"
+    yield "streaming!"
 
-# Stream audio
+# No empty text required, no context manager needed
 audio_stream = client.tts.stream_websocket(text_chunks())
-
-# Save to file
-with open("output.mp3", "wb") as f:
-    for chunk in audio_stream:
-        f.write(chunk)
-
-# Or play directly
-audio_stream = client.tts.stream_websocket(text_chunks())
-play(audio_stream)
-
-# With voice model
-audio_stream = client.tts.stream_websocket(
-    text_chunks(),
-    reference_id="model_id",
-    format="mp3"
-)
+for chunk in audio_stream:
+    # Process audio chunks
+    pass
 ```
 </CodeGroup>
 
-<Tip>
-The new SDK eliminates the need for empty `text=""` in the request. Just pass your text generator directly to `stream_websocket()`.
-</Tip>
-
-### Async Operations
-
-<CodeGroup>
-```python Legacy
-from fish_audio_sdk import AsyncWebSocketSession, TTSRequest
-import asyncio
-
-async def main():
-    ws_session = AsyncWebSocketSession("your_api_key")
-
-    async def text_stream():
-        yield "Async "
-        await asyncio.sleep(0.1)
-        yield "streaming!"
-
-    async with ws_session:
-        buffer = bytearray()
-        async for audio_chunk in ws_session.tts(
-            TTSRequest(text=""),
-            text_stream()
-        ):
-            buffer.extend(audio_chunk)
-
-        with open("output.mp3", "wb") as f:
-            f.write(buffer)
-
-asyncio.run(main())
-```
-
-```python New
-from fishaudio import AsyncFishAudio
-import asyncio
-
-async def main():
-    async with AsyncFishAudio() as client:
-        # Async TTS
-        audio = await client.tts.convert(
-            text="Async text-to-speech"
-        )
-
-        # Async streaming
-        async def text_chunks():
-            yield "Async "
-            await asyncio.sleep(0.1)
-            yield "streaming!"
-
-        audio_stream = client.tts.stream_websocket(text_chunks())
-
-        buffer = bytearray()
-        async for chunk in audio_stream:
-            buffer.extend(chunk)
-
-        with open("output.mp3", "wb") as f:
-            f.write(buffer)
-
-asyncio.run(main())
-```
-</CodeGroup>
-
-## Breaking Changes
-
-<Warning>
-Review these breaking changes carefully when migrating your code.
-</Warning>
-
-### API Changes
-
-| Legacy | New | Notes |
-|--------|-----|-------|
-| `Session()` | `FishAudio()` | Client-based architecture |
-| `session.tts()` | `client.tts.convert()` | Returns complete audio, not chunks |
-| `session.asr()` | `client.asr.transcribe()` | Method renamed for clarity |
-| `session.create_model()` | `client.voices.create()` | Resource namespace |
-| `session.list_models()` | `client.voices.list()` | Resource namespace |
-| `session.get_model()` | `client.voices.get()` | Resource namespace |
-| `TTSRequest` | Function parameters | No request object needed |
-| `ASRRequest` | Function parameters | No request object needed |
-| `WebSocketSession` | `client.tts.stream_websocket()` | Integrated into client |
-
-### Parameter Changes
-
-<AccordionGroup>
-<Accordion title="TTS Parameters">
-**Legacy:**
-```python
-TTSRequest(
-    text="...",
-    reference_id="...",
-    format="mp3",
-    chunk_length=200,
-    normalize=True,
-    latency="balanced",
-    prosody=Prosody(speed=1.2, volume=5),
-    temperature=0.7,
-    top_p=0.7
-)
-```
-
-**New:**
-```python
-client.tts.convert(
-    text="...",
-    reference_id="...",
-    format="mp3",
-    speed=1.2,  # Direct parameter
-    latency="balanced",
-    config=TTSConfig(  # Advanced options in config
-        chunk_length=200,
-        normalize=True,
-        temperature=0.7,
-        top_p=0.7,
-        prosody=Prosody(speed=1.2, volume=5)
-    )
-)
-```
-</Accordion>
-
-<Accordion title="ASR Parameters">
-**Legacy:**
-```python
-ASRRequest(
-    audio=audio_bytes,
-    language="en",
-    ignore_timestamps=False
-)
-```
-
-**New:**
-```python
-client.asr.transcribe(
-    audio=audio_bytes,
-    language="en",
-    include_timestamps=True  # Inverted logic
-)
-```
-
-<Note>
-The timestamp parameter logic is inverted: `ignore_timestamps=False` (legacy) becomes `include_timestamps=True` (new).
-</Note>
-</Accordion>
-
-<Accordion title="Voice Model Parameters">
-**Legacy:**
-```python
-session.create_model(
-    title="...",
-    description="...",
-    voices=[...],
-    texts=[...],
-    visibility="private"
-)
-```
-
-**New:**
-```python
-client.voices.create(
-    title="...",
-    description="...",
-    voices=[...],
-    texts=[...],
-    visibility="private",
-    enhance_audio_quality=True  # New option
-)
-```
-</Accordion>
-</AccordionGroup>
-
-### Return Type Changes
-
-<AccordionGroup>
-<Accordion title="TTS Returns Complete Audio">
-**Legacy:** Returns iterator of chunks
-```python
-audio = b""
-for chunk in session.tts(request):
-    audio += chunk
-```
-
-**New:** Returns complete audio bytes
-```python
-audio = client.tts.convert(text="...")
-# audio is already complete bytes
-```
-</Accordion>
-
-<Accordion title="ASR Timestamp Units">
-**Legacy:** Segment times in seconds
-```python
-for segment in response.segments:
-    # segment.start and segment.end are in seconds
-    print(f"[{segment.start}s - {segment.end}s]")
-```
-
-**New:** Segment times in milliseconds
-```python
-for segment in result.segments:
-    # segment.start and segment.end are in milliseconds
-    print(f"[{segment.start}ms - {segment.end}ms]")
-```
-</Accordion>
-
-<Accordion title="Model vs Voice Terminology">
-**Legacy:** Uses "model" terminology
-```python
-model = session.create_model(...)
-models = session.list_models()
-model = session.get_model(id)
-```
-
-**New:** Uses "voice" terminology
-```python
-voice = client.voices.create(...)
-voices = client.voices.list()
-voice = client.voices.get(id)
-```
-</Accordion>
-</AccordionGroup>
-
-### Exception Changes
+## Error Handling Migration
 
 <CodeGroup>
 ```python Legacy
@@ -815,8 +243,6 @@ except HttpCodeErr as e:
 from fishaudio.exceptions import (
     RateLimitError,
     AuthenticationError,
-    ValidationError,
-    NotFoundError,
     FishAudioError
 )
 
@@ -826,497 +252,142 @@ except RateLimitError as e:
     print(f"Rate limited. Retry after {e.retry_after}s")
 except AuthenticationError:
     print("Auth failed")
-except ValidationError as e:
-    print(f"Invalid request: {e.message}")
 except FishAudioError as e:
     print(f"General error: {e}")
 ```
 </CodeGroup>
 
-## Error Handling Migration
+## Async Support
 
-### Legacy Error Handling
-
-```python
-from fish_audio_sdk import Session, TTSRequest
-from fish_audio_sdk.exceptions import HttpCodeErr
-import time
-
-session = Session("your_api_key")
-
-def generate_with_retry(request, max_retries=3):
-    for attempt in range(max_retries):
-        try:
-            audio = b""
-            for chunk in session.tts(request):
-                audio += chunk
-            return audio
-        except HttpCodeErr as e:
-            if e.status_code == 429:
-                time.sleep(2 ** attempt)
-            elif e.status_code == 401:
-                raise Exception("Invalid API key")
-            else:
-                raise e
-```
-
-### New Error Handling
+The new SDK has full async support with `AsyncFishAudio`:
 
 ```python
-from fishaudio import FishAudio
-from fishaudio.exceptions import (
-    RateLimitError,
-    AuthenticationError,
-    ValidationError,
-    FishAudioError
-)
-import time
+import asyncio
+from fishaudio import AsyncFishAudio
 
-client = FishAudio()
+async def main():
+    client = AsyncFishAudio()
 
-def generate_with_retry(text, max_retries=3):
-    for attempt in range(max_retries):
-        try:
-            return client.tts.convert(text=text)
-        except RateLimitError as e:
-            if attempt < max_retries - 1:
-                wait_time = e.retry_after or (2 ** attempt)
-                print(f"Rate limited. Waiting {wait_time}s...")
-                time.sleep(wait_time)
-            else:
-                raise
-        except AuthenticationError:
-            raise Exception("Invalid API key")
-        except ValidationError as e:
-            print(f"Validation error: {e.message}")
-            raise
-        except FishAudioError as e:
-            if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
-            else:
-                raise
+    # All methods work with await
+    audio = await client.tts.convert(text="Async speech")
+    result = await client.asr.transcribe(audio=audio_bytes)
+    voices = await client.voices.list()
+
+asyncio.run(main())
 ```
 
-## Common Migration Patterns
+## Breaking Changes Summary
 
-### Pattern 1: Simple TTS
-
-<CodeGroup>
-```python Legacy
-from fish_audio_sdk import Session, TTSRequest
-
-session = Session("your_api_key")
-
-audio = b""
-for chunk in session.tts(TTSRequest(text="Hello")):
-    audio += chunk
-
-with open("output.mp3", "wb") as f:
-    f.write(audio)
-```
-
-```python New
-from fishaudio import FishAudio
-from fishaudio.utils import save
-
-client = FishAudio()
-
-audio = client.tts.convert(text="Hello")
-save(audio, "output.mp3")
-```
-</CodeGroup>
-
-### Pattern 2: Voice Cloning Workflow
-
-<CodeGroup>
-```python Legacy
-from fish_audio_sdk import Session, TTSRequest
-
-session = Session("your_api_key")
-
-# Create voice model
-voices = []
-texts = []
-for i in range(3):
-    with open(f"sample_{i}.wav", "rb") as f:
-        voices.append(f.read())
-    texts.append(f"Sample {i}")
-
-model = session.create_model(
-    title="Custom Voice",
-    voices=voices,
-    texts=texts
-)
-
-# Use the model
-request = TTSRequest(
-    text="Hello from my voice",
-    reference_id=model.id
-)
-
+<AccordionGroup>
+<Accordion title="TTS now returns complete audio, not chunks">
+**Before:** Iterator of chunks
+```python
 audio = b""
 for chunk in session.tts(request):
     audio += chunk
 ```
 
-```python New
-from fishaudio import FishAudio
-
-client = FishAudio()
-
-# Create voice model
-voices = []
-texts = []
-for i in range(3):
-    with open(f"sample_{i}.wav", "rb") as f:
-        voices.append(f.read())
-    texts.append(f"Sample {i}")
-
-voice = client.voices.create(
-    title="Custom Voice",
-    voices=voices,
-    texts=texts
-)
-
-# Use the voice
-audio = client.tts.convert(
-    text="Hello from my voice",
-    reference_id=voice.id
-)
-```
-</CodeGroup>
-
-### Pattern 3: Streaming Integration
-
-<CodeGroup>
-```python Legacy
-from fish_audio_sdk import WebSocketSession, TTSRequest
-import openai
-
-ws_session = WebSocketSession("your_api_key")
-
-def stream_chatgpt():
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": "Tell me a joke"}],
-        stream=True
-    )
-    for chunk in response:
-        if content := chunk.choices[0].delta.get("content"):
-            yield content
-
-with ws_session:
-    for audio_chunk in ws_session.tts(
-        TTSRequest(text=""),
-        stream_chatgpt()
-    ):
-        # Process audio
-        pass
+**After:** Complete audio bytes
+```python
+audio = client.tts.convert(text="...")
 ```
 
-```python New
-from fishaudio import FishAudio
-from fishaudio.utils import play
-import openai
+Use `stream()` or `stream_websocket()` if you need chunks.
+</Accordion>
 
-client = FishAudio()
-
-def stream_chatgpt():
-    response = openai.chat.completions.create(
-        model="gpt-4",
-        messages=[{"role": "user", "content": "Tell me a joke"}],
-        stream=True
-    )
-    for chunk in response:
-        if chunk.choices[0].delta.content:
-            yield chunk.choices[0].delta.content
-
-audio_stream = client.tts.stream_websocket(
-    stream_chatgpt(),
-    latency="balanced"
-)
-
-play(audio_stream)
-```
-</CodeGroup>
-
-### Pattern 4: Batch Processing
-
-<CodeGroup>
-```python Legacy
-from fish_audio_sdk import Session, TTSRequest
-
-session = Session("your_api_key")
-
-texts = ["First", "Second", "Third"]
-outputs = []
-
-for text in texts:
-    audio = b""
-    for chunk in session.tts(TTSRequest(text=text)):
-        audio += chunk
-    outputs.append(audio)
+<Accordion title="No more request objects (TTSRequest, ASRRequest)">
+**Before:**
+```python
+request = TTSRequest(text="...", format="mp3")
+audio = session.tts(request)
 ```
 
-```python New (Sync)
-from fishaudio import FishAudio
-
-client = FishAudio()
-
-texts = ["First", "Second", "Third"]
-outputs = [
-    client.tts.convert(text=text)
-    for text in texts
-]
+**After:**
+```python
+audio = client.tts.convert(text="...", format="mp3")
 ```
 
-```python New (Async - Better)
-import asyncio
-from fishaudio import AsyncFishAudio
+Pass parameters directly to methods.
+</Accordion>
 
-async def batch_generate(texts):
-    async with AsyncFishAudio() as client:
-        tasks = [
-            client.tts.convert(text=text)
-            for text in texts
-        ]
-        return await asyncio.gather(*tasks)
+<Accordion title="ASR timestamps changed from seconds to milliseconds">
+**Before:** `segment.start` in seconds (e.g., 1.5)
 
-texts = ["First", "Second", "Third"]
-outputs = asyncio.run(batch_generate(texts))
-```
-</CodeGroup>
+**After:** `segment.start` in milliseconds (e.g., 1500)
 
-## Migration Checklist
+Convert: `seconds = segment.start / 1000`
+</Accordion>
 
-Use this checklist to track your migration progress:
+<Accordion title="Model terminology changed to Voice">
+- `session.create_model()` → `client.voices.create()`
+- `session.list_models()` → `client.voices.list()`
+- `session.get_model()` → `client.voices.get()`
 
-<Steps>
-<Step title="Preparation">
-- [ ] Review this migration guide completely
-- [ ] Identify all places using the legacy SDK
-- [ ] Create a test branch for migration
-- [ ] Ensure comprehensive test coverage
-</Step>
+Plus new methods: `client.voices.update()` and `client.voices.delete()`
+</Accordion>
+</AccordionGroup>
 
-<Step title="Installation">
-- [ ] Install new SDK: `pip install fishaudio`
-- [ ] Verify installation: `python -c "import fishaudio"`
-- [ ] Plan legacy SDK removal timing
-</Step>
-
-<Step title="Code Updates">
-- [ ] Replace all `fish_audio_sdk` imports
-- [ ] Update `Session` to `FishAudio` client
-- [ ] Migrate TTS calls to `client.tts.convert()`
-- [ ] Migrate ASR calls to `client.asr.transcribe()`
-- [ ] Update voice model operations to `client.voices.*`
-- [ ] Migrate WebSocket usage to `stream_websocket()`
-- [ ] Update exception handling
-- [ ] Fix timestamp unit conversions (seconds → milliseconds)
-</Step>
-
-<Step title="Testing">
-- [ ] Run existing test suite
-- [ ] Test authentication flow
-- [ ] Test TTS generation
-- [ ] Test voice cloning
-- [ ] Test ASR transcription
-- [ ] Test WebSocket streaming
-- [ ] Test error handling scenarios
-- [ ] Verify audio output quality
-</Step>
-
-<Step title="Optimization">
-- [ ] Consider using async client for concurrent operations
-- [ ] Leverage built-in utilities (`save`, `play`)
-- [ ] Update error recovery logic
-- [ ] Review and optimize retry mechanisms
-</Step>
-
-<Step title="Cleanup">
-- [ ] Remove legacy SDK: `pip uninstall fish-audio-sdk`
-- [ ] Remove legacy import statements
-- [ ] Update documentation and comments
-- [ ] Update environment variable names if needed
-</Step>
-</Steps>
-
-## Troubleshooting
+## Common Issues
 
 <AccordionGroup>
-<Accordion title="Import errors after migration">
-**Problem:** `ModuleNotFoundError: No module named 'fish_audio_sdk'`
-
-**Solution:**
+<Accordion title="ModuleNotFoundError: No module named 'fishaudio'">
+Upgrade the package:
 ```bash
-# Ensure old package is uninstalled
-pip uninstall fish-audio-sdk
-
-# Install new package
-pip install fishaudio
-
-# Verify
+pip install --upgrade fish-audio-sdk
 python -c "import fishaudio; print(fishaudio.__version__)"
 ```
 </Accordion>
 
-<Accordion title="Audio chunks not working">
-**Problem:** Code expects TTS to return chunks, but gets complete audio
-
-**Solution:**
+<Accordion title="Code expects TTS chunks but gets complete audio">
+The new `convert()` returns complete audio. Use `stream()` for chunks:
 ```python
-# Legacy pattern (no longer needed)
-audio = b""
-for chunk in session.tts(request):
-    audio += chunk
-
-# New pattern (audio is already complete)
-audio = client.tts.convert(text="...")
-
-# For streaming, use stream_websocket()
-audio_stream = client.tts.stream_websocket(text_chunks())
+audio_stream = client.tts.stream(text="...")
 for chunk in audio_stream:
-    # Process chunks
-    pass
+    process_chunk(chunk)
 ```
 </Accordion>
 
-<Accordion title="Timestamp conversion issues">
-**Problem:** Segment timestamps are off by 1000x
-
-**Solution:**
+<Accordion title="WebSocket requires empty text parameter">
+Remove the empty text. Just pass your generator:
 ```python
-# Legacy (seconds)
-segment.start  # e.g., 1.5 seconds
-
-# New (milliseconds)
-segment.start  # e.g., 1500 milliseconds
-
-# Convert to seconds if needed
-segment_seconds = segment.start / 1000
-```
-</Accordion>
-
-<Accordion title="Request objects not found">
-**Problem:** `TTSRequest` and `ASRRequest` no longer exist
-
-**Solution:**
-```python
-# Legacy
-request = TTSRequest(text="...", format="mp3")
-audio = session.tts(request)
-
-# New (pass parameters directly)
-audio = client.tts.convert(text="...", format="mp3")
-```
-</Accordion>
-
-<Accordion title="WebSocket empty text error">
-**Problem:** WebSocket streaming fails with empty text
-
-**Solution:**
-```python
-# Legacy (required empty text)
+# Before
 ws_session.tts(TTSRequest(text=""), text_stream())
 
-# New (no empty text needed)
+# After
 client.tts.stream_websocket(text_stream())
 ```
 </Accordion>
 
-<Accordion title="Exception handling not catching errors">
-**Problem:** `HttpCodeErr` not catching errors in new SDK
-
-**Solution:**
+<Accordion title="ASR timestamps are off by 1000x">
+New SDK uses milliseconds instead of seconds:
 ```python
-# Legacy
-from fish_audio_sdk.exceptions import HttpCodeErr
-
-try:
-    audio = session.tts(request)
-except HttpCodeErr as e:
-    if e.status_code == 429:
-        handle_rate_limit()
-
-# New
-from fishaudio.exceptions import RateLimitError, FishAudioError
-
-try:
-    audio = client.tts.convert(text="...")
-except RateLimitError as e:
-    handle_rate_limit()
-except FishAudioError:
-    handle_general_error()
-```
-</Accordion>
-
-<Accordion title="Authentication fails silently">
-**Problem:** API key not being read from environment
-
-**Solution:**
-```bash
-# Ensure environment variable is named correctly
-export FISH_API_KEY=your_key_here
-
-# Or use explicit initialization
-client = FishAudio(api_key="your_key_here")
-
-# Test authentication
-from fishaudio.exceptions import AuthenticationError
-
-try:
-    credits = client.account.get_credits()
-    print(f"Authenticated! Credits: {credits.credit}")
-except AuthenticationError:
-    print("Authentication failed")
+seconds = segment.start / 1000
 ```
 </Accordion>
 </AccordionGroup>
 
-## Getting Help
+## Next Steps
 
 <CardGroup cols={2}>
+<Card title="Python SDK Guide" icon="python" href="/developer-guide/sdk-guide/python">
+  Complete guide for the new SDK
+</Card>
+
 <Card title="API Reference" icon="book" href="/api-reference/sdk/python">
-Complete documentation for the new SDK
+  Detailed API documentation
 </Card>
 
-<Card title="Examples" icon="code" href="/developer-guide/sdk-guide/python">
-Comprehensive examples and guides
+<Card title="Text-to-Speech" icon="microphone" href="/developer-guide/sdk-guide/python/text-to-speech">
+  TTS features and examples
 </Card>
 
-<Card title="Discord Community" icon="discord" href="https://discord.gg/fishaudio">
-Get help from the community
-</Card>
-
-<Card title="GitHub Issues" icon="github" href="https://github.com/fishaudio/fish-audio-python">
-Report bugs or request features
+<Card title="Voice Cloning" icon="clone" href="/developer-guide/sdk-guide/python/voice-cloning">
+  Clone voices and manage models
 </Card>
 </CardGroup>
 
-## Next Steps
+## Need Help?
 
-After completing your migration:
-
-<Steps>
-<Step title="Explore New Features">
-Take advantage of features not available in the legacy SDK:
-- Built-in audio utilities (`save`, `play`)
-- Async client for better performance
-- Enhanced error handling
-- Voice management operations (update, delete)
-</Step>
-
-<Step title="Optimize Your Code">
-Improve your implementation with modern patterns:
-- Use async operations for concurrent requests
-- Leverage type hints for better IDE support
-- Implement proper error recovery
-</Step>
-
-<Step title="Stay Updated">
-- Watch the [GitHub repository](https://github.com/fishaudio/fish-audio-python) for updates
-- Join our [Discord community](https://discord.gg/fishaudio)
-- Check the [changelog](/developer-guide/getting-started/changelog) regularly
-</Step>
-</Steps>
+- [GitHub Repository](https://github.com/fishaudio/fish-audio-python) - Report issues or request features
+- [Discord Community](https://discord.gg/fishaudio) - Get help from the community
+- [PyPI Package](https://pypi.org/project/fish-audio-sdk/) - Package information
