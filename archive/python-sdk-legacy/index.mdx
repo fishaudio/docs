@@ -1,0 +1,71 @@
+---
+title: "Legacy"
+description: "Archived documentation for the legacy Session-based Python SDK"
+icon: "clock-rotate-left"
+---
+
+<Warning>
+This documentation is for the legacy Python SDK using the Session-based API. This API is deprecated.
+
+**Please migrate to the [new Python SDK](/developer-guide/sdk-guide/python)** which uses a modern client-based architecture.
+
+See the [migration guide](/archive/python-sdk-legacy/migration-guide) for help upgrading.
+</Warning>
+
+## About the Legacy SDK
+
+This archive contains documentation for the `fish_audio_sdk` module using the Session-based API. While this API still functions, it is no longer actively maintained and lacks the modern features available in the new SDK.
+
+### What's Different in the New SDK
+
+The new Python SDK (`fishaudio` module) offers:
+
+- **Modern client-based architecture** - More intuitive and consistent with modern Python libraries
+- **Full async support** - Native asyncio integration for better performance
+- **Better type safety** - Comprehensive type hints and better IDE support
+- **Improved error handling** - More detailed error messages and exception hierarchy
+- **Enhanced utilities** - Built-in audio playback, streaming, and file management
+- **Active maintenance** - Regular updates and new features
+
+### Migration Path
+
+We strongly recommend migrating to the new SDK. The [migration guide](/archive/python-sdk-legacy/migration-guide) provides:
+
+- Side-by-side code comparisons
+- Complete list of breaking changes
+- Common migration patterns
+- Troubleshooting tips
+
+## Migration
+
+<Card title="Migration Guide" icon="arrow-right" href="/archive/python-sdk-legacy/migration-guide">
+  Complete guide to upgrading from the legacy SDK to the new client-based API
+</Card>
+
+## Legacy Documentation Pages
+
+<CardGroup cols={2}>
+<Card title="Installation" icon="download" href="/archive/python-sdk-legacy/installation">
+  How to install the legacy SDK
+</Card>
+
+<Card title="Authentication" icon="key" href="/archive/python-sdk-legacy/authentication">
+  Session initialization and API keys
+</Card>
+
+<Card title="Text-to-Speech" icon="microphone" href="/archive/python-sdk-legacy/text-to-speech">
+  TTS with the Session-based API
+</Card>
+
+<Card title="Voice Cloning" icon="clone" href="/archive/python-sdk-legacy/voice-cloning">
+  Reference audio and voice models
+</Card>
+
+<Card title="Speech-to-Text" icon="waveform" href="/archive/python-sdk-legacy/speech-to-text">
+  ASR transcription with legacy API
+</Card>
+
+<Card title="WebSocket Streaming" icon="bolt" href="/archive/python-sdk-legacy/websocket">
+  Real-time streaming with WebSocketSession
+</Card>
+</CardGroup>

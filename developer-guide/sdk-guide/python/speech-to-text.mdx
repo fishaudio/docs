@@ -1,6 +1,6 @@
 ---
-title: "Speech to Text"
-description: "Convert audio to text with Fish Audio Python SDK"
+title: "Speech-to-Text"
+description: "Transcribe audio to text with the Fish Audio Python SDK"
 icon: "microphone-lines"
 ---
 
@@ -10,173 +10,153 @@ import Prerequisites from '/snippets/prerequisites.mdx';
 
 <Prerequisites />
 
-## Basic Usage
+## Basic Transcription
 
-Transcribe audio to text:
+Transcribe audio files to text with automatic language detection using [`asr.transcribe()`](/api-reference/sdk/python/resources#transcribe):
 
-```python
-from fish_audio_sdk import Session, ASRRequest
+<CodeGroup>
+```python Synchronous focus={6-10}
+from fishaudio import FishAudio
 
-session = Session("your_api_key")
+client = FishAudio()
 
-# Read audio file
+# Transcribe audio
 with open("audio.mp3", "rb") as f:
-    audio_data = f.read()
+    result = client.asr.transcribe(audio=f.read())
 
-# Transcribe
-response = session.asr(ASRRequest(
-    audio=audio_data
-))
-
-print(response.text)
-print(f"Duration: {response.duration}ms")
+print(f"Transcription: {result.text}")
+print(f"Duration: {result.duration}ms")
 ```
+
+```python Asynchronous focus={8-12}
+import asyncio
+from fishaudio import AsyncFishAudio
+
+async def main():
+    client = AsyncFishAudio()
+
+    # Transcribe audio
+    with open("audio.mp3", "rb") as f:
+        result = await client.asr.transcribe(audio=f.read())
+
+    print(f"Transcription: {result.text}")
+    print(f"Duration: {result.duration}ms")
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+The [`ASRResponse`](/api-reference/sdk/python/types#asrresponse-objects) object contains the full transcription and segment details.
 
 ## Language Specification
 
-Improve accuracy by specifying the language:
+Specify the language for more accurate transcription:
 
-```python
-# English transcription
-response = session.asr(ASRRequest(
-    audio=audio_data,
-    language="en"
-))
+<CodeGroup>
+```python Synchronous focus={5-11}
+from fishaudio import FishAudio
 
-# Chinese transcription
-response = session.asr(ASRRequest(
-    audio=audio_data,
-    language="zh"
-))
+client = FishAudio()
+
+# Specify language code
+with open("chinese_audio.mp3", "rb") as f:
+    result = client.asr.transcribe(
+        audio=f.read(),
+        language="zh"  # Chinese
+    )
+
+print(result.text)
 ```
 
-Common language codes: `en` (English), `zh` (Chinese), `es` (Spanish), `fr` (French), `de` (German), `ja` (Japanese), `ko` (Korean), `pt` (Portuguese)
+```python Asynchronous focus={7-13}
+import asyncio
+from fishaudio import AsyncFishAudio
+
+async def main():
+    client = AsyncFishAudio()
+
+    # Specify language code
+    with open("chinese_audio.mp3", "rb") as f:
+        result = await client.asr.transcribe(
+            audio=f.read(),
+            language="zh"  # Chinese
+        )
+
+    print(result.text)
+
+asyncio.run(main())
+```
+</CodeGroup>
 
 <Tip>
-Automatic language detection works well, but specifying the language improves accuracy and speed.
+Auto-detection works well for most cases, but specifying the language can improve accuracy, especially for languages with similar phonetics.
 </Tip>
 
-## Working with Segments
+## Segment Timestamps
 
-Get detailed timing for each segment:
+Access word-level or phrase-level timestamps:
 
-```python
-response = session.asr(ASRRequest(
-    audio=audio_data
-))
+<CodeGroup>
+```python Synchronous focus={5-14}
+from fishaudio import FishAudio
 
-# Full transcription
-print(response.text)
+client = FishAudio()
 
-# Segment details
-for segment in response.segments:
-    print(f"[{segment.start:.2f}s - {segment.end:.2f}s] {segment.text}")
+# Transcribe with segments
+with open("audio.mp3", "rb") as f:
+    result = client.asr.transcribe(audio=f.read())
+
+# Access full text
+print(f"Full text: {result.text}")
+
+# Iterate through segments
+for segment in result.segments:
+    print(f"[{segment.start}ms - {segment.end}ms]: {segment.text}")
 ```
 
-## Timestamps Control
+```python Asynchronous focus={7-16}
+import asyncio
+from fishaudio import AsyncFishAudio
 
-Control timestamp generation:
+async def main():
+    client = AsyncFishAudio()
 
-```python
-# Include timestamps (default)
-response = session.asr(ASRRequest(
-    audio=audio_data,
-    ignore_timestamps=False  # False = include timestamps
-))
+    # Transcribe with segments
+    with open("audio.mp3", "rb") as f:
+        result = await client.asr.transcribe(audio=f.read())
 
-# Skip timestamp processing for faster results
-response = session.asr(ASRRequest(
-    audio=audio_data,
-    ignore_timestamps=True   # True = skip timestamps
-))
+    # Access full text
+    print(f"Full text: {result.text}")
+
+    # Iterate through segments
+    for segment in result.segments:
+        print(f"[{segment.start}ms - {segment.end}ms]: {segment.text}")
+
+asyncio.run(main())
 ```
+</CodeGroup>
 
-<Note>
-`ignore_timestamps=False` (default) includes segment timestamps. Set to `True` to skip timestamp processing for faster transcription when you only need the text.
-</Note>
+## Next Steps
 
-## Audio Formats
+<CardGroup cols={2}>
+<Card title="Text-to-Speech" icon="microphone" href="/developer-guide/sdk-guide/python/text-to-speech">
+  Convert transcribed text back to speech
+</Card>
 
-Supported audio formats:
-- MP3 (recommended)
-- WAV
-- M4A
-- OGG
-- FLAC
-- AAC
+<Card title="Voice Cloning" icon="clone" href="/developer-guide/sdk-guide/python/voice-cloning">
+  Use transcribed audio for voice cloning
+</Card>
 
-File requirements:
-- Maximum size: 100MB
-- Maximum duration: 60 minutes
-- Sample rate: 16kHz or higher recommended
+<Card title="ASR API Reference" icon="book" href="/api-reference/sdk/python/resources#asr">
+  Complete ASR API documentation
+</Card>
 
-## Transcribing TTS Output
+<Card title="Best Practices" icon="lightbulb" href="/developer-guide/best-practices/">
+  Production tips and optimization
+</Card>
+</CardGroup>
 
-Transcribe generated speech:
+## Related Resources
 
-```python
-from fish_audio_sdk import TTSRequest
-
-# Generate speech
-audio_buffer = bytearray()
-for chunk in session.tts(TTSRequest(
-    text="Hello, this is a test"
-)):
-    audio_buffer.extend(chunk)
-
-# Transcribe it
-response = session.asr(ASRRequest(
-    audio=bytes(audio_buffer)
-))
-
-print(response.text)
-```
-
-## Error Handling
-
-Handle common errors:
-
-```python
-from fish_audio_sdk.exceptions import HttpCodeErr
-
-try:
-    response = session.asr(ASRRequest(
-        audio=audio_data
-    ))
-except HttpCodeErr as e:
-    if e.status_code == 413:
-        print("Audio file too large (max 100MB)")
-    elif e.status_code == 400:
-        print("Invalid audio format")
-    else:
-        raise e
-```
-
-## Response Structure
-
-The ASR response includes:
-
-| Field      | Type                | Description                    |
-|------------|---------------------|--------------------------------|
-| `text`     | str                 | Complete transcription         |
-| `duration` | float               | Audio duration (milliseconds)  |
-| `segments` | list[ASRSegment]    | Timestamped text segments      |
-
-Segment structure:
-| Field   | Type  | Description              |
-|---------|-------|--------------------------|
-| `text`  | str   | Segment text             |
-| `start` | float | Start time (seconds)     |
-| `end`   | float | End time (seconds)       |
-
-<Warning>
-Note the timing units: `duration` is in milliseconds while segment `start`/`end` are in seconds.
-</Warning>
-
-## Request Parameters
-
-| Parameter           | Type  | Description                | Default            |
-|---------------------|-------|----------------------------|--------------------|
-| `audio`             | bytes | Audio data to transcribe   | Required           |
-| `language`          | str   | Language code (e.g., "en") | None (auto-detect) |
-| `ignore_timestamps` | bool  | Skip timestamp processing  | False              |
+- [ASR Types Reference](/api-reference/sdk/python/types#asr) - ASR response data structures
+- [Error Handling](/api-reference/sdk/python/exceptions) - Exception types and handling

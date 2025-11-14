@@ -1,0 +1,186 @@
+---
+title: "Speech to Text"
+description: "Convert audio to text with Fish Audio Python SDK"
+icon: "microphone-lines"
+---
+
+import Prerequisites from '/snippets/prerequisites.mdx';
+
+<Warning>
+This documentation is for the legacy Python SDK. Please use the [new Python SDK](/developer-guide/sdk-guide/python) instead. See the [migration guide](/archive/python-sdk-legacy/migration-guide) for help upgrading.
+</Warning>
+
+## Prerequisites
+
+<Prerequisites />
+
+## Basic Usage
+
+Transcribe audio to text:
+
+```python
+from fish_audio_sdk import Session, ASRRequest
+
+session = Session("your_api_key")
+
+# Read audio file
+with open("audio.mp3", "rb") as f:
+    audio_data = f.read()
+
+# Transcribe
+response = session.asr(ASRRequest(
+    audio=audio_data
+))
+
+print(response.text)
+print(f"Duration: {response.duration}ms")
+```
+
+## Language Specification
+
+Improve accuracy by specifying the language:
+
+```python
+# English transcription
+response = session.asr(ASRRequest(
+    audio=audio_data,
+    language="en"
+))
+
+# Chinese transcription
+response = session.asr(ASRRequest(
+    audio=audio_data,
+    language="zh"
+))
+```
+
+Common language codes: `en` (English), `zh` (Chinese), `es` (Spanish), `fr` (French), `de` (German), `ja` (Japanese), `ko` (Korean), `pt` (Portuguese)
+
+<Tip>
+Automatic language detection works well, but specifying the language improves accuracy and speed.
+</Tip>
+
+## Working with Segments
+
+Get detailed timing for each segment:
+
+```python
+response = session.asr(ASRRequest(
+    audio=audio_data
+))
+
+# Full transcription
+print(response.text)
+
+# Segment details
+for segment in response.segments:
+    print(f"[{segment.start:.2f}s - {segment.end:.2f}s] {segment.text}")
+```
+
+## Timestamps Control
+
+Control timestamp generation:
+
+```python
+# Include timestamps (default)
+response = session.asr(ASRRequest(
+    audio=audio_data,
+    ignore_timestamps=False  # False = include timestamps
+))
+
+# Skip timestamp processing for faster results
+response = session.asr(ASRRequest(
+    audio=audio_data,
+    ignore_timestamps=True   # True = skip timestamps
+))
+```
+
+<Note>
+`ignore_timestamps=False` (default) includes segment timestamps. Set to `True` to skip timestamp processing for faster transcription when you only need the text.
+</Note>
+
+## Audio Formats
+
+Supported audio formats:
+- MP3 (recommended)
+- WAV
+- M4A
+- OGG
+- FLAC
+- AAC
+
+File requirements:
+- Maximum size: 100MB
+- Maximum duration: 60 minutes
+- Sample rate: 16kHz or higher recommended
+
+## Transcribing TTS Output
+
+Transcribe generated speech:
+
+```python
+from fish_audio_sdk import TTSRequest
+
+# Generate speech
+audio_buffer = bytearray()
+for chunk in session.tts(TTSRequest(
+    text="Hello, this is a test"
+)):
+    audio_buffer.extend(chunk)
+
+# Transcribe it
+response = session.asr(ASRRequest(
+    audio=bytes(audio_buffer)
+))
+
+print(response.text)
+```
+
+## Error Handling
+
+Handle common errors:
+
+```python
+from fish_audio_sdk.exceptions import HttpCodeErr
+
+try:
+    response = session.asr(ASRRequest(
+        audio=audio_data
+    ))
+except HttpCodeErr as e:
+    if e.status_code == 413:
+        print("Audio file too large (max 100MB)")
+    elif e.status_code == 400:
+        print("Invalid audio format")
+    else:
+        raise e
+```
+
+## Response Structure
+
+The ASR response includes:
+
+| Field      | Type                | Description                    |
+|------------|---------------------|--------------------------------|
+| `text`     | str                 | Complete transcription         |
+| `duration` | float               | Audio duration (milliseconds)  |
+| `segments` | list[ASRSegment]    | Timestamped text segments      |
+
+Segment structure:
+| Field   | Type  | Description              |
+|---------|-------|--------------------------|
+| `text`  | str   | Segment text             |
+| `start` | float | Start time (seconds)     |
+| `end`   | float | End time (seconds)       |
+
+<Warning>
+Note the timing units: `duration` is in milliseconds while segment `start`/`end` are in seconds.
+</Warning>
+
+## Request Parameters
+
+| Parameter           | Type  | Description                | Default            |
+|---------------------|-------|----------------------------|--------------------|
+| `audio`             | bytes | Audio data to transcribe   | Required           |
+| `language`          | str   | Language code (e.g., "en") | None (auto-detect) |
+| `ignore_timestamps` | bool  | Skip timestamp processing  | False              |

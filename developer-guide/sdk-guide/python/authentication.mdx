@@ -1,74 +1,129 @@
 ---
 title: "Authentication"
-description: "Manage API keys and sessions in the Fish Audio Python SDK"
+description: "Configure API authentication for the Fish Audio Python SDK"
 icon: "key"
 ---
 
 import Prerequisites from '/snippets/prerequisites.mdx';
 
-## Prerequisites
+## Get Your API Key
 
 <Prerequisites />
 
-## Session Initialization
+## Client Initialization
 
-Initialize a `Session` with your API key to start using the Fish Audio SDK:
-
-```python
-from fish_audio_sdk import Session
-
-# Initialize with your API key
-session = Session("your_api_key")
-```
-
-### Using Environment Variables
-
-For better security, store your API key in environment variables:
+Initialize the [`FishAudio`](/api-reference/sdk/python/client#fishaudio-objects) client with your API key:
 
 <Tabs>
-  <Tab title="Using os">
-    ```python
-    import os
-    from fish_audio_sdk import Session
-
-    session = Session(os.getenv("FISH_API_KEY"))
-    ```
-
-    Set the environment variable in your shell:
-    ```bash
-    export FISH_API_KEY=your_api_key_here
-    ```
-  </Tab>
-  <Tab title="Using dotenv">
-    ```python
-    import os
-    from dotenv import load_dotenv
-    from fish_audio_sdk import Session
-
-    # Load environment variables from .env file
-    load_dotenv()
-
-    session = Session(os.getenv("FISH_API_KEY"))
-    ```
-
-    Create a `.env` file in your project root:
-    ```bash
-    FISH_API_KEY=your_api_key_here
-    ```
-
-    <Tip>
-      The `dotenv` module comes from the [python-dotenv](https://pypi.org/project/python-dotenv/) package
-    </Tip>
-  </Tab>
-</Tabs>
-
-### Custom Endpoints
-
-If you need to use a proxy or custom endpoint:
+<Tab title="Environment Variable (Recommended)">
+The most secure approach is using environment variables:
 
 ```python
-session = Session(
-    apikey="your_api_key",
+from fishaudio import FishAudio
+
+# Automatically reads from FISH_API_KEY environment variable
+client = FishAudio()
+```
+
+Set the environment variable in your shell:
+
+```bash
+export FISH_API_KEY=your_api_key_here
+```
+
+Or create a `.env` file in your project root:
+
+```bash
+FISH_API_KEY=your_api_key_here
+```
+
+Then load it using `python-dotenv`:
+
+```python
+from dotenv import load_dotenv
+from fishaudio import FishAudio
+
+# Load environment variables from .env file
+load_dotenv()
+
+client = FishAudio()
+```
+
+<Tip>
+Using environment variables keeps your API key out of your codebase and makes it easy to use different keys for development and production.
+</Tip>
+</Tab>
+
+<Tab title="Direct API Key">
+Provide the API key directly when initializing the client:
+
+```python
+from fishaudio import FishAudio
+
+client = FishAudio(api_key="your_api_key_here")
+```
+
+<Warning>
+This approach is less secure. Never commit code containing your actual API key. Use this only for quick testing or when loading the key from a secure secrets manager.
+</Warning>
+</Tab>
+
+<Tab title="Custom Base URL">
+If you're using a proxy or custom endpoint:
+
+```python
+from fishaudio import FishAudio
+
+client = FishAudio(
+    api_key="your_api_key",
     base_url="https://your-proxy-domain.com"
 )
 ```
+
+This is useful for:
+- Corporate proxies
+- Development/staging environments
+- Self-hosted deployments
+</Tab>
+</Tabs>
+
+## Verifying Authentication
+
+Test your authentication by making a simple API call to check your account credits:
+
+```python focus={7-9}
+from fishaudio import FishAudio
+from fishaudio.exceptions import AuthenticationError
+
+try:
+    client = FishAudio()
+
+    # Check account credits (requires valid authentication)
+    credits = client.account.get_credits()
+    print(f"Authentication successful! Credits: {credits.credit}")
+
+except AuthenticationError:
+    print("Authentication failed. Check your API key.")
+```
+
+Handle [`AuthenticationError`](/api-reference/sdk/python/exceptions#authenticationerror-objects) when verifying authentication. The example uses [`get_credits()`](/api-reference/sdk/python/resources#get_credits) to verify the authentication works.
+
+## Next Steps
+
+<CardGroup cols={2}>
+<Card title="Text-to-Speech" icon="microphone" href="/developer-guide/sdk-guide/python/text-to-speech">
+  Generate speech with the authenticated client
+</Card>
+
+<Card title="Voice Cloning" icon="clone" href="/developer-guide/sdk-guide/python/voice-cloning">
+  Clone voices and create custom models
+</Card>
+
+<Card title="Account Management" icon="user" href="/api-reference/sdk/python/resources#account">
+  Check credits and manage your account
+</Card>
+
+<Card title="Error Handling" icon="triangle-exclamation" href="/api-reference/sdk/python/exceptions">
+  Handle authentication errors properly
+</Card>
+</CardGroup>

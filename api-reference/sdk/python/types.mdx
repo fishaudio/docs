@@ -62,6 +62,29 @@ class Prosody(BaseModel)
 
 Speech prosody settings (speed and volume).
 
+<a id="fishaudio.types.tts.Prosody.from_speed_override"></a>
+
+#### from\_speed\_override
+
+```python
+@classmethod
+def from_speed_override(cls,
+                        speed: float,
+                        base: Optional["Prosody"] = None) -> "Prosody"
+```
+
+Create Prosody with speed override, preserving volume from base.
+
+**Arguments**:
+
+- `speed` - Speed value to use
+- `base` - Base prosody to preserve volume from (if any)
+  
+
+**Returns**:
+
+  New Prosody instance with overridden speed
+
 <a id="fishaudio.types.tts.TTSConfig"></a>
 
 ## TTSConfig Objects

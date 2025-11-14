@@ -1,0 +1,216 @@
+---
+title: "Voice Cloning"
+description: "Clone voices using reference audio with Fish Audio Python SDK"
+icon: "clone"
+---
+
+import Prerequisites from '/snippets/prerequisites.mdx';
+
+<Warning>
+This documentation is for the legacy Python SDK. Please use the [new Python SDK](/developer-guide/sdk-guide/python) instead. See the [migration guide](/archive/python-sdk-legacy/migration-guide) for help upgrading.
+</Warning>
+
+## Prerequisites
+
+<Prerequisites />
+
+## Overview
+
+Voice cloning allows you to generate speech that matches a specific voice using reference audio. Fish Audio supports two approaches:
+- Using pre-trained voice models (reference_id)
+- Providing reference audio directly in your request
+
+<Tip>
+Use `reference_id` when you'll reuse a voice multiple times - it's faster and more efficient. Use `references` for one-off voice cloning or testing different voices without creating models.
+</Tip>
+
+## Using Reference Audio
+
+Clone a voice by providing reference audio directly:
+
+```python
+from fish_audio_sdk import Session, TTSRequest, ReferenceAudio
+
+session = Session("your_api_key")
+
+# Load reference audio
+with open("voice_sample.wav", "rb") as f:
+    audio_data = f.read()
+
+request = TTSRequest(
+    text="This will sound like the reference voice",
+    references=[
+        ReferenceAudio(
+            audio=audio_data,
+            text="Text spoken in the reference audio"
+        )
+    ]
+)
+
+# Generate speech
+with open("cloned_voice.mp3", "wb") as f:
+    for chunk in session.tts(request):
+        f.write(chunk)
+```
+
+## Multiple References
+
+Improve voice quality by providing multiple reference samples:
+
+```python
+references = []
+
+# Add multiple voice samples
+for i in range(3):
+    with open(f"sample_{i}.wav", "rb") as f:
+        references.append(ReferenceAudio(
+            audio=f.read(),
+            text=f"Text from sample {i}"
+        ))
+
+request = TTSRequest(
+    text="Better voice quality with multiple references",
+    references=references
+)
+```
+
+## Creating Voice Models
+
+For repeated use, create a persistent voice model:
+
+```python
+# Create a voice model from samples
+voices = []
+texts = []
+
+for i in range(3):
+    with open(f"voice_{i}.wav", "rb") as f:
+        voices.append(f.read())
+        texts.append(f"Sample text {i}")
+
+model = session.create_model(
+    title="My Custom Voice",
+    description="Voice cloned from samples",
+    voices=voices,
+    texts=texts,
+    visibility="private"  # or "public", "unlist"
+)
+
+print(f"Created model: {model.id}")
+
+# Use the model
+request = TTSRequest(
+    text="Using my saved voice model",
+    reference_id=model.id
+)
+```
+
+## Best Practices
+
+### Audio Quality
+
+For best results, reference audio should:
+- Be 10-30 seconds long per sample
+- Have clear speech without background noise
+- Match the language you'll generate
+- Include varied intonation and emotion
+
+### Sample Text
+
+The text parameter in ReferenceAudio should:
+- Match exactly what's spoken in the audio
+- Include punctuation for proper prosody
+- Be in the same language as generation
+
+### Performance Tips
+
+1. **Pre-upload models** for frequently used voices
+2. **Use 2-3 reference samples** for optimal quality
+3. **Keep samples under 30 seconds** each
+4. **Normalize audio levels** before uploading
+
+## Audio Format Requirements
+
+Supported formats for reference audio:
+- WAV (recommended)
+- MP3
+- M4A
+- Other common audio formats
+
+Sample rates:
+- 16kHz minimum
+- 44.1kHz recommended
+- Mono or stereo (converted to mono)
+
+## Example: Voice Bank
+
+Build a library of cloned voices:
+
+```python
+def create_voice_bank():
+    voice_bank = {}
+
+    # List existing models
+    models = session.list_models(self_only=True)
+    for model in models.items:
+        voice_bank[model.title] = model.id
+
+    return voice_bank
+
+def generate_with_voice(text, voice_name):
+    voice_bank = create_voice_bank()
+
+    if voice_name not in voice_bank:
+        print(f"Voice '{voice_name}' not found")
+        return
+
+    request = TTSRequest(
+        text=text,
+        reference_id=voice_bank[voice_name]
+    )
+
+    with open(f"{voice_name}_output.mp3", "wb") as f:
+        for chunk in session.tts(request):
+            f.write(chunk)
+```
+
+## Combining with Emotions
+
+Add emotions to cloned voices:
+
+```python
+request = TTSRequest(
+    text="(happy) This is exciting news! (calm) Let me explain the details.",
+    reference_id="your_model_id"
+)
+
+# Or with direct references
+request = TTSRequest(
+    text="(excited) Amazing discovery!",
+    references=[reference_audio]
+)
+```
+
+## Error Handling
+
+Common issues and solutions:
+
+```python
+try:
+    request = TTSRequest(
+        text="Test speech",
+        references=[reference_audio]
+    )
+
+    for chunk in session.tts(request):
+        # Process audio
+        pass
+
+except Exception as e:
+    if "Invalid audio format" in str(e):
+        print("Check audio format - use WAV or MP3")
+    elif "Audio too short" in str(e):
+        print("Reference audio should be at least 10 seconds")
+    else:
+        raise e
+```
