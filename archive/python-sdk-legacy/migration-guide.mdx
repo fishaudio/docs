@@ -46,12 +46,17 @@ This guide helps you migrate from the legacy `fish_audio_sdk` (Session-based API
 ## Quick Migration
 
 <Steps>
-<Step title="Upgrade the package">
+<Step title="Uninstall and reinstall the package">
 ```bash
-pip install --upgrade fish-audio-sdk
+pip uninstall fish-audio-sdk
+pip install fish-audio-sdk
 ```
 
 The package name stays the same, but the import changes from `fish_audio_sdk` to `fishaudio`.
+
+You can still keep using the `fish_audio_sdk` package if you'd like though. Just be aware that it will not receive any new features or updates.
+
+Since this is a versioning jump from `v2025.6.3` to `v1.0.0`, you may need to pin the version explicitly with `fish-audio-sdk==1.0.0`.
 </Step>
 
 <Step title="Update imports">
