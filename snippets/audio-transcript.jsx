@@ -90,7 +90,7 @@ export const AudioTranscript = ({ voices = [] }) => {
 
       {/* Audio Player */}
       <div className="px-3 py-1.5 bg-card">
-        <audio ref={audioRef} src={currentVoice?.src} preload="metadata" />
+        <audio ref={audioRef} src={currentVoice?.url} preload="metadata" />
 
         <div className="flex items-center gap-2">
           {/* Play/Pause Button */}
