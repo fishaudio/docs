@@ -106,7 +106,7 @@ export const AudioTranscript = ({ voices = [] }) => {
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden z-50">
+              <div className="absolute right-0 mt-1 w-auto bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden z-50">
                 {voices.map((voice, index) => (
                   <button
                     key={index}
@@ -114,11 +114,18 @@ export const AudioTranscript = ({ voices = [] }) => {
                       setSelectedVoice(index);
                       setIsDropdownOpen(false);
                     }}
-                    className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
+                    className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-2 ${
                       index === selectedVoice ? 'bg-gray-100 dark:bg-gray-800 font-medium' : ''
                     }`}
                   >
-                    {voice.name}
+                    {voice.id && (
+                      <img
+                        src={`https://public-platform.r2.fish.audio/coverimage/${voice.id}`}
+                        alt={voice.name}
+                        className="w-5 h-5 rounded-full m-0 flex-shrink-0 object-cover"
+                      />
+                    )}
+                    <span className="flex-1 whitespace-nowrap">{voice.name}</span>
                   </button>
                 ))}
               </div>
