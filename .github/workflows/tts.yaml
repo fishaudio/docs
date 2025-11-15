@@ -33,5 +33,6 @@ jobs:
           body: 'Auto-generated TTS audio for updated documentation'
           branch: chore/tts-updates
           delete-branch: true
+          token: ${{ secrets.BOT_TOKEN }}
           author: ${{ vars.BOT_NAME }} <${{ vars.BOT_EMAIL }}>
           committer: ${{ vars.BOT_NAME }} <${{ vars.BOT_EMAIL }}>
