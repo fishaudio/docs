@@ -5,7 +5,9 @@ export const AudioTranscript = ({ voices = [] }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const audioRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -25,6 +27,23 @@ export const AudioTranscript = ({ voices = [] }) => {
       audio.removeEventListener('ended', handleEnded);
     };
   }, []);
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   // Reset audio when voice changes
   useEffect(() => {
@@ -61,30 +80,52 @@ export const AudioTranscript = ({ voices = [] }) => {
   const currentVoice = voices[selectedVoice];
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-card border-gray-200 dark:border-gray-800">
+    <div className="border rounded-lg bg-card border-gray-200 dark:border-gray-800">
       {/* Header with voice selector */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-muted border-b border-gray-200 dark:border-gray-800">
+      <div className="grid grid-cols-3 items-center px-3 py-1.5 bg-muted border-b border-gray-200 dark:border-gray-800">
         <span className="text-xs font-medium">Listen to Page</span>
 
-        <span className="text-xs font-semibold text-muted-foreground">Powered by Fish Audio S1</span>
+        <span className="text-xs font-semibold text-muted-foreground text-center">Powered by Fish Audio S1</span>
 
         {voices.length > 1 ? (
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">Voice:</span>
-            <select
-              value={selectedVoice}
-              onChange={(e) => setSelectedVoice(Number(e.target.value))}
-              className="text-xs px-1.5 py-0.5 rounded border bg-background border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-primary"
+          <div className="relative justify-self-end" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer text-xs"
             >
-              {voices.map((voice, index) => (
-                <option key={index} value={index}>
-                  {voice.name}
-                </option>
-              ))}
-            </select>
+              <span className="text-muted-foreground">Voice:</span>
+              <span className="font-medium">{voices[selectedVoice]?.name}</span>
+              <svg
+                className={`w-3 h-3 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden z-50">
+                {voices.map((voice, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      setSelectedVoice(index);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
+                      index === selectedVoice ? 'bg-gray-100 dark:bg-gray-800 font-medium' : ''
+                    }`}
+                  >
+                    {voice.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
-          <div className="w-[80px]" />
+          <div className="justify-self-end" />
         )}
       </div>
 

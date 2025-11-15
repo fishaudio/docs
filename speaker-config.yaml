@@ -1,0 +1,15 @@
+# speaker-config.yaml
+# Configuration file for speak-mintlify TTS generation
+#
+# S3 credentials and API keys should go in .env or environment variables
+
+# Voice Configuration (map of voice ID -> display name)
+voices:
+  8ef4a238714b45718ce04243307c57a7: E-girl
+  802e3bc2b27e49c2995d23ef70e6ac89: Energetic Male
+  # Add more voices as needed
+
+# Component Configuration (optional)
+component:
+  import: /snippets/audio-transcript.jsx
+  name: AudioTranscript
