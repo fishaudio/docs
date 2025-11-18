@@ -503,16 +503,18 @@ For chunk-by-chunk processing, use stream() instead.
 #### stream\_websocket
 
 ```python
-def stream_websocket(text_stream: Iterable[Union[str, TextEvent, FlushEvent]],
-                     *,
-                     reference_id: Optional[str] = None,
-                     references: Optional[List[ReferenceAudio]] = None,
-                     format: Optional[AudioFormat] = None,
-                     latency: Optional[LatencyMode] = None,
-                     speed: Optional[float] = None,
-                     config: TTSConfig = TTSConfig(),
-                     model: Model = "s1",
-                     max_workers: int = 10) -> Iterator[bytes]
+def stream_websocket(
+        text_stream: Iterable[Union[str, TextEvent, FlushEvent]],
+        *,
+        reference_id: Optional[str] = None,
+        references: Optional[List[ReferenceAudio]] = None,
+        format: Optional[AudioFormat] = None,
+        latency: Optional[LatencyMode] = None,
+        speed: Optional[float] = None,
+        config: TTSConfig = TTSConfig(),
+        model: Model = "s1",
+        max_workers: int = 10,
+        ws_options: Optional[WebSocketOptions] = None) -> Iterator[bytes]
 ```
 
 Stream text and receive audio in real-time via WebSocket.
@@ -530,6 +532,9 @@ Perfect for conversational AI, live captioning, and streaming applications.
 - `config` - TTS configuration (audio settings, voice, model parameters)
 - `model` - TTS model to use
 - `max_workers` - ThreadPoolExecutor workers for concurrent sender
+- `ws_options` - WebSocket connection options for configuring timeouts, message size limits, etc.
+  Useful for long-running generations that may exceed default timeout values.
+  See WebSocketOptions class for available parameters.
   
 
 **Returns**:
@@ -540,7 +545,7 @@ Perfect for conversational AI, live captioning, and streaming applications.
 **Example**:
 
     ```python
-    from fishaudio import FishAudio, TTSConfig, ReferenceAudio
+    from fishaudio import FishAudio, TTSConfig, ReferenceAudio, WebSocketOptions
 
     client = FishAudio(api_key="...")
 
@@ -573,6 +578,16 @@ Perfect for conversational AI, live captioning, and streaming applications.
         for audio_chunk in client.tts.stream_websocket(
             text_generator(),
             references=[ReferenceAudio(audio=audio_bytes, text="sample")]
+        ):
+            f.write(audio_chunk)
+
+    # With WebSocket options for long-running generations
+    # Useful if you're generating very long responses that may take >20 seconds
+    ws_options = WebSocketOptions(keepalive_ping_timeout_seconds=60.0)
+    with open("output.mp3", "wb") as f:
+        for audio_chunk in client.tts.stream_websocket(
+            text_generator(),
+            ws_options=ws_options
         ):
             f.write(audio_chunk)
 
@@ -723,7 +738,8 @@ async def stream_websocket(text_stream: AsyncIterable[Union[str, TextEvent,
                            latency: Optional[LatencyMode] = None,
                            speed: Optional[float] = None,
                            config: TTSConfig = TTSConfig(),
-                           model: Model = "s1")
+                           model: Model = "s1",
+                           ws_options: Optional[WebSocketOptions] = None)
 ```
 
 Stream text and receive audio in real-time via WebSocket (async).
@@ -740,6 +756,9 @@ Perfect for conversational AI, live captioning, and streaming applications.
 - `speed` - Speech speed multiplier, e.g. 1.5 for 1.5x speed (overrides config.prosody.speed if provided)
 - `config` - TTS configuration (audio settings, voice, model parameters)
 - `model` - TTS model to use
+- `ws_options` - WebSocket connection options for configuring timeouts, message size limits, etc.
+  Useful for long-running generations that may exceed default timeout values.
+  See WebSocketOptions class for available parameters.
   
 
 **Returns**:
@@ -750,7 +769,7 @@ Perfect for conversational AI, live captioning, and streaming applications.
 **Example**:
 
     ```python
-    from fishaudio import AsyncFishAudio, TTSConfig, ReferenceAudio
+    from fishaudio import AsyncFishAudio, TTSConfig, ReferenceAudio, WebSocketOptions
 
     client = AsyncFishAudio(api_key="...")
 
@@ -783,6 +802,16 @@ Perfect for conversational AI, live captioning, and streaming applications.
         async for audio_chunk in client.tts.stream_websocket(
             text_generator(),
             references=[ReferenceAudio(audio=audio_bytes, text="sample")]
+        ):
+            await f.write(audio_chunk)
+
+    # With WebSocket options for long-running generations
+    # Useful if you're generating very long responses that may take >20 seconds
+    ws_options = WebSocketOptions(keepalive_ping_timeout_seconds=60.0)
+    async with aiofiles.open("output.mp3", "wb") as f:
+        async for audio_chunk in client.tts.stream_websocket(
+            text_generator(),
+            ws_options=ws_options
         ):
             await f.write(audio_chunk)
 
