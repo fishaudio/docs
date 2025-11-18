@@ -452,6 +452,271 @@
         ]
       }
     },
+    "/v1/tts/with_timestamp": {
+      "post": {
+        "summary": "Text to Speech with Timestamp",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "model",
+            "description": "Specify which TTS model to use. We recommend `s1`",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "s1",
+              "enum": [
+                "s1",
+                "speech-1.6",
+                "speech-1.5"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/msgpack": {
+              "schema": {
+                "properties": {
+                  "text": {
+                    "description": "Text to be converted to speech",
+                    "title": "Text",
+                    "type": "string"
+                  },
+                  "temperature": {
+                    "description": "Controls randomness in the speech generation. Higher values (e.g., 1.0) make the output more random, while lower values (e.g., 0.1) make it more deterministic. We recommend `0.9` for `s1` model",
+                    "title": "Temperature",
+                    "type": "number",
+                    "default": 0.9,
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                  },
+                  "top_p": {
+                    "description": "Controls diversity via nucleus sampling. Lower values (e.g., 0.1) make the output more focused, while higher values (e.g., 1.0) allow more diversity.  We recommend `0.9` for `s1` model",
+                    "title": "Top P",
+                    "type": "number",
+                    "default": 0.9,
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                  },
+                  "references": {
+                    "anyOf": [
+                      {
+                        "items": {
+                          "$ref": "#/components/schemas/ReferenceAudio"
+                        },
+                        "type": "array"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "References to be used for the speech, this requires MessagePack serialization, this will override reference_voices and reference_texts",
+                    "title": "References"
+                  },
+                  "reference_id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "ID of the reference model o be used for the speech",
+                    "title": "Reference Id"
+                  },
+                  "prosody": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/ProsodyControl"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Prosody to be used for the speech"
+                  },
+                  "chunk_length": {
+                    "default": 200,
+                    "description": "Chunk length to be used for the speech",
+                    "maximum": 300,
+                    "minimum": 100,
+                    "title": "Chunk Length",
+                    "type": "integer"
+                  },
+                  "normalize": {
+                    "default": true,
+                    "description": "Whether to normalize the speech, this will reduce the latency but may reduce performance on numbers and dates",
+                    "title": "Normalize",
+                    "type": "boolean"
+                  },
+                  "format": {
+                    "default": "mp3",
+                    "description": "Format to be used for the speech",
+                    "enum": [
+                      "wav",
+                      "pcm",
+                      "mp3",
+                      "opus"
+                    ],
+                    "title": "Format",
+                    "type": "string"
+                  },
+                  "sample_rate": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Sample rate to be used for the speech",
+                    "title": "Sample Rate"
+                  },
+                  "mp3_bitrate": {
+                    "default": 128,
+                    "description": "MP3 Bitrate to be used for the speech",
+                    "enum": [
+                      64,
+                      128,
+                      192
+                    ],
+                    "title": "Mp3 Bitrate",
+                    "type": "integer"
+                  },
+                  "opus_bitrate": {
+                    "default": 32,
+                    "description": "Opus Bitrate to be used for the speech",
+                    "enum": [
+                      -1000,
+                      24,
+                      32,
+                      48,
+                      64
+                    ],
+                    "title": "Opus Bitrate",
+                    "type": "integer"
+                  },
+                  "latency": {
+                    "default": "normal",
+                    "description": "Latency to be used for the speech, balanced will reduce the latency but may lead to performance degradation",
+                    "enum": [
+                      "normal",
+                      "balanced"
+                    ],
+                    "title": "Latency",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TTSWithTimestampResponseData"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "No payment -- see charging schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "headers": {
+              "RATELIMIT-LIMIT-CONCURRENCY": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Concurrency rate limit"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "OpenAPI v1"
+        ]
+      }
+    },
     "/v1/asr": {
       "post": {
         "summary": "Speech to Text",
@@ -2860,6 +3125,65 @@
         ],
         "title": "SampleEntity",
         "type": "object"
+      },
+      "ErrorMessage": {
+        "type": "object",
+        "required": [
+          "status",
+          "message"
+        ],
+        "properties": {
+          "status": {
+            "type": "integer",
+            "format": "uint16"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "TimestampSegment": {
+        "type": "object",
+        "required": [
+          "text",
+          "start",
+          "end"
+        ],
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "start": {
+            "type": "number",
+            "format": "double"
+          },
+          "end": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "TTSWithTimestampResponseData": {
+        "type": "object",
+        "required": [
+          "audio_base64",
+          "text",
+          "alignment"
+        ],
+        "properties": {
+          "audio_base64": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "alignment": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimestampSegment"
+            }
+          }
+        }
       }
     }
   }
