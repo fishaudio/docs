@@ -52,22 +52,26 @@ channels:
         $ref: '#/components/messages/AudioEvent'
       finishEvent:
         $ref: '#/components/messages/FinishEvent'
+    bindings:
+      ws:
+        headers:
+          type: object
+          required:
+            - model
+          properties:
+            model:
+              type: string
+              enum:
+                - speech-1.5
+                - speech-1.6
+                - s1
+              description: TTS model to use for this session
     description: |
       Real-time TTS streaming channel. Clients send text chunks and receive audio chunks concurrently.
 
       ## Connection Headers
-      - `Authorization: Bearer <api_key>` - Required for authentication
-      - `model: <model_name>` - Required to specify which TTS model to use
-
-      ## WebSocket Options
-
-      When connecting via supported clients (e.g., httpx-ws), you can configure:
-      - `keepalive_ping_timeout_seconds` (default: 20) - Max delay waiting for ping response
-      - `keepalive_ping_interval_seconds` (default: 20) - Interval between keepalive pings
-      - `max_message_size_bytes` (default: 65536) - Maximum message size in bytes
-      - `queue_size` (default: 512) - Receive message queue size
-
-      For long-running generations (>20 seconds), increase timeout values to prevent disconnection.
+      - `Authorization: Bearer <api_key>` - Required for authentication (see security section)
+      - `model: <model_name>` - Required to specify which TTS model to use (see bindings)
 
 operations:
   receiveText:
@@ -127,7 +131,8 @@ components:
         This must be the first message sent after connecting. It contains all the
         configuration for voice, audio format, and generation parameters.
       examples:
-        - payload:
+        - name: Basic Configuration
+          payload:
             event: start
             request:
               text: ""
@@ -135,6 +140,40 @@ components:
               chunk_length: 200
               reference_id: "802e3bc2b27e49c2995d23ef70e6ac89"
               latency: balanced
+        - name: Full Configuration with All Options
+          payload:
+            event: start
+            request:
+              text: ""
+              chunk_length: 200
+              format: mp3
+              sample_rate: 44100
+              mp3_bitrate: 192
+              opus_bitrate: 64
+              references: []
+              reference_id: "802e3bc2b27e49c2995d23ef70e6ac89"
+              normalize: true
+              latency: balanced
+              prosody:
+                speed: 1.2
+                volume: 2.0
+              top_p: 0.7
+              temperature: 0.7
+        - name: Voice Cloning with Reference Audio
+          payload:
+            event: start
+            request:
+              text: ""
+              format: wav
+              chunk_length: 250
+              references:
+                - audio: <binary audio data>
+                  text: "This is the reference audio transcript."
+              normalize: true
+              latency: normal
+              prosody:
+                speed: 1.0
+                volume: 0.0
 
     TextEvent:
       name: TextEvent
