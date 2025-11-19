@@ -1,0 +1,17 @@
+---
+asyncapi: "../../asyncapi.yml ttsLive"
+title: 'WebSocket TTS Streaming'
+description: 'Real-time text-to-speech streaming via WebSocket'
+icon: "webhook"
+iconType: "solid"
+---
+
+<Note>
+The WebSocket TTS endpoint enables bidirectional streaming for low-latency text-to-speech generation with MessagePack serialization.
+</Note>
+
+<Warning>
+For long-running generations (>20 seconds), increase WebSocket timeout values to prevent disconnection:
+- `keepalive_ping_timeout_seconds` (default: 20)
+- `keepalive_ping_interval_seconds` (default: 20)
+</Warning>
