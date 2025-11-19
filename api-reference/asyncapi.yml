@@ -70,8 +70,8 @@ channels:
       For long-running generations (>20 seconds), increase timeout values to prevent disconnection.
 
 operations:
-  sendText:
-    action: send
+  receiveText:
+    action: receive
     channel:
       $ref: '#/channels/ttsLive'
     messages:
@@ -80,28 +80,28 @@ operations:
       - $ref: '#/channels/ttsLive/messages/flushEvent'
       - $ref: '#/channels/ttsLive/messages/closeEvent'
     description: |
-      Send text and control events to the TTS engine.
+      Server receives text and control events from the client.
 
       **Event Sequence:**
-      1. Send StartEvent once at the beginning with TTS configuration
-      2. Send TextEvent for each text chunk you want to synthesize
-      3. Optionally send FlushEvent to force immediate synthesis of buffered text
-      4. Send CloseEvent when all text has been sent
+      1. Client sends StartEvent once at the beginning with TTS configuration
+      2. Client sends TextEvent for each text chunk to synthesize
+      3. Client optionally sends FlushEvent to force immediate synthesis of buffered text
+      4. Client sends CloseEvent when all text has been sent
 
-  receiveAudio:
-    action: receive
+  sendAudio:
+    action: send
     channel:
       $ref: '#/channels/ttsLive'
     messages:
       - $ref: '#/channels/ttsLive/messages/audioEvent'
       - $ref: '#/channels/ttsLive/messages/finishEvent'
     description: |
-      Receive audio chunks and completion events from the TTS engine.
+      Server sends audio chunks and completion events to the client.
 
       **Event Flow:**
-      - AudioEvent messages arrive as audio is generated (multiple times)
-      - FinishEvent arrives once when synthesis completes
-      - Unknown events should be ignored to support future protocol extensions
+      - Server sends AudioEvent messages as audio is generated (multiple times)
+      - Server sends FinishEvent once when synthesis completes
+      - Clients should ignore unknown events to support future protocol extensions
 
 components:
   messages:
