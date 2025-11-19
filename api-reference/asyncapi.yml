@@ -1,0 +1,475 @@
+asyncapi: 3.0.0
+
+info:
+  title: Fish Audio WebSocket TTS API
+  version: 1.0.0
+  description: |
+    Real-time Text-to-Speech streaming via WebSocket using MessagePack serialization.
+
+    ## Protocol Overview
+
+    The WebSocket TTS endpoint enables bidirectional streaming for low-latency text-to-speech generation:
+
+    1. **Client** connects to `/v1/tts/live` with model and auth headers
+    2. **Client** sends StartEvent with TTS configuration
+    3. **Client** streams TextEvent messages with text chunks
+    4. **Server** streams back AudioEvent messages with generated audio
+    5. **Client** sends CloseEvent to signal completion
+    6. **Server** sends FinishEvent and closes connection
+
+    ## Message Serialization
+
+    All messages are serialized using **MessagePack** (binary format) before sending over the WebSocket.
+
+    ## Common Use Cases
+
+    - Conversational AI with streaming responses
+    - Live captioning and narration
+    - Real-time dubbing and voice-overs
+    - Interactive voice applications
+
+servers:
+  production:
+    host: api.fish.audio
+    protocol: wss
+    description: Fish Audio production WebSocket server
+    security:
+      - $ref: '#/components/securitySchemes/bearerAuth'
+
+channels:
+  ttsLive:
+    address: /v1/tts/live
+    messages:
+      startEvent:
+        $ref: '#/components/messages/StartEvent'
+      textEvent:
+        $ref: '#/components/messages/TextEvent'
+      flushEvent:
+        $ref: '#/components/messages/FlushEvent'
+      closeEvent:
+        $ref: '#/components/messages/CloseEvent'
+      audioEvent:
+        $ref: '#/components/messages/AudioEvent'
+      finishEvent:
+        $ref: '#/components/messages/FinishEvent'
+    bindings:
+      ws:
+        headers:
+          type: object
+          required:
+            - model
+          properties:
+            model:
+              type: string
+              enum:
+                - speech-1.5
+                - speech-1.6
+                - s1
+              description: TTS model to use for this session
+    description: |
+      Real-time TTS streaming channel. Clients send text chunks and receive audio chunks concurrently.
+
+      ## Connection Headers
+      - `Authorization: Bearer <api_key>` - Required for authentication (see security section)
+      - `model: <model_name>` - Required to specify which TTS model to use (see bindings)
+
+operations:
+  receiveText:
+    action: receive
+    channel:
+      $ref: '#/channels/ttsLive'
+    messages:
+      - $ref: '#/channels/ttsLive/messages/startEvent'
+      - $ref: '#/channels/ttsLive/messages/textEvent'
+      - $ref: '#/channels/ttsLive/messages/flushEvent'
+      - $ref: '#/channels/ttsLive/messages/closeEvent'
+    description: |
+      Server receives text and control events from the client.
+
+      **Event Sequence:**
+      1. Client sends StartEvent once at the beginning with TTS configuration
+      2. Client sends TextEvent for each text chunk to synthesize
+      3. Client optionally sends FlushEvent to force immediate synthesis of buffered text
+      4. Client sends CloseEvent when all text has been sent
+
+  sendAudio:
+    action: send
+    channel:
+      $ref: '#/channels/ttsLive'
+    messages:
+      - $ref: '#/channels/ttsLive/messages/audioEvent'
+      - $ref: '#/channels/ttsLive/messages/finishEvent'
+    description: |
+      Server sends audio chunks and completion events to the client.
+
+      **Event Flow:**
+      - Server sends AudioEvent messages as audio is generated (multiple times)
+      - Server sends FinishEvent once when synthesis completes
+      - Clients should ignore unknown events to support future protocol extensions
+
+components:
+  messages:
+    StartEvent:
+      name: StartEvent
+      title: Start TTS Session
+      contentType: application/msgpack
+      payload:
+        type: object
+        required:
+          - event
+          - request
+        properties:
+          event:
+            type: string
+            const: start
+            description: Event type identifier
+          request:
+            $ref: '#/components/schemas/TTSRequest'
+      description: |
+        Initiates a TTS streaming session with configuration.
+
+        This must be the first message sent after connecting. It contains all the
+        configuration for voice, audio format, and generation parameters.
+      examples:
+        - name: Basic Configuration
+          payload:
+            event: start
+            request:
+              text: ""
+              format: mp3
+              chunk_length: 200
+              reference_id: "802e3bc2b27e49c2995d23ef70e6ac89"
+              latency: balanced
+        - name: Full Configuration with All Options
+          payload:
+            event: start
+            request:
+              text: ""
+              chunk_length: 200
+              format: mp3
+              sample_rate: 44100
+              mp3_bitrate: 192
+              opus_bitrate: 64
+              references: []
+              reference_id: "802e3bc2b27e49c2995d23ef70e6ac89"
+              normalize: true
+              latency: balanced
+              prosody:
+                speed: 1.2
+                volume: 2.0
+              top_p: 0.7
+              temperature: 0.7
+        - name: Voice Cloning with Reference Audio
+          payload:
+            event: start
+            request:
+              text: ""
+              format: wav
+              chunk_length: 250
+              references:
+                - audio: <binary audio data>
+                  text: "This is the reference audio transcript."
+              normalize: true
+              latency: normal
+              prosody:
+                speed: 1.0
+                volume: 0.0
+
+    TextEvent:
+      name: TextEvent
+      title: Send Text Chunk
+      contentType: application/msgpack
+      payload:
+        type: object
+        required:
+          - event
+          - text
+        properties:
+          event:
+            type: string
+            const: text
+            description: Event type identifier
+          text:
+            type: string
+            description: Text chunk to synthesize
+      description: |
+        Sends a chunk of text for synthesis.
+
+        You can send multiple TextEvent messages in sequence. The server will buffer
+        and synthesize text according to the chunk_length parameter from StartEvent.
+      examples:
+        - payload:
+            event: text
+            text: "Hello, this is streaming text. "
+
+    FlushEvent:
+      name: FlushEvent
+      title: Flush Buffered Text
+      contentType: application/msgpack
+      payload:
+        type: object
+        required:
+          - event
+        properties:
+          event:
+            type: string
+            const: flush
+            description: Event type identifier
+      description: |
+        Forces immediate synthesis of all buffered text.
+
+        Use this when you want audio generated immediately without waiting for more
+        text or for the buffer to fill up. Useful for ensuring low latency in
+        interactive applications.
+      examples:
+        - payload:
+            event: flush
+
+    CloseEvent:
+      name: CloseEvent
+      title: End TTS Session
+      contentType: application/msgpack
+      payload:
+        type: object
+        required:
+          - event
+        properties:
+          event:
+            type: string
+            const: stop
+            description: Event type identifier (note 'stop', not 'close')
+      description: |
+        Signals the end of the text stream.
+
+        After sending this event, the server will finish synthesizing any remaining
+        buffered text and send a FinishEvent before closing the connection.
+      examples:
+        - payload:
+            event: stop
+
+    AudioEvent:
+      name: AudioEvent
+      title: Audio Chunk
+      contentType: application/msgpack
+      payload:
+        type: object
+        required:
+          - event
+          - audio
+        properties:
+          event:
+            type: string
+            const: audio
+            description: Event type identifier
+          audio:
+            type: string
+            format: binary
+            description: Audio bytes in the format specified in StartEvent (mp3, wav, pcm, or opus)
+      description: |
+        Contains generated audio bytes.
+
+        You will receive multiple AudioEvent messages as audio is generated. Each
+        message contains a chunk of audio in the format you specified. Concatenate
+        all chunks to get the complete audio.
+      examples:
+        - payload:
+            event: audio
+            audio: <binary audio data>
+
+    FinishEvent:
+      name: FinishEvent
+      title: Session Complete
+      contentType: application/msgpack
+      payload:
+        type: object
+        required:
+          - event
+          - reason
+        properties:
+          event:
+            type: string
+            const: finish
+            description: Event type identifier
+          reason:
+            type: string
+            enum:
+              - stop
+              - error
+            description: |
+              Completion reason:
+              - 'stop': Normal completion
+              - 'error': An error occurred during synthesis
+      description: |
+        Signals that the TTS session has completed.
+
+        - If reason='stop', synthesis completed successfully
+        - If reason='error', an error occurred (client should handle gracefully)
+
+        The WebSocket connection will close after this event.
+      examples:
+        - payload:
+            event: finish
+            reason: stop
+        - payload:
+            event: finish
+            reason: error
+
+  schemas:
+    TTSRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          description: |
+            Text to synthesize. For WebSocket streaming, this is typically empty
+            in the StartEvent (text is sent via TextEvent messages).
+
+        temperature:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          default: 0.7
+          description: |
+            Controls randomness in speech generation. Higher values (e.g., 1.0) make
+            output more random, lower values (e.g., 0.1) more deterministic.
+
+        top_p:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          default: 0.7
+          description: |
+            Controls diversity via nucleus sampling. Lower values (e.g., 0.1) make
+            output more focused, higher values (e.g., 1.0) allow more diversity.
+
+        references:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReferenceAudio'
+          description: |
+            Reference audio samples for instant voice cloning. Provide audio samples
+            with transcriptions to clone a voice in real-time.
+
+        reference_id:
+          type: [string, "null"]
+          description: |
+            ID of a pre-trained reference model from fish.audio.
+            Find model IDs in voice URLs (e.g., '802e3bc2b27e49c2995d23ef70e6ac89').
+
+        prosody:
+          oneOf:
+            - $ref: '#/components/schemas/ProsodyControl'
+            - type: "null"
+          description: Speech speed and volume settings
+
+        chunk_length:
+          type: integer
+          minimum: 100
+          maximum: 300
+          default: 200
+          description: |
+            Characters per generation chunk. Lower values = faster initial response
+            but potentially lower quality. Higher values = better quality but slower.
+
+        normalize:
+          type: boolean
+          default: true
+          description: |
+            Whether to normalize/clean input text. Reduces latency but may reduce
+            performance on numbers and dates.
+
+        format:
+          type: string
+          enum:
+            - wav
+            - pcm
+            - mp3
+            - opus
+          default: mp3
+          description: Audio output format
+
+        sample_rate:
+          type: [integer, "null"]
+          description: |
+            Audio sample rate in Hz. If not specified, uses format-specific default.
+
+        mp3_bitrate:
+          type: integer
+          enum:
+            - 64
+            - 128
+            - 192
+          default: 128
+          description: MP3 bitrate in kbps (only used when format=mp3)
+
+        opus_bitrate:
+          type: integer
+          enum:
+            - -1000
+            - 24
+            - 32
+            - 48
+            - 64
+          default: 32
+          description: Opus bitrate in kbps (only used when format=opus)
+
+        latency:
+          type: string
+          enum:
+            - normal
+            - balanced
+          default: balanced
+          description: |
+            Generation mode:
+            - 'normal': Higher quality, slower
+            - 'balanced': Faster generation, may have slight quality reduction
+
+    ReferenceAudio:
+      type: object
+      required:
+        - audio
+        - text
+      properties:
+        audio:
+          type: string
+          format: binary
+          description: Audio file bytes for the reference sample
+        text:
+          type: string
+          description: |
+            Transcription of what is spoken in the reference audio. Should match
+            exactly what's spoken and include punctuation for proper prosody.
+
+    ProsodyControl:
+      type: object
+      properties:
+        speed:
+          type: number
+          minimum: 0.5
+          maximum: 2.0
+          default: 1.0
+          description: |
+            Speech speed multiplier. Range: 0.5-2.0.
+            Examples: 1.5 = 50% faster, 0.8 = 20% slower
+        volume:
+          type: number
+          minimum: -20.0
+          maximum: 20.0
+          default: 0.0
+          description: |
+            Volume adjustment in decibels. Range: -20 to 20.
+            Positive values increase volume, negative values decrease it.
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        API key authentication using Bearer token.
+
+        Get your API key from https://fish.audio/app/api-keys
+
+        Pass the token in the Authorization header:
+        `Authorization: Bearer YOUR_API_KEY`
