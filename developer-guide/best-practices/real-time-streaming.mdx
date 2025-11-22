@@ -73,10 +73,10 @@ Stream text as it's being written:
 <Tabs>
   <Tab title="Python">
     ```python
-    from fish_audio_sdk import WebSocketSession, TTSRequest
+    from fishaudio import FishAudio
 
-    # Initialize WebSocket session
-    session = WebSocketSession("your_api_key")
+    # Initialize client
+    client = FishAudio(api_key="your_api_key")
 
     # Stream text word by word
     def stream_text():
@@ -85,15 +85,16 @@ Stream text as it's being written:
             yield word + " "
 
     # Generate speech as text streams
-    request = TTSRequest(
-        text="",
+    audio_stream = client.tts.stream_websocket(
+        stream_text(),
         reference_id="your_voice_model_id",
         temperature=0.7,  # Controls variation
-        top_p=0.7  # Controls diversity
+        top_p=0.7,  # Controls diversity
+        latency="balanced"
     )
 
     with open("output.mp3", "wb") as f:
-        for audio_chunk in session.tts(request, stream_text()):
+        for audio_chunk in audio_stream:
             f.write(audio_chunk)
     ```
   </Tab>
@@ -169,8 +170,9 @@ Stream text as it's being written:
 <Tabs>
   <Tab title="Python">
     ```python
-    request = TTSRequest(
-        text="",
+    # Use latency parameter with stream_websocket
+    audio_stream = client.tts.stream_websocket(
+        text_chunks(),
         reference_id="model_id",
         latency="balanced"  # For faster response
     )
@@ -209,11 +211,11 @@ Stream responses as they're generated:
     def chatbot_response(user_input):
         # Get AI response (streaming)
         ai_text = get_ai_response(user_input)
-        
+
         # Convert to speech in real-time
-        for text_chunk in ai_text:
-            for audio_chunk in session.tts(request, text_chunk):
-                play_audio(audio_chunk)
+        audio_stream = client.tts.stream_websocket(ai_text)
+        for audio_chunk in audio_stream:
+            play_audio(audio_chunk)
     ```
   </Tab>
   <Tab title="JavaScript">
@@ -433,12 +435,20 @@ Change voices mid-stream:
   <Tab title="Python">
     ```python
     # Start with one voice
-    request1 = TTSRequest(reference_id="voice1")
-    stream_speech("Hello from voice one.", request1)
+    def text1():
+        yield "Hello from voice one."
+
+    audio1 = client.tts.stream_websocket(text1(), reference_id="voice1")
+    for chunk in audio1:
+        play_audio(chunk)
 
     # Switch to another
-    request2 = TTSRequest(reference_id="voice2")
-    stream_speech("And now voice two!", request2)
+    def text2():
+        yield "And now voice two!"
+
+    audio2 = client.tts.stream_websocket(text2(), reference_id="voice2")
+    for chunk in audio2:
+        play_audio(chunk)
     ```
   </Tab>
   <Tab title="JavaScript">
@@ -483,13 +493,14 @@ Adjust speaking speed:
 <Tabs>
   <Tab title="Python">
     ```python
-    request = TTSRequest(
-        text="",
-        prosody={
-            "speed": 1.5,  # 1.5x speed
-            "volume": 0    # Normal volume
-        }
+    from fishaudio.types import Prosody
+
+    # Use speed and volume with stream_websocket
+    audio_stream = client.tts.stream_websocket(
+        text_chunks(),
+        speed=1.5  # 1.5x speed
     )
+    # Note: For full prosody control including volume, use TTSConfig
     ```
   </Tab>
   <Tab title="JavaScript">

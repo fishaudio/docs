@@ -84,20 +84,18 @@ The easiest way to generate speech:
       <Step title="Basic Usage">
         Generate speech with just a few lines of code:
         ```python
-        from fish_audio_sdk import Session, TTSRequest
+        from fishaudio import FishAudio
+        from fishaudio.utils import save
 
-        # Initialize session
-        session = Session("your_api_key_here")
+        # Initialize client
+        client = FishAudio(api_key="your_api_key_here")
 
         # Generate speech
-        with open("output.mp3", "wb") as f:
-            for chunk in session.tts(
-                TTSRequest(
-                    text="Hello, world!",
-                    reference_id="your_voice_model_id"
-                )
-            ):
-                f.write(chunk)
+        audio = client.tts.convert(
+            text="Hello, world!",
+            reference_id="your_voice_model_id"
+        )
+        save(audio, "output.mp3")
 
         print("✓ Audio saved to output.mp3")
         ```
@@ -147,10 +145,10 @@ Browse and select voices from the playground:
   <Tab title="Python">
     ```python
     # Use a voice from the playground
-    session.tts(TTSRequest(
+    audio = client.tts.convert(
         text="Welcome to Fish Audio!",
         reference_id="7f92f8afb8ec43bf81429cc1c9199cb1"
-    ))
+    )
     ```
   </Tab>
   <Tab title="JavaScript">
@@ -172,10 +170,10 @@ Use voices you've created:
   <Tab title="Python">
     ```python
     # Use your own cloned voice
-    session.tts(TTSRequest(
+    audio = client.tts.convert(
         text="This is my custom voice speaking",
         reference_id="your_model_id"
-    ))
+    )
     ```
   </Tab>
   <Tab title="JavaScript">
@@ -196,18 +194,19 @@ Provide reference audio directly:
 <Tabs>
   <Tab title="Python">
     ```python
-    from fish_audio_sdk import ReferenceAudio
+    from fishaudio.types import ReferenceAudio
 
     # Use reference audio on-the-fly
-    session.tts(TTSRequest(
-        text="Hello from reference audio",
-        references=[
-            ReferenceAudio(
-                audio=open("voice_sample.wav", "rb").read(),
-                text="Sample text from the audio"
-            )
-        ]
-    ))
+    with open("voice_sample.wav", "rb") as f:
+        audio = client.tts.convert(
+            text="Hello from reference audio",
+            references=[
+                ReferenceAudio(
+                    audio=f.read(),
+                    text="Sample text from the audio"
+                )
+            ]
+        )
     ```
   </Tab>
   <Tab title="JavaScript">
@@ -241,11 +240,8 @@ Specify a model in your request:
 <Tabs>
   <Tab title="Python">
     ```python
-    # Using the latest S1 model
-    session.tts(
-        TTSRequest(text="Hello world"),
-        backend="s1"
-    )
+    # Using the latest model (default)
+    audio = client.tts.convert(text="Hello world")
     ```
   </Tab>
   <Tab title="JavaScript">
@@ -268,11 +264,11 @@ Choose your output format:
 <Tabs>
   <Tab title="Python">
     ```python
-    session.tts(TTSRequest(
+    audio = client.tts.convert(
         text="Your text here",
         format="mp3",  # Options: "mp3", "wav", "pcm", "opus"
         mp3_bitrate=128  # For MP3: 64, 128, or 192
-    ))
+    )
     ```
   </Tab>
   <Tab title="JavaScript">
@@ -293,10 +289,10 @@ Control text processing chunks:
 <Tabs>
   <Tab title="Python">
     ```python
-    session.tts(TTSRequest(
+    audio = client.tts.convert(
         text="Long text content...",
         chunk_length=200  # 100-300 characters per chunk
-    ))
+    )
     ```
   </Tab>
   <Tab title="JavaScript">
@@ -316,10 +312,10 @@ Optimize for speed or quality:
 <Tabs>
   <Tab title="Python">
     ```python
-    session.tts(TTSRequest(
+    audio = client.tts.convert(
         text="Quick response needed",
         latency="balanced"  # "normal" or "balanced"
-    ))
+    )
     ```
   </Tab>
   <Tab title="JavaScript">
@@ -405,11 +401,13 @@ Stream audio for real-time applications:
   <Tab title="Python">
     ```python
     # Stream audio chunks
+    audio_stream = client.tts.stream(
+        text="Streaming this text in real-time",
+        reference_id="model_id"
+    )
+
     with open("stream_output.mp3", "wb") as f:
-        for chunk in session.tts(TTSRequest(
-            text="Streaming this text in real-time",
-            reference_id="model_id"
-        )):
+        for chunk in audio_stream:
             f.write(chunk)
             # Process chunk immediately for real-time playback
     ```
@@ -473,10 +471,10 @@ Make your speech more expressive:
     (laughing) Just kidding, I found it!
     """
 
-    session.tts(TTSRequest(
+    audio = client.tts.convert(
         text=emotional_text,
         reference_id="model_id"
-    ))
+    )
     ```
   </Tab>
   <Tab title="JavaScript">
@@ -558,6 +556,8 @@ For best results:
 <Tabs>
   <Tab title="Python">
     ```python
+    from fishaudio.utils import save
+
     texts = [
         "First announcement",
         "Second announcement",
@@ -565,12 +565,11 @@ For best results:
     ]
 
     for i, text in enumerate(texts):
-        with open(f"output_{i}.mp3", "wb") as f:
-            for chunk in session.tts(TTSRequest(
-                text=text,
-                reference_id="model_id"
-            )):
-                f.write(chunk)
+        audio = client.tts.convert(
+            text=text,
+            reference_id="model_id"
+        )
+        save(audio, f"output_{i}.mp3")
     ```
   </Tab>
   <Tab title="JavaScript">
@@ -599,18 +598,17 @@ For best results:
   <Tab title="Python">
     ```python
     import time
+    from fishaudio.exceptions import FishAudioError
 
     def generate_with_retry(text, max_retries=3):
         for attempt in range(max_retries):
             try:
-                audio_data = b""
-                for chunk in session.tts(TTSRequest(
+                audio = client.tts.convert(
                     text=text,
                     reference_id="model_id"
-                )):
-                    audio_data += chunk
-                return audio_data
-            except Exception as e:
+                )
+                return audio
+            except FishAudioError as e:
                 if attempt < max_retries - 1:
                     time.sleep(2 ** attempt)  # Exponential backoff
                 else:
