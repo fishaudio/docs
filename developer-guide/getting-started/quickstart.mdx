@@ -114,18 +114,15 @@ Choose your preferred method to generate speech:
         Create a Python script:
 
         ```python
-        from fish_audio_sdk import Session, TTSRequest
+        from fishaudio import FishAudio
+        from fishaudio.utils import save
 
         # Initialize with your API key
-        session = Session("your_api_key_here")
+        client = FishAudio(api_key="your_api_key_here")
 
         # Generate speech
-        with open("welcome.mp3", "wb") as f:
-            for chunk in session.tts(
-              TTSRequest(text="Hello! Welcome to Fish Audio."),
-              backend='s1'
-            ):
-                f.write(chunk)
+        audio = client.tts.convert(text="Hello! Welcome to Fish Audio.")
+        save(audio, "welcome.mp3")
 
         print("✓ Audio saved to welcome.mp3")
         ```
@@ -258,20 +255,17 @@ Then generate speech with your chosen voice:
   <Tab title="Python">
     ```python
     import os
-    from fish_audio_sdk import Session, TTSRequest
+    from fishaudio import FishAudio
+    from fishaudio.utils import save
 
-    session = Session("your_api_key_here")
+    client = FishAudio(api_key="your_api_key_here")
 
     # Generate speech with custom voice
-    with open("custom_voice.mp3", "wb") as f:
-        for chunk in session.tts(
-          TTSRequest(
-            text="This is a custom voice from Fish Audio! You can explore hundreds of different voices on the platform, or even create your own.",
-            reference_id=os.environ.get("REFERENCE_ID")
-          ),
-          backend='s1'
-        ):
-            f.write(chunk)
+    audio = client.tts.convert(
+        text="This is a custom voice from Fish Audio! You can explore hundreds of different voices on the platform, or even create your own.",
+        reference_id=os.environ.get("REFERENCE_ID")
+    )
+    save(audio, "custom_voice.mp3")
     ```
   </Tab>
 
