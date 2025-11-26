@@ -37,5 +37,5 @@ npm run dev
 
 ## Support
 
-- Email: support@fish.audio
+- Email: [support@fish.audio](mailto:support@fish.audio)
 - [API Status](https://status.fish.audio)
