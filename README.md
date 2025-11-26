@@ -1,7 +1,7 @@
 # Fish Audio Documentation
 
 [![Fish Audio](https://img.shields.io/badge/Fish_Audio-21176d?logo=fishaudio&logoColor=fff&logoSize=auto)](https://fish.audio)
-[![License](https://img.shields.io/github/license/fishaudio/fish-docs)](./LICENSE)
+[![License](https://img.shields.io/github/license/fishaudio/docs)](./LICENSE)
 
 This repository contains the source for [Fish Audio's documentation](https://docs.fish.audio).
 
