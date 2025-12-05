@@ -43,12 +43,12 @@
               "schema": {
                 "properties": {
                   "text": {
-                    "description": "Text to be converted to speech",
+                    "description": "The text content to convert to speech. Supports multiple languages including English, Chinese, Japanese, and more. For best results, use proper punctuation and avoid mixing too many languages in a single request.",
                     "title": "Text",
                     "type": "string"
                   },
                   "temperature": {
-                    "description": "Controls randomness in the speech generation. Higher values (e.g., 1.0) make the output more random, while lower values (e.g., 0.1) make it more deterministic. We recommend `0.9` for `s1` model",
+                    "description": "Controls the randomness/expressiveness of the generated speech. Higher values (e.g., 0.9) produce more varied and expressive speech with natural prosody variations. Lower values (e.g., 0.5) produce more consistent but potentially monotonous output. Recommended: 0.9 for s1 model.",
                     "title": "Temperature",
                     "type": "number",
                     "default": 0.9,
@@ -56,7 +56,7 @@
                     "maximum": 1.0
                   },
                   "top_p": {
-                    "description": "Controls diversity via nucleus sampling. Lower values (e.g., 0.1) make the output more focused, while higher values (e.g., 1.0) allow more diversity.  We recommend `0.9` for `s1` model",
+                    "description": "Controls diversity via nucleus sampling. Limits token selection to the smallest set whose cumulative probability exceeds this value. Lower values (e.g., 0.5) produce more focused/predictable speech, higher values (e.g., 0.95) allow more variety. Recommended: 0.9 for s1 model.",
                     "title": "Top P",
                     "type": "number",
                     "default": 0.9,
@@ -75,7 +75,7 @@
                         "type": "null"
                       }
                     ],
-                    "description": "References to be used for the speech, this requires MessagePack serialization, this will override reference_voices and reference_texts",
+                    "description": "Custom voice references for zero-shot voice cloning. Provide audio samples with their transcripts to clone a voice on-the-fly without creating a model. Requires MessagePack serialization (not available via JSON). Takes precedence over reference_id if both are provided. For best results, use 10-30 seconds of clean audio.",
                     "title": "References"
                   },
                   "reference_id": {
@@ -88,7 +88,7 @@
                       }
                     ],
                     "default": null,
-                    "description": "ID of the reference model o be used for the speech",
+                    "description": "The unique identifier of a voice model to use for speech synthesis. You can find model IDs in the Fish Audio voice library or use your own custom-trained models. If not specified and no references provided, a default voice will be used.",
                     "title": "Reference Id"
                   },
                   "prosody": {
@@ -101,11 +101,11 @@
                       }
                     ],
                     "default": null,
-                    "description": "Prosody to be used for the speech"
+                    "description": "Fine-tune the speech output with speed and volume adjustments. Speed controls speaking rate (1.0 = normal, <1.0 = slower, >1.0 = faster). Volume adjusts loudness in decibels (0 = unchanged, positive = louder, negative = quieter)."
                   },
                   "chunk_length": {
                     "default": 200,
-                    "description": "Chunk length to be used for the speech",
+                    "description": "Controls the size of text segments for processing. The text is split into chunks before synthesis. Higher values (e.g., 300) produce longer continuous speech segments but increase memory usage and latency. Lower values (e.g., 100) reduce latency but may affect naturalness at chunk boundaries. Recommended: 200 for balanced quality/latency.",
                     "maximum": 300,
                     "minimum": 100,
                     "title": "Chunk Length",
@@ -113,13 +113,13 @@
                   },
                   "normalize": {
                     "default": true,
-                    "description": "Whether to normalize the speech, this will reduce the latency but may reduce performance on numbers and dates",
+                    "description": "Normalizes text for English and Chinese, improving stability for numbers. When enabled, preprocesses text to improve pronunciation consistency. Disable if you need precise control over how text is spoken.",
                     "title": "Normalize",
                     "type": "boolean"
                   },
                   "format": {
                     "default": "mp3",
-                    "description": "Format to be used for the speech",
+                    "description": "Output audio format. 'mp3': Compressed, widely compatible, good for streaming (44.1kHz). 'wav': Uncompressed, highest quality, larger file size (44.1kHz). 'pcm': Raw 16-bit audio data, useful for real-time processing (44.1kHz). 'opus': Modern compressed format, excellent quality at low bitrates, ideal for web applications (48kHz).",
                     "enum": [
                       "wav",
                       "pcm",
@@ -139,12 +139,12 @@
                       }
                     ],
                     "default": null,
-                    "description": "Sample rate to be used for the speech",
+                    "description": "Audio sample rate in Hz. When null, uses the format's default (44100 Hz for most formats). Common values: 44100 (CD quality), 22050 (reduced size), 16000 (speech-optimized). Lower sample rates reduce file size but may affect audio quality.",
                     "title": "Sample Rate"
                   },
                   "mp3_bitrate": {
                     "default": 128,
-                    "description": "MP3 Bitrate to be used for the speech",
+                    "description": "Bitrate for MP3 output in kbps. Only applies when format='mp3'. 64: Smaller files, reduced quality. 128: Good balance of quality and size (recommended). 192: Higher quality, larger files.",
                     "enum": [
                       64,
                       128,
@@ -155,7 +155,7 @@
                   },
                   "opus_bitrate": {
                     "default": 32,
-                    "description": "Opus Bitrate to be used for the speech",
+                    "description": "Bitrate for Opus output in kbps. Only applies when format='opus'. -1000: Automatic bitrate selection based on content. 24-64: Manual bitrate selection. Higher values improve quality but increase file size. Opus is very efficient, so even 32kbps provides good speech quality.",
                     "enum": [
                       -1000,
                       24,
@@ -168,13 +168,47 @@
                   },
                   "latency": {
                     "default": "normal",
-                    "description": "Latency to be used for the speech, balanced will reduce the latency but may lead to performance degradation",
+                    "description": "Controls the trade-off between response time and audio quality. 'normal': Best quality, standard latency - recommended for non-real-time applications. 'balanced': Reduced time-to-first-byte at the cost of slightly reduced quality - recommended for real-time/streaming applications where responsiveness matters.",
                     "enum": [
                       "normal",
                       "balanced"
                     ],
                     "title": "Latency",
                     "type": "string"
+                  },
+                  "max_new_tokens": {
+                    "default": 1024,
+                    "description": "Maximum number of audio tokens to generate per text chunk. Higher values allow generating longer audio segments per chunk. Reduce if experiencing memory issues or if you only need short utterances. Most users should leave this at the default.",
+                    "title": "Max New Tokens",
+                    "type": "integer"
+                  },
+                  "repetition_penalty": {
+                    "default": 1.2,
+                    "description": "Discourages the model from repeating similar audio patterns. Values > 1.0 reduce repetition (1.2 is recommended). Higher values (e.g., 1.5) more aggressively prevent loops but may affect naturalness. Values closer to 1.0 allow more repetition. Useful for preventing audio artifacts in longer generations.",
+                    "title": "Repetition Penalty",
+                    "type": "number"
+                  },
+                  "min_chunk_length": {
+                    "default": 50,
+                    "description": "Minimum number of characters required before splitting text into a new chunk. Prevents creation of very short audio segments that might sound unnatural. Higher values ensure longer continuous segments but may increase latency for the first audio. Works in conjunction with chunk_length.",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "title": "Min Chunk Length",
+                    "type": "integer"
+                  },
+                  "condition_on_previous_chunks": {
+                    "default": true,
+                    "description": "Enables voice consistency across multiple text chunks. When true, uses the audio from previous chunks as context for generating subsequent chunks, maintaining consistent voice characteristics throughout long texts. When false, each chunk is generated independently. Disable only if you want deliberately varied intonation between segments.",
+                    "title": "Condition On Previous Chunks",
+                    "type": "boolean"
+                  },
+                  "early_stop_threshold": {
+                    "default": 1.0,
+                    "description": "Controls when to stop audio generation early during batch processing. Value of 1.0 means wait for all samples to complete (best quality). Lower values (e.g., 0.8) stop when 80% of samples are done, potentially reducing latency but may cut off audio prematurely. Most users should leave this at 1.0.",
+                    "title": "Early Stop Threshold",
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0
                   }
                 },
                 "required": [
@@ -232,7 +266,7 @@
                       }
                     ],
                     "default": null,
-                    "description": "ID of the reference model o be used for the speech",
+                    "description": "The unique identifier of a voice model to use for speech synthesis. You can find model IDs in the Fish Audio voice library or use your own custom-trained models. If not specified and no references provided, a default voice will be used.",
                     "title": "Reference Id"
                   },
                   "prosody": {
@@ -319,6 +353,40 @@
                     ],
                     "title": "Latency",
                     "type": "string"
+                  },
+                  "max_new_tokens": {
+                    "default": 1024,
+                    "description": "Maximum number of tokens to generate per chunk. Each chunk can produce up to ~25 seconds of audio",
+                    "title": "Max New Tokens",
+                    "type": "integer"
+                  },
+                  "repetition_penalty": {
+                    "default": 1.2,
+                    "description": "Penalty for repeating tokens. Higher values reduce repetition in the generated speech",
+                    "title": "Repetition Penalty",
+                    "type": "number"
+                  },
+                  "min_chunk_length": {
+                    "default": 50,
+                    "description": "Minimum chunk length for text splitting",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "title": "Min Chunk Length",
+                    "type": "integer"
+                  },
+                  "condition_on_previous_chunks": {
+                    "default": true,
+                    "description": "Whether to condition generation on previous chunks. If references are provided, uses references only; otherwise uses first chunk as reference",
+                    "title": "Condition On Previous Chunks",
+                    "type": "boolean"
+                  },
+                  "early_stop_threshold": {
+                    "default": 1.0,
+                    "description": "Early stop if this fraction of samples are finished",
+                    "title": "Early Stop Threshold",
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0
                   }
                 },
                 "required": [
@@ -2606,14 +2674,17 @@
     },
     "schemas": {
       "ProsodyControl": {
+        "description": "Controls for adjusting the prosody (rhythm and intonation) of generated speech.",
         "properties": {
           "speed": {
             "default": 1,
+            "description": "Speaking rate multiplier. Valid range: 0.5 to 2.0. 1.0 = normal speed, 0.5 = half speed, 2.0 = double speed. Useful for adjusting pacing without regenerating audio.",
             "title": "Speed",
             "type": "number"
           },
           "volume": {
             "default": 0,
+            "description": "Volume adjustment in decibels (dB). 0 = no change, positive values = louder, negative values = quieter.",
             "title": "Volume",
             "type": "number"
           }
@@ -2622,13 +2693,16 @@
         "type": "object"
       },
       "ReferenceAudio": {
+        "description": "A voice sample with its transcript, used for zero-shot voice cloning. The model will attempt to match the voice characteristics from the audio sample.",
         "properties": {
           "audio": {
             "format": "binary",
+            "description": "Raw audio bytes of the voice sample. Supported formats: WAV, MP3, FLAC. For best results, use 10-30 seconds of clear speech with minimal background noise.",
             "title": "Audio",
             "type": "string"
           },
           "text": {
+            "description": "The exact transcript of what is spoken in the audio sample. Accuracy is important for voice cloning quality.",
             "title": "Text",
             "type": "string"
           }
