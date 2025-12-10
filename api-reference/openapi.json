@@ -48,18 +48,18 @@
                     "type": "string"
                   },
                   "temperature": {
-                    "description": "Controls the randomness/expressiveness of the generated speech. Higher values (e.g., 0.9) produce more varied and expressive speech with natural prosody variations. Lower values (e.g., 0.5) produce more consistent but potentially monotonous output. Recommended: 0.9 for s1 model.",
+                    "description": "Controls the randomness/expressiveness of the generated speech. Higher values produce more varied and expressive speech, lower values produce more consistent output.",
                     "title": "Temperature",
                     "type": "number",
-                    "default": 0.9,
+                    "default": 0.7,
                     "minimum": 0.0,
                     "maximum": 1.0
                   },
                   "top_p": {
-                    "description": "Controls diversity via nucleus sampling. Limits token selection to the smallest set whose cumulative probability exceeds this value. Lower values (e.g., 0.5) produce more focused/predictable speech, higher values (e.g., 0.95) allow more variety. Recommended: 0.9 for s1 model.",
+                    "description": "Controls diversity via nucleus sampling. Lower values produce more focused/predictable speech, higher values allow more variety.",
                     "title": "Top P",
                     "type": "number",
-                    "default": 0.9,
+                    "default": 0.7,
                     "minimum": 0.0,
                     "maximum": 1.0
                   },
@@ -104,8 +104,8 @@
                     "description": "Fine-tune the speech output with speed and volume adjustments. Speed controls speaking rate (1.0 = normal, <1.0 = slower, >1.0 = faster). Volume adjusts loudness in decibels (0 = unchanged, positive = louder, negative = quieter)."
                   },
                   "chunk_length": {
-                    "default": 200,
-                    "description": "Controls the size of text segments for processing. The text is split into chunks before synthesis. Higher values (e.g., 300) produce longer continuous speech segments but increase memory usage and latency. Lower values (e.g., 100) reduce latency but may affect naturalness at chunk boundaries. Recommended: 200 for balanced quality/latency.",
+                    "default": 300,
+                    "description": "Controls the size of text segments for processing. The text is split into chunks before synthesis. Higher values produce longer continuous speech segments but increase memory usage and latency. Lower values reduce latency but may affect naturalness at chunk boundaries.",
                     "maximum": 300,
                     "minimum": 100,
                     "title": "Chunk Length",
@@ -113,7 +113,7 @@
                   },
                   "normalize": {
                     "default": true,
-                    "description": "Normalizes text for English and Chinese, improving stability for numbers. When enabled, preprocesses text to improve pronunciation consistency. Disable if you need precise control over how text is spoken.",
+                    "description": "Normalizes text for English and Chinese, improving stability for numbers. When enabled, preprocesses text to improve pronunciation consistency.",
                     "title": "Normalize",
                     "type": "boolean"
                   },
@@ -154,8 +154,8 @@
                     "type": "integer"
                   },
                   "opus_bitrate": {
-                    "default": 32,
-                    "description": "Bitrate for Opus output in kbps. Only applies when format='opus'. -1000: Automatic bitrate selection based on content. 24-64: Manual bitrate selection. Higher values improve quality but increase file size. Opus is very efficient, so even 32kbps provides good speech quality.",
+                    "default": -1000,
+                    "description": "Bitrate for Opus output in kbps. Only applies when format='opus'. -1000: Automatic bitrate selection based on content (recommended). 24-64: Manual bitrate selection. Higher values improve quality but increase file size.",
                     "enum": [
                       -1000,
                       24,
@@ -168,8 +168,9 @@
                   },
                   "latency": {
                     "default": "normal",
-                    "description": "Controls the trade-off between response time and audio quality. 'normal': Best quality, standard latency - recommended for non-real-time applications. 'balanced': Reduced time-to-first-byte at the cost of slightly reduced quality - recommended for real-time/streaming applications where responsiveness matters.",
+                    "description": "Controls the trade-off between response time and audio quality. 'normal': Best quality, standard latency - recommended for non-real-time applications. 'balanced': Reduced time-to-first-byte at the cost of slightly reduced quality - recommended for real-time/streaming applications. 'low': Lowest latency, may have further quality trade-offs.",
                     "enum": [
+                      "low",
                       "normal",
                       "balanced"
                     ],
@@ -184,7 +185,7 @@
                   },
                   "repetition_penalty": {
                     "default": 1.2,
-                    "description": "Discourages the model from repeating similar audio patterns. Values > 1.0 reduce repetition (1.2 is recommended). Higher values (e.g., 1.5) more aggressively prevent loops but may affect naturalness. Values closer to 1.0 allow more repetition. Useful for preventing audio artifacts in longer generations.",
+                    "description": "Discourages the model from repeating similar audio patterns. Values > 1.0 reduce repetition. Higher values more aggressively prevent loops but may affect naturalness.",
                     "title": "Repetition Penalty",
                     "type": "number"
                   },
@@ -226,7 +227,7 @@
                     "type": "string"
                   },
                   "temperature": {
-                    "description": "Controls randomness in the speech generation. Higher values (e.g., 1.0) make the output more random, while lower values (e.g., 0.1) make it more deterministic",
+                    "description": "Controls the randomness/expressiveness of the generated speech. Higher values produce more varied and expressive speech, lower values produce more consistent output.",
                     "title": "Temperature",
                     "type": "number",
                     "default": 0.7,
@@ -234,7 +235,7 @@
                     "maximum": 1.0
                   },
                   "top_p": {
-                    "description": "Controls diversity via nucleus sampling. Lower values (e.g., 0.1) make the output more focused, while higher values (e.g., 1.0) allow more diversity",
+                    "description": "Controls diversity via nucleus sampling. Lower values produce more focused/predictable speech, higher values allow more variety.",
                     "title": "Top P",
                     "type": "number",
                     "default": 0.7,
@@ -282,7 +283,7 @@
                     "description": "Prosody to be used for the speech"
                   },
                   "chunk_length": {
-                    "default": 200,
+                    "default": 300,
                     "description": "Chunk length to be used for the speech",
                     "maximum": 300,
                     "minimum": 100,
@@ -291,7 +292,7 @@
                   },
                   "normalize": {
                     "default": true,
-                    "description": "Whether to normalize the speech, this will reduce the latency but may reduce performance on numbers and dates",
+                    "description": "Normalizes text for English and Chinese, improving stability for numbers. When enabled, preprocesses text to improve pronunciation consistency.",
                     "title": "Normalize",
                     "type": "boolean"
                   },
@@ -332,7 +333,7 @@
                     "type": "integer"
                   },
                   "opus_bitrate": {
-                    "default": 32,
+                    "default": -1000,
                     "description": "Opus Bitrate to be used for the speech",
                     "enum": [
                       -1000,
@@ -348,6 +349,7 @@
                     "default": "normal",
                     "description": "Latency to be used for the speech, balanced will reduce the latency but may lead to performance degradation",
                     "enum": [
+                      "low",
                       "normal",
                       "balanced"
                     ],
@@ -362,7 +364,7 @@
                   },
                   "repetition_penalty": {
                     "default": 1.2,
-                    "description": "Penalty for repeating tokens. Higher values reduce repetition in the generated speech",
+                    "description": "Discourages the model from repeating similar audio patterns. Values > 1.0 reduce repetition. Higher values more aggressively prevent loops but may affect naturalness.",
                     "title": "Repetition Penalty",
                     "type": "number"
                   },
