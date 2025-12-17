@@ -9,14 +9,14 @@ Audio saving utility.
 #### save
 
 ```python
-def save(audio: Union[bytes, Iterator[bytes]], filename: str) -> None
+def save(audio: Union[bytes, Iterable[bytes]], filename: str) -> None
 ```
 
 Save audio to a file.
 
 **Arguments**:
 
-- `audio` - Audio bytes or iterator of bytes
+- `audio` - Audio bytes or iterable of bytes
 - `filename` - Path to save the audio file
   
 
@@ -47,7 +47,7 @@ Audio playback utility.
 #### play
 
 ```python
-def play(audio: Union[bytes, Iterator[bytes]],
+def play(audio: Union[bytes, Iterable[bytes]],
          *,
          notebook: bool = False,
          use_ffmpeg: bool = True) -> None
@@ -57,7 +57,7 @@ Play audio using various playback methods.
 
 **Arguments**:
 
-- `audio` - Audio bytes or iterator of bytes
+- `audio` - Audio bytes or iterable of bytes
 - `notebook` - Use Jupyter notebook playback (IPython.display.Audio)
 - `use_ffmpeg` - Use ffplay for playback (default, falls back to sounddevice)
   
