@@ -752,6 +752,476 @@
         ]
       }
     },
+    "/v1/tts/with_timestamp": {
+      "post": {
+        "summary": "Text to Speech with Timestamp Alignment",
+        "description": "Generates speech from text and returns word-level timestamp alignment. The complete audio is generated first, then aligned with the text to provide precise timing information for each segment.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "model",
+            "description": "Specify which TTS model to use. We recommend `s1`",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "s1",
+              "enum": [
+                "s1",
+                "speech-1.6",
+                "speech-1.5"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "text": {
+                    "description": "The text content to convert to speech.",
+                    "title": "Text",
+                    "type": "string"
+                  },
+                  "temperature": {
+                    "description": "Controls the randomness/expressiveness of the generated speech.",
+                    "title": "Temperature",
+                    "type": "number",
+                    "default": 0.7,
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                  },
+                  "top_p": {
+                    "description": "Controls diversity via nucleus sampling.",
+                    "title": "Top P",
+                    "type": "number",
+                    "default": 0.7,
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                  },
+                  "reference_id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "The unique identifier of a voice model to use for speech synthesis.",
+                    "title": "Reference Id"
+                  },
+                  "chunk_length": {
+                    "default": 300,
+                    "description": "Controls the size of text segments for processing.",
+                    "maximum": 300,
+                    "minimum": 100,
+                    "title": "Chunk Length",
+                    "type": "integer"
+                  },
+                  "normalize": {
+                    "default": true,
+                    "description": "Normalizes text for English and Chinese, improving stability for numbers.",
+                    "title": "Normalize",
+                    "type": "boolean"
+                  },
+                  "latency": {
+                    "default": "normal",
+                    "description": "Controls the trade-off between response time and audio quality.",
+                    "enum": [
+                      "low",
+                      "normal",
+                      "balanced"
+                    ],
+                    "title": "Latency",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, returns audio with timestamp alignment",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TTSWithTimestampResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "No payment -- see charging schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "loc": {
+                        "title": "Location",
+                        "description": "error field",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "type": {
+                        "title": "Type",
+                        "description": "error type",
+                        "type": "string"
+                      },
+                      "msg": {
+                        "title": "Message",
+                        "description": "error message",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "loc",
+                      "type",
+                      "msg"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "OpenAPI v1"
+        ]
+      }
+    },
+    "/v1/tts/with_timestamp/stream": {
+      "post": {
+        "summary": "Streaming Text to Speech with Timestamp Alignment",
+        "description": "Streams speech chunks with progressive timestamp alignment via Server-Sent Events (SSE). Each event contains a JSON object with `audio_base64`, `text`, and `alignment` fields. The SSE format is: `data: {\"audio_base64\": \"...\", \"text\": \"...\", \"alignment\": [...]}\\n\\n`",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "model",
+            "description": "Specify which TTS model to use. Only s1 supports streaming alignment.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "s1",
+              "enum": [
+                "s1"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "text": {
+                    "description": "The text content to convert to speech.",
+                    "title": "Text",
+                    "type": "string"
+                  },
+                  "temperature": {
+                    "description": "Controls the randomness/expressiveness of the generated speech.",
+                    "title": "Temperature",
+                    "type": "number",
+                    "default": 0.7,
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                  },
+                  "top_p": {
+                    "description": "Controls diversity via nucleus sampling.",
+                    "title": "Top P",
+                    "type": "number",
+                    "default": 0.7,
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                  },
+                  "reference_id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "The unique identifier of a voice model to use for speech synthesis.",
+                    "title": "Reference Id"
+                  },
+                  "chunk_length": {
+                    "default": 300,
+                    "description": "Controls the size of text segments for processing.",
+                    "maximum": 300,
+                    "minimum": 100,
+                    "title": "Chunk Length",
+                    "type": "integer"
+                  },
+                  "normalize": {
+                    "default": true,
+                    "description": "Normalizes text for English and Chinese, improving stability for numbers.",
+                    "title": "Normalize",
+                    "type": "boolean"
+                  },
+                  "latency": {
+                    "default": "normal",
+                    "description": "Controls the trade-off between response time and audio quality.",
+                    "enum": [
+                      "low",
+                      "normal",
+                      "balanced"
+                    ],
+                    "title": "Latency",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, returns SSE stream of audio chunks with alignment",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "text/event-stream"
+              }
+            },
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "Server-Sent Events stream. Each event data field contains a JSON object with: audio_base64 (string), text (string, optional), alignment (array of TimestampSegment, optional)"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - model not supported for streaming alignment",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "No payment -- see charging schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "loc": {
+                        "title": "Location",
+                        "description": "error field",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "type": {
+                        "title": "Type",
+                        "description": "error type",
+                        "type": "string"
+                      },
+                      "msg": {
+                        "title": "Message",
+                        "description": "error message",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "loc",
+                      "type",
+                      "msg"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "OpenAPI v1"
+        ]
+      }
+    },
     "/wallet/{user_id}/package": {
       "get": {
         "summary": "Get User Package",
@@ -2935,6 +3405,75 @@
           "audio"
         ],
         "title": "SampleEntity",
+        "type": "object"
+      },
+      "TimestampSegment": {
+        "description": "A segment of aligned text with its timing information",
+        "properties": {
+          "text": {
+            "description": "The text content of this segment",
+            "title": "Text",
+            "type": "string"
+          },
+          "start": {
+            "description": "Start time in seconds",
+            "title": "Start",
+            "type": "number"
+          },
+          "end": {
+            "description": "End time in seconds",
+            "title": "End",
+            "type": "number"
+          }
+        },
+        "required": [
+          "text",
+          "start",
+          "end"
+        ],
+        "title": "TimestampSegment",
+        "type": "object"
+      },
+      "TTSWithTimestampResponse": {
+        "description": "TTS response with audio and timestamp alignment",
+        "properties": {
+          "audio_base64": {
+            "description": "Base64-encoded audio data",
+            "title": "Audio Base64",
+            "type": "string"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The text that was synthesized (with emotion markers removed)",
+            "title": "Text"
+          },
+          "alignment": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TimestampSegment"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Word-level timestamp alignment segments",
+            "title": "Alignment"
+          }
+        },
+        "required": [
+          "audio_base64"
+        ],
+        "title": "TTSWithTimestampResponse",
         "type": "object"
       }
     }

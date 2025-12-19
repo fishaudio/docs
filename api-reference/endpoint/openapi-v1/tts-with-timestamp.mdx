@@ -1,0 +1,49 @@
+---
+openapi: post /v1/tts/with_timestamp
+title: 'Text to Speech with Timestamp'
+description: 'Generate speech with word-level timestamp alignment'
+icon: "clock"
+iconType: "solid"
+---
+
+<Note>
+This endpoint generates complete audio first, then aligns it with the input text to provide precise timing information for each segment. The response includes both the audio and an array of timestamp segments.
+</Note>
+
+## Response Format
+
+The response is a JSON object containing:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `audio_base64` | string | Base64-encoded audio data |
+| `text` | string | The synthesized text (with emotion markers removed) |
+| `alignment` | array | Array of timestamp segments |
+
+Each timestamp segment contains:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `text` | string | The text content of this segment |
+| `start` | number | Start time in seconds |
+| `end` | number | End time in seconds |
+
+## Example Response
+
+```json
+{
+  "audio_base64": "UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8...",
+  "text": "Hello, world!",
+  "alignment": [
+    {"text": "Hello,", "start": 0.0, "end": 0.45},
+    {"text": "world!", "start": 0.52, "end": 1.1}
+  ]
+}
+```
+
+## Use Cases
+
+- **Subtitle generation**: Automatically create synchronized subtitles for video content
+- **Karaoke-style highlighting**: Highlight words as they are spoken
+- **Accessibility features**: Provide visual indicators synchronized with audio playback
+- **Audio editing**: Precisely locate and edit specific words in generated speech
