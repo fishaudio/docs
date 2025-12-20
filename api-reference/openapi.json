@@ -75,7 +75,7 @@
                         "type": "null"
                       }
                     ],
-                    "description": "Custom voice references for zero-shot voice cloning. Provide audio samples with their transcripts to clone a voice on-the-fly without creating a model. Requires MessagePack serialization (not available via JSON). Takes precedence over reference_id if both are provided. For best results, use 10-30 seconds of clean audio.",
+                    "description": "Custom voice references for zero-shot voice cloning. Provide audio samples with their transcripts to clone a voice on-the-fly without creating a model. Requires MessagePack serialization (not available via JSON). Ignored if reference_id is also provided. For best results, use 10-30 seconds of clean audio.",
                     "title": "References"
                   },
                   "reference_id": {
@@ -254,7 +254,7 @@
                         "type": "null"
                       }
                     ],
-                    "description": "References to be used for the speech, this requires MessagePack serialization, this will override reference_voices and reference_texts",
+                    "description": "Custom voice references for zero-shot voice cloning. Provide audio samples with their transcripts to clone a voice on-the-fly without creating a model. Requires MessagePack serialization. Ignored if reference_id is also provided. For best results, use 10-30 seconds of clean audio.",
                     "title": "References"
                   },
                   "reference_id": {
