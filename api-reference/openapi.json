@@ -41,290 +41,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "properties": {
-                  "text": {
-                    "description": "Text to be converted to speech",
-                    "title": "Text",
-                    "type": "string"
-                  },
-                  "temperature": {
-                    "description": "Controls randomness in the speech generation. Higher values (e.g., 1.0) make the output more random, while lower values (e.g., 0.1) make it more deterministic. We recommend `0.9` for `s1` model",
-                    "title": "Temperature",
-                    "type": "number",
-                    "default": 0.9,
-                    "minimum": 0.0,
-                    "maximum": 1.0
-                  },
-                  "top_p": {
-                    "description": "Controls diversity via nucleus sampling. Lower values (e.g., 0.1) make the output more focused, while higher values (e.g., 1.0) allow more diversity.  We recommend `0.9` for `s1` model",
-                    "title": "Top P",
-                    "type": "number",
-                    "default": 0.9,
-                    "minimum": 0.0,
-                    "maximum": 1.0
-                  },
-                  "references": {
-                    "anyOf": [
-                      {
-                        "items": {
-                          "$ref": "#/components/schemas/ReferenceAudio"
-                        },
-                        "type": "array"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "References to be used for the speech, this requires MessagePack serialization, this will override reference_voices and reference_texts",
-                    "title": "References"
-                  },
-                  "reference_id": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "default": null,
-                    "description": "ID of the reference model o be used for the speech",
-                    "title": "Reference Id"
-                  },
-                  "prosody": {
-                    "anyOf": [
-                      {
-                        "$ref": "#/components/schemas/ProsodyControl"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "default": null,
-                    "description": "Prosody to be used for the speech"
-                  },
-                  "chunk_length": {
-                    "default": 200,
-                    "description": "Chunk length to be used for the speech",
-                    "maximum": 300,
-                    "minimum": 100,
-                    "title": "Chunk Length",
-                    "type": "integer"
-                  },
-                  "normalize": {
-                    "default": true,
-                    "description": "Whether to normalize the speech, this will reduce the latency but may reduce performance on numbers and dates",
-                    "title": "Normalize",
-                    "type": "boolean"
-                  },
-                  "format": {
-                    "default": "mp3",
-                    "description": "Format to be used for the speech",
-                    "enum": [
-                      "wav",
-                      "pcm",
-                      "mp3",
-                      "opus"
-                    ],
-                    "title": "Format",
-                    "type": "string"
-                  },
-                  "sample_rate": {
-                    "anyOf": [
-                      {
-                        "type": "integer"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "default": null,
-                    "description": "Sample rate to be used for the speech",
-                    "title": "Sample Rate"
-                  },
-                  "mp3_bitrate": {
-                    "default": 128,
-                    "description": "MP3 Bitrate to be used for the speech",
-                    "enum": [
-                      64,
-                      128,
-                      192
-                    ],
-                    "title": "Mp3 Bitrate",
-                    "type": "integer"
-                  },
-                  "opus_bitrate": {
-                    "default": 32,
-                    "description": "Opus Bitrate to be used for the speech",
-                    "enum": [
-                      -1000,
-                      24,
-                      32,
-                      48,
-                      64
-                    ],
-                    "title": "Opus Bitrate",
-                    "type": "integer"
-                  },
-                  "latency": {
-                    "default": "normal",
-                    "description": "Latency to be used for the speech, balanced will reduce the latency but may lead to performance degradation",
-                    "enum": [
-                      "normal",
-                      "balanced"
-                    ],
-                    "title": "Latency",
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "text"
-                ],
-                "type": "object"
+                "$ref": "#/components/schemas/TTSRequest"
               }
             },
             "application/msgpack": {
               "schema": {
-                "properties": {
-                  "text": {
-                    "description": "Text to be converted to speech",
-                    "title": "Text",
-                    "type": "string"
-                  },
-                  "temperature": {
-                    "description": "Controls randomness in the speech generation. Higher values (e.g., 1.0) make the output more random, while lower values (e.g., 0.1) make it more deterministic",
-                    "title": "Temperature",
-                    "type": "number",
-                    "default": 0.7,
-                    "minimum": 0.0,
-                    "maximum": 1.0
-                  },
-                  "top_p": {
-                    "description": "Controls diversity via nucleus sampling. Lower values (e.g., 0.1) make the output more focused, while higher values (e.g., 1.0) allow more diversity",
-                    "title": "Top P",
-                    "type": "number",
-                    "default": 0.7,
-                    "minimum": 0.0,
-                    "maximum": 1.0
-                  },
-                  "references": {
-                    "anyOf": [
-                      {
-                        "items": {
-                          "$ref": "#/components/schemas/ReferenceAudio"
-                        },
-                        "type": "array"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "References to be used for the speech, this requires MessagePack serialization, this will override reference_voices and reference_texts",
-                    "title": "References"
-                  },
-                  "reference_id": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "default": null,
-                    "description": "ID of the reference model o be used for the speech",
-                    "title": "Reference Id"
-                  },
-                  "prosody": {
-                    "anyOf": [
-                      {
-                        "$ref": "#/components/schemas/ProsodyControl"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "default": null,
-                    "description": "Prosody to be used for the speech"
-                  },
-                  "chunk_length": {
-                    "default": 200,
-                    "description": "Chunk length to be used for the speech",
-                    "maximum": 300,
-                    "minimum": 100,
-                    "title": "Chunk Length",
-                    "type": "integer"
-                  },
-                  "normalize": {
-                    "default": true,
-                    "description": "Whether to normalize the speech, this will reduce the latency but may reduce performance on numbers and dates",
-                    "title": "Normalize",
-                    "type": "boolean"
-                  },
-                  "format": {
-                    "default": "mp3",
-                    "description": "Format to be used for the speech",
-                    "enum": [
-                      "wav",
-                      "pcm",
-                      "mp3",
-                      "opus"
-                    ],
-                    "title": "Format",
-                    "type": "string"
-                  },
-                  "sample_rate": {
-                    "anyOf": [
-                      {
-                        "type": "integer"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "default": null,
-                    "description": "Sample rate to be used for the speech",
-                    "title": "Sample Rate"
-                  },
-                  "mp3_bitrate": {
-                    "default": 128,
-                    "description": "MP3 Bitrate to be used for the speech",
-                    "enum": [
-                      64,
-                      128,
-                      192
-                    ],
-                    "title": "Mp3 Bitrate",
-                    "type": "integer"
-                  },
-                  "opus_bitrate": {
-                    "default": 32,
-                    "description": "Opus Bitrate to be used for the speech",
-                    "enum": [
-                      -1000,
-                      24,
-                      32,
-                      48,
-                      64
-                    ],
-                    "title": "Opus Bitrate",
-                    "type": "integer"
-                  },
-                  "latency": {
-                    "default": "normal",
-                    "description": "Latency to be used for the speech, balanced will reduce the latency but may lead to performance degradation",
-                    "enum": [
-                      "normal",
-                      "balanced"
-                    ],
-                    "title": "Latency",
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "text"
-                ],
-                "type": "object"
+                "$ref": "#/components/schemas/TTSRequest"
               }
             }
           }
@@ -2606,14 +2328,17 @@
     },
     "schemas": {
       "ProsodyControl": {
+        "description": "Controls for adjusting the prosody (rhythm and intonation) of generated speech.",
         "properties": {
           "speed": {
             "default": 1,
+            "description": "Speaking rate multiplier. Valid range: 0.5 to 2.0. 1.0 = normal speed, 0.5 = half speed, 2.0 = double speed. Useful for adjusting pacing without regenerating audio.",
             "title": "Speed",
             "type": "number"
           },
           "volume": {
             "default": 0,
+            "description": "Volume adjustment in decibels (dB). 0 = no change, positive values = louder, negative values = quieter.",
             "title": "Volume",
             "type": "number"
           }
@@ -2622,13 +2347,16 @@
         "type": "object"
       },
       "ReferenceAudio": {
+        "description": "A voice sample with its transcript, used for zero-shot voice cloning. The model will attempt to match the voice characteristics from the audio sample.",
         "properties": {
           "audio": {
             "format": "binary",
+            "description": "Raw audio bytes of the voice sample. Supported formats: WAV, MP3, FLAC. For best results, use 10-30 seconds of clear speech with minimal background noise.",
             "title": "Audio",
             "type": "string"
           },
           "text": {
+            "description": "The exact transcript of what is spoken in the audio sample. Accuracy is important for voice cloning quality.",
             "title": "Text",
             "type": "string"
           }
@@ -2639,6 +2367,160 @@
         ],
         "title": "ReferenceAudio",
         "type": "object"
+      },
+      "TTSRequest": {
+        "description": "Request body for text-to-speech synthesis.",
+        "type": "object",
+        "required": ["text"],
+        "properties": {
+          "text": {
+            "description": "Text to convert to speech.",
+            "title": "Text",
+            "type": "string"
+          },
+          "temperature": {
+            "description": "Controls expressiveness. Higher is more varied, lower is more consistent.",
+            "title": "Temperature",
+            "type": "number",
+            "default": 0.7,
+            "minimum": 0.0,
+            "maximum": 1.0
+          },
+          "top_p": {
+            "description": "Controls diversity via nucleus sampling.",
+            "title": "Top P",
+            "type": "number",
+            "default": 0.7,
+            "minimum": 0.0,
+            "maximum": 1.0
+          },
+          "references": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ReferenceAudio"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Inline voice references for zero-shot cloning. Requires MessagePack (not JSON). Ignored if reference_id is provided.",
+            "title": "References"
+          },
+          "reference_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Voice model ID from the Fish Audio library or your custom models.",
+            "title": "Reference Id"
+          },
+          "prosody": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProsodyControl"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Speed and volume adjustments for the output."
+          },
+          "chunk_length": {
+            "default": 300,
+            "description": "Text segment size for processing.",
+            "maximum": 300,
+            "minimum": 100,
+            "title": "Chunk Length",
+            "type": "integer"
+          },
+          "normalize": {
+            "default": true,
+            "description": "Normalizes text for English and Chinese, improving stability for numbers.",
+            "title": "Normalize",
+            "type": "boolean"
+          },
+          "format": {
+            "default": "mp3",
+            "description": "Output audio format.",
+            "enum": ["wav", "pcm", "mp3", "opus"],
+            "title": "Format",
+            "type": "string"
+          },
+          "sample_rate": {
+            "anyOf": [
+              { "type": "integer" },
+              { "type": "null" }
+            ],
+            "default": null,
+            "description": "Audio sample rate in Hz. When null, uses the format's default (44100 Hz for most formats, 48000 Hz for opus).",
+            "title": "Sample Rate"
+          },
+          "mp3_bitrate": {
+            "default": 128,
+            "description": "MP3 bitrate in kbps. Only applies when format is mp3.",
+            "enum": [64, 128, 192],
+            "title": "Mp3 Bitrate",
+            "type": "integer"
+          },
+          "opus_bitrate": {
+            "default": -1000,
+            "description": "Opus bitrate in bps. -1000 for automatic. Only applies when format is opus.",
+            "enum": [-1000, 24, 32, 48, 64],
+            "title": "Opus Bitrate",
+            "type": "integer"
+          },
+          "latency": {
+            "default": "normal",
+            "description": "Latency-quality trade-off. normal: best quality, balanced: reduced latency, low: lowest latency.",
+            "enum": ["low", "normal", "balanced"],
+            "title": "Latency",
+            "type": "string"
+          },
+          "max_new_tokens": {
+            "default": 1024,
+            "description": "Maximum audio tokens to generate per text chunk.",
+            "title": "Max New Tokens",
+            "type": "integer"
+          },
+          "repetition_penalty": {
+            "default": 1.2,
+            "description": "Penalty for repeating audio patterns. Values above 1.0 reduce repetition.",
+            "title": "Repetition Penalty",
+            "type": "number"
+          },
+          "min_chunk_length": {
+            "default": 50,
+            "description": "Minimum characters before splitting into a new chunk.",
+            "minimum": 0,
+            "maximum": 100,
+            "title": "Min Chunk Length",
+            "type": "integer"
+          },
+          "condition_on_previous_chunks": {
+            "default": true,
+            "description": "Use previous audio as context for voice consistency.",
+            "title": "Condition On Previous Chunks",
+            "type": "boolean"
+          },
+          "early_stop_threshold": {
+            "default": 1.0,
+            "description": "Early stopping threshold for batch processing.",
+            "title": "Early Stop Threshold",
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          }
+        },
+        "title": "TTSRequest"
       },
       "ASRSegment": {
         "properties": {
