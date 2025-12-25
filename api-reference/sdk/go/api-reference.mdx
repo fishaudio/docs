@@ -15,7 +15,7 @@ import "github.com/fishaudio/fish-audio-go"
 
 ## Constants
 
-<a id="DefaultBaseURL"></a>
+<a name="DefaultBaseURL"></a>
 
 ```go
 const (
@@ -30,8 +30,8 @@ const (
 )
 ```
 
-<a id="APIError"></a>
-## type [APIError](https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L12-L16)
+<a name="APIError"></a>
+## type [APIError](<https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L12-L16>)
 
 APIError is raised when the API returns an error response.
 
@@ -43,8 +43,8 @@ type APIError struct {
 }
 ```
 
-<a id="APIError.Error"></a>
-### func (*APIError) [Error](https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L18)
+<a name="APIError.Error"></a>
+### func \(\*APIError\) [Error](<https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L18>)
 
 ```go
 func (e *APIError) Error() string
@@ -52,8 +52,8 @@ func (e *APIError) Error() string
 
 
 
-<a id="APIError.IsFishAudioError"></a>
-### func (*APIError) [IsFishAudioError](https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L22)
+<a name="APIError.IsFishAudioError"></a>
+### func \(\*APIError\) [IsFishAudioError](<https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L22>)
 
 ```go
 func (e *APIError) IsFishAudioError()
@@ -61,10 +61,10 @@ func (e *APIError) IsFishAudioError()
 
 
 
-<a id="ASRResponse"></a>
-## type [ASRResponse](https://github.com/fishaudio/fish-audio-go/blob/main/asr.go#L24-L31)
+<a name="ASRResponse"></a>
+## type [ASRResponse](<https://github.com/fishaudio/fish-audio-go/blob/main/asr.go#L24-L31>)
 
-ASRResponse contains the result of speech-to-text transcription.
+ASRResponse contains the result of speech\-to\-text transcription.
 
 ```go
 type ASRResponse struct {
@@ -77,8 +77,8 @@ type ASRResponse struct {
 }
 ```
 
-<a id="ASRSegment"></a>
-## type [ASRSegment](https://github.com/fishaudio/fish-audio-go/blob/main/asr.go#L14-L21)
+<a name="ASRSegment"></a>
+## type [ASRSegment](<https://github.com/fishaudio/fish-audio-go/blob/main/asr.go#L14-L21>)
 
 ASRSegment represents a timestamped segment of transcribed text.
 
@@ -93,10 +93,10 @@ type ASRSegment struct {
 }
 ```
 
-<a id="ASRService"></a>
-## type [ASRService](https://github.com/fishaudio/fish-audio-go/blob/main/asr.go#L42-L44)
+<a name="ASRService"></a>
+## type [ASRService](<https://github.com/fishaudio/fish-audio-go/blob/main/asr.go#L42-L44>)
 
-ASRService provides speech-to-text operations.
+ASRService provides speech\-to\-text operations.
 
 ```go
 type ASRService struct {
@@ -104,8 +104,8 @@ type ASRService struct {
 }
 ```
 
-<a id="ASRService.Transcribe"></a>
-### func (*ASRService) [Transcribe](https://github.com/fishaudio/fish-audio-go/blob/main/asr.go#L55)
+<a name="ASRService.Transcribe"></a>
+### func \(\*ASRService\) [Transcribe](<https://github.com/fishaudio/fish-audio-go/blob/main/asr.go#L55>)
 
 ```go
 func (s *ASRService) Transcribe(ctx context.Context, audio []byte, params *TranscribeParams) (*ASRResponse, error)
@@ -123,8 +123,8 @@ result, err := client.ASR.Transcribe(ctx, audio, &fishaudio.TranscribeParams{
 fmt.Println(result.Text)
 ```
 
-<a id="AccountService"></a>
-## type [AccountService](https://github.com/fishaudio/fish-audio-go/blob/main/account.go#L38-L40)
+<a name="AccountService"></a>
+## type [AccountService](<https://github.com/fishaudio/fish-audio-go/blob/main/account.go#L38-L40>)
 
 AccountService provides account and billing operations.
 
@@ -134,8 +134,8 @@ type AccountService struct {
 }
 ```
 
-<a id="AccountService.GetCredits"></a>
-### func (*AccountService) [GetCredits](https://github.com/fishaudio/fish-audio-go/blob/main/account.go#L48)
+<a name="AccountService.GetCredits"></a>
+### func \(\*AccountService\) [GetCredits](<https://github.com/fishaudio/fish-audio-go/blob/main/account.go#L48>)
 
 ```go
 func (s *AccountService) GetCredits(ctx context.Context, params *GetCreditsParams) (*Credits, error)
@@ -150,8 +150,8 @@ credits, err := client.Account.GetCredits(ctx, nil)
 fmt.Printf("Available credits: %s\n", credits.Credit)
 ```
 
-<a id="AccountService.GetPackage"></a>
-### func (*AccountService) [GetPackage](https://github.com/fishaudio/fish-audio-go/blob/main/account.go#L68)
+<a name="AccountService.GetPackage"></a>
+### func \(\*AccountService\) [GetPackage](<https://github.com/fishaudio/fish-audio-go/blob/main/account.go#L68>)
 
 ```go
 func (s *AccountService) GetPackage(ctx context.Context) (*Package, error)
@@ -166,8 +166,8 @@ pkg, err := client.Account.GetPackage(ctx)
 fmt.Printf("Balance: %d/%d\n", pkg.Balance, pkg.Total)
 ```
 
-<a id="AudioFormat"></a>
-## type [AudioFormat](https://github.com/fishaudio/fish-audio-go/blob/main/shared.go#L4)
+<a name="AudioFormat"></a>
+## type [AudioFormat](<https://github.com/fishaudio/fish-audio-go/blob/main/shared.go#L4>)
 
 AudioFormat specifies the output audio format.
 
@@ -175,7 +175,7 @@ AudioFormat specifies the output audio format.
 type AudioFormat string
 ```
 
-<a id="AudioFormatMP3"></a>
+<a name="AudioFormatMP3"></a>
 
 ```go
 const (
@@ -186,15 +186,15 @@ const (
 )
 ```
 
-<a id="AudioStream"></a>
-## type [AudioStream](https://github.com/fishaudio/fish-audio-go/blob/main/audio_stream.go#L31-L37)
+<a name="AudioStream"></a>
+## type [AudioStream](<https://github.com/fishaudio/fish-audio-go/blob/main/audio_stream.go#L31-L37>)
 
 AudioStream wraps an HTTP response for streaming audio data.
 
 It provides two ways to consume audio:
 
-- Iterate chunk-by-chunk using Next() and Bytes()
-- Collect all chunks at once using Collect()
+- Iterate chunk\-by\-chunk using Next\(\) and Bytes\(\)
+- Collect all chunks at once using Collect\(\)
 
 Example:
 
@@ -221,17 +221,17 @@ type AudioStream struct {
 }
 ```
 
-<a id="AudioStream.Bytes"></a>
-### func (*AudioStream) [Bytes](https://github.com/fishaudio/fish-audio-go/blob/main/audio_stream.go#L71)
+<a name="AudioStream.Bytes"></a>
+### func \(\*AudioStream\) [Bytes](<https://github.com/fishaudio/fish-audio-go/blob/main/audio_stream.go#L71>)
 
 ```go
 func (s *AudioStream) Bytes() []byte
 ```
 
-Bytes returns the current chunk of audio data. Only valid after a successful call to Next().
+Bytes returns the current chunk of audio data. Only valid after a successful call to Next\(\).
 
-<a id="AudioStream.Close"></a>
-### func (*AudioStream) [Close](https://github.com/fishaudio/fish-audio-go/blob/main/audio_stream.go#L95)
+<a name="AudioStream.Close"></a>
+### func \(\*AudioStream\) [Close](<https://github.com/fishaudio/fish-audio-go/blob/main/audio_stream.go#L95>)
 
 ```go
 func (s *AudioStream) Close() error
@@ -239,8 +239,8 @@ func (s *AudioStream) Close() error
 
 Close closes the underlying response body.
 
-<a id="AudioStream.Collect"></a>
-### func (*AudioStream) [Collect](https://github.com/fishaudio/fish-audio-go/blob/main/audio_stream.go#L82)
+<a name="AudioStream.Collect"></a>
+### func \(\*AudioStream\) [Collect](<https://github.com/fishaudio/fish-audio-go/blob/main/audio_stream.go#L82>)
 
 ```go
 func (s *AudioStream) Collect() ([]byte, error)
@@ -248,8 +248,8 @@ func (s *AudioStream) Collect() ([]byte, error)
 
 Collect reads all remaining audio data and returns it as a single byte slice. This consumes the stream and closes it automatically.
 
-<a id="AudioStream.Err"></a>
-### func (*AudioStream) [Err](https://github.com/fishaudio/fish-audio-go/blob/main/audio_stream.go#L76)
+<a name="AudioStream.Err"></a>
+### func \(\*AudioStream\) [Err](<https://github.com/fishaudio/fish-audio-go/blob/main/audio_stream.go#L76>)
 
 ```go
 func (s *AudioStream) Err() error
@@ -257,8 +257,8 @@ func (s *AudioStream) Err() error
 
 Err returns any error that occurred during iteration.
 
-<a id="AudioStream.Next"></a>
-### func (*AudioStream) [Next](https://github.com/fishaudio/fish-audio-go/blob/main/audio_stream.go#L49)
+<a name="AudioStream.Next"></a>
+### func \(\*AudioStream\) [Next](<https://github.com/fishaudio/fish-audio-go/blob/main/audio_stream.go#L49>)
 
 ```go
 func (s *AudioStream) Next() bool
@@ -266,8 +266,8 @@ func (s *AudioStream) Next() bool
 
 Next advances to the next chunk of audio data. It returns false when there are no more chunks or an error occurred.
 
-<a id="AudioStream.Read"></a>
-### func (*AudioStream) [Read](https://github.com/fishaudio/fish-audio-go/blob/main/audio_stream.go#L107)
+<a name="AudioStream.Read"></a>
+### func \(\*AudioStream\) [Read](<https://github.com/fishaudio/fish-audio-go/blob/main/audio_stream.go#L107>)
 
 ```go
 func (s *AudioStream) Read(p []byte) (n int, err error)
@@ -275,10 +275,10 @@ func (s *AudioStream) Read(p []byte) (n int, err error)
 
 Read implements io.Reader interface.
 
-<a id="AuthenticationError"></a>
-## type [AuthenticationError](https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L25-L27)
+<a name="AuthenticationError"></a>
+## type [AuthenticationError](<https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L25-L27>)
 
-AuthenticationError is raised when authentication fails (401).
+AuthenticationError is raised when authentication fails \(401\).
 
 ```go
 type AuthenticationError struct {
@@ -286,8 +286,8 @@ type AuthenticationError struct {
 }
 ```
 
-<a id="Author"></a>
-## type [Author](https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L26-L30)
+<a name="Author"></a>
+## type [Author](<https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L26-L30>)
 
 Author represents voice model author information.
 
@@ -299,8 +299,8 @@ type Author struct {
 }
 ```
 
-<a id="Client"></a>
-## type [Client](https://github.com/fishaudio/fish-audio-go/blob/main/client.go#L26-L37)
+<a name="Client"></a>
+## type [Client](<https://github.com/fishaudio/fish-audio-go/blob/main/client.go#L26-L37>)
 
 Client is the Fish Audio API client.
 
@@ -316,8 +316,8 @@ type Client struct {
 }
 ```
 
-<a id="NewClient"></a>
-### func [NewClient](https://github.com/fishaudio/fish-audio-go/blob/main/client.go#L42)
+<a name="NewClient"></a>
+### func [NewClient](<https://github.com/fishaudio/fish-audio-go/blob/main/client.go#L42>)
 
 ```go
 func NewClient(apiKey string, opts ...ClientOption) *Client
@@ -325,10 +325,10 @@ func NewClient(apiKey string, opts ...ClientOption) *Client
 
 NewClient creates a new Fish Audio API client.
 
-If apiKey is empty, it will try to read from the FISH_API_KEY environment variable.
+If apiKey is empty, it will try to read from the FISH\_API\_KEY environment variable.
 
-<a id="Client.Close"></a>
-### func (*Client) [Close](https://github.com/fishaudio/fish-audio-go/blob/main/client.go#L73)
+<a name="Client.Close"></a>
+### func \(\*Client\) [Close](<https://github.com/fishaudio/fish-audio-go/blob/main/client.go#L73>)
 
 ```go
 func (c *Client) Close() error
@@ -336,8 +336,8 @@ func (c *Client) Close() error
 
 Close closes the HTTP client's idle connections.
 
-<a id="ClientOption"></a>
-## type [ClientOption](https://github.com/fishaudio/fish-audio-go/blob/main/options.go#L9)
+<a name="ClientOption"></a>
+## type [ClientOption](<https://github.com/fishaudio/fish-audio-go/blob/main/options.go#L9>)
 
 ClientOption is a function that configures the Client.
 
@@ -345,8 +345,8 @@ ClientOption is a function that configures the Client.
 type ClientOption func(*Client)
 ```
 
-<a id="WithBaseURL"></a>
-### func [WithBaseURL](https://github.com/fishaudio/fish-audio-go/blob/main/options.go#L12)
+<a name="WithBaseURL"></a>
+### func [WithBaseURL](<https://github.com/fishaudio/fish-audio-go/blob/main/options.go#L12>)
 
 ```go
 func WithBaseURL(url string) ClientOption
@@ -354,8 +354,8 @@ func WithBaseURL(url string) ClientOption
 
 WithBaseURL sets a custom base URL for the API.
 
-<a id="WithHTTPClient"></a>
-### func [WithHTTPClient](https://github.com/fishaudio/fish-audio-go/blob/main/options.go#L19)
+<a name="WithHTTPClient"></a>
+### func [WithHTTPClient](<https://github.com/fishaudio/fish-audio-go/blob/main/options.go#L19>)
 
 ```go
 func WithHTTPClient(httpClient *http.Client) ClientOption
@@ -363,8 +363,8 @@ func WithHTTPClient(httpClient *http.Client) ClientOption
 
 WithHTTPClient sets a custom HTTP client.
 
-<a id="WithTimeout"></a>
-### func [WithTimeout](https://github.com/fishaudio/fish-audio-go/blob/main/options.go#L26)
+<a name="WithTimeout"></a>
+### func [WithTimeout](<https://github.com/fishaudio/fish-audio-go/blob/main/options.go#L26>)
 
 ```go
 func WithTimeout(timeout time.Duration) ClientOption
@@ -372,8 +372,8 @@ func WithTimeout(timeout time.Duration) ClientOption
 
 WithTimeout sets the default timeout for requests.
 
-<a id="ConvertParams"></a>
-## type [ConvertParams](https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L60-L75)
+<a name="ConvertParams"></a>
+## type [ConvertParams](<https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L60-L75>)
 
 ConvertParams contains parameters for TTS conversion.
 
@@ -396,8 +396,8 @@ type ConvertParams struct {
 }
 ```
 
-<a id="CreateVoiceParams"></a>
-## type [CreateVoiceParams](https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L80-L99)
+<a name="CreateVoiceParams"></a>
+## type [CreateVoiceParams](<https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L80-L99>)
 
 CreateVoiceParams contains parameters for creating a voice.
 
@@ -424,8 +424,8 @@ type CreateVoiceParams struct {
 }
 ```
 
-<a id="Credits"></a>
-## type [Credits](https://github.com/fishaudio/fish-audio-go/blob/main/account.go#L9-L17)
+<a name="Credits"></a>
+## type [Credits](<https://github.com/fishaudio/fish-audio-go/blob/main/account.go#L9-L17>)
 
 Credits represents the user's API credit balance.
 
@@ -441,8 +441,8 @@ type Credits struct {
 }
 ```
 
-<a id="FishAudioError"></a>
-## type [FishAudioError](https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L6-L9)
+<a name="FishAudioError"></a>
+## type [FishAudioError](<https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L6-L9>)
 
 FishAudioError is the base interface for all Fish Audio SDK errors.
 
@@ -453,8 +453,8 @@ type FishAudioError interface {
 }
 ```
 
-<a id="GetCreditsParams"></a>
-## type [GetCreditsParams](https://github.com/fishaudio/fish-audio-go/blob/main/account.go#L32-L35)
+<a name="GetCreditsParams"></a>
+## type [GetCreditsParams](<https://github.com/fishaudio/fish-audio-go/blob/main/account.go#L32-L35>)
 
 GetCreditsParams contains parameters for getting credits.
 
@@ -465,8 +465,8 @@ type GetCreditsParams struct {
 }
 ```
 
-<a id="LatencyMode"></a>
-## type [LatencyMode](https://github.com/fishaudio/fish-audio-go/blob/main/shared.go#L14)
+<a name="LatencyMode"></a>
+## type [LatencyMode](<https://github.com/fishaudio/fish-audio-go/blob/main/shared.go#L14>)
 
 LatencyMode specifies the generation latency mode.
 
@@ -474,7 +474,7 @@ LatencyMode specifies the generation latency mode.
 type LatencyMode string
 ```
 
-<a id="LatencyNormal"></a>
+<a name="LatencyNormal"></a>
 
 ```go
 const (
@@ -483,8 +483,8 @@ const (
 )
 ```
 
-<a id="ListVoicesParams"></a>
-## type [ListVoicesParams](https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L58-L77)
+<a name="ListVoicesParams"></a>
+## type [ListVoicesParams](<https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L58-L77>)
 
 ListVoicesParams contains parameters for listing voices.
 
@@ -511,8 +511,8 @@ type ListVoicesParams struct {
 }
 ```
 
-<a id="Model"></a>
-## type [Model](https://github.com/fishaudio/fish-audio-go/blob/main/shared.go#L54)
+<a name="Model"></a>
+## type [Model](<https://github.com/fishaudio/fish-audio-go/blob/main/shared.go#L54>)
 
 Model specifies the TTS model to use.
 
@@ -520,7 +520,7 @@ Model specifies the TTS model to use.
 type Model string
 ```
 
-<a id="ModelSpeech15"></a>
+<a name="ModelSpeech15"></a>
 
 ```go
 const (
@@ -530,8 +530,8 @@ const (
 )
 ```
 
-<a id="ModelState"></a>
-## type [ModelState](https://github.com/fishaudio/fish-audio-go/blob/main/shared.go#L44)
+<a name="ModelState"></a>
+## type [ModelState](<https://github.com/fishaudio/fish-audio-go/blob/main/shared.go#L44>)
 
 ModelState specifies the state of a voice model.
 
@@ -539,7 +539,7 @@ ModelState specifies the state of a voice model.
 type ModelState string
 ```
 
-<a id="ModelStateCreated"></a>
+<a name="ModelStateCreated"></a>
 
 ```go
 const (
@@ -550,10 +550,10 @@ const (
 )
 ```
 
-<a id="NotFoundError"></a>
-## type [NotFoundError](https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L35-L37)
+<a name="NotFoundError"></a>
+## type [NotFoundError](<https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L35-L37>)
 
-NotFoundError is raised when a resource is not found (404).
+NotFoundError is raised when a resource is not found \(404\).
 
 ```go
 type NotFoundError struct {
@@ -561,8 +561,8 @@ type NotFoundError struct {
 }
 ```
 
-<a id="Package"></a>
-## type [Package](https://github.com/fishaudio/fish-audio-go/blob/main/account.go#L20-L29)
+<a name="Package"></a>
+## type [Package](<https://github.com/fishaudio/fish-audio-go/blob/main/account.go#L20-L29>)
 
 Package represents the user's prepaid package information.
 
@@ -579,8 +579,8 @@ type Package struct {
 }
 ```
 
-<a id="PaginatedResponse"></a>
-## type [PaginatedResponse](https://github.com/fishaudio/fish-audio-go/blob/main/shared.go#L22-L25)
+<a name="PaginatedResponse"></a>
+## type [PaginatedResponse](<https://github.com/fishaudio/fish-audio-go/blob/main/shared.go#L22-L25>)
 
 PaginatedResponse wraps paginated API responses.
 
@@ -591,10 +591,10 @@ type PaginatedResponse[T any] struct {
 }
 ```
 
-<a id="PermissionError"></a>
-## type [PermissionError](https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L30-L32)
+<a name="PermissionError"></a>
+## type [PermissionError](<https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L30-L32>)
 
-PermissionError is raised when permission is denied (403).
+PermissionError is raised when permission is denied \(403\).
 
 ```go
 type PermissionError struct {
@@ -602,10 +602,10 @@ type PermissionError struct {
 }
 ```
 
-<a id="Prosody"></a>
-## type [Prosody](https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L24-L29)
+<a name="Prosody"></a>
+## type [Prosody](<https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L24-L29>)
 
-Prosody contains speech prosody settings (speed and volume).
+Prosody contains speech prosody settings \(speed and volume\).
 
 ```go
 type Prosody struct {
@@ -616,10 +616,10 @@ type Prosody struct {
 }
 ```
 
-<a id="RateLimitError"></a>
-## type [RateLimitError](https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L40-L42)
+<a name="RateLimitError"></a>
+## type [RateLimitError](<https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L40-L42>)
 
-RateLimitError is raised when rate limit is exceeded (429).
+RateLimitError is raised when rate limit is exceeded \(429\).
 
 ```go
 type RateLimitError struct {
@@ -627,8 +627,8 @@ type RateLimitError struct {
 }
 ```
 
-<a id="ReferenceAudio"></a>
-## type [ReferenceAudio](https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L16-L21)
+<a name="ReferenceAudio"></a>
+## type [ReferenceAudio](<https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L16-L21>)
 
 ReferenceAudio contains reference audio for voice cloning.
 
@@ -641,10 +641,10 @@ type ReferenceAudio struct {
 }
 ```
 
-<a id="RequestOptions"></a>
-## type [RequestOptions](https://github.com/fishaudio/fish-audio-go/blob/main/options.go#L33-L42)
+<a name="RequestOptions"></a>
+## type [RequestOptions](<https://github.com/fishaudio/fish-audio-go/blob/main/options.go#L33-L42>)
 
-RequestOptions allows per-request overrides of client defaults.
+RequestOptions allows per\-request overrides of client defaults.
 
 ```go
 type RequestOptions struct {
@@ -659,8 +659,8 @@ type RequestOptions struct {
 }
 ```
 
-<a id="Sample"></a>
-## type [Sample](https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L18-L23)
+<a name="Sample"></a>
+## type [Sample](<https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L18-L23>)
 
 Sample represents a sample audio for a voice model.
 
@@ -673,10 +673,10 @@ type Sample struct {
 }
 ```
 
-<a id="ServerError"></a>
-## type [ServerError](https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L50-L52)
+<a name="ServerError"></a>
+## type [ServerError](<https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L50-L52>)
 
-ServerError is raised when the server encounters an error (5xx).
+ServerError is raised when the server encounters an error \(5xx\).
 
 ```go
 type ServerError struct {
@@ -684,8 +684,8 @@ type ServerError struct {
 }
 ```
 
-<a id="StreamParams"></a>
-## type [StreamParams](https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L78-L93)
+<a name="StreamParams"></a>
+## type [StreamParams](<https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L78-L93>)
 
 StreamParams contains parameters for TTS streaming.
 
@@ -708,10 +708,10 @@ type StreamParams struct {
 }
 ```
 
-<a id="TTSConfig"></a>
-## type [TTSConfig](https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L32-L57)
+<a name="TTSConfig"></a>
+## type [TTSConfig](<https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L32-L57>)
 
-TTSConfig is reusable configuration for text-to-speech requests.
+TTSConfig is reusable configuration for text\-to\-speech requests.
 
 ```go
 type TTSConfig struct {
@@ -742,10 +742,10 @@ type TTSConfig struct {
 }
 ```
 
-<a id="TTSService"></a>
-## type [TTSService](https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L113-L115)
+<a name="TTSService"></a>
+## type [TTSService](<https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L113-L115>)
 
-TTSService provides text-to-speech operations.
+TTSService provides text\-to\-speech operations.
 
 ```go
 type TTSService struct {
@@ -753,8 +753,8 @@ type TTSService struct {
 }
 ```
 
-<a id="TTSService.Convert"></a>
-### func (*TTSService) [Convert](https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L118)
+<a name="TTSService.Convert"></a>
+### func \(\*TTSService\) [Convert](<https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L118>)
 
 ```go
 func (s *TTSService) Convert(ctx context.Context, params *ConvertParams) ([]byte, error)
@@ -762,8 +762,8 @@ func (s *TTSService) Convert(ctx context.Context, params *ConvertParams) ([]byte
 
 Convert generates speech from text and returns the complete audio.
 
-<a id="TTSService.Stream"></a>
-### func (*TTSService) [Stream](https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L135)
+<a name="TTSService.Stream"></a>
+### func \(\*TTSService\) [Stream](<https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L135>)
 
 ```go
 func (s *TTSService) Stream(ctx context.Context, params *StreamParams) (*AudioStream, error)
@@ -771,19 +771,19 @@ func (s *TTSService) Stream(ctx context.Context, params *StreamParams) (*AudioSt
 
 Stream generates speech from text and returns an audio stream.
 
-<a id="TTSService.StreamWebSocket"></a>
-### func (*TTSService) [StreamWebSocket](https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L235)
+<a name="TTSService.StreamWebSocket"></a>
+### func \(\*TTSService\) [StreamWebSocket](<https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L235>)
 
 ```go
 func (s *TTSService) StreamWebSocket(ctx context.Context, textChan <-chan string, params *StreamParams, opts *WebSocketOptions) (*WebSocketAudioStream, error)
 ```
 
-StreamWebSocket streams text to speech over WebSocket for real-time generation.
+StreamWebSocket streams text to speech over WebSocket for real\-time generation.
 
 The textChan receives text chunks to synthesize. Close the channel to end streaming. Returns a WebSocketAudioStream that can be iterated for audio chunks.
 
-<a id="TrainMode"></a>
-## type [TrainMode](https://github.com/fishaudio/fish-audio-go/blob/main/shared.go#L37)
+<a name="TrainMode"></a>
+## type [TrainMode](<https://github.com/fishaudio/fish-audio-go/blob/main/shared.go#L37>)
 
 TrainMode specifies the training mode for voice models.
 
@@ -791,7 +791,7 @@ TrainMode specifies the training mode for voice models.
 type TrainMode string
 ```
 
-<a id="TrainModeFast"></a>
+<a name="TrainModeFast"></a>
 
 ```go
 const (
@@ -799,8 +799,8 @@ const (
 )
 ```
 
-<a id="TranscribeParams"></a>
-## type [TranscribeParams](https://github.com/fishaudio/fish-audio-go/blob/main/asr.go#L34-L39)
+<a name="TranscribeParams"></a>
+## type [TranscribeParams](<https://github.com/fishaudio/fish-audio-go/blob/main/asr.go#L34-L39>)
 
 TranscribeParams contains parameters for ASR transcription.
 
@@ -813,8 +813,8 @@ type TranscribeParams struct {
 }
 ```
 
-<a id="UpdateVoiceParams"></a>
-## type [UpdateVoiceParams](https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L102-L113)
+<a name="UpdateVoiceParams"></a>
+## type [UpdateVoiceParams](<https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L102-L113>)
 
 UpdateVoiceParams contains parameters for updating a voice.
 
@@ -833,10 +833,10 @@ type UpdateVoiceParams struct {
 }
 ```
 
-<a id="ValidationError"></a>
-## type [ValidationError](https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L45-L47)
+<a name="ValidationError"></a>
+## type [ValidationError](<https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L45-L47>)
 
-ValidationError is raised when request validation fails (422).
+ValidationError is raised when request validation fails \(422\).
 
 ```go
 type ValidationError struct {
@@ -844,8 +844,8 @@ type ValidationError struct {
 }
 ```
 
-<a id="Visibility"></a>
-## type [Visibility](https://github.com/fishaudio/fish-audio-go/blob/main/shared.go#L28)
+<a name="Visibility"></a>
+## type [Visibility](<https://github.com/fishaudio/fish-audio-go/blob/main/shared.go#L28>)
 
 Visibility specifies the visibility of a voice model.
 
@@ -853,7 +853,7 @@ Visibility specifies the visibility of a voice model.
 type Visibility string
 ```
 
-<a id="VisibilityPublic"></a>
+<a name="VisibilityPublic"></a>
 
 ```go
 const (
@@ -863,8 +863,8 @@ const (
 )
 ```
 
-<a id="Voice"></a>
-## type [Voice](https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L33-L55)
+<a name="Voice"></a>
+## type [Voice](<https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L33-L55>)
 
 Voice represents a voice model.
 
@@ -894,8 +894,8 @@ type Voice struct {
 }
 ```
 
-<a id="VoicesService"></a>
-## type [VoicesService](https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L116-L118)
+<a name="VoicesService"></a>
+## type [VoicesService](<https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L116-L118>)
 
 VoicesService provides voice management operations.
 
@@ -905,8 +905,8 @@ type VoicesService struct {
 }
 ```
 
-<a id="VoicesService.Create"></a>
-### func (*VoicesService) [Create](https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L192)
+<a name="VoicesService.Create"></a>
+### func \(\*VoicesService\) [Create](<https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L192>)
 
 ```go
 func (s *VoicesService) Create(ctx context.Context, params *CreateVoiceParams) (*Voice, error)
@@ -914,8 +914,8 @@ func (s *VoicesService) Create(ctx context.Context, params *CreateVoiceParams) (
 
 Create creates/clones a new voice.
 
-<a id="VoicesService.Delete"></a>
-### func (*VoicesService) [Delete](https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L389)
+<a name="VoicesService.Delete"></a>
+### func \(\*VoicesService\) [Delete](<https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L389>)
 
 ```go
 func (s *VoicesService) Delete(ctx context.Context, voiceID string) error
@@ -923,8 +923,8 @@ func (s *VoicesService) Delete(ctx context.Context, voiceID string) error
 
 Delete deletes a voice.
 
-<a id="VoicesService.Get"></a>
-### func (*VoicesService) [Get](https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L183)
+<a name="VoicesService.Get"></a>
+### func \(\*VoicesService\) [Get](<https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L183>)
 
 ```go
 func (s *VoicesService) Get(ctx context.Context, voiceID string) (*Voice, error)
@@ -932,8 +932,8 @@ func (s *VoicesService) Get(ctx context.Context, voiceID string) (*Voice, error)
 
 Get returns a voice by ID.
 
-<a id="VoicesService.List"></a>
-### func (*VoicesService) [List](https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L121)
+<a name="VoicesService.List"></a>
+### func \(\*VoicesService\) [List](<https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L121>)
 
 ```go
 func (s *VoicesService) List(ctx context.Context, params *ListVoicesParams) (*PaginatedResponse[Voice], error)
@@ -941,8 +941,8 @@ func (s *VoicesService) List(ctx context.Context, params *ListVoicesParams) (*Pa
 
 List returns available voices/models.
 
-<a id="VoicesService.Update"></a>
-### func (*VoicesService) [Update](https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L316)
+<a name="VoicesService.Update"></a>
+### func \(\*VoicesService\) [Update](<https://github.com/fishaudio/fish-audio-go/blob/main/voices.go#L316>)
 
 ```go
 func (s *VoicesService) Update(ctx context.Context, voiceID string, params *UpdateVoiceParams) error
@@ -950,8 +950,8 @@ func (s *VoicesService) Update(ctx context.Context, voiceID string, params *Upda
 
 Update updates voice metadata.
 
-<a id="WebSocketAudioStream"></a>
-## type [WebSocketAudioStream](https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L376-L383)
+<a name="WebSocketAudioStream"></a>
+## type [WebSocketAudioStream](<https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L376-L383>)
 
 WebSocketAudioStream wraps WebSocket audio chunks for iteration.
 
@@ -961,8 +961,8 @@ type WebSocketAudioStream struct {
 }
 ```
 
-<a id="WebSocketAudioStream.Bytes"></a>
-### func (*WebSocketAudioStream) [Bytes](https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L410)
+<a name="WebSocketAudioStream.Bytes"></a>
+### func \(\*WebSocketAudioStream\) [Bytes](<https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L410>)
 
 ```go
 func (s *WebSocketAudioStream) Bytes() []byte
@@ -970,8 +970,8 @@ func (s *WebSocketAudioStream) Bytes() []byte
 
 Bytes returns the current chunk of audio data.
 
-<a id="WebSocketAudioStream.Close"></a>
-### func (*WebSocketAudioStream) [Close](https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L465)
+<a name="WebSocketAudioStream.Close"></a>
+### func \(\*WebSocketAudioStream\) [Close](<https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L465>)
 
 ```go
 func (s *WebSocketAudioStream) Close() error
@@ -979,8 +979,8 @@ func (s *WebSocketAudioStream) Close() error
 
 Close closes the stream.
 
-<a id="WebSocketAudioStream.Collect"></a>
-### func (*WebSocketAudioStream) [Collect](https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L424)
+<a name="WebSocketAudioStream.Collect"></a>
+### func \(\*WebSocketAudioStream\) [Collect](<https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L424>)
 
 ```go
 func (s *WebSocketAudioStream) Collect() ([]byte, error)
@@ -988,8 +988,8 @@ func (s *WebSocketAudioStream) Collect() ([]byte, error)
 
 Collect reads all audio chunks and returns them as a single byte slice.
 
-<a id="WebSocketAudioStream.Err"></a>
-### func (*WebSocketAudioStream) [Err](https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L417)
+<a name="WebSocketAudioStream.Err"></a>
+### func \(\*WebSocketAudioStream\) [Err](<https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L417>)
 
 ```go
 func (s *WebSocketAudioStream) Err() error
@@ -997,8 +997,8 @@ func (s *WebSocketAudioStream) Err() error
 
 Err returns any error that occurred during iteration.
 
-<a id="WebSocketAudioStream.Next"></a>
-### func (*WebSocketAudioStream) [Next](https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L387)
+<a name="WebSocketAudioStream.Next"></a>
+### func \(\*WebSocketAudioStream\) [Next](<https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L387>)
 
 ```go
 func (s *WebSocketAudioStream) Next() bool
@@ -1006,8 +1006,8 @@ func (s *WebSocketAudioStream) Next() bool
 
 Next advances to the next chunk of audio data. Returns false when there are no more chunks or an error occurred.
 
-<a id="WebSocketAudioStream.Read"></a>
-### func (*WebSocketAudioStream) [Read](https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L436)
+<a name="WebSocketAudioStream.Read"></a>
+### func \(\*WebSocketAudioStream\) [Read](<https://github.com/fishaudio/fish-audio-go/blob/main/tts.go#L436>)
 
 ```go
 func (s *WebSocketAudioStream) Read(p []byte) (n int, err error)
@@ -1015,8 +1015,8 @@ func (s *WebSocketAudioStream) Read(p []byte) (n int, err error)
 
 Read implements io.Reader interface.
 
-<a id="WebSocketError"></a>
-## type [WebSocketError](https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L55-L57)
+<a name="WebSocketError"></a>
+## type [WebSocketError](<https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L55-L57>)
 
 WebSocketError is raised when WebSocket connection or streaming fails.
 
@@ -1026,8 +1026,8 @@ type WebSocketError struct {
 }
 ```
 
-<a id="WebSocketError.Error"></a>
-### func (*WebSocketError) [Error](https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L59)
+<a name="WebSocketError.Error"></a>
+### func \(\*WebSocketError\) [Error](<https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L59>)
 
 ```go
 func (e *WebSocketError) Error() string
@@ -1035,8 +1035,8 @@ func (e *WebSocketError) Error() string
 
 
 
-<a id="WebSocketError.IsFishAudioError"></a>
-### func (*WebSocketError) [IsFishAudioError](https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L63)
+<a name="WebSocketError.IsFishAudioError"></a>
+### func \(\*WebSocketError\) [IsFishAudioError](<https://github.com/fishaudio/fish-audio-go/blob/main/errors.go#L63>)
 
 ```go
 func (e *WebSocketError) IsFishAudioError()
@@ -1044,8 +1044,8 @@ func (e *WebSocketError) IsFishAudioError()
 
 
 
-<a id="WebSocketOptions"></a>
-## type [WebSocketOptions](https://github.com/fishaudio/fish-audio-go/blob/main/options.go#L45-L63)
+<a name="WebSocketOptions"></a>
+## type [WebSocketOptions](<https://github.com/fishaudio/fish-audio-go/blob/main/options.go#L45-L63>)
 
 WebSocketOptions configures WebSocket connections.
 
@@ -1071,8 +1071,8 @@ type WebSocketOptions struct {
 }
 ```
 
-<a id="DefaultWebSocketOptions"></a>
-### func [DefaultWebSocketOptions](https://github.com/fishaudio/fish-audio-go/blob/main/options.go#L66)
+<a name="DefaultWebSocketOptions"></a>
+### func [DefaultWebSocketOptions](<https://github.com/fishaudio/fish-audio-go/blob/main/options.go#L66>)
 
 ```go
 func DefaultWebSocketOptions() *WebSocketOptions
@@ -1080,4 +1080,4 @@ func DefaultWebSocketOptions() *WebSocketOptions
 
 DefaultWebSocketOptions returns WebSocketOptions with default values.
 
-Generated by [gomarkdoc](https://github.com/princjef/gomarkdoc)
+Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)
