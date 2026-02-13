@@ -1,41 +1,3 @@
-<a id="fishaudio.utils.save"></a>
-
-# fishaudio.utils.save
-
-Audio saving utility.
-
-<a id="fishaudio.utils.save.save"></a>
-
-#### save
-
-```python
-def save(audio: Union[bytes, Iterable[bytes]], filename: str) -> None
-```
-
-Save audio to a file.
-
-**Arguments**:
-
-- `audio` - Audio bytes or iterable of bytes
-- `filename` - Path to save the audio file
-  
-
-**Examples**:
-
-    ```python
-    from fishaudio import FishAudio, save
-
-    client = FishAudio(api_key="...")
-    audio = client.tts.convert(text="Hello world")
-
-    # Save to file
-    save(audio, "output.mp3")
-
-    # Works with iterators too
-    audio_stream = client.tts.convert(text="Another example")
-    save(audio_stream, "another.mp3")
-    ```
-
 <a id="fishaudio.utils.play"></a>
 
 # fishaudio.utils.play
@@ -83,6 +45,44 @@ Play audio using various playback methods.
 
     # Force sounddevice fallback
     play(audio, use_ffmpeg=False)
+    ```
+
+<a id="fishaudio.utils.save"></a>
+
+# fishaudio.utils.save
+
+Audio saving utility.
+
+<a id="fishaudio.utils.save.save"></a>
+
+#### save
+
+```python
+def save(audio: Union[bytes, Iterable[bytes]], filename: str) -> None
+```
+
+Save audio to a file.
+
+**Arguments**:
+
+- `audio` - Audio bytes or iterable of bytes
+- `filename` - Path to save the audio file
+  
+
+**Examples**:
+
+    ```python
+    from fishaudio import FishAudio, save
+
+    client = FishAudio(api_key="...")
+    audio = client.tts.convert(text="Hello world")
+
+    # Save to file
+    save(audio, "output.mp3")
+
+    # Works with iterators too
+    audio_stream = client.tts.convert(text="Another example")
+    save(audio_stream, "another.mp3")
     ```
 
 <a id="fishaudio.utils.stream"></a>
