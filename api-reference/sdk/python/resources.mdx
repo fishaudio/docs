@@ -312,163 +312,65 @@ async def delete(voice_id: str,
 
 Delete a voice (async). See sync version for details.
 
-<a id="fishaudio.resources.account"></a>
+<a id="fishaudio.resources.realtime"></a>
 
-# fishaudio.resources.account
+# fishaudio.resources.realtime
 
-Account namespace client for billing and credits.
+Real-time WebSocket streaming helpers.
 
-<a id="fishaudio.resources.account.AccountClient"></a>
+<a id="fishaudio.resources.realtime.iter_websocket_audio"></a>
 
-## AccountClient Objects
-
-```python
-class AccountClient()
-```
-
-Synchronous account operations.
-
-<a id="fishaudio.resources.account.AccountClient.get_credits"></a>
-
-#### get\_credits
+#### iter\_websocket\_audio
 
 ```python
-def get_credits(*,
-                check_free_credit: Optional[bool] = OMIT,
-                request_options: Optional[RequestOptions] = None) -> Credits
+def iter_websocket_audio(ws) -> Iterator[bytes]
 ```
 
-Get API credit balance.
+Process WebSocket audio messages (sync).
+
+Receives messages from WebSocket, yields audio chunks, handles errors.
+Unknown events are ignored and iteration continues.
 
 **Arguments**:
 
-- `check_free_credit` - Whether to check free credit availability
-- `request_options` - Request-level overrides
+- `ws` - WebSocket connection from httpx_ws.connect_ws
   
 
-**Returns**:
+**Yields**:
 
-  Credits information
+  Audio bytes
   
 
-**Example**:
+**Raises**:
 
-    ```python
-    client = FishAudio(api_key="...")
-    credits = client.account.get_credits()
-    print(f"Available credits: {float(credits.credit)}")
+- `WebSocketError` - On disconnect or error finish event
 
-    # Check free credit availability
-    credits = client.account.get_credits(check_free_credit=True)
-    if credits.has_free_credit:
-        print("Free credits available!")
-    ```
+<a id="fishaudio.resources.realtime.aiter_websocket_audio"></a>
 
-<a id="fishaudio.resources.account.AccountClient.get_package"></a>
-
-#### get\_package
+#### aiter\_websocket\_audio
 
 ```python
-def get_package(*,
-                request_options: Optional[RequestOptions] = None) -> Package
+async def aiter_websocket_audio(ws) -> AsyncIterator[bytes]
 ```
 
-Get package information.
+Process WebSocket audio messages (async).
+
+Receives messages from WebSocket, yields audio chunks, handles errors.
+Unknown events are ignored and iteration continues.
 
 **Arguments**:
 
-- `request_options` - Request-level overrides
+- `ws` - WebSocket connection from httpx_ws.aconnect_ws
   
 
-**Returns**:
+**Yields**:
 
-  Package information
+  Audio bytes
   
 
-**Example**:
+**Raises**:
 
-    ```python
-    client = FishAudio(api_key="...")
-    package = client.account.get_package()
-    print(f"Balance: {package.balance}/{package.total}")
-    ```
-
-<a id="fishaudio.resources.account.AsyncAccountClient"></a>
-
-## AsyncAccountClient Objects
-
-```python
-class AsyncAccountClient()
-```
-
-Asynchronous account operations.
-
-<a id="fishaudio.resources.account.AsyncAccountClient.get_credits"></a>
-
-#### get\_credits
-
-```python
-async def get_credits(
-        *,
-        check_free_credit: Optional[bool] = OMIT,
-        request_options: Optional[RequestOptions] = None) -> Credits
-```
-
-Get API credit balance (async).
-
-**Arguments**:
-
-- `check_free_credit` - Whether to check free credit availability
-- `request_options` - Request-level overrides
-  
-
-**Returns**:
-
-  Credits information
-  
-
-**Example**:
-
-    ```python
-    client = AsyncFishAudio(api_key="...")
-    credits = await client.account.get_credits()
-    print(f"Available credits: {float(credits.credit)}")
-
-    # Check free credit availability
-    credits = await client.account.get_credits(check_free_credit=True)
-    if credits.has_free_credit:
-        print("Free credits available!")
-    ```
-
-<a id="fishaudio.resources.account.AsyncAccountClient.get_package"></a>
-
-#### get\_package
-
-```python
-async def get_package(*,
-                      request_options: Optional[RequestOptions] = None
-                      ) -> Package
-```
-
-Get package information (async).
-
-**Arguments**:
-
-- `request_options` - Request-level overrides
-  
-
-**Returns**:
-
-  Package information
-  
-
-**Example**:
-
-    ```python
-    client = AsyncFishAudio(api_key="...")
-    package = await client.account.get_package()
-    print(f"Balance: {package.balance}/{package.total}")
-    ```
+- `WebSocketError` - On disconnect or error finish event
 
 <a id="fishaudio.resources.tts"></a>
 
@@ -924,65 +826,163 @@ Perfect for conversational AI, live captioning, and streaming applications.
             await f.write(audio_chunk)
     ```
 
-<a id="fishaudio.resources.realtime"></a>
+<a id="fishaudio.resources.account"></a>
 
-# fishaudio.resources.realtime
+# fishaudio.resources.account
 
-Real-time WebSocket streaming helpers.
+Account namespace client for billing and credits.
 
-<a id="fishaudio.resources.realtime.iter_websocket_audio"></a>
+<a id="fishaudio.resources.account.AccountClient"></a>
 
-#### iter\_websocket\_audio
+## AccountClient Objects
 
 ```python
-def iter_websocket_audio(ws) -> Iterator[bytes]
+class AccountClient()
 ```
 
-Process WebSocket audio messages (sync).
+Synchronous account operations.
 
-Receives messages from WebSocket, yields audio chunks, handles errors.
-Unknown events are ignored and iteration continues.
+<a id="fishaudio.resources.account.AccountClient.get_credits"></a>
+
+#### get\_credits
+
+```python
+def get_credits(*,
+                check_free_credit: Optional[bool] = OMIT,
+                request_options: Optional[RequestOptions] = None) -> Credits
+```
+
+Get API credit balance.
 
 **Arguments**:
 
-- `ws` - WebSocket connection from httpx_ws.connect_ws
+- `check_free_credit` - Whether to check free credit availability
+- `request_options` - Request-level overrides
   
 
-**Yields**:
+**Returns**:
 
-  Audio bytes
+  Credits information
   
 
-**Raises**:
+**Example**:
 
-- `WebSocketError` - On disconnect or error finish event
+    ```python
+    client = FishAudio(api_key="...")
+    credits = client.account.get_credits()
+    print(f"Available credits: {float(credits.credit)}")
 
-<a id="fishaudio.resources.realtime.aiter_websocket_audio"></a>
+    # Check free credit availability
+    credits = client.account.get_credits(check_free_credit=True)
+    if credits.has_free_credit:
+        print("Free credits available!")
+    ```
 
-#### aiter\_websocket\_audio
+<a id="fishaudio.resources.account.AccountClient.get_package"></a>
+
+#### get\_package
 
 ```python
-async def aiter_websocket_audio(ws) -> AsyncIterator[bytes]
+def get_package(*,
+                request_options: Optional[RequestOptions] = None) -> Package
 ```
 
-Process WebSocket audio messages (async).
-
-Receives messages from WebSocket, yields audio chunks, handles errors.
-Unknown events are ignored and iteration continues.
+Get package information.
 
 **Arguments**:
 
-- `ws` - WebSocket connection from httpx_ws.aconnect_ws
+- `request_options` - Request-level overrides
   
 
-**Yields**:
+**Returns**:
 
-  Audio bytes
+  Package information
   
 
-**Raises**:
+**Example**:
 
-- `WebSocketError` - On disconnect or error finish event
+    ```python
+    client = FishAudio(api_key="...")
+    package = client.account.get_package()
+    print(f"Balance: {package.balance}/{package.total}")
+    ```
+
+<a id="fishaudio.resources.account.AsyncAccountClient"></a>
+
+## AsyncAccountClient Objects
+
+```python
+class AsyncAccountClient()
+```
+
+Asynchronous account operations.
+
+<a id="fishaudio.resources.account.AsyncAccountClient.get_credits"></a>
+
+#### get\_credits
+
+```python
+async def get_credits(
+        *,
+        check_free_credit: Optional[bool] = OMIT,
+        request_options: Optional[RequestOptions] = None) -> Credits
+```
+
+Get API credit balance (async).
+
+**Arguments**:
+
+- `check_free_credit` - Whether to check free credit availability
+- `request_options` - Request-level overrides
+  
+
+**Returns**:
+
+  Credits information
+  
+
+**Example**:
+
+    ```python
+    client = AsyncFishAudio(api_key="...")
+    credits = await client.account.get_credits()
+    print(f"Available credits: {float(credits.credit)}")
+
+    # Check free credit availability
+    credits = await client.account.get_credits(check_free_credit=True)
+    if credits.has_free_credit:
+        print("Free credits available!")
+    ```
+
+<a id="fishaudio.resources.account.AsyncAccountClient.get_package"></a>
+
+#### get\_package
+
+```python
+async def get_package(*,
+                      request_options: Optional[RequestOptions] = None
+                      ) -> Package
+```
+
+Get package information (async).
+
+**Arguments**:
+
+- `request_options` - Request-level overrides
+  
+
+**Returns**:
+
+  Package information
+  
+
+**Example**:
+
+    ```python
+    client = AsyncFishAudio(api_key="...")
+    package = await client.account.get_package()
+    print(f"Balance: {package.balance}/{package.total}")
+    ```
 
 <a id="fishaudio.resources.asr"></a>
 
