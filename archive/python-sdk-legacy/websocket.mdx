@@ -275,7 +275,7 @@ ws_session = WebSocketSession(
 for audio_chunk in ws_session.tts(
     TTSRequest(text=""),
     text_stream(),
-    backend="speech-1.5"  # or "speech-1.6"
+    backend="s1"
 ):
     pass
 ```
@@ -304,4 +304,4 @@ for audio_chunk in ws_session.tts(
 |---------------|--------------|--------------------| -------------|
 | `request`     | TTSRequest   | TTS configuration  | Required     |
 | `text_stream` | Iterable[str]| Text generator     | Required     |
-| `backend`     | str          | Model version      | "speech-1.5" |
+| `backend`     | str          | Model version      | "s1" |
