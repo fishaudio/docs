@@ -63,7 +63,7 @@ Represents a TTS voice that can be used for synthesis.
 - `created_at` - Timestamp when the model was created
 - `updated_at` - Timestamp when the model was last updated
 - `languages` - List of supported language codes (e.g., ["en", "zh"])
-- `visibility` - Model visibility. Options: "public", "private", "unlisted"
+- `visibility` - Model visibility. Options: "public", "private", "unlist"
 - `lock_visibility` - Whether visibility setting is locked
 - `like_count` - Number of likes the model has received
 - `mark_count` - Number of bookmarks/favorites
@@ -72,6 +72,53 @@ Represents a TTS voice that can be used for synthesis.
 - `liked` - Whether the current user has liked this model. Default: False
 - `marked` - Whether the current user has bookmarked this model. Default: False
 - `author` - Information about the voice model's creator
+
+<a id="fishaudio.types.account"></a>
+
+# fishaudio.types.account
+
+Account-related types (credits, packages, etc.).
+
+<a id="fishaudio.types.account.Credits"></a>
+
+## Credits Objects
+
+```python
+class Credits(BaseModel)
+```
+
+User's API credit balance.
+
+**Attributes**:
+
+- `id` - Unique credits record identifier
+- `user_id` - User identifier
+- `credit` - Current credit balance (decimal for precise accounting)
+- `created_at` - Timestamp when the credits record was created
+- `updated_at` - Timestamp when the credits were last updated
+- `has_phone_sha256` - Whether the user has a verified phone number. Optional
+- `has_free_credit` - Whether the user has received free credits. Optional
+
+<a id="fishaudio.types.account.Package"></a>
+
+## Package Objects
+
+```python
+class Package(BaseModel)
+```
+
+User's prepaid package information.
+
+**Attributes**:
+
+- `id` - Unique package identifier
+- `user_id` - User identifier
+- `type` - Package type identifier
+- `total` - Total units in the package
+- `balance` - Remaining units in the package
+- `created_at` - Timestamp when the package was purchased
+- `updated_at` - Timestamp when the package was last updated
+- `finished_at` - Timestamp when the package was fully consumed. None if still active
 
 <a id="fishaudio.types.tts"></a>
 
@@ -165,6 +212,11 @@ All parameters have sensible defaults.
 - `top_p` - Nucleus sampling parameter for token selection. Range: 0.0-1.0. Default: 0.7
 - `temperature` - Randomness in generation. Range: 0.0-1.0. Default: 0.7.
   Higher = more varied, lower = more consistent
+- `max_new_tokens` - Maximum number of tokens to generate. Default: 1024
+- `repetition_penalty` - Penalty for repeated tokens. Default: 1.2
+- `min_chunk_length` - Minimum chunk length for generation. Default: 50
+- `condition_on_previous_chunks` - Whether to condition generation on previous chunks. Default: True
+- `early_stop_threshold` - Threshold for early stopping. Default: 1.0
 
 <a id="fishaudio.types.tts.TTSRequest"></a>
 
@@ -194,6 +246,11 @@ For the HTTP API, parameters are passed directly to methods.
 - `prosody` - Speech speed and volume settings. Default: None
 - `top_p` - Nucleus sampling for token selection. Range: 0.0-1.0. Default: 0.7
 - `temperature` - Randomness in generation. Range: 0.0-1.0. Default: 0.7
+- `max_new_tokens` - Maximum number of tokens to generate. Default: 1024
+- `repetition_penalty` - Penalty for repeated tokens. Default: 1.2
+- `min_chunk_length` - Minimum chunk length for generation. Default: 50
+- `condition_on_previous_chunks` - Whether to condition generation on previous chunks. Default: True
+- `early_stop_threshold` - Threshold for early stopping. Default: 1.0
 
 <a id="fishaudio.types.tts.StartEvent"></a>
 
@@ -255,52 +312,26 @@ WebSocket event to end the streaming session.
 
 - `event` - Event type identifier, always "stop"
 
-<a id="fishaudio.types.account"></a>
+<a id="fishaudio.types.shared"></a>
 
-# fishaudio.types.account
+# fishaudio.types.shared
 
-Account-related types (credits, packages, etc.).
+Shared types used across the SDK.
 
-<a id="fishaudio.types.account.Credits"></a>
+<a id="fishaudio.types.shared.PaginatedResponse"></a>
 
-## Credits Objects
+## PaginatedResponse Objects
 
 ```python
-class Credits(BaseModel)
+class PaginatedResponse(BaseModel, Generic[T])
 ```
 
-User's API credit balance.
+Generic paginated response.
 
 **Attributes**:
 
-- `id` - Unique credits record identifier
-- `user_id` - User identifier
-- `credit` - Current credit balance (decimal for precise accounting)
-- `created_at` - Timestamp when the credits record was created
-- `updated_at` - Timestamp when the credits were last updated
-- `has_phone_sha256` - Whether the user has a verified phone number. Optional
-- `has_free_credit` - Whether the user has received free credits. Optional
-
-<a id="fishaudio.types.account.Package"></a>
-
-## Package Objects
-
-```python
-class Package(BaseModel)
-```
-
-User's prepaid package information.
-
-**Attributes**:
-
-- `id` - Unique package identifier
-- `user_id` - User identifier
-- `type` - Package type identifier
-- `total` - Total units in the package
-- `balance` - Remaining units in the package
-- `created_at` - Timestamp when the package was purchased
-- `updated_at` - Timestamp when the package was last updated
-- `finished_at` - Timestamp when the package was fully consumed. None if still active
+- `total` - Total number of items across all pages
+- `items` - List of items on the current page
 
 <a id="fishaudio.types.asr"></a>
 
@@ -345,25 +376,4 @@ Response from speech-to-text transcription.
 #### duration
 
 Duration in milliseconds
-
-<a id="fishaudio.types.shared"></a>
-
-# fishaudio.types.shared
-
-Shared types used across the SDK.
-
-<a id="fishaudio.types.shared.PaginatedResponse"></a>
-
-## PaginatedResponse Objects
-
-```python
-class PaginatedResponse(BaseModel, Generic[T])
-```
-
-Generic paginated response.
-
-**Attributes**:
-
-- `total` - Total number of items across all pages
-- `items` - List of items on the current page
 
