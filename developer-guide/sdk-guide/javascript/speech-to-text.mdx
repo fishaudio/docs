@@ -130,7 +130,7 @@ Supported audio formats:
 - AAC
 
 File requirements:
-- Maximum size: 100MB
+- Maximum size: 20MB
 - Maximum duration: 60 minutes
 - Sample rate: 16kHz or higher recommended
 
@@ -160,7 +160,7 @@ try {
   await fishAudio.speechToText.convert({ audio: createReadStream("audio.mp3") });
 } catch (e: any) {
   const status = e?.status || e?.response?.status;
-  if (status === 413) console.error("Audio file too large (max 100MB)");
+  if (status === 413) console.error("Audio file too large (max 20MB)");
   else if (status === 400) console.error("Invalid audio format");
   else throw e;
 }
