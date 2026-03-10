@@ -72,7 +72,7 @@ Choose your preferred method to generate speech:
         curl -X POST https://api.fish.audio/v1/tts \
           -H "Authorization: Bearer $FISH_API_KEY" \
           -H "Content-Type: application/json" \
-          -H "model: s1" \
+          -H "model: s2-pro" \
           -d '{
             "text": "Hello! Welcome to Fish Audio. This is my first AI-generated voice.",
             "format": "mp3"
@@ -242,7 +242,7 @@ Then generate speech with your chosen voice:
     curl -X POST https://api.fish.audio/v1/tts \
       -H "Authorization: Bearer $FISH_API_KEY" \
       -H "Content-Type: application/json" \
-      -H "model: s1" \
+      -H "model: s2" \
       -d '{
         "text": "This is a custom voice from Fish Audio! You can explore hundreds of different voices on the platform, or even create your own.",
         "reference_id": "'"$REFERENCE_ID"'",
