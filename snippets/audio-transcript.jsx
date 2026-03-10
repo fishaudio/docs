@@ -85,7 +85,7 @@ export const AudioTranscript = ({ voices = [] }) => {
       <div className="grid grid-cols-3 items-center px-3 py-1.5 bg-muted border-b border-gray-200 dark:border-gray-800">
         <span className="text-xs font-medium">Listen to Page</span>
 
-        <span className="text-xs font-semibold text-muted-foreground text-center">Powered by Fish Audio S1</span>
+        <span className="text-xs font-semibold text-muted-foreground text-center">Powered by Fish Audio S2-Pro</span>
 
         {voices.length > 1 ? (
           <div className="relative justify-self-end" ref={dropdownRef}>
