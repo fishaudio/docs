@@ -3,6 +3,7 @@ name: TTS
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   generate-tts:
@@ -16,8 +17,9 @@ jobs:
           node-version: 20
 
       - name: Generate TTS audio
-        run: npx speak-mintlify@latest generate .
+        run: npx speak-mintlify@latest generate . $FORCE_FLAG
         env:
+          FORCE_FLAG: ${{ github.event_name == 'workflow_dispatch' && '--force' || '' }}
           FISH_API_KEY: ${{ secrets.FISH_API_KEY }}
           S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
