@@ -167,7 +167,7 @@ connection.on(RealtimeEvents.ERROR, (err) => {
 
 Customize WebSocket behavior by configuring the client.<br />
 Optionally specify the backend model to use.
-Our state-of-the-art [S1 model](/developer-guide/models-pricing/models-overview) is the default:
+Our state-of-the-art [S2-Pro model](/developer-guide/models-pricing/models-overview) is the default:
 
 ```typescript
 // Custom endpoint
@@ -180,7 +180,7 @@ const fishAudio = new FishAudioClient({
 const conn = await fishAudio.textToSpeech.convertRealtime(
   request,
   makeTextStream(),
-  backend: "s1"
+  backend: "s2-pro"
 );
 ```
 

@@ -49,24 +49,25 @@ Fish Audio offers state-of-the-art text-to-speech models optimized for different
 ### Recommended Model
 
 <Card title="s2-pro" icon="star">
-  **Fish Audio S2** - Our next-generation TTS model with best-in-class performance
-  - Natural language control with `[bracket]` syntax — not limited to a fixed set (e.g., `[whisper]`, `[laugh]`, `[emphasis]`)
+  **Fish Audio S2-Pro** - Our next-generation TTS model with best-in-class performance
+  - Natural language control with `[bracket]` syntax — not limited to a fixed set (e.g., `[whispers sweetly]`, `[laughing nervously]`)
   - Multi-speaker dialogue support
   - 80+ languages
+  - 100ms time-to-first-audio
+  - Full SGLang-based serving stack
   - Open-source
 </Card>
 
 <Note>
-We recommend using `s2-pro` for all new projects to access inline emotion cues, multi-speaker dialogue, and expanded language support.
+We recommend using `s2-pro` for all new projects to access the latest capabilities and performance improvements. S1 remains available for existing integrations.
 </Note>
 
 ### Previous Model
 
-<Card title="s1" icon="check">
-  **Fish Audio S1** - Still supported with industry-leading quality
+<Card title="s1" icon="microchip">
+  **Fish Audio S1** - High-quality voice generation
   - 4 billion parameters
   - 0.008 WER (0.8% word error rate)
-  - Strong performance and naturalness
   - Full emotional control capabilities with `(parenthesis)` syntax
 </Card>
 
@@ -81,9 +82,17 @@ We recommend using `s2-pro` for all new projects to access inline emotion cues, 
 
 ## Supported Languages
 
-**Fish Audio S2** supports 80+ languages with inline emotion and paralinguistic cue support.
+### S2-Pro
 
-**Fish Audio S1** supports the following 13 languages:
+S2-Pro supports 80+ languages with automatic language detection and inline emotion and paralinguistic cue support.
+
+<Info>
+Language detection is automatic - simply provide text in your target language.
+</Info>
+
+### S1
+
+S1 supports text-to-speech generation in 13 languages with full emotional expression capabilities.
 
 ```
 English, Chinese, Japanese, German,
@@ -91,17 +100,13 @@ French, Spanish, Korean, Arabic,
 Russian, Dutch, Italian, Polish, Portuguese
 ```
 
-<Info>
-Language detection is automatic - simply provide text in your target language.
-</Info>
-
 ## Voice Styles and Emotions
 
 Fish Audio models support emotional expressions and voice styles that can be controlled through text markers in your input.
 
-### S2 Natural Language Control
+### S2-Pro Natural Language Control
 
-S2 treats `[bracket]` tags as standard text rather than dedicated control tokens. Through training on massive datasets, the model learned implicit mappings between natural language descriptions and acoustic variations. This means you are not limited to a predefined set of tags — you can use descriptive cues and the model will interpret them.
+S2-Pro treats `[bracket]` tags as standard text rather than dedicated control tokens. Through training on massive datasets, the model learned implicit mappings between natural language descriptions and acoustic variations. This means you are not limited to a predefined set of tags — you can use any descriptive expression and the model will interpret it, such as `[whispers sweetly]` or `[laughing nervously]`.
 
 Common examples include:
 
@@ -111,7 +116,7 @@ Common examples include:
 ```
 
 <Tip>
-S2 cues can be placed anywhere in your text to control emotion at specific positions. For example: `"I can't believe it [gasp] you actually did it [laugh]"`
+S2-Pro cues can be placed anywhere in your text to control emotion at specific positions. For example: `"I can't believe it [gasp] you actually did it [laugh]"`
 </Tip>
 
 ### S1 Voice Styles and Emotions

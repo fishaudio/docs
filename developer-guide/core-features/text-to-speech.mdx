@@ -231,7 +231,8 @@ Choose the right model for your needs:
 
 | Model | Best For | Quality | Speed |
 |---|---|---|---|
-| **s1** | Latest features | Excellent | Fast |
+| **s1** | Prototyping | Excellent | Fast |
+| **s2-pro** | Latest features | Excellent | Fastest |
 
 Specify a model in your request:
 
@@ -244,10 +245,10 @@ Specify a model in your request:
   </Tab>
   <Tab title="JavaScript">
     ```javascript
-    // Using the latest S1 model
+    // Using the latest S2-Pro model
     const audio = await fishAudio.textToSpeech.convert(
         { text: "Hello world" },
-        "s1"
+        "s2-pro"
     );
     ```
   </Tab>
@@ -355,7 +356,7 @@ For direct API calls without the SDK:
             headers={
                 "authorization": "Bearer YOUR_API_KEY",
                 "content-type": "application/msgpack",
-                "model": "s1"
+                "model": "s2-pro"
             }
         )
         
@@ -380,7 +381,7 @@ For direct API calls without the SDK:
         headers: {
             Authorization: "Bearer <YOUR_API_KEY>",
             "Content-Type": "application/msgpack",
-            model: "s1",
+            model: "s2-pro",
         },
         body,
     });
