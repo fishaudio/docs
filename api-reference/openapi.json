@@ -2185,7 +2185,7 @@
                 "type": "null"
               }
             ],
-            "description": "Inline voice references for zero-shot cloning. Requires MessagePack (not JSON). For single speaker, provide an array of ReferenceAudio objects. For multiple speakers, provide an array of arrays where each inner array contains references for one speaker. The speaker index corresponds to the index in reference_id array. Example for multi-speaker: [[{audio, text}], [{audio, text}, {audio, text}]] for 2 speakers where speaker 1 has 2 reference samples.",
+            "description": "Inline voice references for zero-shot cloning. Requires MessagePack (not JSON). For single speaker, provide an array of ReferenceAudio objects. For multiple speakers, provide an array of arrays where each inner array contains references for one speaker. **Multi-speaker is only available with the S2-Pro model.** The speaker index corresponds to the index in reference_id array. Example for multi-speaker: [[{audio, text}], [{audio, text}, {audio, text}]] for 2 speakers where speaker 1 has 2 reference samples.",
             "title": "References"
           },
           "reference_id": {
@@ -2206,7 +2206,7 @@
               }
             ],
             "default": null,
-            "description": "Voice model ID(s) from Fish Audio library or your custom models. For single speaker synthesis, provide a string. For multi-speaker synthesis (e.g., dialogue), provide an array of model IDs. When using multiple speakers, use speaker tags in your text like [0] and [1] to indicate which speaker should speak each part. Example: '[0]Hello![1]Hi there![0]How are you?' with reference_id: ['speaker-a-id', 'speaker-b-id']",
+            "description": "Voice model ID(s) from Fish Audio library or your custom models. For single speaker synthesis, provide a string. For multi-speaker synthesis (e.g., dialogue), provide an array of model IDs. **Multi-speaker is only available with the S2-Pro model.** When using multiple speakers, use speaker tags in your text like [0] and [1] to indicate which speaker should speak each part. Example: '[0]Hello![1]Hi there![0]How are you?' with reference_id: ['speaker-a-id', 'speaker-b-id']",
             "title": "Reference Id"
           },
           "prosody": {
