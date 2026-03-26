@@ -14,6 +14,18 @@
     "/v1/tts": {
       "post": {
         "summary": "Text to Speech",
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "Single Speaker",
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/tts \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2-pro' \\\n  --data '{\n    \"text\": \"Hello! Welcome to Fish Audio.\",\n    \"reference_id\": \"model-id\",\n    \"temperature\": 0.7,\n    \"top_p\": 0.7,\n    \"prosody\": {\n      \"speed\": 1,\n      \"volume\": 0,\n      \"normalize_loudness\": true\n    },\n    \"chunk_length\": 300,\n    \"normalize\": true,\n    \"format\": \"mp3\",\n    \"sample_rate\": 44100,\n    \"mp3_bitrate\": 128,\n    \"latency\": \"normal\",\n    \"max_new_tokens\": 1024,\n    \"repetition_penalty\": 1.2,\n    \"min_chunk_length\": 50,\n    \"condition_on_previous_chunks\": true,\n    \"early_stop_threshold\": 1\n  }'"
+          },
+          {
+            "lang": "bash",
+            "label": "Multi Speaker (S2-Pro only)",
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/tts \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2-pro' \\\n  --data '{\n    \"text\": \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\",\n    \"reference_id\": [\"speaker-a-id\", \"speaker-b-id\"],\n    \"temperature\": 0.7,\n    \"top_p\": 0.7,\n    \"prosody\": {\n      \"speed\": 1,\n      \"volume\": 0,\n      \"normalize_loudness\": true\n    },\n    \"chunk_length\": 300,\n    \"normalize\": true,\n    \"format\": \"mp3\",\n    \"sample_rate\": 44100,\n    \"mp3_bitrate\": 128,\n    \"latency\": \"normal\",\n    \"max_new_tokens\": 1024,\n    \"repetition_penalty\": 1.2,\n    \"min_chunk_length\": 50,\n    \"condition_on_previous_chunks\": true,\n    \"early_stop_threshold\": 1\n  }'"
+          }
+        ],
         "security": [
           {
             "BearerAuth": []
@@ -2112,6 +2124,12 @@
             "description": "Volume adjustment in decibels (dB). 0 = no change, positive values = louder, negative values = quieter.",
             "title": "Volume",
             "type": "number"
+          },
+          "normalize_loudness": {
+            "default": true,
+            "description": "Normalize output loudness for more consistent perceived volume. **S2-Pro only.**",
+            "title": "Normalize Loudness",
+            "type": "boolean"
           }
         },
         "title": "ProsodyControl",
@@ -2137,7 +2155,7 @@
         "type": "object"
       },
       "TTSRequest": {
-        "description": "Request body for text-to-speech synthesis. Supports both single-speaker and multi-speaker synthesis.\n\n## Single Speaker\nProvide either `reference_id` (string) pointing to a voice model, or `references` (array of ReferenceAudio) for zero-shot cloning.\n\n## Multiple Speakers (Dialogue)\nFor multi-speaker synthesis, provide:\n- `reference_id`: array of voice model IDs, e.g., [\"speaker-0-id\", \"speaker-1-id\"]\n- `text`: use speaker tags `<|speaker:0|>`, `<|speaker:1|>`, etc. to indicate speaker changes, e.g., \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\"\n\nAlternatively, for zero-shot multi-speaker:\n- `references`: 2D array where each inner array contains references for one speaker\n- `reference_id`: array of identifiers (can be arbitrary strings for zero-shot)\n\n## Example (Multi-Speaker with Model IDs)\n```json\n{\n  \"text\": \"<|speaker:0|>Good morning!<|speaker:1|>Good morning! How are you?<|speaker:0|>I'm great, thanks!\",\n  \"reference_id\": [\"model-id-alice\", \"model-id-bob\"]\n}\n```",
+        "description": "Request body for text-to-speech synthesis. Supports single-speaker synthesis on all compatible TTS models. Multi-speaker dialogue synthesis is only available with the S2-Pro model.\n\n## Single Speaker\nProvide either `reference_id` (string) pointing to a voice model, or `references` (array of ReferenceAudio) for zero-shot cloning.\n\n## Multiple Speakers (Dialogue, S2-Pro only)\nFor multi-speaker synthesis, provide:\n- `reference_id`: array of voice model IDs, e.g., [\"speaker-0-id\", \"speaker-1-id\"]\n- `text`: use speaker tags `<|speaker:0|>`, `<|speaker:1|>`, etc. to indicate speaker changes, e.g., \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\"\n\nAlternatively, for zero-shot multi-speaker:\n- `references`: 2D array where each inner array contains references for one speaker\n- `reference_id`: array of identifiers (can be arbitrary strings for zero-shot)\n\n## Example (Multi-Speaker with Model IDs)\n```json\n{\n  \"text\": \"<|speaker:0|>Good morning!<|speaker:1|>Good morning! How are you?<|speaker:0|>I'm great, thanks!\",\n  \"reference_id\": [\"model-id-alice\", \"model-id-bob\"]\n}\n```",
         "type": "object",
         "required": ["text"],
         "properties": {
@@ -2206,7 +2224,7 @@
               }
             ],
             "default": null,
-            "description": "Voice model ID(s) from Fish Audio library or your custom models. For single speaker synthesis, provide a string. For multi-speaker synthesis (e.g., dialogue), provide an array of model IDs. **Multi-speaker is only available with the S2-Pro model.** When using multiple speakers, use speaker tags in your text like [0] and [1] to indicate which speaker should speak each part. Example: '[0]Hello![1]Hi there![0]How are you?' with reference_id: ['speaker-a-id', 'speaker-b-id']",
+            "description": "Voice model ID(s) from Fish Audio library or your custom models. For single-speaker synthesis, provide a string. For multi-speaker synthesis (dialogue), provide an array of model IDs. **Multi-speaker is only available with the S2-Pro model.** When using multiple speakers, use speaker tags in your text like `<|speaker:0|>` and `<|speaker:1|>` to indicate speaker changes. Example: `<|speaker:0|>Hello!<|speaker:1|>Hi there!<|speaker:0|>How are you?` with `reference_id: [\"speaker-a-id\", \"speaker-b-id\"]`.",
             "title": "Reference Id"
           },
           "prosody": {
