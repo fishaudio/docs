@@ -63,7 +63,8 @@ channels:
               type: string
               enum:
                 - s1
-              description: TTS model to use for this session
+                - s2-pro
+              description: TTS model to use for this session. Use `s2-pro` for multi-speaker dialogue synthesis.
     description: |
       Real-time TTS streaming channel. Clients send text chunks and receive audio chunks concurrently.
 
@@ -122,12 +123,19 @@ components:
             const: start
             description: Event type identifier
           request:
-            $ref: '#/components/schemas/TTSRequest'
+            $ref: '#/components/schemas/WebSocketTTSRequest'
       description: |
         Initiates a TTS streaming session with configuration.
 
         This must be the first message sent after connecting. It contains all the
         configuration for voice, audio format, and generation parameters.
+
+        The `request` payload uses the same fields as the HTTP TTS API. In
+        WebSocket mode, `request.text` is typically empty in the StartEvent and
+        the actual text is streamed through subsequent TextEvent messages.
+
+        For full parameter details, examples, and model-specific guidance, see
+        the HTTP [Text to Speech API](/api-reference/endpoint/openapi-v1/text-to-speech).
       examples:
         - name: Basic Configuration
           payload:
@@ -135,28 +143,34 @@ components:
             request:
               text: ""
               format: mp3
-              chunk_length: 200
+              chunk_length: 300
               reference_id: "802e3bc2b27e49c2995d23ef70e6ac89"
-              latency: balanced
+              latency: normal
         - name: Full Configuration with All Options
           payload:
             event: start
             request:
               text: ""
-              chunk_length: 200
+              max_new_tokens: 1024
+              top_p: 0.7
+              repetition_penalty: 1.2
+              temperature: 0.7
+              min_chunk_length: 50
+              chunk_length: 300
+              condition_on_previous_chunks: true
+              normalize: true
+              early_stop_threshold: 1.0
               format: mp3
               sample_rate: 44100
-              mp3_bitrate: 192
-              opus_bitrate: 64
+              mp3_bitrate: 128
+              opus_bitrate: -1000
               references: []
               reference_id: "802e3bc2b27e49c2995d23ef70e6ac89"
-              normalize: true
-              latency: balanced
+              latency: normal
               prosody:
                 speed: 1.2
                 volume: 2.0
-              top_p: 0.7
-              temperature: 0.7
+                normalize_loudness: true
         - name: Voice Cloning with Reference Audio
           payload:
             event: start
@@ -172,6 +186,7 @@ components:
               prosody:
                 speed: 1.0
                 volume: 0.0
+                normalize_loudness: true
 
     TextEvent:
       name: TextEvent
@@ -313,16 +328,30 @@ components:
             reason: error
 
   schemas:
-    TTSRequest:
+    WebSocketTTSRequest:
       type: object
+      description: |
+        Request payload for text-to-speech synthesis in WebSocket StartEvent.
+        It uses the same parameters as the HTTP [Text to Speech API](/api-reference/endpoint/openapi-v1/text-to-speech).
+        Supports single-speaker synthesis on all compatible TTS models.
+        Multi-speaker dialogue synthesis is only available with `s2-pro`.
+        In WebSocket mode, `text` is usually empty in StartEvent and the actual
+        content is sent through subsequent TextEvent messages.
       required:
         - text
       properties:
         text:
           type: string
           description: |
-            Text to synthesize. For WebSocket streaming, this is typically empty
-            in the StartEvent (text is sent via TextEvent messages).
+            Text to convert to speech. For WebSocket streaming, this is
+            typically empty in the StartEvent and the actual text is sent via
+            TextEvent messages.
+
+        max_new_tokens:
+          type: integer
+          default: 1024
+          description: |
+            Maximum audio tokens to generate per text chunk.
 
         temperature:
           type: number
@@ -330,8 +359,8 @@ components:
           maximum: 1.0
           default: 0.7
           description: |
-            Controls randomness in speech generation. Higher values (e.g., 1.0) make
-            output more random, lower values (e.g., 0.1) more deterministic.
+            Controls expressiveness. Higher is more varied, lower is more
+            consistent.
 
         top_p:
           type: number
@@ -339,44 +368,94 @@ components:
           maximum: 1.0
           default: 0.7
           description: |
-            Controls diversity via nucleus sampling. Lower values (e.g., 0.1) make
-            output more focused, higher values (e.g., 1.0) allow more diversity.
+            Controls diversity via nucleus sampling.
+
+        repetition_penalty:
+          type: number
+          default: 1.2
+          description: |
+            Penalty for repeating audio patterns. Values above 1.0 reduce
+            repetition.
+
+        min_chunk_length:
+          type: integer
+          minimum: 0
+          maximum: 100
+          default: 50
+          description: |
+            Minimum characters before splitting into a new chunk.
 
         references:
-          type: array
-          items:
-            $ref: '#/components/schemas/ReferenceAudio'
+          anyOf:
+            - description: "Single speaker: array of reference audio samples"
+              type: array
+              items:
+                $ref: '#/components/schemas/WebSocketReferenceAudio'
+            - description: "Multiple speakers: array of arrays, where each inner array contains reference samples for one speaker"
+              type: array
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WebSocketReferenceAudio'
+            - type: "null"
           description: |
-            Reference audio samples for instant voice cloning. Provide audio samples
-            with transcriptions to clone a voice in real-time.
+            Inline voice references for zero-shot cloning. Single-speaker uses
+            an array of ReferenceAudio. Multi-speaker uses an array of speaker
+            arrays. Multi-speaker dialogue is only available with `s2-pro`.
+            See the HTTP Text to Speech API page for detailed examples.
 
         reference_id:
-          type: [string, "null"]
+          anyOf:
+            - description: "Single speaker: voice model ID string"
+              type: string
+            - description: "Multiple speakers: array of voice model IDs, one per speaker"
+              type: array
+              items:
+                type: string
+            - type: "null"
+          default: null
           description: |
-            ID of a pre-trained reference model from fish.audio.
-            Find model IDs in voice URLs (e.g., '802e3bc2b27e49c2995d23ef70e6ac89').
+            Voice model ID from Fish Audio or your custom models. Use a string
+            for single-speaker synthesis, or an array of model IDs for
+            multi-speaker dialogue on `s2-pro`. When using multiple speakers,
+            add speaker tags in `text`. See the HTTP Text to Speech API page
+            for full examples.
 
         prosody:
           oneOf:
-            - $ref: '#/components/schemas/ProsodyControl'
+            - $ref: '#/components/schemas/WebSocketProsodyControl'
             - type: "null"
-          description: Speech speed and volume settings
+          default: null
+          description: Speed and volume adjustments for the output.
 
         chunk_length:
           type: integer
           minimum: 100
           maximum: 300
-          default: 200
+          default: 300
           description: |
-            Characters per generation chunk. Lower values = faster initial response
-            but potentially lower quality. Higher values = better quality but slower.
+            Text segment size for processing.
+
+        condition_on_previous_chunks:
+          type: boolean
+          default: true
+          description: |
+            Use previous audio as context for voice consistency.
 
         normalize:
           type: boolean
           default: true
           description: |
-            Whether to normalize/clean input text. Reduces latency but may reduce
-            performance on numbers and dates.
+            Normalizes text for English and Chinese, improving stability for
+            numbers.
+
+        early_stop_threshold:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          default: 1.0
+          description: |
+            Early stopping threshold for batch processing.
 
         format:
           type: string
@@ -386,12 +465,14 @@ components:
             - mp3
             - opus
           default: mp3
-          description: Audio output format
+          description: Output audio format.
 
         sample_rate:
           type: [integer, "null"]
+          default: null
           description: |
-            Audio sample rate in Hz. If not specified, uses format-specific default.
+            Audio sample rate in Hz. When null, uses the format's default
+            (44100 Hz for most formats, 48000 Hz for opus).
 
         mp3_bitrate:
           type: integer
@@ -400,7 +481,8 @@ components:
             - 128
             - 192
           default: 128
-          description: MP3 bitrate in kbps (only used when format=mp3)
+          description: |
+            MP3 bitrate in kbps. Only applies when format is mp3.
 
         opus_bitrate:
           type: integer
@@ -410,21 +492,23 @@ components:
             - 32
             - 48
             - 64
-          default: 32
-          description: Opus bitrate in kbps (only used when format=opus)
+          default: -1000
+          description: |
+            Opus bitrate in bps. -1000 for automatic. Only applies when format
+            is opus.
 
         latency:
           type: string
           enum:
+            - low
             - normal
             - balanced
-          default: balanced
+          default: normal
           description: |
-            Generation mode:
-            - 'normal': Higher quality, slower
-            - 'balanced': Faster generation, may have slight quality reduction
+            Latency-quality trade-off. normal: best quality, balanced: reduced
+            latency, low: lowest latency.
 
-    ReferenceAudio:
+    WebSocketReferenceAudio:
       type: object
       required:
         - audio
@@ -440,7 +524,7 @@ components:
             Transcription of what is spoken in the reference audio. Should match
             exactly what's spoken and include punctuation for proper prosody.
 
-    ProsodyControl:
+    WebSocketProsodyControl:
       type: object
       properties:
         speed:
@@ -449,16 +533,17 @@ components:
           maximum: 2.0
           default: 1.0
           description: |
-            Speech speed multiplier. Range: 0.5-2.0.
-            Examples: 1.5 = 50% faster, 0.8 = 20% slower
+            Speaking rate multiplier. Valid range: 0.5 to 2.0. 1.0 = normal
+            speed, 0.5 = half speed, 2.0 = double speed. Useful for adjusting
+            pacing without regenerating audio.
         volume:
           type: number
           minimum: -20.0
           maximum: 20.0
           default: 0.0
           description: |
-            Volume adjustment in decibels. Range: -20 to 20.
-            Positive values increase volume, negative values decrease it.
+            Volume adjustment in decibels (dB). 0 = no change, positive values
+            = louder, negative values = quieter.
         normalize_loudness:
           type: boolean
           default: true
