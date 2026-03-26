@@ -459,6 +459,12 @@ components:
           description: |
             Volume adjustment in decibels. Range: -20 to 20.
             Positive values increase volume, negative values decrease it.
+        normalize_loudness:
+          type: boolean
+          default: true
+          description: |
+            Normalize output loudness for more consistent perceived volume.
+            S2-Pro only.
 
   securitySchemes:
     bearerAuth:
