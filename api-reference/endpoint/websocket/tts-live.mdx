@@ -1,5 +1,5 @@
 ---
-asyncapi: "../../asyncapi.yml ttsLive"
+asyncapi: "/api-reference/asyncapi.yml ttsLive"
 title: 'WebSocket TTS Streaming'
 description: 'Real-time text-to-speech streaming via WebSocket'
 icon: "webhook"
@@ -8,4 +8,8 @@ iconType: "solid"
 
 <Note>
 The WebSocket TTS endpoint enables bidirectional streaming for low-latency text-to-speech generation with MessagePack serialization.
+</Note>
+
+<Note>
+The `request` payload inside `StartEvent` uses the same parameters as the HTTP [Text to Speech API](/api-reference/endpoint/openapi-v1/text-to-speech). For more detailed field guidance, model-specific behavior, and examples, see that page. In WebSocket mode, `request.text` is typically empty in `StartEvent`, and the text content is sent through subsequent `TextEvent` messages.
 </Note>
