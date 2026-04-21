@@ -1,0 +1,92 @@
+---
+title: "Agent Quickstart"
+description: "Low-noise entry points and canonical URLs for AI agents using Fish Audio documentation"
+icon: "robot"
+---
+
+## Purpose
+
+This page is the recommended starting point for AI agents, RAG pipelines, and documentation crawlers that need accurate Fish Audio references with minimal markup noise.
+
+## Retrieval Order
+
+1. Read [llms.txt](https://docs.fish.audio/llms.txt) for the curated documentation index.
+2. Read [llms-full.txt](https://docs.fish.audio/llms-full.txt) when broad site context is needed.
+3. Read [OpenAPI](https://docs.fish.audio/api-reference/openapi.json) for REST schemas, parameters, and examples.
+4. Read [AsyncAPI](https://docs.fish.audio/api-reference/asyncapi.yml) for the WebSocket streaming protocol.
+5. Fetch individual `.md` pages only after narrowing to a specific task.
+
+## Canonical API Facts
+
+- Base API URL: `https://api.fish.audio`
+- Authentication: `Authorization: Bearer <FISH_API_KEY>`
+- TTS model selection: send a required `model` header. Recommended default: `s2-pro`
+- Main REST endpoints:
+  - `POST /v1/tts`
+  - `POST /v1/asr`
+  - `GET /model`
+  - `POST /model`
+  - `GET /model/{id}`
+  - `PATCH /model/{id}`
+  - `DELETE /model/{id}`
+- Real-time streaming endpoint: `wss://api.fish.audio/v1/tts/live`
+
+## High-Value URLs
+
+### Start Here
+
+- [Agent Quickstart](https://docs.fish.audio/developer-guide/resources/agent-quickstart.md)
+- [Quick Start](https://docs.fish.audio/developer-guide/getting-started/quickstart.md)
+- [AI Coding Agents](https://docs.fish.audio/developer-guide/resources/coding-agents.md)
+
+### API Specs
+
+- [OpenAPI](https://docs.fish.audio/api-reference/openapi.json)
+- [AsyncAPI](https://docs.fish.audio/api-reference/asyncapi.yml)
+- [API Introduction](https://docs.fish.audio/api-reference/introduction.md)
+
+### Authentication And SDK Setup
+
+- [Python Authentication](https://docs.fish.audio/developer-guide/sdk-guide/python/authentication.md)
+- [JavaScript Authentication](https://docs.fish.audio/developer-guide/sdk-guide/javascript/authentication.md)
+- [Python SDK Overview](https://docs.fish.audio/developer-guide/sdk-guide/python/overview.md)
+- [JavaScript Installation](https://docs.fish.audio/developer-guide/sdk-guide/javascript/installation.md)
+
+### Core Product Tasks
+
+- [Text to Speech Guide](https://docs.fish.audio/developer-guide/core-features/text-to-speech.md)
+- [Speech to Text Guide](https://docs.fish.audio/developer-guide/core-features/speech-to-text.md)
+- [Creating Voice Models](https://docs.fish.audio/developer-guide/core-features/creating-models.md)
+- [Emotion Control](https://docs.fish.audio/developer-guide/core-features/emotions.md)
+- [Fine-grained Control](https://docs.fish.audio/developer-guide/core-features/fine-grained-control.md)
+
+### Real-Time And Integrations
+
+- [WebSocket TTS Streaming](https://docs.fish.audio/api-reference/endpoint/websocket/tts-live.md)
+- [Real-time Voice Streaming Best Practices](https://docs.fish.audio/developer-guide/best-practices/real-time-streaming.md)
+- [Python WebSocket Streaming](https://docs.fish.audio/developer-guide/sdk-guide/python/websocket.md)
+- [JavaScript WebSocket](https://docs.fish.audio/developer-guide/sdk-guide/javascript/websocket.md)
+- [LiveKit Integration](https://docs.fish.audio/developer-guide/integrations/livekit.md)
+- [Pipecat Integration](https://docs.fish.audio/developer-guide/integrations/pipecat.md)
+
+### Models, Pricing, And Lifecycle
+
+- [Models Overview](https://docs.fish.audio/developer-guide/models-pricing/models-overview.md)
+- [Choosing a Model](https://docs.fish.audio/developer-guide/models-pricing/choosing-a-model.md)
+- [Pricing And Rate Limits](https://docs.fish.audio/developer-guide/models-pricing/pricing-and-rate-limits.md)
+- [Model Deprecations](https://docs.fish.audio/developer-guide/models-pricing/deprecations.md)
+
+## Task Routing
+
+- If the task is "generate speech", start with Quick Start, the Text to Speech guide, and `POST /v1/tts`.
+- If the task is "transcribe audio", start with the Speech to Text guide and `POST /v1/asr`.
+- If the task is "clone or manage voices", start with Creating Voice Models and the `/model` endpoints.
+- If the task is "stream audio in real time", start with AsyncAPI, WebSocket TTS Streaming, and the WebSocket SDK guides.
+- If the task is "pick the right model or estimate cost", start with Models Overview and Pricing And Rate Limits.
+
+## Notes For Agents
+
+- Prefer `openapi.json` and `asyncapi.yml` for machine-readable schemas.
+- Prefer `.md` URLs when you need a single human-authored page in Markdown form.
+- Some richer pages use interactive MDX widgets. If a fetched page contains UI or component noise, fall back to this page, `llms.txt`, `llms-full.txt`, or the API spec files first.
+- Treat this page as the canonical low-noise entry point for Fish Audio documentation retrieval.
