@@ -2,7 +2,17 @@
   "openapi": "3.1.0",
   "info": {
     "title": "FishAudio OpenAPI",
-    "version": "1"
+    "version": "1",
+    "description": "Canonical REST API schema for Fish Audio text-to-speech, speech-to-text, wallet, and voice model operations.",
+    "contact": {
+      "name": "Fish Audio Support",
+      "url": "https://docs.fish.audio",
+      "email": "support@fish.audio"
+    }
+  },
+  "externalDocs": {
+    "description": "Fish Audio documentation",
+    "url": "https://docs.fish.audio"
   },
   "servers": [
     {
@@ -2101,7 +2111,20 @@
       }
     }
   },
-  "tags": [],
+  "tags": [
+    {
+      "name": "OpenAPI v1",
+      "description": "Core Fish Audio REST endpoints for text-to-speech and speech-to-text."
+    },
+    {
+      "name": "Wallet",
+      "description": "Endpoints for API credit and package information."
+    },
+    {
+      "name": "Model",
+      "description": "Endpoints for listing, creating, updating, and deleting voice models."
+    }
+  ],
   "components": {
     "securitySchemes": {
       "BearerAuth": {
