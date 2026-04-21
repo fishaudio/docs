@@ -5,11 +5,11 @@ icon: "volume-high"
 ---
 
 import { AudioSample } from '/snippets/audio-sample.jsx';
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 97976236c8a840e3fa946aaa32fbe89b46871f27c4ff63c296aeadf1bdb00b36 */}
 <Visibility for="humans">
-<PageAudioTranscript page="core-features-text-to-speech" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("core-features-text-to-speech")} />
 </Visibility>
 
 
@@ -18,7 +18,7 @@ import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
 Transform any text into natural, expressive speech using Fish Audio's advanced TTS models. Choose from pre-made voices or use your own cloned voices.
 
 <Visibility for="humans">
-<AudioSample />
+  <AudioSample />
 </Visibility>
 
 Discover the world's best cloned voices models on our [Discovery](https://fish.audio/discovery) page.

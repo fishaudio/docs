@@ -3,11 +3,11 @@ title: "Voice Cloning"
 description: "Create custom voice models from audio samples"
 icon: "microphone"
 ---
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 22bd06fb705ab4f510dcb10a5a0a976e777ebfb717f33f3039ff2ac373eb37c0 */}
 <Visibility for="humans">
-<PageAudioTranscript page="products-voice-cloning" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("products-voice-cloning")} />
 </Visibility>
 
 

@@ -3,11 +3,11 @@ title: "Voice Cloning Best Practices"
 description: "Simple tips to get the best voice cloning results with Fish Audio"
 icon: "microphone"
 ---
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 08c4d76b8d47b111acc05e19edd7f6d25d1cdb1ffca28036df1bbe58cc087707 */}
 <Visibility for="humans">
-<PageAudioTranscript page="best-practices-voice-cloning" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("best-practices-voice-cloning")} />
 </Visibility>
 
 

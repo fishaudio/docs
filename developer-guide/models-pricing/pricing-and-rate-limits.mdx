@@ -5,11 +5,11 @@ icon: "dollar-sign"
 ---
 
 import Support from '/snippets/support.mdx';
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 6aad8e45c91ed5d293e7b11e34b7b182b14c73b0c2cb15ee92fcd4196a92850f */}
 <Visibility for="humans">
-<PageAudioTranscript page="models-pricing-pricing-and-rate-limits" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("models-pricing-pricing-and-rate-limits")} />
 </Visibility>
 
 

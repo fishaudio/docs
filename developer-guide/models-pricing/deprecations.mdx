@@ -5,11 +5,11 @@ icon: "triangle-exclamation"
 ---
 
 import Support from '/snippets/support.mdx';
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 7ef952be0ed6f40790be341c025da97ee160cd82ce9381d85ccc22323a1f81a2 */}
 <Visibility for="humans">
-<PageAudioTranscript page="models-pricing-deprecations" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("models-pricing-deprecations")} />
 </Visibility>
 
 

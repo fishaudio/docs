@@ -3,11 +3,11 @@ title: "Roadmap"
 description: "Upcoming features and improvements for Fish Audio"
 icon: "map"
 ---
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 5e6a0d1e04bf7ca95de425bdc59aaa4966137474d47fa7e89ed49a51d00ac2f7 */}
 <Visibility for="humans">
-<PageAudioTranscript page="resources-roadmap" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("resources-roadmap")} />
 </Visibility>
 
 

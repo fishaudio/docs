@@ -5,11 +5,11 @@ icon: "clone"
 ---
 
 import Prerequisites from '/snippets/prerequisites.mdx';
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 7aeb79d08f833b97cf12bc561736fd35361a6a063f37f6f22671e24b097507cc */}
 <Visibility for="humans">
-<PageAudioTranscript page="python-voice-cloning" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("python-voice-cloning")} />
 </Visibility>
 
 

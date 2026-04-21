@@ -3,11 +3,11 @@ title: "Creating Voice Models"
 description: "Learn how to create custom voice models with Fish Audio"
 icon: "wand-magic-sparkles"
 ---
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 6a43e7312895ae0c33a68fad2e95821fbecd8a5bfe0c250d3ee631871dc8d410 */}
 <Visibility for="humans">
-<PageAudioTranscript page="core-features-creating-models" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("core-features-creating-models")} />
 </Visibility>
 
 

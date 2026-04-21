@@ -3,11 +3,11 @@ title: "Text to Speech"
 description: "Convert text into natural-sounding speech with Fish Audio's AI voices"
 icon: "volume-high"
 ---
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 320a06bd0e91ba30dae7508f5d75d09d4b59171d5b825cf336d4027ab1e55323 */}
 <Visibility for="humans">
-<PageAudioTranscript page="products-tts" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("products-tts")} />
 </Visibility>
 
 

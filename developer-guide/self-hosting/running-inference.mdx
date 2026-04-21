@@ -3,11 +3,11 @@ title: "Running Inference"
 description: "Generate speech using self-hosted Fish Audio models"
 icon: "play"
 ---
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 7698d1a07e9798942356f5040025620002f27a00c185f904d68ca5902892dca4 */}
 <Visibility for="humans">
-<PageAudioTranscript page="self-hosting-running-inference" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("self-hosting-running-inference")} />
 </Visibility>
 
 

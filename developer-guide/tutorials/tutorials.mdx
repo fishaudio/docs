@@ -3,11 +3,11 @@ title: "Tutorials & Examples"
 description: "Step-by-step guides and code examples for Fish Audio features"
 icon: "book-open"
 ---
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 51595017aedb8f8987dee17fe84b729ed2501d3b4b1fe65ef658e0cd2d9a4eaa */}
 <Visibility for="humans">
-<PageAudioTranscript page="tutorials-tutorials" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("tutorials-tutorials")} />
 </Visibility>
 
 

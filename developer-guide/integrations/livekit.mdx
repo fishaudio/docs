@@ -3,11 +3,11 @@ title: "LiveKit"
 description: "Build real-time voice AI agents with Fish Audio and LiveKit"
 icon: "/images/livekit-logo.jpeg"
 ---
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: d4389b9df8a96b72e64e17ecd54cd8c0f454b893518a720b43f3ec0699e007e0 */}
 <Visibility for="humans">
-<PageAudioTranscript page="integrations-livekit" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("integrations-livekit")} />
 </Visibility>
 
 

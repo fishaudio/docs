@@ -6,11 +6,11 @@ icon: "whale"
 
 import { ColorSwatch } from '/snippets/color-swatch.jsx';
 import { DownloadAssets } from '/snippets/download-assets.jsx';
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 93e3fdfe77965d5176d3db1b9e16845e4b055b33fccd930ac406273243102618 */}
 <Visibility for="humans">
-<PageAudioTranscript page="resources-brand" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("resources-brand")} />
 </Visibility>
 
 

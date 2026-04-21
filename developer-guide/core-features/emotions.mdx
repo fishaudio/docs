@@ -9,11 +9,11 @@ import AdvancedEmotions from '/snippets/emotion-list-advanced.mdx';
 import ToneMarkers from '/snippets/emotion-list-tones.mdx';
 import AudioEffects from '/snippets/emotion-list-effects.mdx';
 import SpecialEffects from '/snippets/emotion-list-special.mdx';
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 702d6176919d2e53007c71cc0850ac755add8d539e6fbd4c55fd20e8332821d7 */}
 <Visibility for="humans">
-<PageAudioTranscript page="core-features-emotions" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("core-features-emotions")} />
 </Visibility>
 
 

@@ -5,11 +5,11 @@ icon: "microphone-lines"
 ---
 
 import Prerequisites from '/snippets/prerequisites.mdx';
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: db549b2a658341874769f07fb1a9570ea730773cc12027bbc6a1571f8f11e84d */}
 <Visibility for="humans">
-<PageAudioTranscript page="python-sdk-legacy-speech-to-text" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("python-sdk-legacy-speech-to-text")} />
 </Visibility>
 
 

@@ -5,11 +5,11 @@ icon: "key"
 ---
 
 import Prerequisites from '/snippets/prerequisites.mdx';
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: a0e092b51613880c9649356b5a1dd793a2f6f35569c935af013d397406f9be21 */}
 <Visibility for="humans">
-<PageAudioTranscript page="python-authentication" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("python-authentication")} />
 </Visibility>
 
 

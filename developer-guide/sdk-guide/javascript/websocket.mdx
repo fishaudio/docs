@@ -5,11 +5,11 @@ icon: "bolt"
 ---
 
 import Prerequisites from '/snippets/prerequisites.mdx';
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: ad7ba016bd2904359639932e55d311b20f2b15ef5a61fdef2e2618da18ea8264 */}
 <Visibility for="humans">
-<PageAudioTranscript page="javascript-websocket" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("javascript-websocket")} />
 </Visibility>
 
 

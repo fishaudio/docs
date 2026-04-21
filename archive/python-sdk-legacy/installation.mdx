@@ -5,11 +5,11 @@ icon: "download"
 ---
 
 import Support from '/snippets/support.mdx';
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 9dd04eae97e4e568f124ae29da74fac8d34afc7e6a9b0c2e43466870209d0623 */}
 <Visibility for="humans">
-<PageAudioTranscript page="python-sdk-legacy-installation" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("python-sdk-legacy-installation")} />
 </Visibility>
 
 

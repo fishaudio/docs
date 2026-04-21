@@ -3,11 +3,11 @@ title: "Pipecat"
 description: "Build voice AI agents with Fish Audio and Pipecat"
 icon: "/images/pipecat-logo.png"
 ---
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: bae6e1c41cd826abd228c78e58612f89898fee34aca315cd398fc8b0c4bbbd33 */}
 <Visibility for="humans">
-<PageAudioTranscript page="integrations-pipecat" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("integrations-pipecat")} />
 </Visibility>
 
 

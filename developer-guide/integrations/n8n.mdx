@@ -3,11 +3,11 @@ title: "n8n"
 description: "Automate workflows with Fish Audio and n8n"
 icon: "/images/n8n.png"
 ---
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 2aa17f69dd9868bf3688a8e43fd9663285af0635088d1f8236b1d26704f34ffc */}
 <Visibility for="humans">
-<PageAudioTranscript page="integrations-n8n" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("integrations-n8n")} />
 </Visibility>
 
 

@@ -3,11 +3,11 @@ title: "Real-time Voice Streaming"
 description: "Stream voice generation in real-time for interactive applications"
 icon: "signal-stream"
 ---
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: cd4fb1f6c5e78c5d2f3a76e688cd7d27b8e24e40f27c6ec5bbd194d4caca24b8 */}
 <Visibility for="humans">
-<PageAudioTranscript page="best-practices-real-time-streaming" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("best-practices-real-time-streaming")} />
 </Visibility>
 
 

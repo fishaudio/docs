@@ -5,11 +5,11 @@ icon: "download"
 ---
 
 import Support from '/snippets/support.mdx';
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 8caf44030e141bbcc8d79ccffd18823edd74f0903979d6ad76b1866a1a5339a6 */}
 <Visibility for="humans">
-<PageAudioTranscript page="javascript-installation" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("javascript-installation")} />
 </Visibility>
 
 

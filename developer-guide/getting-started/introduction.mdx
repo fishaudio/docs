@@ -3,11 +3,11 @@ title: "Overview of Fish Audio"
 description: "Discover Fish Audio's powerful voice generation platform and what you can build"
 icon: "whale"
 ---
-import { PageAudioTranscript } from '/snippets/page-audio-transcript.jsx';
+import { AudioTranscript, getPageAudioTranscriptVoices } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 8c07d4d6124c05fdf89f134c80a6b162016fc0a0632dddffb3c16cec3d5ca0d3 */}
 <Visibility for="humans">
-<PageAudioTranscript page="getting-started-introduction" />
+  <AudioTranscript voices={getPageAudioTranscriptVoices("getting-started-introduction")} />
 </Visibility>
 
 
