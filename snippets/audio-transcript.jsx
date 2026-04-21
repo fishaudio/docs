@@ -1,26 +1,26 @@
 import { useState, useRef, useEffect } from 'react';
 
-const getPageAudioTranscriptVoices = (page) => {
-  if (!page) return [];
-
-  const baseUrl = 'https://pub-b995142090474379a930b856ab79b4d4.r2.dev/audio';
-  const voices = [
-    { id: '8ef4a238714b45718ce04243307c57a7', name: 'E-girl' },
-    { id: '802e3bc2b27e49c2995d23ef70e6ac89', name: 'Energetic Male' },
-    { id: '933563129e564b19a115bedd57b7406a', name: 'Sarah' },
-    { id: 'bf322df2096a46f18c579d0baa36f41d', name: 'Adrian' },
-    { id: 'b347db033a6549378b48d00acb0d06cd', name: 'Selene' },
-    { id: '536d3a5e000945adb7038665781a4aca', name: 'Ethan' },
-  ];
-
-  return voices.map((voice) => ({
-    ...voice,
-    url: `${baseUrl}/${page}/${voice.id}.mp3`
-  }));
-};
-
 export const AudioTranscript = ({ voices, page }) => {
-  const resolvedVoices = voices?.length ? voices : getPageAudioTranscriptVoices(page);
+  const resolvedVoices = voices?.length
+    ? voices
+    : (() => {
+        if (!page) return [];
+
+        const baseUrl = 'https://pub-b995142090474379a930b856ab79b4d4.r2.dev/audio';
+        const pageVoices = [
+          { id: '8ef4a238714b45718ce04243307c57a7', name: 'E-girl' },
+          { id: '802e3bc2b27e49c2995d23ef70e6ac89', name: 'Energetic Male' },
+          { id: '933563129e564b19a115bedd57b7406a', name: 'Sarah' },
+          { id: 'bf322df2096a46f18c579d0baa36f41d', name: 'Adrian' },
+          { id: 'b347db033a6549378b48d00acb0d06cd', name: 'Selene' },
+          { id: '536d3a5e000945adb7038665781a4aca', name: 'Ethan' },
+        ];
+
+        return pageVoices.map((voice) => ({
+          ...voice,
+          url: `${baseUrl}/${page}/${voice.id}.mp3`
+        }));
+      })();
   const [selectedVoice, setSelectedVoice] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
