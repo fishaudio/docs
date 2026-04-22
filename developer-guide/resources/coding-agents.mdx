@@ -44,7 +44,7 @@ Fish Audio publishes a ready-made [Agent Skill](https://github.com/vercel-labs/s
 <Tabs>
   <Tab title="Install the raw-API skill">
     ```bash
-    npx skills add docs.fish.audio --skill fish-audio-api
+    npx skills add https://docs.fish.audio --skill fish-audio-api
     ```
 
     This installs the skill into your agent's local skill directory (for example `~/.claude/skills/fish-audio-api/`). Once installed, ask your agent to "call the Fish Audio TTS API with curl" or "stream TTS over WebSocket in Python" and it will follow the skill's conventions.
@@ -52,7 +52,7 @@ Fish Audio publishes a ready-made [Agent Skill](https://github.com/vercel-labs/s
 
   <Tab title="Install all Fish Audio skills">
     ```bash
-    npx skills add docs.fish.audio
+    npx skills add https://docs.fish.audio
     ```
 
     Installs every skill advertised at [/.well-known/agent-skills/index.json](https://docs.fish.audio/.well-known/agent-skills/index.json), including the auto-generated product overview skill and the raw-API skill.
@@ -62,8 +62,8 @@ Fish Audio publishes a ready-made [Agent Skill](https://github.com/vercel-labs/s
     The discovery index lives at [/.well-known/agent-skills/index.json](https://docs.fish.audio/.well-known/agent-skills/index.json) and each skill's raw markdown is served at [/.well-known/agent-skills/&lt;skill&gt;/SKILL.md](https://docs.fish.audio/.well-known/agent-skills/fish-audio-api/SKILL.md). Review the skill content first, then install with:
 
     ```bash
-    npx skills add docs.fish.audio --list          # show available skills
-    npx skills add docs.fish.audio --skill fish-audio-api
+    npx skills add https://docs.fish.audio --list          # show available skills
+    npx skills add https://docs.fish.audio --skill fish-audio-api
     ```
   </Tab>
 </Tabs>
