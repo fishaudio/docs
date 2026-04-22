@@ -37,6 +37,45 @@ If your coding agent supports direct document fetching, start with `llms.txt` be
 
 </Note>
 
+## Install as an Agent Skill
+
+Fish Audio publishes a ready-made [Agent Skill](https://github.com/vercel-labs/skills) that teaches your coding agent how to call the Fish Audio REST and WebSocket APIs directly, without an SDK. It covers authentication, every endpoint in our OpenAPI schema, MessagePack vs JSON vs multipart encoding rules, multi-speaker dialogue, and the WebSocket streaming protocol.
+
+<Tabs>
+  <Tab title="Install the raw-API skill">
+    ```bash
+    npx skills add docs.fish.audio --skill fish-audio-api
+    ```
+
+    This installs the skill into your agent's local skill directory (for example `~/.claude/skills/fish-audio-api/`). Once installed, ask your agent to "call the Fish Audio TTS API with curl" or "stream TTS over WebSocket in Python" and it will follow the skill's conventions.
+  </Tab>
+
+  <Tab title="Install all Fish Audio skills">
+    ```bash
+    npx skills add docs.fish.audio
+    ```
+
+    Installs every skill advertised at [/.well-known/agent-skills/index.json](https://docs.fish.audio/.well-known/agent-skills/index.json), including the auto-generated product overview skill and the raw-API skill.
+  </Tab>
+
+  <Tab title="Inspect before installing">
+    The discovery index lives at [/.well-known/agent-skills/index.json](https://docs.fish.audio/.well-known/agent-skills/index.json) and each skill's raw markdown is served at [/.well-known/agent-skills/&lt;skill&gt;/SKILL.md](https://docs.fish.audio/.well-known/agent-skills/fish-audio-api/SKILL.md). Review the skill content first, then install with:
+
+    ```bash
+    npx skills add docs.fish.audio --list          # show available skills
+    npx skills add docs.fish.audio --skill fish-audio-api
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+The `skills` CLI works with any agent that uses `SKILL.md` conventions — Claude Code, Cursor, Windsurf, Codex, and others. See [`npx skills --help`](https://github.com/vercel-labs/skills) for agent-specific install flags such as `-a claude-code` or `-a cursor`.
+</Tip>
+
+<Note>
+Prefer MCP if you want live documentation search inside your editor. Prefer the Agent Skill if you want a self-contained instruction file that works offline after install and doesn't rely on a running MCP server.
+</Note>
+
 ## Why Use MCP Integration?
 
 <CardGroup cols={3}>

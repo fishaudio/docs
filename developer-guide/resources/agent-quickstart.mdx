@@ -17,6 +17,18 @@ This documentation site already provides built-in LLM-friendly indexes:
 
 In most cases, agents should read `llms.txt` first and only fetch `llms-full.txt` when they need wider context across the whole documentation set.
 
+## Install the Agent Skill
+
+For coding agents that support [Agent Skills](https://github.com/vercel-labs/skills) (Claude Code, Cursor, Windsurf, Codex, and others), install the ready-made raw-API skill with a single command:
+
+```bash
+npx skills add docs.fish.audio --skill fish-audio-api
+```
+
+The skill teaches the agent how to call the Fish Audio REST and WebSocket APIs directly from `curl`, Python, Node.js, or any HTTP client — no SDK required. It covers authentication, every endpoint in our [OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json), MessagePack vs JSON vs multipart encoding rules, multi-speaker dialogue, and the WebSocket streaming protocol.
+
+Discovery endpoint: [/.well-known/agent-skills/index.json](https://docs.fish.audio/.well-known/agent-skills/index.json). Run `npx skills add docs.fish.audio` (without `--skill`) to install every skill published here, including the auto-generated product overview skill.
+
 ## Retrieval Order
 
 1. Read [llms.txt](https://docs.fish.audio/llms.txt) for the curated documentation index.
