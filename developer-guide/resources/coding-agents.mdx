@@ -3,13 +3,14 @@ title: "AI Coding Agents"
 description: "Connect AI coding assistants to Fish Audio documentation via MCP for real-time API guidance"
 icon: "robot"
 ---
-import { AudioTranscript } from '/snippets/audio-transcript.jsx';
+
+import { AudioTranscript } from "/snippets/audio-transcript.jsx";
 
 {/* speak-mintlify-hash: bb48040abec73604a76c532d042b645b95eeccb2d2d82929888bf41b3180935a */}
+
 <Visibility for="humans">
   <AudioTranscript page="resources-coding-agents" />
 </Visibility>
-
 
 ## Overview
 
@@ -23,7 +24,18 @@ The Fish Audio MCP server provides instant access to:
 - Troubleshooting guides
 
 Connect once and get accurate, up-to-date Fish Audio knowledge in your coding environment.
+
 </Tip>
+
+<Note>
+This documentation site also exposes built-in LLM-friendly indexes:
+
+- [llms.txt](https://docs.fish.audio/llms.txt) for the curated page index
+- [llms-full.txt](https://docs.fish.audio/llms-full.txt) for broader site context
+
+If your coding agent supports direct document fetching, start with `llms.txt` before pulling individual pages.
+
+</Note>
 
 ## Why Use MCP Integration?
 
@@ -32,9 +44,9 @@ Connect once and get accurate, up-to-date Fish Audio knowledge in your coding en
     Access the latest API documentation without leaving your editor
   </Card>
 
-  <Card title="Accurate Code" icon="check">
-    Generate working code based on current API specifications
-  </Card>
+<Card title="Accurate Code" icon="check">
+  Generate working code based on current API specifications
+</Card>
 
   <Card title="Smart Assistance" icon="brain">
     Get context-aware help for debugging and optimization
@@ -80,6 +92,7 @@ Connect once and get accurate, up-to-date Fish Audio knowledge in your coding en
         Ask Claude Code: "What Fish Audio models are available?" or "How do I use Fish Audio's TTS API?"
       </Step>
     </Steps>
+
   </Tab>
 
   <Tab title="Cursor">
@@ -118,6 +131,7 @@ Connect once and get accurate, up-to-date Fish Audio knowledge in your coding en
     <Note>
     Cursor's MCP support was added in early 2025. Ensure you're running the latest version for full functionality.
     </Note>
+
   </Tab>
 
   <Tab title="Windsurf">
@@ -156,6 +170,7 @@ Connect once and get accurate, up-to-date Fish Audio knowledge in your coding en
     <Note>
     Windsurf's MCP support was introduced in Wave 3 (February 2025). Ensure you're running the latest version.
     </Note>
+
   </Tab>
 </Tabs>
 
@@ -170,13 +185,13 @@ Once connected, ask your coding agent questions naturally:
     "How do I authenticate with Fish Audio API?"
   </Card>
 
-  <Card title="TTS Example" icon="microphone">
-    "Show me Python code for text-to-speech"
-  </Card>
+<Card title="TTS Example" icon="microphone">
+  "Show me Python code for text-to-speech"
+</Card>
 
-  <Card title="Emotions" icon="masks-theater">
-    "What emotion parameters are available?"
-  </Card>
+<Card title="Emotions" icon="masks-theater">
+  "What emotion parameters are available?"
+</Card>
 
   <Card title="WebSocket" icon="plug">
     "Help me implement real-time streaming"
@@ -207,6 +222,7 @@ Once connected, ask your coding agent questions naturally:
 
         return output_file
     ```
+
   </Tab>
 
   <Tab title="Voice Cloning">
@@ -236,6 +252,7 @@ Once connected, ask your coding agent questions naturally:
             logging.error(f"Cloning failed: {e}")
             raise
     ```
+
   </Tab>
 
   <Tab title="Streaming">
@@ -257,6 +274,7 @@ Once connected, ask your coding agent questions naturally:
             # Process audio chunk
             yield chunk
     ```
+
   </Tab>
 </Tabs>
 
@@ -269,21 +287,21 @@ Your coding agent can access:
     Complete endpoint documentation with parameters
   </Card>
 
-  <Card title="SDK Guides" icon="book">
-    Python SDK usage and examples
-  </Card>
+<Card title="SDK Guides" icon="book">
+  Python SDK usage and examples
+</Card>
 
-  <Card title="Best Practices" icon="lightbulb">
-    Optimization patterns and tips
-  </Card>
+<Card title="Best Practices" icon="lightbulb">
+  Optimization patterns and tips
+</Card>
 
-  <Card title="Models & Pricing" icon="tags">
-    Available models and rate limits
-  </Card>
+<Card title="Models & Pricing" icon="tags">
+  Available models and rate limits
+</Card>
 
-  <Card title="Voice Cloning" icon="copy">
-    Custom voice creation guides
-  </Card>
+<Card title="Voice Cloning" icon="copy">
+  Custom voice creation guides
+</Card>
 
   <Card title="Troubleshooting" icon="wrench">
     Common issues and solutions
@@ -321,6 +339,7 @@ Create agent workflows for common tasks:
 - Buffer management
 - Error recovery"
 ```
+
 </CodeGroup>
 
 ### Context-Aware Features
@@ -344,6 +363,7 @@ With MCP integration, your agent can:
     3. Ensure your agent supports MCP protocol
     4. Restart your coding environment
     5. Clear any cached configurations
+
   </Accordion>
 
   <Accordion title="Outdated Information">
@@ -352,6 +372,7 @@ With MCP integration, your agent can:
     1. Refresh the MCP connection in settings
     2. Clear documentation cache if available
     3. Report persistent issues to support@fish.audio
+
   </Accordion>
 
   <Accordion title="Missing Features">
@@ -361,17 +382,16 @@ With MCP integration, your agent can:
     2. Check MCP protocol compatibility
     3. Ensure proper server configuration
     4. Contact support for assistance
+
   </Accordion>
 </AccordionGroup>
 
 ## Security
 
 <Info>
-**Your data is safe:**
-- MCP provides read-only access to public documentation
-- No API keys are transmitted through MCP
-- All connections use HTTPS encryption
-- No user queries or usage data is stored
+  **Your data is safe:** - MCP provides read-only access to public documentation
+  - No API keys are transmitted through MCP - All connections use HTTPS
+  encryption - No user queries or usage data is stored
 </Info>
 
 ## Next Steps
@@ -385,21 +405,21 @@ With MCP integration, your agent can:
     Start with Fish Audio API basics
   </Card>
 
-  <Card
-    title="Python SDK"
-    icon="python"
-    href="/developer-guide/sdk-guide/python/installation"
-  >
-    Install and configure the Python SDK
-  </Card>
+<Card
+  title="Python SDK"
+  icon="python"
+  href="/developer-guide/sdk-guide/python/installation"
+>
+  Install and configure the Python SDK
+</Card>
 
-  <Card
-    title="TTS Guide and Best Practices"
-    icon="microphone"
-    href="/developer-guide/core-features/text-to-speech"
-  >
-    Learn text-to-speech optimization
-  </Card>
+<Card
+  title="TTS Guide and Best Practices"
+  icon="microphone"
+  href="/developer-guide/core-features/text-to-speech"
+>
+  Learn text-to-speech optimization
+</Card>
 
   <Card
     title="Voice Cloning Guide"
