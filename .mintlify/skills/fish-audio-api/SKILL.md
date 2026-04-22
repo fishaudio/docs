@@ -33,7 +33,7 @@ This file condenses those into rules an agent can apply directly.
 | PATCH | `/model/{id}` | Update voice model |
 | DELETE | `/model/{id}` | Delete voice model |
 | GET | `/wallet/{user_id}/package` | Subscription package info (`user_id` defaults to `self`) |
-| GET | `/wallet/{user_id}/api-credit` | API credit balance |
+| GET | `/wallet/{user_id}/api-credit` | API credit balance (`user_id` defaults to `self`) |
 | WSS | `/v1/tts/live` | Real-time TTS streaming (MessagePack frames) |
 
 ## Text-to-Speech — `POST /v1/tts`
@@ -169,7 +169,9 @@ with httpx.stream("POST", "https://api.fish.audio/v1/tts",
 ### Node.js (fetch, streaming)
 
 ```js
-import { writeFile } from "node:fs/promises";
+import { createWriteStream } from "node:fs";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 
 const res = await fetch("https://api.fish.audio/v1/tts", {
   method: "POST",
@@ -187,7 +189,7 @@ const res = await fetch("https://api.fish.audio/v1/tts", {
 });
 
 if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
-await writeFile("out.mp3", Buffer.from(await res.arrayBuffer()));
+await pipeline(Readable.fromWeb(res.body), createWriteStream("out.mp3"));
 ```
 
 ## Speech-to-Text — `POST /v1/asr`
@@ -284,7 +286,7 @@ curl --request PATCH https://api.fish.audio/model/<id> \
 ## Wallet
 
 - `GET /wallet/self/package` → `{user_id, type, total, balance, created_at, updated_at, finished_at}`
-- `GET /wallet/self/api-credit?check_free_credit=true` → `{_id, user_id, credit, created_at, updated_at, has_phone_sha256, has_free_credit}`
+- `GET /wallet/self/api-credit` → `{_id, user_id, credit, created_at, updated_at, has_phone_sha256, has_free_credit}`. Pass `?check_free_credit=true` to also populate `has_free_credit` (default `false` — the field is `null` when not checked).
 
 Replace `self` with a specific `user_id` if you have permission; otherwise always use `self`.
 
@@ -311,10 +313,14 @@ Server → client:
 - `AudioEvent`: `{event: "audio", audio: <bytes>}` — many of these, concatenate in order to reconstruct the audio stream in the format set by `request.format`.
 - `FinishEvent`: `{event: "finish", reason: "stop" | "error"}` — exactly one, then the server closes the socket. Ignore unknown events for forward compatibility.
 
-### Python example (`websockets` + `msgpack`)
+### Python example (`websockets>=14` + `msgpack`)
+
+`additional_headers` is the parameter name in `websockets` v14+. On older
+releases use `extra_headers=` or import from `websockets.legacy.client`.
 
 ```python
 import asyncio, os, msgpack, websockets
+from websockets.exceptions import ConnectionClosed
 
 API_KEY = os.environ["FISH_API_KEY"]
 URL = "wss://api.fish.audio/v1/tts/live"
@@ -336,22 +342,31 @@ async def run(text_stream):
         await ws.send(msgpack.packb(start, use_bin_type=True))
 
         async def sender():
-            async for chunk in text_stream:
-                await ws.send(msgpack.packb(
-                    {"event": "text", "text": chunk}, use_bin_type=True))
-            await ws.send(msgpack.packb({"event": "stop"}, use_bin_type=True))
+            try:
+                async for chunk in text_stream:
+                    await ws.send(msgpack.packb(
+                        {"event": "text", "text": chunk}, use_bin_type=True))
+                await ws.send(msgpack.packb({"event": "stop"}, use_bin_type=True))
+            except ConnectionClosed:
+                pass  # server sent finish before the text stream drained
 
         send_task = asyncio.create_task(sender())
-        with open("out.mp3", "wb") as f:
-            async for raw in ws:
-                msg = msgpack.unpackb(raw, raw=False)
-                if msg["event"] == "audio":
-                    f.write(msg["audio"])
-                elif msg["event"] == "finish":
-                    if msg["reason"] == "error":
-                        raise RuntimeError("TTS failed")
-                    break
-        await send_task
+        try:
+            with open("out.mp3", "wb") as f:
+                async for raw in ws:
+                    msg = msgpack.unpackb(raw, raw=False)
+                    if msg["event"] == "audio":
+                        f.write(msg["audio"])
+                    elif msg["event"] == "finish":
+                        if msg["reason"] == "error":
+                            raise RuntimeError("TTS failed")
+                        break
+        finally:
+            send_task.cancel()
+            try:
+                await send_task
+            except (asyncio.CancelledError, ConnectionClosed):
+                pass
 
 async def words():
     for w in ["Hello", " from", " Fish", " Audio."]:

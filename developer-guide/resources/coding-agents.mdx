@@ -58,12 +58,13 @@ Fish Audio publishes a ready-made [Agent Skill](https://github.com/vercel-labs/s
     Installs every skill advertised at [/.well-known/agent-skills/index.json](https://docs.fish.audio/.well-known/agent-skills/index.json), including the auto-generated product overview skill and the raw-API skill.
   </Tab>
 
-  <Tab title="Install from a direct URL">
-    ```bash
-    npx skills add https://docs.fish.audio/.well-known/agent-skills/fish-audio-api
-    ```
+  <Tab title="Inspect before installing">
+    The discovery index lives at [/.well-known/agent-skills/index.json](https://docs.fish.audio/.well-known/agent-skills/index.json) and each skill's raw markdown is served at [/.well-known/agent-skills/&lt;skill&gt;/SKILL.md](https://docs.fish.audio/.well-known/agent-skills/fish-audio-api/SKILL.md). Review the skill content first, then install with:
 
-    Useful if your tooling prefers a fully qualified URL or you want to pin to a specific skill path.
+    ```bash
+    npx skills add docs.fish.audio --list          # show available skills
+    npx skills add docs.fish.audio --skill fish-audio-api
+    ```
   </Tab>
 </Tabs>
 
