@@ -23,11 +23,28 @@ npm install
 npm run dev
 ```
 
+### OpenAPI schema
+
+The REST API reference is generated from `api-reference/openapi.json`.
+Refresh it from the canonical API schema before validating or deploying docs:
+
+```bash
+npm run update:openapi
+npm run check:openapi
+```
+
+CI also checks pull requests against the latest schema from
+`https://api.fish.audio/openapi.json` and opens an automatic update PR when the
+schema changes on `main`.
+
 ### Commands
 
 - `npm run dev` - Start development server
 - `npm run format` - Format files
 - `npm run format:check` - Check formatting
+- `npm run update:openapi` - Pull the latest OpenAPI schema
+- `npm run check:openapi` - Validate the local OpenAPI schema
+- `npm run validate` - Refresh OpenAPI schema and validate the Mintlify docs
 
 ## Community
 

@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "mint dev",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "update:openapi": "node scripts/update-openapi.mjs",
+    "check:openapi": "mint openapi-check api-reference/openapi.json",
+    "validate": "npm run update:openapi && mint validate"
   },
   "dependencies": {
     "mint": "^4.2.177"

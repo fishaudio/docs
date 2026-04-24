@@ -1,0 +1,69 @@
+name: OpenAPI Schema
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  check-openapi:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Pull latest OpenAPI schema
+        run: npm run update:openapi
+
+      - name: Validate OpenAPI schema
+        run: npm run check:openapi
+
+      - name: Ensure committed schema is current
+        run: git diff --exit-code -- api-reference/openapi.json
+
+  update-openapi:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Pull latest OpenAPI schema
+        run: npm run update:openapi
+
+      - name: Validate OpenAPI schema
+        run: npm run check:openapi
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore: update OpenAPI schema"
+          title: "chore: update OpenAPI schema"
+          body: "Auto-generated update from https://api.fish.audio/openapi.json"
+          branch: chore/update-openapi-schema
+          delete-branch: true
+          token: ${{ secrets.BOT_TOKEN }}
+          author: ${{ vars.BOT_NAME }} <${{ vars.BOT_EMAIL }}>
+          committer: ${{ vars.BOT_NAME }} <${{ vars.BOT_EMAIL }}>
