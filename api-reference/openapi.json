@@ -14,370 +14,7 @@
     "description": "Fish Audio documentation",
     "url": "https://docs.fish.audio"
   },
-  "servers": [
-    {
-      "url": "https://api.fish.audio",
-      "description": "Fish Audio API"
-    }
-  ],
   "paths": {
-    "/v1/tts": {
-      "post": {
-        "summary": "Text to Speech",
-        "x-codeSamples": [
-          {
-            "lang": "bash",
-            "label": "Single Speaker",
-            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/tts \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2-pro' \\\n  --data '{\n    \"text\": \"Hello! Welcome to Fish Audio.\",\n    \"reference_id\": \"model-id\",\n    \"temperature\": 0.7,\n    \"top_p\": 0.7,\n    \"prosody\": {\n      \"speed\": 1,\n      \"volume\": 0,\n      \"normalize_loudness\": true\n    },\n    \"chunk_length\": 300,\n    \"normalize\": true,\n    \"format\": \"mp3\",\n    \"sample_rate\": 44100,\n    \"mp3_bitrate\": 128,\n    \"latency\": \"normal\",\n    \"max_new_tokens\": 1024,\n    \"repetition_penalty\": 1.2,\n    \"min_chunk_length\": 50,\n    \"condition_on_previous_chunks\": true,\n    \"early_stop_threshold\": 1\n  }'"
-          },
-          {
-            "lang": "bash",
-            "label": "Multi Speaker (S2-Pro only)",
-            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/tts \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2-pro' \\\n  --data '{\n    \"text\": \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\",\n    \"reference_id\": [\"speaker-a-id\", \"speaker-b-id\"],\n    \"temperature\": 0.7,\n    \"top_p\": 0.7,\n    \"prosody\": {\n      \"speed\": 1,\n      \"volume\": 0,\n      \"normalize_loudness\": true\n    },\n    \"chunk_length\": 300,\n    \"normalize\": true,\n    \"format\": \"mp3\",\n    \"sample_rate\": 44100,\n    \"mp3_bitrate\": 128,\n    \"latency\": \"normal\",\n    \"max_new_tokens\": 1024,\n    \"repetition_penalty\": 1.2,\n    \"min_chunk_length\": 50,\n    \"condition_on_previous_chunks\": true,\n    \"early_stop_threshold\": 1\n  }'"
-          }
-        ],
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "header",
-            "name": "model",
-            "description": "Specify which TTS model to use. We recommend `s2-pro`.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "default": "s2-pro",
-              "enum": ["s1", "s2-pro"]
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TTSRequest"
-              }
-            },
-            "application/msgpack": {
-              "schema": {
-                "$ref": "#/components/schemas/TTSRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Request fulfilled, document follows",
-            "headers": {
-              "Transfer-Encoding": {
-                "schema": {
-                  "type": "string"
-                },
-                "description": "chunked"
-              }
-            }
-          },
-          "401": {
-            "description": "No permission -- see authorization schemes",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    }
-                  },
-                  "required": ["status", "message"],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "402": {
-            "description": "No payment -- see charging schemes",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    }
-                  },
-                  "required": ["status", "message"],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "loc": {
-                        "title": "Location",
-                        "description": "error field",
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "type": {
-                        "title": "Type",
-                        "description": "error type",
-                        "type": "string"
-                      },
-                      "msg": {
-                        "title": "Message",
-                        "description": "error message",
-                        "type": "string"
-                      },
-                      "ctx": {
-                        "title": "Context",
-                        "description": "error context",
-                        "type": "string"
-                      },
-                      "in": {
-                        "title": "In",
-                        "type": "string",
-                        "enum": ["path", "query", "header", "cookie", "body"]
-                      }
-                    },
-                    "required": ["loc", "type", "msg"]
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": ["OpenAPI v1"]
-      }
-    },
-    "/v1/asr": {
-      "post": {
-        "summary": "Speech to Text",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "properties": {
-                  "audio": {
-                    "description": "Audio to be converted to text",
-                    "format": "binary",
-                    "title": "Audio",
-                    "type": "string"
-                  },
-                  "language": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "default": null,
-                    "description": "Language to be used for the speech",
-                    "title": "Language"
-                  },
-                  "ignore_timestamps": {
-                    "default": true,
-                    "description": "Whether to return precise timestamps in the text, this will increase the latency in audio shorter than 30 seconds",
-                    "title": "Ignore Timestamps",
-                    "type": "boolean"
-                  }
-                },
-                "required": ["audio"],
-                "type": "object"
-              }
-            },
-            "application/msgpack": {
-              "schema": {
-                "properties": {
-                  "audio": {
-                    "description": "Audio to be converted to text",
-                    "format": "binary",
-                    "title": "Audio",
-                    "type": "string"
-                  },
-                  "language": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "default": null,
-                    "description": "Language to be used for the speech",
-                    "title": "Language"
-                  },
-                  "ignore_timestamps": {
-                    "default": true,
-                    "description": "Whether to return precise timestamps in the text, this will increase the latency in audio shorter than 30 seconds",
-                    "title": "Ignore Timestamps",
-                    "type": "boolean"
-                  }
-                },
-                "required": ["audio"],
-                "type": "object"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Request fulfilled, document follows",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "text": {
-                      "title": "Text",
-                      "type": "string"
-                    },
-                    "duration": {
-                      "description": "Duration of the audio in seconds",
-                      "title": "Duration",
-                      "type": "number"
-                    },
-                    "segments": {
-                      "items": {
-                        "$ref": "#/components/schemas/ASRSegment"
-                      },
-                      "title": "Segments",
-                      "type": "array"
-                    }
-                  },
-                  "required": ["text", "duration", "segments"],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No permission -- see authorization schemes",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    }
-                  },
-                  "required": ["status", "message"],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "402": {
-            "description": "No payment -- see charging schemes",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    }
-                  },
-                  "required": ["status", "message"],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "loc": {
-                        "title": "Location",
-                        "description": "error field",
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "type": {
-                        "title": "Type",
-                        "description": "error type",
-                        "type": "string"
-                      },
-                      "msg": {
-                        "title": "Message",
-                        "description": "error message",
-                        "type": "string"
-                      },
-                      "ctx": {
-                        "title": "Context",
-                        "description": "error context",
-                        "type": "string"
-                      },
-                      "in": {
-                        "title": "In",
-                        "type": "string",
-                        "enum": ["path", "query", "header", "cookie", "body"]
-                      }
-                    },
-                    "required": ["loc", "type", "msg"]
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": ["OpenAPI v1"]
-      }
-    },
     "/wallet/{user_id}/package": {
       "get": {
         "summary": "Get User Package",
@@ -425,16 +62,136 @@
                       "type": "integer"
                     },
                     "created_at": {
+                      "format": "date-time",
                       "title": "Created At",
                       "type": "string"
                     },
                     "updated_at": {
+                      "format": "date-time",
                       "title": "Updated At",
                       "type": "string"
                     },
                     "finished_at": {
+                      "format": "date-time",
                       "title": "Finished At",
                       "type": "string"
+                    },
+                    "stripe_subscription_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Stripe Subscription Id"
+                    },
+                    "stripe_price_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Stripe Price Id"
+                    },
+                    "billing_period": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Billing Period"
+                    },
+                    "current_period_end": {
+                      "anyOf": [
+                        {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Current Period End"
+                    },
+                    "cancel_at_period_end": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Cancel At Period End"
+                    },
+                    "cancel_at": {
+                      "anyOf": [
+                        {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Cancel At"
+                    },
+                    "scheduled_change": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": true,
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Scheduled Change"
+                    },
+                    "last_synced_at": {
+                      "anyOf": [
+                        {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Last Synced At"
+                    },
+                    "extra_balance": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": 0,
+                      "title": "Extra Balance"
+                    },
+                    "has_used_trial": {
+                      "default": false,
+                      "title": "Has Used Trial",
+                      "type": "boolean"
                     }
                   },
                   "required": [
@@ -467,7 +224,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["status", "message"],
+                  "required": [
+                    "status",
+                    "message"
+                  ],
                   "type": "object"
                 }
               }
@@ -509,17 +269,29 @@
                       "in": {
                         "title": "In",
                         "type": "string",
-                        "enum": ["path", "query", "header", "cookie", "body"]
+                        "enum": [
+                          "path",
+                          "query",
+                          "header",
+                          "cookie",
+                          "body"
+                        ]
                       }
                     },
-                    "required": ["loc", "type", "msg"]
+                    "required": [
+                      "loc",
+                      "type",
+                      "msg"
+                    ]
                   }
                 }
               }
             }
           }
         },
-        "tags": ["Wallet"]
+        "tags": [
+          "Wallet"
+        ]
       }
     },
     "/wallet/{user_id}/api-credit": {
@@ -540,6 +312,25 @@
               "default": false,
               "title": "Check Free Credit",
               "type": "boolean"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "team_id",
+            "description": "",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Team Id"
             },
             "deprecated": false
           },
@@ -565,7 +356,7 @@
                 "schema": {
                   "properties": {
                     "_id": {
-                      "title": " Id",
+                      "title": "Id",
                       "type": "string"
                     },
                     "user_id": {
@@ -632,7 +423,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["status", "message"],
+                  "required": [
+                    "status",
+                    "message"
+                  ],
                   "type": "object"
                 }
               }
@@ -674,17 +468,29 @@
                       "in": {
                         "title": "In",
                         "type": "string",
-                        "enum": ["path", "query", "header", "cookie", "body"]
+                        "enum": [
+                          "path",
+                          "query",
+                          "header",
+                          "cookie",
+                          "body"
+                        ]
                       }
                     },
-                    "required": ["loc", "type", "msg"]
+                    "required": [
+                      "loc",
+                      "type",
+                      "msg"
+                    ]
                   }
                 }
               }
             }
           }
         },
-        "tags": ["Wallet"]
+        "tags": [
+          "Wallet"
+        ]
       }
     },
     "/model": {
@@ -703,6 +509,7 @@
             "required": false,
             "schema": {
               "default": 10,
+              "minimum": 1,
               "title": "Page Size",
               "type": "integer"
             },
@@ -715,6 +522,7 @@
             "required": false,
             "schema": {
               "default": 1,
+              "minimum": 1,
               "title": "Page Number",
               "type": "integer"
             },
@@ -852,7 +660,11 @@
             "required": false,
             "schema": {
               "default": "score",
-              "enum": ["score", "task_count", "created_at"],
+              "enum": [
+                "score",
+                "task_count",
+                "created_at"
+              ],
               "title": "Sort By",
               "type": "string"
             },
@@ -879,7 +691,10 @@
                       "type": "array"
                     }
                   },
-                  "required": ["total", "items"],
+                  "required": [
+                    "total",
+                    "items"
+                  ],
                   "type": "object"
                 }
               }
@@ -921,43 +736,57 @@
                       "in": {
                         "title": "In",
                         "type": "string",
-                        "enum": ["path", "query", "header", "cookie", "body"]
+                        "enum": [
+                          "path",
+                          "query",
+                          "header",
+                          "cookie",
+                          "body"
+                        ]
                       }
                     },
-                    "required": ["loc", "type", "msg"]
+                    "required": [
+                      "loc",
+                      "type",
+                      "msg"
+                    ]
                   }
                 }
               }
             }
           }
         },
-        "tags": ["Model"]
+        "tags": [
+          "Model"
+        ]
       },
       "post": {
-        "summary": "Create Model",
+        "summary": "Create Model for Users via API",
         "security": [
           {
             "BearerAuth": []
           }
         ],
-        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
-            "multipart/form-data": {
+            "application/json": {
               "schema": {
                 "properties": {
                   "visibility": {
                     "default": "public",
                     "description": "Model visibility, public will be shown in the discovery page, unlist allows anyone with the link to access, private only be visible to the creator",
-                    "enum": ["public", "unlist", "private"],
+                    "enum": [
+                      "public",
+                      "unlist",
+                      "private"
+                    ],
                     "title": "Visibility",
                     "type": "string"
                   },
                   "type": {
                     "const": "tts",
                     "description": "Model type, tts is for text to speech",
-                    "enum": ["tts"],
                     "title": "Type",
                     "type": "string"
                   },
@@ -996,7 +825,6 @@
                   "train_mode": {
                     "const": "fast",
                     "description": "Model train mode, for TTS model, fast means model instantly available after creation",
-                    "enum": ["fast"],
                     "title": "Train Mode",
                     "type": "string"
                   },
@@ -1020,13 +848,13 @@
                   "texts": {
                     "anyOf": [
                       {
+                        "type": "string"
+                      },
+                      {
                         "items": {
                           "type": "string"
                         },
                         "type": "array"
-                      },
-                      {
-                        "type": "string"
                       },
                       {
                         "type": "null"
@@ -1039,13 +867,13 @@
                   "tags": {
                     "anyOf": [
                       {
+                        "type": "string"
+                      },
+                      {
                         "items": {
                           "type": "string"
                         },
                         "type": "array"
-                      },
-                      {
-                        "type": "string"
                       },
                       {
                         "type": "null"
@@ -1055,13 +883,292 @@
                     "title": "Tags"
                   },
                   "enhance_audio_quality": {
-                    "default": false,
+                    "default": true,
                     "description": "Enhance audio quality",
                     "title": "Enhance Audio Quality",
                     "type": "boolean"
+                  },
+                  "generate_sample": {
+                    "default": false,
+                    "description": "Generate default text",
+                    "title": "Generate Sample",
+                    "type": "boolean"
                   }
                 },
-                "required": ["type", "title", "train_mode", "voices"],
+                "required": [
+                  "type",
+                  "title",
+                  "train_mode",
+                  "voices"
+                ],
+                "type": "object"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "properties": {
+                  "visibility": {
+                    "default": "public",
+                    "description": "Model visibility, public will be shown in the discovery page, unlist allows anyone with the link to access, private only be visible to the creator",
+                    "enum": [
+                      "public",
+                      "unlist",
+                      "private"
+                    ],
+                    "title": "Visibility",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "tts",
+                    "description": "Model type, tts is for text to speech",
+                    "title": "Type",
+                    "type": "string"
+                  },
+                  "title": {
+                    "description": "Model title or name",
+                    "title": "Title",
+                    "type": "string"
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Model description",
+                    "title": "Description"
+                  },
+                  "cover_image": {
+                    "anyOf": [
+                      {
+                        "format": "binary",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Model cover image, this is required if the model is public",
+                    "title": "Cover Image"
+                  },
+                  "train_mode": {
+                    "const": "fast",
+                    "description": "Model train mode, for TTS model, fast means model instantly available after creation",
+                    "title": "Train Mode",
+                    "type": "string"
+                  },
+                  "voices": {
+                    "anyOf": [
+                      {
+                        "items": {
+                          "format": "binary",
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      {
+                        "format": "binary",
+                        "type": "string"
+                      }
+                    ],
+                    "description": "Upload voices files that will be used to tune the model",
+                    "title": "Voices"
+                  },
+                  "texts": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Texts corresponding to the voices, if unspecified, ASR will be performed on the voices",
+                    "title": "Texts"
+                  },
+                  "tags": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Model tags",
+                    "title": "Tags"
+                  },
+                  "enhance_audio_quality": {
+                    "default": true,
+                    "description": "Enhance audio quality",
+                    "title": "Enhance Audio Quality",
+                    "type": "boolean"
+                  },
+                  "generate_sample": {
+                    "default": false,
+                    "description": "Generate default text",
+                    "title": "Generate Sample",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "type",
+                  "title",
+                  "train_mode",
+                  "voices"
+                ],
+                "type": "object"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "visibility": {
+                    "default": "public",
+                    "description": "Model visibility, public will be shown in the discovery page, unlist allows anyone with the link to access, private only be visible to the creator",
+                    "enum": [
+                      "public",
+                      "unlist",
+                      "private"
+                    ],
+                    "title": "Visibility",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "tts",
+                    "description": "Model type, tts is for text to speech",
+                    "title": "Type",
+                    "type": "string"
+                  },
+                  "title": {
+                    "description": "Model title or name",
+                    "title": "Title",
+                    "type": "string"
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Model description",
+                    "title": "Description"
+                  },
+                  "cover_image": {
+                    "anyOf": [
+                      {
+                        "format": "binary",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Model cover image, this is required if the model is public",
+                    "title": "Cover Image"
+                  },
+                  "train_mode": {
+                    "const": "fast",
+                    "description": "Model train mode, for TTS model, fast means model instantly available after creation",
+                    "title": "Train Mode",
+                    "type": "string"
+                  },
+                  "voices": {
+                    "anyOf": [
+                      {
+                        "items": {
+                          "format": "binary",
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      {
+                        "format": "binary",
+                        "type": "string"
+                      }
+                    ],
+                    "description": "Upload voices files that will be used to tune the model",
+                    "title": "Voices"
+                  },
+                  "texts": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Texts corresponding to the voices, if unspecified, ASR will be performed on the voices",
+                    "title": "Texts"
+                  },
+                  "tags": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Model tags",
+                    "title": "Tags"
+                  },
+                  "enhance_audio_quality": {
+                    "default": true,
+                    "description": "Enhance audio quality",
+                    "title": "Enhance Audio Quality",
+                    "type": "boolean"
+                  },
+                  "generate_sample": {
+                    "default": false,
+                    "description": "Generate default text",
+                    "title": "Generate Sample",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "type",
+                  "title",
+                  "train_mode",
+                  "voices"
+                ],
                 "type": "object"
               }
             },
@@ -1071,14 +1178,17 @@
                   "visibility": {
                     "default": "public",
                     "description": "Model visibility, public will be shown in the discovery page, unlist allows anyone with the link to access, private only be visible to the creator",
-                    "enum": ["public", "unlist", "private"],
+                    "enum": [
+                      "public",
+                      "unlist",
+                      "private"
+                    ],
                     "title": "Visibility",
                     "type": "string"
                   },
                   "type": {
                     "const": "tts",
                     "description": "Model type, tts is for text to speech",
-                    "enum": ["tts"],
                     "title": "Type",
                     "type": "string"
                   },
@@ -1117,7 +1227,6 @@
                   "train_mode": {
                     "const": "fast",
                     "description": "Model train mode, for TTS model, fast means model instantly available after creation",
-                    "enum": ["fast"],
                     "title": "Train Mode",
                     "type": "string"
                   },
@@ -1141,13 +1250,13 @@
                   "texts": {
                     "anyOf": [
                       {
+                        "type": "string"
+                      },
+                      {
                         "items": {
                           "type": "string"
                         },
                         "type": "array"
-                      },
-                      {
-                        "type": "string"
                       },
                       {
                         "type": "null"
@@ -1160,13 +1269,13 @@
                   "tags": {
                     "anyOf": [
                       {
+                        "type": "string"
+                      },
+                      {
                         "items": {
                           "type": "string"
                         },
                         "type": "array"
-                      },
-                      {
-                        "type": "string"
                       },
                       {
                         "type": "null"
@@ -1176,13 +1285,24 @@
                     "title": "Tags"
                   },
                   "enhance_audio_quality": {
-                    "default": false,
+                    "default": true,
                     "description": "Enhance audio quality",
                     "title": "Enhance Audio Quality",
                     "type": "boolean"
+                  },
+                  "generate_sample": {
+                    "default": false,
+                    "description": "Generate default text",
+                    "title": "Generate Sample",
+                    "type": "boolean"
                   }
                 },
-                "required": ["type", "title", "train_mode", "voices"],
+                "required": [
+                  "type",
+                  "title",
+                  "train_mode",
+                  "voices"
+                ],
                 "type": "object"
               }
             }
@@ -1197,11 +1317,14 @@
                 "schema": {
                   "properties": {
                     "_id": {
-                      "title": " Id",
+                      "title": "Id",
                       "type": "string"
                     },
                     "type": {
-                      "enum": ["svc", "tts"],
+                      "enum": [
+                        "svc",
+                        "tts"
+                      ],
                       "title": "Type",
                       "type": "string"
                     },
@@ -1219,12 +1342,20 @@
                     },
                     "train_mode": {
                       "default": "full",
-                      "enum": ["fast", "full"],
+                      "enum": [
+                        "fast",
+                        "full"
+                      ],
                       "title": "Train Mode",
                       "type": "string"
                     },
                     "state": {
-                      "enum": ["created", "training", "trained", "failed"],
+                      "enum": [
+                        "created",
+                        "training",
+                        "trained",
+                        "failed"
+                      ],
                       "title": "State",
                       "type": "string"
                     },
@@ -1262,7 +1393,11 @@
                       "type": "array"
                     },
                     "visibility": {
-                      "enum": ["public", "unlist", "private"],
+                      "enum": [
+                        "public",
+                        "unlist",
+                        "private"
+                      ],
                       "title": "Visibility",
                       "type": "string"
                     },
@@ -1270,6 +1405,34 @@
                       "default": false,
                       "title": "Lock Visibility",
                       "type": "boolean"
+                    },
+                    "dmca_taken_down": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": false,
+                      "title": "Dmca Taken Down"
+                    },
+                    "default_text": {
+                      "default": "",
+                      "title": "Default Text",
+                      "type": "string"
+                    },
+                    "quality": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/ModelQualityEntity"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
                     },
                     "like_count": {
                       "title": "Like Count",
@@ -1344,7 +1507,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["status", "message"],
+                  "required": [
+                    "status",
+                    "message"
+                  ],
                   "type": "object"
                 }
               }
@@ -1386,17 +1552,29 @@
                       "in": {
                         "title": "In",
                         "type": "string",
-                        "enum": ["path", "query", "header", "cookie", "body"]
+                        "enum": [
+                          "path",
+                          "query",
+                          "header",
+                          "cookie",
+                          "body"
+                        ]
                       }
                     },
-                    "required": ["loc", "type", "msg"]
+                    "required": [
+                      "loc",
+                      "type",
+                      "msg"
+                    ]
                   }
                 }
               }
             }
           }
         },
-        "tags": ["Model"]
+        "tags": [
+          "Model"
+        ]
       }
     },
     "/model/{id}": {
@@ -1429,11 +1607,14 @@
                 "schema": {
                   "properties": {
                     "_id": {
-                      "title": " Id",
+                      "title": "Id",
                       "type": "string"
                     },
                     "type": {
-                      "enum": ["svc", "tts"],
+                      "enum": [
+                        "svc",
+                        "tts"
+                      ],
                       "title": "Type",
                       "type": "string"
                     },
@@ -1451,12 +1632,20 @@
                     },
                     "train_mode": {
                       "default": "full",
-                      "enum": ["fast", "full"],
+                      "enum": [
+                        "fast",
+                        "full"
+                      ],
                       "title": "Train Mode",
                       "type": "string"
                     },
                     "state": {
-                      "enum": ["created", "training", "trained", "failed"],
+                      "enum": [
+                        "created",
+                        "training",
+                        "trained",
+                        "failed"
+                      ],
                       "title": "State",
                       "type": "string"
                     },
@@ -1494,7 +1683,11 @@
                       "type": "array"
                     },
                     "visibility": {
-                      "enum": ["public", "unlist", "private"],
+                      "enum": [
+                        "public",
+                        "unlist",
+                        "private"
+                      ],
                       "title": "Visibility",
                       "type": "string"
                     },
@@ -1502,6 +1695,34 @@
                       "default": false,
                       "title": "Lock Visibility",
                       "type": "boolean"
+                    },
+                    "dmca_taken_down": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": false,
+                      "title": "Dmca Taken Down"
+                    },
+                    "default_text": {
+                      "default": "",
+                      "title": "Default Text",
+                      "type": "string"
+                    },
+                    "quality": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/ModelQualityEntity"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
                     },
                     "like_count": {
                       "title": "Like Count",
@@ -1576,7 +1797,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["status", "message"],
+                  "required": [
+                    "status",
+                    "message"
+                  ],
                   "type": "object"
                 }
               }
@@ -1618,17 +1842,29 @@
                       "in": {
                         "title": "In",
                         "type": "string",
-                        "enum": ["path", "query", "header", "cookie", "body"]
+                        "enum": [
+                          "path",
+                          "query",
+                          "header",
+                          "cookie",
+                          "body"
+                        ]
                       }
                     },
-                    "required": ["loc", "type", "msg"]
+                    "required": [
+                      "loc",
+                      "type",
+                      "msg"
+                    ]
                   }
                 }
               }
             }
           }
         },
-        "tags": ["Model"]
+        "tags": [
+          "Model"
+        ]
       },
       "patch": {
         "summary": "Update Model",
@@ -1696,7 +1932,11 @@
                   "visibility": {
                     "anyOf": [
                       {
-                        "enum": ["public", "unlist", "private"],
+                        "enum": [
+                          "public",
+                          "unlist",
+                          "private"
+                        ],
                         "type": "string"
                       },
                       {
@@ -1767,7 +2007,11 @@
                   "visibility": {
                     "anyOf": [
                       {
-                        "enum": ["public", "unlist", "private"],
+                        "enum": [
+                          "public",
+                          "unlist",
+                          "private"
+                        ],
                         "type": "string"
                       },
                       {
@@ -1838,7 +2082,11 @@
                   "visibility": {
                     "anyOf": [
                       {
-                        "enum": ["public", "unlist", "private"],
+                        "enum": [
+                          "public",
+                          "unlist",
+                          "private"
+                        ],
                         "type": "string"
                       },
                       {
@@ -1909,7 +2157,11 @@
                   "visibility": {
                     "anyOf": [
                       {
-                        "enum": ["public", "unlist", "private"],
+                        "enum": [
+                          "public",
+                          "unlist",
+                          "private"
+                        ],
                         "type": "string"
                       },
                       {
@@ -1960,7 +2212,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["status", "message"],
+                  "required": [
+                    "status",
+                    "message"
+                  ],
                   "type": "object"
                 }
               }
@@ -2002,17 +2257,29 @@
                       "in": {
                         "title": "In",
                         "type": "string",
-                        "enum": ["path", "query", "header", "cookie", "body"]
+                        "enum": [
+                          "path",
+                          "query",
+                          "header",
+                          "cookie",
+                          "body"
+                        ]
                       }
                     },
-                    "required": ["loc", "type", "msg"]
+                    "required": [
+                      "loc",
+                      "type",
+                      "msg"
+                    ]
                   }
                 }
               }
             }
           }
         },
-        "tags": ["Model"]
+        "tags": [
+          "Model"
+        ]
       },
       "delete": {
         "summary": "Delete Model",
@@ -2055,7 +2322,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["status", "message"],
+                  "required": [
+                    "status",
+                    "message"
+                  ],
                   "type": "object"
                 }
               }
@@ -2097,17 +2367,432 @@
                       "in": {
                         "title": "In",
                         "type": "string",
-                        "enum": ["path", "query", "header", "cookie", "body"]
+                        "enum": [
+                          "path",
+                          "query",
+                          "header",
+                          "cookie",
+                          "body"
+                        ]
                       }
                     },
-                    "required": ["loc", "type", "msg"]
+                    "required": [
+                      "loc",
+                      "type",
+                      "msg"
+                    ]
                   }
                 }
               }
             }
           }
         },
-        "tags": ["Model"]
+        "tags": [
+          "Model"
+        ]
+      }
+    },
+    "/v1/tts": {
+      "post": {
+        "summary": "Text to Speech",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TTSRequest"
+              }
+            },
+            "application/msgpack": {
+              "schema": {
+                "$ref": "#/components/schemas/TTSRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {
+              "Transfer-Encoding": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "chunked"
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "No payment -- see charging schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "loc": {
+                        "title": "Location",
+                        "description": "error field",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "type": {
+                        "title": "Type",
+                        "description": "error type",
+                        "type": "string"
+                      },
+                      "msg": {
+                        "title": "Message",
+                        "description": "error message",
+                        "type": "string"
+                      },
+                      "ctx": {
+                        "title": "Context",
+                        "description": "error context",
+                        "type": "string"
+                      },
+                      "in": {
+                        "title": "In",
+                        "type": "string",
+                        "enum": [
+                          "path",
+                          "query",
+                          "header",
+                          "cookie",
+                          "body"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "loc",
+                      "type",
+                      "msg"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "OpenAPI v1"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "model",
+            "description": "Specify which TTS model to use. We recommend `s2-pro`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "s2-pro",
+              "enum": [
+                "s1",
+                "s2-pro"
+              ]
+            }
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "Single Speaker",
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/tts \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2-pro' \\\n  --data '{\n    \"text\": \"Hello! Welcome to Fish Audio.\",\n    \"reference_id\": \"model-id\",\n    \"temperature\": 0.7,\n    \"top_p\": 0.7,\n    \"prosody\": {\n      \"speed\": 1,\n      \"volume\": 0,\n      \"normalize_loudness\": true\n    },\n    \"chunk_length\": 300,\n    \"normalize\": true,\n    \"format\": \"mp3\",\n    \"sample_rate\": 44100,\n    \"mp3_bitrate\": 128,\n    \"latency\": \"normal\",\n    \"max_new_tokens\": 1024,\n    \"repetition_penalty\": 1.2,\n    \"min_chunk_length\": 50,\n    \"condition_on_previous_chunks\": true,\n    \"early_stop_threshold\": 1\n  }'"
+          },
+          {
+            "lang": "bash",
+            "label": "Multi Speaker (S2-Pro only)",
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/tts \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2-pro' \\\n  --data '{\n    \"text\": \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\",\n    \"reference_id\": [\"speaker-a-id\", \"speaker-b-id\"],\n    \"temperature\": 0.7,\n    \"top_p\": 0.7,\n    \"prosody\": {\n      \"speed\": 1,\n      \"volume\": 0,\n      \"normalize_loudness\": true\n    },\n    \"chunk_length\": 300,\n    \"normalize\": true,\n    \"format\": \"mp3\",\n    \"sample_rate\": 44100,\n    \"mp3_bitrate\": 128,\n    \"latency\": \"normal\",\n    \"max_new_tokens\": 1024,\n    \"repetition_penalty\": 1.2,\n    \"min_chunk_length\": 50,\n    \"condition_on_previous_chunks\": true,\n    \"early_stop_threshold\": 1\n  }'"
+          }
+        ]
+      }
+    },
+    "/v1/asr": {
+      "post": {
+        "summary": "Speech to Text",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "audio": {
+                    "description": "Audio to be converted to text",
+                    "format": "binary",
+                    "title": "Audio",
+                    "type": "string"
+                  },
+                  "language": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Language to be used for the speech",
+                    "title": "Language"
+                  },
+                  "ignore_timestamps": {
+                    "default": true,
+                    "description": "Whether to return precise timestamps in the text, this will increase the latency in audio shorter than 30 seconds",
+                    "title": "Ignore Timestamps",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "audio"
+                ],
+                "type": "object"
+              }
+            },
+            "application/msgpack": {
+              "schema": {
+                "properties": {
+                  "audio": {
+                    "description": "Audio to be converted to text",
+                    "format": "binary",
+                    "title": "Audio",
+                    "type": "string"
+                  },
+                  "language": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Language to be used for the speech",
+                    "title": "Language"
+                  },
+                  "ignore_timestamps": {
+                    "default": true,
+                    "description": "Whether to return precise timestamps in the text, this will increase the latency in audio shorter than 30 seconds",
+                    "title": "Ignore Timestamps",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "audio"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "text": {
+                      "title": "Text",
+                      "type": "string"
+                    },
+                    "duration": {
+                      "description": "Duration of the audio in seconds",
+                      "title": "Duration",
+                      "type": "number"
+                    },
+                    "segments": {
+                      "items": {
+                        "$ref": "#/components/schemas/ASRSegment"
+                      },
+                      "title": "Segments",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "text",
+                    "duration",
+                    "segments"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "No payment -- see charging schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "loc": {
+                        "title": "Location",
+                        "description": "error field",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "type": {
+                        "title": "Type",
+                        "description": "error type",
+                        "type": "string"
+                      },
+                      "msg": {
+                        "title": "Message",
+                        "description": "error message",
+                        "type": "string"
+                      },
+                      "ctx": {
+                        "title": "Context",
+                        "description": "error context",
+                        "type": "string"
+                      },
+                      "in": {
+                        "title": "In",
+                        "type": "string",
+                        "enum": [
+                          "path",
+                          "query",
+                          "header",
+                          "cookie",
+                          "body"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "loc",
+                      "type",
+                      "msg"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "OpenAPI v1"
+        ]
       }
     }
   },
@@ -2133,6 +2818,299 @@
       }
     },
     "schemas": {
+      "AuthorEntity": {
+        "properties": {
+          "_id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "nickname": {
+            "title": "Nickname",
+            "type": "string"
+          },
+          "avatar": {
+            "title": "Avatar",
+            "type": "string"
+          }
+        },
+        "required": [
+          "_id",
+          "nickname",
+          "avatar"
+        ],
+        "title": "AuthorEntity",
+        "type": "object"
+      },
+      "ModelAudioQualityEntity": {
+        "properties": {
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "duration_ms": {
+            "title": "Duration Ms",
+            "type": "number"
+          },
+          "language": {
+            "default": "unknown",
+            "title": "Language",
+            "type": "string"
+          },
+          "quality": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Quality",
+            "type": "object"
+          },
+          "quality_passed": {
+            "default": false,
+            "title": "Quality Passed",
+            "type": "boolean"
+          },
+          "quality_reason": {
+            "default": "",
+            "title": "Quality Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "filename",
+          "duration_ms"
+        ],
+        "title": "ModelAudioQualityEntity",
+        "type": "object"
+      },
+      "ModelEntity": {
+        "properties": {
+          "_id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "svc",
+              "tts"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "cover_image": {
+            "title": "Cover Image",
+            "type": "string"
+          },
+          "train_mode": {
+            "default": "full",
+            "enum": [
+              "fast",
+              "full"
+            ],
+            "title": "Train Mode",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "created",
+              "training",
+              "trained",
+              "failed"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "samples": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SampleEntity"
+            },
+            "title": "Samples",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "languages": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Languages",
+            "type": "array"
+          },
+          "visibility": {
+            "enum": [
+              "public",
+              "unlist",
+              "private"
+            ],
+            "title": "Visibility",
+            "type": "string"
+          },
+          "lock_visibility": {
+            "default": false,
+            "title": "Lock Visibility",
+            "type": "boolean"
+          },
+          "dmca_taken_down": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": false,
+            "title": "Dmca Taken Down"
+          },
+          "default_text": {
+            "default": "",
+            "title": "Default Text",
+            "type": "string"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelQualityEntity"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "like_count": {
+            "title": "Like Count",
+            "type": "integer"
+          },
+          "mark_count": {
+            "title": "Mark Count",
+            "type": "integer"
+          },
+          "shared_count": {
+            "title": "Shared Count",
+            "type": "integer"
+          },
+          "task_count": {
+            "title": "Task Count",
+            "type": "integer"
+          },
+          "unliked": {
+            "default": false,
+            "title": "Unliked",
+            "type": "boolean"
+          },
+          "liked": {
+            "default": false,
+            "title": "Liked",
+            "type": "boolean"
+          },
+          "marked": {
+            "default": false,
+            "title": "Marked",
+            "type": "boolean"
+          },
+          "author": {
+            "$ref": "#/components/schemas/AuthorEntity"
+          }
+        },
+        "required": [
+          "_id",
+          "type",
+          "title",
+          "description",
+          "cover_image",
+          "state",
+          "tags",
+          "created_at",
+          "updated_at",
+          "visibility",
+          "like_count",
+          "mark_count",
+          "shared_count",
+          "task_count",
+          "author"
+        ],
+        "title": "ModelEntity",
+        "type": "object"
+      },
+      "ModelQualityEntity": {
+        "properties": {
+          "audios": {
+            "items": {
+              "$ref": "#/components/schemas/ModelAudioQualityEntity"
+            },
+            "title": "Audios",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ModelQualityEntity",
+        "type": "object"
+      },
+      "SampleEntity": {
+        "properties": {
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "audio": {
+            "title": "Audio",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "text",
+          "task_id",
+          "audio"
+        ],
+        "title": "SampleEntity",
+        "type": "object"
+      },
       "ProsodyControl": {
         "description": "Controls for adjusting the prosody (rhythm and intonation) of generated speech.",
         "properties": {
@@ -2162,8 +3140,8 @@
         "description": "A voice sample with its transcript, used for zero-shot voice cloning. The model will attempt to match the voice characteristics from the audio sample.",
         "properties": {
           "audio": {
-            "format": "binary",
             "description": "Raw audio bytes of the voice sample. Supported formats: WAV, MP3, FLAC. For best results, use 10-30 seconds of clear speech with minimal background noise.",
+            "format": "binary",
             "title": "Audio",
             "type": "string"
           },
@@ -2173,14 +3151,15 @@
             "type": "string"
           }
         },
-        "required": ["audio", "text"],
+        "required": [
+          "audio",
+          "text"
+        ],
         "title": "ReferenceAudio",
         "type": "object"
       },
       "TTSRequest": {
         "description": "Request body for text-to-speech synthesis. Supports single-speaker synthesis on all compatible TTS models. Multi-speaker dialogue synthesis is only available with the S2-Pro model.\n\n## Single Speaker\nProvide either `reference_id` (string) pointing to a voice model, or `references` (array of ReferenceAudio) for zero-shot cloning.\n\n## Multiple Speakers (Dialogue, S2-Pro only)\nFor multi-speaker synthesis, provide:\n- `reference_id`: array of voice model IDs, e.g., [\"speaker-0-id\", \"speaker-1-id\"]\n- `text`: use speaker tags `<|speaker:0|>`, `<|speaker:1|>`, etc. to indicate speaker changes, e.g., \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\"\n\nAlternatively, for zero-shot multi-speaker:\n- `references`: 2D array where each inner array contains references for one speaker\n- `reference_id`: array of identifiers (can be arbitrary strings for zero-shot)\n\n## Example (Multi-Speaker with Model IDs)\n```json\n{\n  \"text\": \"<|speaker:0|>Good morning!<|speaker:1|>Good morning! How are you?<|speaker:0|>I'm great, thanks!\",\n  \"reference_id\": [\"model-id-alice\", \"model-id-bob\"]\n}\n```",
-        "type": "object",
-        "required": ["text"],
         "properties": {
           "text": {
             "description": "Text to convert to speech.",
@@ -2188,20 +3167,20 @@
             "type": "string"
           },
           "temperature": {
-            "description": "Controls expressiveness. Higher is more varied, lower is more consistent.",
-            "title": "Temperature",
-            "type": "number",
             "default": 0.7,
-            "minimum": 0.0,
-            "maximum": 1.0
+            "description": "Controls expressiveness. Higher is more varied, lower is more consistent.",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Temperature",
+            "type": "number"
           },
           "top_p": {
-            "description": "Controls diversity via nucleus sampling.",
-            "title": "Top P",
-            "type": "number",
             "default": 0.7,
-            "minimum": 0.0,
-            "maximum": 1.0
+            "description": "Controls diversity via nucleus sampling.",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Top P",
+            "type": "number"
           },
           "references": {
             "anyOf": [
@@ -2279,12 +3258,24 @@
           "format": {
             "default": "mp3",
             "description": "Output audio format.",
-            "enum": ["wav", "pcm", "mp3", "opus"],
+            "enum": [
+              "wav",
+              "pcm",
+              "mp3",
+              "opus"
+            ],
             "title": "Format",
             "type": "string"
           },
           "sample_rate": {
-            "anyOf": [{ "type": "integer" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "default": null,
             "description": "Audio sample rate in Hz. When null, uses the format's default (44100 Hz for most formats, 48000 Hz for opus).",
             "title": "Sample Rate"
@@ -2292,21 +3283,35 @@
           "mp3_bitrate": {
             "default": 128,
             "description": "MP3 bitrate in kbps. Only applies when format is mp3.",
-            "enum": [64, 128, 192],
+            "enum": [
+              64,
+              128,
+              192
+            ],
             "title": "Mp3 Bitrate",
             "type": "integer"
           },
           "opus_bitrate": {
             "default": -1000,
             "description": "Opus bitrate in bps. -1000 for automatic. Only applies when format is opus.",
-            "enum": [-1000, 24, 32, 48, 64],
+            "enum": [
+              -1000,
+              24,
+              32,
+              48,
+              64
+            ],
             "title": "Opus Bitrate",
             "type": "integer"
           },
           "latency": {
             "default": "normal",
             "description": "Latency-quality trade-off. normal: best quality, balanced: reduced latency, low: lowest latency.",
-            "enum": ["low", "normal", "balanced"],
+            "enum": [
+              "low",
+              "normal",
+              "balanced"
+            ],
             "title": "Latency",
             "type": "string"
           },
@@ -2325,8 +3330,8 @@
           "min_chunk_length": {
             "default": 50,
             "description": "Minimum characters before splitting into a new chunk.",
-            "minimum": 0,
             "maximum": 100,
+            "minimum": 0,
             "title": "Min Chunk Length",
             "type": "integer"
           },
@@ -2337,15 +3342,19 @@
             "type": "boolean"
           },
           "early_stop_threshold": {
-            "default": 1.0,
+            "default": 1,
             "description": "Early stopping threshold for batch processing.",
+            "maximum": 1,
+            "minimum": 0,
             "title": "Early Stop Threshold",
-            "type": "number",
-            "minimum": 0.0,
-            "maximum": 1.0
+            "type": "number"
           }
         },
-        "title": "TTSRequest"
+        "required": [
+          "text"
+        ],
+        "title": "TTSRequest",
+        "type": "object"
       },
       "ASRSegment": {
         "properties": {
@@ -2362,184 +3371,20 @@
             "type": "number"
           }
         },
-        "required": ["text", "start", "end"],
-        "title": "ASRSegment",
-        "type": "object"
-      },
-      "AuthorEntity": {
-        "properties": {
-          "_id": {
-            "title": " Id",
-            "type": "string"
-          },
-          "nickname": {
-            "title": "Nickname",
-            "type": "string"
-          },
-          "avatar": {
-            "title": "Avatar",
-            "type": "string"
-          }
-        },
-        "required": ["_id", "nickname", "avatar"],
-        "title": "AuthorEntity",
-        "type": "object"
-      },
-      "ModelEntity": {
-        "properties": {
-          "_id": {
-            "title": " Id",
-            "type": "string"
-          },
-          "type": {
-            "enum": ["svc", "tts"],
-            "title": "Type",
-            "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "description": {
-            "title": "Description",
-            "type": "string"
-          },
-          "cover_image": {
-            "title": "Cover Image",
-            "type": "string"
-          },
-          "train_mode": {
-            "default": "full",
-            "enum": ["fast", "full"],
-            "title": "Train Mode",
-            "type": "string"
-          },
-          "state": {
-            "enum": ["created", "training", "trained", "failed"],
-            "title": "State",
-            "type": "string"
-          },
-          "tags": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Tags",
-            "type": "array"
-          },
-          "samples": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/SampleEntity"
-            },
-            "title": "Samples",
-            "type": "array"
-          },
-          "created_at": {
-            "format": "date-time",
-            "title": "Created At",
-            "type": "string"
-          },
-          "updated_at": {
-            "format": "date-time",
-            "title": "Updated At",
-            "type": "string"
-          },
-          "languages": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Languages",
-            "type": "array"
-          },
-          "visibility": {
-            "enum": ["public", "unlist", "private"],
-            "title": "Visibility",
-            "type": "string"
-          },
-          "lock_visibility": {
-            "default": false,
-            "title": "Lock Visibility",
-            "type": "boolean"
-          },
-          "like_count": {
-            "title": "Like Count",
-            "type": "integer"
-          },
-          "mark_count": {
-            "title": "Mark Count",
-            "type": "integer"
-          },
-          "shared_count": {
-            "title": "Shared Count",
-            "type": "integer"
-          },
-          "task_count": {
-            "title": "Task Count",
-            "type": "integer"
-          },
-          "unliked": {
-            "default": false,
-            "title": "Unliked",
-            "type": "boolean"
-          },
-          "liked": {
-            "default": false,
-            "title": "Liked",
-            "type": "boolean"
-          },
-          "marked": {
-            "default": false,
-            "title": "Marked",
-            "type": "boolean"
-          },
-          "author": {
-            "$ref": "#/components/schemas/AuthorEntity"
-          }
-        },
         "required": [
-          "_id",
-          "type",
-          "title",
-          "description",
-          "cover_image",
-          "state",
-          "tags",
-          "created_at",
-          "updated_at",
-          "visibility",
-          "like_count",
-          "mark_count",
-          "shared_count",
-          "task_count",
-          "author"
+          "text",
+          "start",
+          "end"
         ],
-        "title": "ModelEntity",
-        "type": "object"
-      },
-      "SampleEntity": {
-        "properties": {
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "text": {
-            "title": "Text",
-            "type": "string"
-          },
-          "task_id": {
-            "title": "Task Id",
-            "type": "string"
-          },
-          "audio": {
-            "title": "Audio",
-            "type": "string"
-          }
-        },
-        "required": ["title", "text", "task_id", "audio"],
-        "title": "SampleEntity",
+        "title": "ASRSegment",
         "type": "object"
       }
     }
-  }
+  },
+  "servers": [
+    {
+      "description": "Fish Audio API",
+      "url": "https://api.fish.audio"
+    }
+  ]
 }
