@@ -1,0 +1,107 @@
+---
+title: "English Phoneme Control"
+description: "Control English pronunciation with CMU Arpabet or IPA"
+icon: "language"
+---
+
+## Overview
+
+English phoneme control supports two notation styles:
+
+- CMU Arpabet, the pronunciation format used by CMUdict.
+- IPA, for workflows that already store pronunciations as International Phonetic Alphabet strings.
+
+Wrap the pronunciation for one word in `<|phoneme_start|>` and `<|phoneme_end|>`, and keep surrounding punctuation outside the tag.
+
+```text
+I am an <|phoneme_start|>EH1 N JH AH0 N IH1 R<|phoneme_end|>.
+```
+
+## CMU Arpabet
+
+CMU Arpabet is written as space-separated uppercase symbols. Vowels can include stress digits:
+
+- `0` for unstressed vowels.
+- `1` for primary stress.
+- `2` for secondary stress.
+
+Example:
+
+```text
+Standard: I am an engineer.
+With phoneme control: I am an <|phoneme_start|>EH1 N JH AH0 N IH1 R<|phoneme_end|>.
+```
+
+You can omit stress digits when you only need a rough pronunciation, but CMUdict-style output with stress digits usually gives the model the clearest signal.
+
+## IPA
+
+IPA can be written as a continuous IPA string inside the same phoneme tags. Do not include dictionary slashes unless you intentionally want those characters spoken.
+
+```text
+Standard: The data is ready.
+With phoneme control: The <|phoneme_start|>ˈdeɪtə<|phoneme_end|> is ready.
+```
+
+Use one notation style inside each tag. For example, do not mix `AH0` and `ə` in the same phoneme span.
+
+## Common Examples
+
+Use phoneme control when spelling alone is ambiguous:
+
+```text
+The <|phoneme_start|>R IY1 D<|phoneme_end|> endpoint returns the current state.
+The book was <|phoneme_start|>R EH1 D<|phoneme_end|> yesterday.
+```
+
+```text
+The <|phoneme_start|>B EY1 S<|phoneme_end|> line is too loud.
+The <|phoneme_start|>B AE1 S<|phoneme_end|> swam upstream.
+```
+
+```text
+The <|phoneme_start|>P OW1 L IH0 SH<|phoneme_end|> team joined the call.
+Please <|phoneme_start|>P AA1 L IH0 SH<|phoneme_end|> the final mix.
+```
+
+Use it for product names, acronyms, and technical terms:
+
+```text
+Deploy with <|phoneme_start|>K UW2 B ER0 N EH1 T IY0 Z<|phoneme_end|>.
+The query uses <|phoneme_start|>EH1 S K Y UW1 EH1 L<|phoneme_end|>.
+```
+
+## Generate CMU Arpabet
+
+The training pipeline uses CMUdict-style pronunciations. You can generate the same format with the `cmudict` package:
+
+```bash
+pip install cmudict
+```
+
+```python
+import cmudict
+
+
+entries = cmudict.dict()
+
+
+def cmu_pronunciation(word: str) -> str | None:
+    phones = entries.get(word.lower())
+    if not phones:
+        return None
+    return " ".join(phones[0])
+
+
+print(cmu_pronunciation("engineer"))
+# EH1 N JH AH0 N IH1 R
+```
+
+CMUdict may contain multiple pronunciations for the same word. Listen to the result and choose the variant that matches your intended accent or context.
+
+## Practical Tips
+
+- Replace only the word whose pronunciation needs control.
+- Strip punctuation before dictionary lookup, then place punctuation after the tag.
+- Use CMU Arpabet for dictionary-derived pronunciations and IPA when your source material already uses IPA.
+- For names and brands, write the pronunciation that you want the listener to hear, not necessarily the spelling.

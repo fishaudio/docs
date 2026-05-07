@@ -28,147 +28,62 @@ Playground: You can use V1.6 Control Model, without setting any other options.
 
 ## Phoneme Control
 
-Phoneme control allows you to specify exact pronunciations for words or characters. Currently, we support:
+Phoneme control allows you to specify exact pronunciations for words, characters, or short phrases. Wrap the desired pronunciation in `<|phoneme_start|>` and `<|phoneme_end|>` tags.
 
-- CMU Arpabet (for English)
-- Pinyin (for Chinese)
-- Japanese romaji phonemes with pitch accent markers
+The replacement scope depends on the language:
 
-To use phoneme control, wrap the desired pronunciation in `<|phoneme_start|>` and `<|phoneme_end|>` tags. Each tag should contain a single word or character.
+- English: replace one word with CMU Arpabet or IPA.
+- Chinese: replace one character or syllable with tone-number pinyin.
+- Japanese: replace a short Japanese word or phrase with OpenJTalk-style romaji and pitch accent markers.
 
-### English Example
+<CardGroup cols={3}>
+  <Card
+    title="English"
+    icon="language"
+    href="/developer-guide/core-features/fine-grained-control/english"
+  >
+    CMU Arpabet and IPA examples for names, homographs, acronyms, and technical
+    terms.
+  </Card>
 
-Standard: "I am an engineer."
-With phoneme control: "I am an `<|phoneme_start|>EH N JH AH N IH R<|phoneme_end|>`."
+<Card
+  title="Chinese"
+  icon="language"
+  href="/developer-guide/core-features/fine-grained-control/chinese"
+>
+  Tone-number pinyin examples for multi-character words, tones, and polyphonic
+  characters.
+</Card>
 
-### Chinese Example
+  <Card
+    title="Japanese"
+    icon="language"
+    href="/developer-guide/core-features/fine-grained-control/japanese"
+  >
+    OpenJTalk romaji phonemes with pitch accent digits or rising/falling edge
+    markers.
+  </Card>
+</CardGroup>
 
-Standard: "我是一个工程师。"
-With phoneme control: "我是一个`<|phoneme_start|>gong1<|phoneme_end|><|phoneme_start|>cheng2<|phoneme_end|><|phoneme_start|>shi1<|phoneme_end|>`。"
+### Quick Examples
 
-### Japanese Example
-
-Japanese phoneme control uses OpenJTalk-style romaji phonemes plus pitch accent information. This is useful for Japanese homographs that have the same phoneme sequence but different pitch accents, such as `端が`, `箸が`, and `橋が`.
-
-Standard: "橋が見えます。"
-With phoneme control: "`<|phoneme_start|>ha0shi1ga0<|phoneme_end|>`見えます。"
-
-For Japanese, put the pitch level digit immediately after each vowel-bearing mora:
-
-- `0` means the current mora is low.
-- `1` means the current mora is high.
-- Consonants are written without spaces before the vowel they belong to, for example `ha`, `shi`, and `ga`.
-- Use OpenJTalk phoneme symbols such as `a`, `i`, `u`, `e`, `o`, `N`, `cl`, `ky`, `sh`, `ch`, and `ts`.
-
-The following examples all share the plain phoneme sequence `h a sh i g a`, but the pitch markers disambiguate the word:
-
-- `端が` (edge + subject marker): `<|phoneme_start|>ha0shi1ga1<|phoneme_end|>`
-- `箸が` (chopsticks + subject marker): `<|phoneme_start|>ha1shi0ga0<|phoneme_end|>`
-- `橋が` (bridge + subject marker): `<|phoneme_start|>ha0shi1ga0<|phoneme_end|>`
-
-If you are converting from a tool that emits ttslearn-style prosody symbols, do not put literal `[` or `]` inside the Fish Audio phoneme tag. Convert the rising edge to `0` on the low mora, the falling edge to `1` on the high mora, or use the `J`/`L` edge notation described below.
-
-<Note>
-  Japanese pitch accent depends on the dictionary, reading, and dialect.
-  Generate the phoneme string from the same text you send to TTS, then listen
-  and adjust the digits when you need a specific accent.
-</Note>
-
-#### Generating Japanese Phonemes
-
-You can generate Japanese phoneme strings with `pyopenjtalk`. The converter below follows the full-context label approach used in the [ttslearn Japanese Tacotron recipe](https://r9y9.github.io/ttslearn/latest/notebooks/ch10_Recipe-Tacotron.html#%E3%83%95%E3%83%AB%E3%82%B3%E3%83%B3%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88%E3%83%A9%E3%83%99%E3%83%AB%E3%81%8B%E3%82%89%E3%81%AE%E9%9F%B3%E7%B4%A0%E5%88%97%E3%81%8A%E3%82%88%E3%81%B3%E9%9F%BB%E5%BE%8B%E8%A8%98%E5%8F%B7%E3%81%AE%E6%8A%BD%E5%87%BA), reads the `A`-series accent-position values from OpenJTalk full-context labels, and emits Fish Audio's digit format instead of the `[` and `]` prosody symbols shown there.
-
-```bash
-pip install pyopenjtalk
-```
-
-```python
-import re
-
-import pyopenjtalk
-
-
-JAPANESE_VOWELS = {"a", "i", "u", "e", "o"}
-
-
-def _numeric_feature(pattern: str, label: str, default: int = -1) -> int:
-    match = re.search(pattern, label)
-    return int(match.group(1)) if match else default
-
-
-def japanese_to_romaji_with_accent(
-    sentence: str,
-    boundary: bool = False,
-    rise_edge: str = "J",
-    fall_edge: str = "L",
-) -> str:
-    labels = pyopenjtalk.extract_fullcontext(sentence)
-    text = ""
-    level = -1
-
-    for index, label in enumerate(labels):
-        phoneme = re.search(r"\-([^\+]*)\+", label).group(1)
-        if phoneme in {"sil", "pau"}:
-            continue
-
-        # OpenJTalk may emit uppercase vowels for devoiced vowels.
-        if phoneme in {"A", "I", "U", "E", "O"}:
-            phoneme = phoneme.lower()
-
-        text += phoneme
-
-        a1 = _numeric_feature(r"/A:(\-?[0-9]+)\+", label)
-        a2 = _numeric_feature(r"\+(\d+)\+", label)
-        a3 = _numeric_feature(r"\+(\d+)/", label)
-
-        next_phoneme = re.search(r"\-([^\+]*)\+", labels[index + 1]).group(1)
-        if next_phoneme in {"sil", "pau"}:
-            a2_next = -1
-        else:
-            a2_next = _numeric_feature(r"\+(\d+)\+", labels[index + 1])
-
-        if a3 == 1 and a2_next == 1:
-            if boundary and level >= 0:
-                text += " "
-            elif level >= 0:
-                text += str(level)
-            level = -1
-        elif a1 == 0 and a2_next == a2 + 1:
-            level = 0
-            text += fall_edge if boundary else "1"
-        elif a2 == 1 and a2_next == 2:
-            level = 1
-            text += rise_edge if boundary else "0"
-        elif phoneme in JAPANESE_VOWELS:
-            if level < 0:
-                level = 0
-            if not boundary:
-                text += str(level)
-
-    return text
-
-
-print(japanese_to_romaji_with_accent("橋が"))
-# ha0shi1ga0
-print(japanese_to_romaji_with_accent("橋が", boundary=True))
-# haJshiLga
-```
-
-Then place the result inside the phoneme tags:
+English:
 
 ```text
-<|phoneme_start|>ha0shi1ga0<|phoneme_end|>
+I am an <|phoneme_start|>EH1 N JH AH0 N IH1 R<|phoneme_end|>.
 ```
 
-Minimal request body:
+Chinese:
 
-```json
-{
-  "text": "<|phoneme_start|>ha0shi1ga0<|phoneme_end|>見えます。"
-}
+```text
+我是一个<|phoneme_start|>gong1<|phoneme_end|><|phoneme_start|>cheng2<|phoneme_end|><|phoneme_start|>shi1<|phoneme_end|>。
 ```
 
-If your pipeline prefers edge markers instead of digits, set `boundary=True`. In that mode, `J` marks a rising edge and `L` marks a falling edge. Use one notation style consistently inside each phoneme tag.
+Japanese:
+
+```text
+<|phoneme_start|>ha0shi1ga0<|phoneme_end|>見えます。
+```
 
 ## Paralanguage
 
@@ -198,5 +113,13 @@ The following special effects can be added using parentheses:
 </Warning>
 
 Example:
-Standard: "I am an engineer."
-With paralanguage: "I am, um, an (break) engineer."
+
+```text
+I am, um, an (break) engineer.
+```
+
+You can combine paralanguage and phoneme control in the same text:
+
+```text
+I am, um, an (break) <|phoneme_start|>EH1 N JH AH0 N IH1 R<|phoneme_end|>.
+```
