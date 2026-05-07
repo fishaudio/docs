@@ -1,72 +1,124 @@
 ---
-title: 'Fine-grained Control'
-description: 'Advanced control over speech generation'
+title: "Fine-grained Control"
+description: "Advanced control over speech generation"
 icon: "sliders"
 iconType: "solid"
 ---
-import { AudioTranscript } from '/snippets/audio-transcript.jsx';
+
+import { AudioTranscript } from "/snippets/audio-transcript.jsx";
 
 {/* speak-mintlify-hash: 4a46ae86b04c62730f1554051768c47b306f2378a3624545d53de421d5d19acd */}
+
 <Visibility for="humans">
   <AudioTranscript page="core-features-fine-grained-control" />
 </Visibility>
-
 
 ## Getting Started
 
 To use fine-grained control, you can use either our SDK, API, or Playground.
 
-SDK/API: We recommend disabling normalization by setting `"normalize": false` in the request body. This ensures that the API doesn't alter the intonation of control tags.
+SDK/API: Phoneme tags are preserved by text normalization, so you can keep the default normalization behavior for pronunciation control. Set `"normalize": false` only when you want to prevent normalization from rewriting the surrounding text, such as numbers, dates, or URLs.
 
 Playground: You can use V1.6 Control Model, without setting any other options.
 
 <Note>
-Disabling normalization may reduce the stability of reading numbers, dates, and URLs. You'll need to handle these cases manually for best results.
+  Disabling normalization may reduce the stability of reading numbers, dates,
+  and URLs. You'll need to handle these cases manually for best results.
 </Note>
 
 ## Phoneme Control
 
-Phoneme control allows you to specify exact pronunciations for words or characters. Currently, we support:
+Phoneme control allows you to specify exact pronunciations for words, characters, or short phrases. Wrap the desired pronunciation in `<|phoneme_start|>` and `<|phoneme_end|>` tags.
 
-- CMU Arpabet (for English)
-- Pinyin (for Chinese)
+The replacement scope depends on the language:
 
-To use phoneme control, wrap the desired pronunciation in `<|phoneme_start|>` and `<|phoneme_end|>` tags. Each tag should contain a single word or character.
+- English: replace one word with CMU Arpabet.
+- Chinese: replace one character or syllable with tone-number pinyin.
+- Japanese: replace a short Japanese word or phrase with OpenJTalk-style romaji and pitch accent markers.
 
-### English Example
+<CardGroup cols={3}>
+  <Card
+    title="English"
+    icon="language"
+    href="/developer-guide/core-features/fine-grained-control/english"
+  >
+    CMU Arpabet examples for names, homographs, acronyms, and technical terms.
+  </Card>
 
-Standard: "I am an engineer."
-With phoneme control: "I am an `<|phoneme_start|>EH N JH AH N IH R<|phoneme_end|>`."
+<Card
+  title="Chinese"
+  icon="language"
+  href="/developer-guide/core-features/fine-grained-control/chinese"
+>
+  Tone-number pinyin examples for multi-character words, tones, and polyphonic
+  characters.
+</Card>
 
-### Chinese Example
+  <Card
+    title="Japanese"
+    icon="language"
+    href="/developer-guide/core-features/fine-grained-control/japanese"
+  >
+    OpenJTalk romaji phonemes with pitch accent digits or rising/falling edge
+    markers.
+  </Card>
+</CardGroup>
 
-Standard: "我是一个工程师。"
-With phoneme control: "我是一个`<|phoneme_start|>gong1<|phoneme_end|><|phoneme_start|>cheng2<|phoneme_end|><|phoneme_start|>shi1<|phoneme_end|>`。"
+### Quick Examples
+
+English:
+
+```text
+I am an <|phoneme_start|>EH1 N JH AH0 N IH1 R<|phoneme_end|>.
+```
+
+Chinese:
+
+```text
+我是一个<|phoneme_start|>gong1<|phoneme_end|><|phoneme_start|>cheng2<|phoneme_end|><|phoneme_start|>shi1<|phoneme_end|>。
+```
+
+Japanese:
+
+```text
+<|phoneme_start|>ha0shi1ga0<|phoneme_end|>見えます。
+```
 
 ## Paralanguage
 
 Paralanguage controls allow you to add natural speech elements and pauses to make the generated speech sound more human-like. There are two main types of controls:
 
 ### Pause Words
+
 You can use common pause words like "um", "uh", "嗯", "啊" to control the rhythm of the speech.
 
 ### Special Effects
+
 The following special effects can be added using parentheses:
 
-| Effect | Description | First Available | Stage |
-|--------|-------------|-----------------|-------|
-| `(break)` | Short pause | V1.6 | Experimental |
-| `(long-break)` | Extended pause | V1.6 | Experimental |
-| `(breath)` | Breathing sound | V1.6 | Experimental |
-| `(laugh)` | Laughter sound | V1.6 | Experimental |
-| `(cough)` | Coughing sound | V1.6 | Experimental |
-| `(lip-smacking)` | Lip smacking sound | V1.6 | Experimental |
-| `(sigh)` | Sighing sound | V1.6 | Experimental |
+| Effect           | Description        | First Available | Stage        |
+| ---------------- | ------------------ | --------------- | ------------ |
+| `(break)`        | Short pause        | V1.6            | Experimental |
+| `(long-break)`   | Extended pause     | V1.6            | Experimental |
+| `(breath)`       | Breathing sound    | V1.6            | Experimental |
+| `(laugh)`        | Laughter sound     | V1.6            | Experimental |
+| `(cough)`        | Coughing sound     | V1.6            | Experimental |
+| `(lip-smacking)` | Lip smacking sound | V1.6            | Experimental |
+| `(sigh)`         | Sighing sound      | V1.6            | Experimental |
 
 <Warning>
-The effects `(laugh)`, `(cough)`, `(lip-smacking)`, and `(sigh)` are developing. You may need to repeat them multiple times for better results.
+  The effects `(laugh)`, `(cough)`, `(lip-smacking)`, and `(sigh)` are
+  developing. You may need to repeat them multiple times for better results.
 </Warning>
 
 Example:
-Standard: "I am an engineer."
-With paralanguage: "I am, um, an (break) engineer."
+
+```text
+I am, um, an (break) engineer.
+```
+
+You can combine paralanguage and phoneme control in the same text:
+
+```text
+I am, um, an (break) <|phoneme_start|>EH1 N JH AH0 N IH1 R<|phoneme_end|>.
+```

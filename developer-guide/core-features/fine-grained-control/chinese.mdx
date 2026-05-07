@@ -1,0 +1,98 @@
+---
+title: "Chinese Phoneme Control"
+description: "Control Chinese pronunciation with tone-number pinyin"
+icon: "language"
+---
+
+## Overview
+
+Chinese phoneme control uses pinyin with tone numbers, also known as tone3 pinyin. Wrap one syllable in each `<|phoneme_start|>` and `<|phoneme_end|>` tag.
+
+```text
+我是一个<|phoneme_start|>gong1<|phoneme_end|><|phoneme_start|>cheng2<|phoneme_end|><|phoneme_start|>shi1<|phoneme_end|>。
+```
+
+This format is especially useful for polyphonic characters, names, and domain-specific terms where the default reading may be ambiguous.
+
+## Tone Numbers
+
+Put the tone number at the end of each pinyin syllable:
+
+| Tone | Example | Description |
+| ---- | ------- | ----------- |
+| 1    | `ma1`   | High level  |
+| 2    | `ma2`   | Rising      |
+| 3    | `ma3`   | Dipping     |
+| 4    | `ma4`   | Falling     |
+| 5    | `ma5`   | Neutral     |
+
+Use lowercase pinyin and keep punctuation outside the phoneme tag.
+
+## Multi-character Words
+
+For a multi-character word, place adjacent phoneme tags in the same order as the original characters:
+
+```text
+Standard: 我是一个工程师。
+With phoneme control: 我是一个<|phoneme_start|>gong1<|phoneme_end|><|phoneme_start|>cheng2<|phoneme_end|><|phoneme_start|>shi1<|phoneme_end|>。
+```
+
+You can also tag only the ambiguous character and leave the rest of the sentence unchanged:
+
+```text
+请把这个字读作<|phoneme_start|>hang2<|phoneme_end|>。
+```
+
+## Polyphonic Characters
+
+For polyphonic characters, choose the pinyin that matches the phrase meaning:
+
+```text
+重庆: <|phoneme_start|>chong2<|phoneme_end|><|phoneme_start|>qing4<|phoneme_end|>
+重要: <|phoneme_start|>zhong4<|phoneme_end|><|phoneme_start|>yao4<|phoneme_end|>
+```
+
+```text
+银行: <|phoneme_start|>yin2<|phoneme_end|><|phoneme_start|>hang2<|phoneme_end|>
+行走: <|phoneme_start|>xing2<|phoneme_end|><|phoneme_start|>zou3<|phoneme_end|>
+```
+
+```text
+音乐: <|phoneme_start|>yin1<|phoneme_end|><|phoneme_start|>yue4<|phoneme_end|>
+快乐: <|phoneme_start|>kuai4<|phoneme_end|><|phoneme_start|>le4<|phoneme_end|>
+```
+
+## Generate Pinyin
+
+The training pipeline uses the `pypinyin` dictionary and converts entries to tone3 pinyin. The helper below mirrors that behavior for single characters:
+
+```bash
+pip install pypinyin
+```
+
+```python
+from pypinyin.contrib.tone_convert import to_tone3
+from pypinyin.pinyin_dict import pinyin_dict
+
+
+def chinese_char_to_pinyin(char: str) -> str | None:
+    pinyin = pinyin_dict.get(ord(char))
+    if pinyin is None:
+        return None
+    if "," in pinyin:
+        raise ValueError(f"{char} has multiple readings; choose one manually")
+    return to_tone3(pinyin)
+
+
+print(chinese_char_to_pinyin("工"))
+# gong1
+```
+
+Phrase-level words can require a phrase dictionary or manual selection. For example, `重` should be `chong2` in `重庆` but `zhong4` in `重要`.
+
+## Practical Tips
+
+- Use one phoneme tag per Chinese character or syllable.
+- Keep Chinese punctuation, brackets, and spaces outside the tag.
+- Choose readings manually for names and polyphonic characters.
+- Use `ma5`-style tone 5 when you need to mark a neutral tone explicitly.
