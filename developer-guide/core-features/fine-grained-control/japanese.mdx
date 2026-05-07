@@ -27,7 +27,7 @@ Put the pitch level digit immediately after each vowel-bearing mora:
 
 The following examples all share the plain phoneme sequence `h a sh i g a`, but the pitch markers disambiguate the word:
 
-- `端が` (edge + subject marker): `<|phoneme_start|>ha0shi1ga1<|phoneme_end|>`
+- `端が` (end + subject marker): `<|phoneme_start|>ha0shi1ga1<|phoneme_end|>`
 - `箸が` (chopsticks + subject marker): `<|phoneme_start|>ha1shi0ga0<|phoneme_end|>`
 - `橋が` (bridge + subject marker): `<|phoneme_start|>ha0shi1ga0<|phoneme_end|>`
 
@@ -41,12 +41,7 @@ The following examples all share the plain phoneme sequence `h a sh i g a`, but 
 
 The [ttslearn Japanese Tacotron recipe](https://r9y9.github.io/ttslearn/latest/notebooks/ch10_Recipe-Tacotron.html#%E3%83%95%E3%83%AB%E3%82%B3%E3%83%B3%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88%E3%83%A9%E3%83%99%E3%83%AB%E3%81%8B%E3%82%89%E3%81%AE%E9%9F%B3%E7%B4%A0%E5%88%97%E3%81%8A%E3%82%88%E3%81%B3%E9%9F%BB%E5%BE%8B%E8%A8%98%E5%8F%B7%E3%81%AE%E6%8A%BD%E5%87%BA) shows how to extract phonemes and prosody symbols from OpenJTalk full-context labels. That recipe prints symbols such as `[` for a pitch rise and `]` for a pitch fall.
 
-Fish Audio phoneme tags should not contain literal `[` or `]`. Convert that prosody into either:
-
-- Digit notation, such as `ha0shi1ga0`.
-- Edge notation, such as `haJshiLga`, where `J` marks a rising edge and `L` marks a falling edge.
-
-Use one notation style consistently inside each phoneme tag.
+Fish Audio phoneme tags should not contain literal `[` or `]`. Convert that prosody into digit notation, such as `ha0shi1ga0`.
 
 ## Generate Japanese Phonemes
 
@@ -65,12 +60,7 @@ import pyopenjtalk
 JAPANESE_VOWELS = "aiueoAIUEON"
 
 
-def japanese_to_romaji_with_accent(
-    sentence: str,
-    boundary: bool = False,
-    rise_edge: str = "J",
-    fall_edge: str = "L",
-) -> str:
+def japanese_to_romaji_with_accent(sentence: str) -> str:
     text = ""
     labels = pyopenjtalk.extract_fullcontext(sentence)
     level = -1
@@ -94,40 +84,27 @@ def japanese_to_romaji_with_accent(
 
         # Accent phrase boundary
         if a3 == 1 and a2_next == 1:
-            if boundary:
-                if level >= 0:
-                    text += " "
-            else:
-                if level >= 0:
-                    text += str(level)
+            if level >= 0:
+                text += str(level)
             level = -1
         # Falling
         elif a1 == 0 and a2_next == a2 + 1:
             level = 0
-            if boundary:
-                text += fall_edge
-            else:
-                text += "1"
+            text += "1"
         # Rising
         elif a2 == 1 and a2_next == 2:
             level = 1
-            if boundary:
-                text += rise_edge
-            else:
-                text += "0"
+            text += "0"
         elif phoneme in JAPANESE_VOWELS:
             if level < 0:
                 level = 0
-            if not boundary:
-                text += str(level)
+            text += str(level)
 
     return text
 
 
 print(japanese_to_romaji_with_accent("橋が"))
 # ha0shi1ga0
-print(japanese_to_romaji_with_accent("橋が", boundary=True))
-# haJshiLga
 ```
 
 Then place the result inside the phoneme tags:
