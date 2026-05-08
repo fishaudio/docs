@@ -192,26 +192,53 @@ Long input can produce multiple `content` chunks. Treat audio and alignment as t
 
 For example, if the first aligned content chunk has `audio_duration: 16.24`, add `16.24` seconds to every segment in the next non-null alignment before rendering it on the complete audio timeline.
 
-```javascript
-function buildGlobalTimeline(alignments) {
-  const timeline = [];
-  let offsetSeconds = 0;
+<Tabs>
+  <Tab title="Python">
 
-  for (const alignment of alignments) {
-    for (const segment of alignment.segments) {
-      timeline.push({
-        text: segment.text,
-        start: segment.start + offsetSeconds,
-        end: segment.end + offsetSeconds,
-      });
+    ```python
+    def build_global_timeline(alignments):
+        timeline = []
+        offset_seconds = 0.0
+
+        for alignment in alignments:
+            for segment in alignment["segments"]:
+                timeline.append({
+                    "text": segment["text"],
+                    "start": segment["start"] + offset_seconds,
+                    "end": segment["end"] + offset_seconds,
+                })
+
+            offset_seconds += alignment["audio_duration"]
+
+        return timeline
+    ```
+
+  </Tab>
+  <Tab title="Node.js">
+
+    ```javascript
+    function buildGlobalTimeline(alignments) {
+      const timeline = [];
+      let offsetSeconds = 0;
+
+      for (const alignment of alignments) {
+        for (const segment of alignment.segments) {
+          timeline.push({
+            text: segment.text,
+            start: segment.start + offsetSeconds,
+            end: segment.end + offsetSeconds,
+          });
+        }
+
+        offsetSeconds += alignment.audio_duration;
+      }
+
+      return timeline;
     }
+    ```
 
-    offsetSeconds += alignment.audio_duration;
-  }
-
-  return timeline;
-}
-```
+  </Tab>
+</Tabs>
 
 ## Format Guidance
 
