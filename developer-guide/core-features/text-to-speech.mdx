@@ -430,6 +430,17 @@ Stream audio for real-time applications:
   </Tab>
 </Tabs>
 
+### Streaming with Timestamps
+
+Use the [Text to Speech Stream with Timestamps API](/api-reference/endpoint/openapi-v1/text-to-speech-stream-with-timestamps) when you need generated audio and alignment data in the same stream. This endpoint returns Server-Sent Events where each event includes an `audio_base64` chunk, the matching text `content`, and optional `alignment` segments with start and end times.
+
+<Note>
+  Timestamped streaming is best for karaoke-style highlighting, synchronized
+  captions, phrase progress indicators, and timeline editing. For this endpoint,
+  prefer `opus` over `mp3` when possible because Opus provides cleaner streaming
+  boundaries for alignment.
+</Note>
+
 ## Adding Emotions
 
 <Tip>
