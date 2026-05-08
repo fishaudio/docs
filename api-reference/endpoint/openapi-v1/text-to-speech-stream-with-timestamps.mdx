@@ -1,0 +1,257 @@
+---
+openapi: post /v1/tts/stream/with-timestamp
+title: "Text to Speech Stream with Timestamps"
+description: "Stream generated speech and timestamp alignment events"
+icon: "waveform-lines"
+iconType: "solid"
+---
+
+<Warning>
+  This endpoint returns `text/event-stream`. Each SSE `message` event contains
+  one JSON payload with a base64-encoded audio chunk.
+</Warning>
+
+<Note>
+  Use this endpoint when you need both progressive audio delivery and
+  text-to-audio alignment data, such as karaoke-style highlighting, word or
+  phrase progress indicators, captions synchronized to generated speech, or
+  timeline editing.
+</Note>
+
+## How the Stream Works
+
+The response is a Server-Sent Events stream. Every event includes:
+
+| Field          | Type             | Description                                                                                                   |
+| -------------- | ---------------- | ------------------------------------------------------------------------------------------------------------- |
+| `audio_base64` | `string`         | One base64-encoded audio chunk. Concatenate all chunks in arrival order to reconstruct the complete audio.    |
+| `content`      | `string`         | The text covered by this event's generated audio chunk. Long input can be split into multiple content chunks. |
+| `alignment`    | `object \| null` | Timestamp alignment for this content chunk. Audio-only continuation events can return `null`.                 |
+
+When `latency` is set to `balanced`, long input can be split into several text chunks. Each text chunk may produce one non-null `alignment` event, followed by one or more audio-only events where `alignment` is `null`.
+
+<Tip>
+  Collect every non-null `alignment` in stream order. Do not keep only the first
+  or last alignment event.
+</Tip>
+
+## Alignment Shape
+
+Each non-null `alignment` contains the generated audio duration and ordered timing segments:
+
+```json
+{
+  "alignment": {
+    "audio_duration": 16.24,
+    "segments": [
+      {
+        "text": "Hello",
+        "start": 0,
+        "end": 0.42
+      },
+      {
+        "text": "world",
+        "start": 0.42,
+        "end": 0.86
+      }
+    ]
+  }
+}
+```
+
+`start` and `end` are measured in seconds from the start of that content chunk's generated audio. Use `audio_duration` to offset later chunks when you need a single global timeline.
+
+## Minimal Request
+
+```bash
+curl --no-buffer --request POST \
+  --url https://api.fish.audio/v1/tts/stream/with-timestamp \
+  --header 'Authorization: Bearer <token>' \
+  --header 'Content-Type: application/json' \
+  --header 'model: s2-pro' \
+  --data '{
+    "text": "Hello! Welcome to Fish Audio.",
+    "reference_id": "model-id",
+    "format": "opus",
+    "latency": "balanced"
+  }'
+```
+
+## Parsing the Stream
+
+The stream payload uses standard SSE framing. Parse each `data:` line as JSON, append every decoded `audio_base64` chunk to your audio buffer, and store non-null alignments separately.
+
+<Tabs>
+  <Tab title="Python">
+
+    ```python
+    import base64
+    import json
+    import requests
+
+    response = requests.post(
+        "https://api.fish.audio/v1/tts/stream/with-timestamp",
+        headers={
+            "Authorization": "Bearer <token>",
+            "Content-Type": "application/json",
+            "model": "s2-pro",
+        },
+        json={
+            "text": "Hello! Welcome to Fish Audio.",
+            "reference_id": "model-id",
+            "format": "opus",
+            "latency": "balanced",
+        },
+        stream=True,
+    )
+
+    audio_chunks = []
+    alignments = []
+
+    for line in response.iter_lines(decode_unicode=True):
+        if not line or not line.startswith("data: "):
+            continue
+
+        event = json.loads(line.removeprefix("data: "))
+        audio_chunks.append(base64.b64decode(event["audio_base64"]))
+
+        if event["alignment"] is not None:
+            alignments.append(event["alignment"])
+
+    audio = b"".join(audio_chunks)
+    ```
+
+  </Tab>
+  <Tab title="Node.js">
+
+    ```javascript
+    const response = await fetch(
+      "https://api.fish.audio/v1/tts/stream/with-timestamp",
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer <token>",
+          "Content-Type": "application/json",
+          model: "s2-pro",
+        },
+        body: JSON.stringify({
+          text: "Hello! Welcome to Fish Audio.",
+          reference_id: "model-id",
+          format: "opus",
+          latency: "balanced",
+        }),
+      }
+    );
+
+    const audioChunks = [];
+    const alignments = [];
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    for await (const chunk of response.body) {
+      buffer += decoder.decode(chunk, { stream: true });
+      const events = buffer.split("\n\n");
+      buffer = events.pop() ?? "";
+
+      for (const eventText of events) {
+        const dataLine = eventText
+          .split("\n")
+          .find(line => line.startsWith("data: "));
+
+        if (!dataLine) continue;
+
+        const event = JSON.parse(dataLine.slice(6));
+        audioChunks.push(Buffer.from(event.audio_base64, "base64"));
+
+        if (event.alignment !== null) {
+          alignments.push(event.alignment);
+        }
+      }
+    }
+
+    const audio = Buffer.concat(audioChunks);
+    ```
+
+  </Tab>
+</Tabs>
+
+## Handling Split Content Chunks
+
+Long input can produce multiple `content` chunks. Treat audio and alignment as two related streams:
+
+1. Append every decoded `audio_base64` chunk in event order. Do this even when `alignment` is `null`.
+2. Keep only non-null `alignment` objects for timing data.
+3. Convert each alignment's local segment times into global times by adding the duration of all previous aligned content chunks.
+
+<Note>
+  `audio_base64` chunks are transport chunks, not sentence or word boundaries.
+  Do not try to align each audio chunk individually. Use `alignment.segments`
+  for text timing, and use `alignment.audio_duration` to offset later aligned
+  content chunks.
+</Note>
+
+For example, if the first aligned content chunk has `audio_duration: 16.24`, add `16.24` seconds to every segment in the next non-null alignment before rendering it on the complete audio timeline.
+
+<Tabs>
+  <Tab title="Python">
+
+    ```python
+    def build_global_timeline(alignments):
+        timeline = []
+        offset_seconds = 0.0
+
+        for alignment in alignments:
+            for segment in alignment["segments"]:
+                timeline.append({
+                    "text": segment["text"],
+                    "start": segment["start"] + offset_seconds,
+                    "end": segment["end"] + offset_seconds,
+                })
+
+            offset_seconds += alignment["audio_duration"]
+
+        return timeline
+    ```
+
+  </Tab>
+  <Tab title="Node.js">
+
+    ```javascript
+    function buildGlobalTimeline(alignments) {
+      const timeline = [];
+      let offsetSeconds = 0;
+
+      for (const alignment of alignments) {
+        for (const segment of alignment.segments) {
+          timeline.push({
+            text: segment.text,
+            start: segment.start + offsetSeconds,
+            end: segment.end + offsetSeconds,
+          });
+        }
+
+        offsetSeconds += alignment.audio_duration;
+      }
+
+      return timeline;
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+## Format Guidance
+
+For timestamped streaming, we recommend `opus` with the default 48 kHz sample rate when your client supports it. Opus is designed for streaming and gives the best balance of quality, latency, and bandwidth for this endpoint.
+
+`wav` and `pcm` avoid lossy codec artifacts and are straightforward to align, but they produce much larger payloads. Use them when you need uncompressed audio, direct sample-level processing, or a playback pipeline that already expects raw audio.
+
+<Warning>
+  Use `mp3` only when broad playback compatibility is more important than the
+  cleanest streaming boundaries. MP3 encoding uses overlapping audio windows, so
+  this endpoint must flush complete sentence audio before emitting alignment
+  data. Around sentence boundaries, that flush can introduce a small quality
+  loss or discontinuity compared with `opus`.
+</Warning>
+
+This endpoint accepts the same TTS request fields as the [Text to Speech API](/api-reference/endpoint/openapi-v1/text-to-speech), including `reference_id`, `references`, `prosody`, `temperature`, `top_p`, `chunk_length`, `format`, and `latency`.
