@@ -175,6 +175,44 @@ The stream payload uses standard SSE framing. Parse each `data:` line as JSON, a
   </Tab>
 </Tabs>
 
+## Handling Split Content Chunks
+
+Long input can produce multiple `content` chunks. Treat audio and alignment as two related streams:
+
+1. Append every decoded `audio_base64` chunk in event order. Do this even when `alignment` is `null`.
+2. Keep only non-null `alignment` objects for timing data.
+3. Convert each alignment's local segment times into global times by adding the duration of all previous aligned content chunks.
+
+<Note>
+  `audio_base64` chunks are transport chunks, not sentence or word boundaries.
+  Do not try to align each audio chunk individually. Use `alignment.segments`
+  for text timing, and use `alignment.audio_duration` to offset later aligned
+  content chunks.
+</Note>
+
+For example, if the first aligned content chunk has `audio_duration: 16.24`, add `16.24` seconds to every segment in the next non-null alignment before rendering it on the complete audio timeline.
+
+```javascript
+function buildGlobalTimeline(alignments) {
+  const timeline = [];
+  let offsetSeconds = 0;
+
+  for (const alignment of alignments) {
+    for (const segment of alignment.segments) {
+      timeline.push({
+        text: segment.text,
+        start: segment.start + offsetSeconds,
+        end: segment.end + offsetSeconds,
+      });
+    }
+
+    offsetSeconds += alignment.audio_duration;
+  }
+
+  return timeline;
+}
+```
+
 ## Format Guidance
 
 For timestamped streaming, we recommend `opus` with the default 48 kHz sample rate when your client supports it. Opus is designed for streaming and gives the best balance of quality, latency, and bandwidth for this endpoint.
