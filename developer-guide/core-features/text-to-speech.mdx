@@ -432,7 +432,7 @@ Stream audio for real-time applications:
 
 ### Streaming with Timestamps
 
-Use the [Text to Speech Stream with Timestamps API](/api-reference/endpoint/openapi-v1/text-to-speech-stream-with-timestamps) when you need generated audio and alignment data in the same stream. This endpoint returns Server-Sent Events where each event includes an `audio_base64` chunk, the matching text `content`, and optional `alignment` segments with start and end times.
+Use the [Text to Speech Stream with Timestamps API](/api-reference/endpoint/openapi-v1/text-to-speech-stream-with-timestamps) when you need generated audio and alignment data in the same stream. This endpoint returns Server-Sent Events where each event includes an `audio_base64` chunk and, when available, the latest cumulative `alignment` snapshot for a `chunk_seq`. Clients should concatenate audio chunks in arrival order and replace stored alignment snapshots by `chunk_seq`.
 
 <Note>
   Timestamped streaming is best for karaoke-style highlighting, synchronized

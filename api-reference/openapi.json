@@ -2601,19 +2601,19 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TTSRequest"
+                "$ref": "#/components/schemas/TTSStreamWithTimestampRequest"
               }
             },
             "application/msgpack": {
               "schema": {
-                "$ref": "#/components/schemas/TTSRequest"
+                "$ref": "#/components/schemas/TTSStreamWithTimestampRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Server-Sent Events stream. Each `message` event contains a JSON payload with one base64 audio chunk. Concatenate every `audio_base64` chunk in arrival order to reconstruct the complete audio. In balanced streaming, long input can be split into multiple text chunks. Each text chunk may produce a non-null `alignment` event, followed by one or more audio-only events for the same `content` where `alignment` is null. Clients should collect every non-null `alignment` in order instead of keeping only the first or last event.",
+            "description": "Server-Sent Events stream. Each `message` event contains a JSON payload with one base64 audio chunk. Concatenate every `audio_base64` chunk in arrival order to reconstruct the complete audio. `alignment` is the latest cumulative timestamp snapshot for `chunk_seq`; clients should replace the previous snapshot for that chunk instead of appending segments. `chunk_audio_offset_sec` can be added to segment times to derive absolute timestamps in the full audio.",
             "headers": {
               "Transfer-Encoding": {
                 "schema": {
@@ -2625,7 +2625,7 @@
             "content": {
               "text/event-stream": {
                 "schema": {
-                  "description": "One Server-Sent Events message payload for streaming TTS with timestamps. Each event contains one audio chunk. Concatenate all `audio_base64` chunks in arrival order to reconstruct the complete audio. Long input may be split into multiple content chunks. Each chunk can have its own non-null `alignment`, followed by additional audio-only events for that chunk where `alignment` is null. Collect every non-null `alignment` in order.",
+                  "description": "One Server-Sent Events message payload for streaming TTS with timestamps. Each event contains one audio chunk. Concatenate all `audio_base64` chunks in arrival order to reconstruct the complete audio. `alignment` is the latest cumulative timestamp snapshot for the reported `chunk_seq`; clients should replace the previous snapshot for that chunk instead of appending segments.",
                   "examples": [
                     {
                       "alignment": {
@@ -2884,11 +2884,269 @@
                         ]
                       },
                       "audio_base64": "SUQzBAAAAAAA...",
+                      "chunk_audio_offset_sec": 0,
+                      "chunk_seq": 0,
                       "content": "I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start."
                     },
                     {
-                      "alignment": null,
+                      "alignment": {
+                        "audio_duration": 16.24,
+                        "segments": [
+                          {
+                            "end": 0.16,
+                            "start": 0,
+                            "text": "I"
+                          },
+                          {
+                            "end": 0.48,
+                            "start": 0.16,
+                            "text": "can't"
+                          },
+                          {
+                            "end": 0.8,
+                            "start": 0.48,
+                            "text": "believe"
+                          },
+                          {
+                            "end": 1.12,
+                            "start": 0.8,
+                            "text": "its"
+                          },
+                          {
+                            "end": 1.44,
+                            "start": 1.2,
+                            "text": "been"
+                          },
+                          {
+                            "end": 1.76,
+                            "start": 1.44,
+                            "text": "this"
+                          },
+                          {
+                            "end": 2.48,
+                            "start": 1.76,
+                            "text": "long"
+                          },
+                          {
+                            "end": 2.64,
+                            "start": 2.56,
+                            "text": "It"
+                          },
+                          {
+                            "end": 3.04,
+                            "start": 2.72,
+                            "text": "feels"
+                          },
+                          {
+                            "end": 3.28,
+                            "start": 3.12,
+                            "text": "like"
+                          },
+                          {
+                            "end": 4,
+                            "start": 3.36,
+                            "text": "forever"
+                          },
+                          {
+                            "end": 4.32,
+                            "start": 4,
+                            "text": "since"
+                          },
+                          {
+                            "end": 4.48,
+                            "start": 4.32,
+                            "text": "we"
+                          },
+                          {
+                            "end": 4.96,
+                            "start": 4.48,
+                            "text": "last"
+                          },
+                          {
+                            "end": 5.28,
+                            "start": 4.96,
+                            "text": "really"
+                          },
+                          {
+                            "end": 5.84,
+                            "start": 5.28,
+                            "text": "talked"
+                          },
+                          {
+                            "end": 6.24,
+                            "start": 6,
+                            "text": "Ive"
+                          },
+                          {
+                            "end": 6.64,
+                            "start": 6.24,
+                            "text": "missed"
+                          },
+                          {
+                            "end": 6.96,
+                            "start": 6.64,
+                            "text": "hearing"
+                          },
+                          {
+                            "end": 7.2,
+                            "start": 6.96,
+                            "text": "your"
+                          },
+                          {
+                            "end": 7.76,
+                            "start": 7.2,
+                            "text": "voice"
+                          },
+                          {
+                            "end": 7.92,
+                            "start": 7.76,
+                            "text": "your"
+                          },
+                          {
+                            "end": 8.48,
+                            "start": 7.92,
+                            "text": "stories"
+                          },
+                          {
+                            "end": 8.72,
+                            "start": 8.48,
+                            "text": "even"
+                          },
+                          {
+                            "end": 8.8,
+                            "start": 8.72,
+                            "text": "the"
+                          },
+                          {
+                            "end": 9.2,
+                            "start": 8.8,
+                            "text": "little"
+                          },
+                          {
+                            "end": 9.52,
+                            "start": 9.2,
+                            "text": "things"
+                          },
+                          {
+                            "end": 9.68,
+                            "start": 9.52,
+                            "text": "you"
+                          },
+                          {
+                            "end": 10,
+                            "start": 9.68,
+                            "text": "used"
+                          },
+                          {
+                            "end": 10.08,
+                            "start": 10,
+                            "text": "to"
+                          },
+                          {
+                            "end": 10.64,
+                            "start": 10.08,
+                            "text": "say"
+                          },
+                          {
+                            "end": 10.96,
+                            "start": 10.64,
+                            "text": "How"
+                          },
+                          {
+                            "end": 11.12,
+                            "start": 10.96,
+                            "text": "have"
+                          },
+                          {
+                            "end": 11.36,
+                            "start": 11.12,
+                            "text": "you"
+                          },
+                          {
+                            "end": 11.92,
+                            "start": 11.36,
+                            "text": "been"
+                          },
+                          {
+                            "end": 12.24,
+                            "start": 12,
+                            "text": "Ive"
+                          },
+                          {
+                            "end": 12.48,
+                            "start": 12.24,
+                            "text": "thought"
+                          },
+                          {
+                            "end": 12.8,
+                            "start": 12.48,
+                            "text": "about"
+                          },
+                          {
+                            "end": 13.2,
+                            "start": 12.8,
+                            "text": "calling"
+                          },
+                          {
+                            "end": 13.36,
+                            "start": 13.2,
+                            "text": "you"
+                          },
+                          {
+                            "end": 13.68,
+                            "start": 13.36,
+                            "text": "so"
+                          },
+                          {
+                            "end": 13.92,
+                            "start": 13.68,
+                            "text": "many"
+                          },
+                          {
+                            "end": 14.56,
+                            "start": 13.92,
+                            "text": "times"
+                          },
+                          {
+                            "end": 14.72,
+                            "start": 14.56,
+                            "text": "but"
+                          },
+                          {
+                            "end": 14.88,
+                            "start": 14.72,
+                            "text": "I"
+                          },
+                          {
+                            "end": 15.2,
+                            "start": 14.88,
+                            "text": "never"
+                          },
+                          {
+                            "end": 15.36,
+                            "start": 15.2,
+                            "text": "knew"
+                          },
+                          {
+                            "end": 15.6,
+                            "start": 15.36,
+                            "text": "where"
+                          },
+                          {
+                            "end": 15.6,
+                            "start": 15.6,
+                            "text": "to"
+                          },
+                          {
+                            "end": 16.24,
+                            "start": 15.68,
+                            "text": "start"
+                          }
+                        ]
+                      },
                       "audio_base64": "//uSxOAAF...",
+                      "chunk_audio_offset_sec": 0,
+                      "chunk_seq": 0,
                       "content": "I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start."
                     },
                     {
@@ -3078,6 +3336,8 @@
                         ]
                       },
                       "audio_base64": "//uSxImAl...",
+                      "chunk_audio_offset_sec": 16.24,
+                      "chunk_seq": 1,
                       "content": "Seeing you again now makes me realize just how much I’ve missed you. We have so much to catch up on, and I don’t even know which part of my life to tell you about first."
                     }
                   ],
@@ -3088,7 +3348,7 @@
                       "type": "string"
                     },
                     "content": {
-                      "description": "Text content covered by this event's text chunk. Long input may be split into multiple content chunks in one stream.",
+                      "description": "Text content described by this event's latest alignment snapshot. Long input may be split into multiple content chunks in one stream.",
                       "title": "Content",
                       "type": "string"
                     },
@@ -3101,13 +3361,27 @@
                           "type": "null"
                         }
                       ],
-                      "description": "Timestamp information for this content chunk. Balanced streaming can produce multiple non-null alignments, one for each text chunk. Additional audio events for the same content chunk may return null."
+                      "description": "Latest cumulative timestamp snapshot for `chunk_seq`. When present, replace the previous alignment for the same `chunk_seq`; do not append segments. Null means no alignment snapshot has been produced yet or alignment is unavailable."
+                    },
+                    "chunk_seq": {
+                      "description": "Sequence number of the text chunk described by `alignment`. Clients should bucket alignment snapshots by this value.",
+                      "minimum": 0,
+                      "title": "Chunk Seq",
+                      "type": "integer"
+                    },
+                    "chunk_audio_offset_sec": {
+                      "description": "Absolute start time of this text chunk within the full audio, in seconds.",
+                      "minimum": 0,
+                      "title": "Chunk Audio Offset Sec",
+                      "type": "number"
                     }
                   },
                   "required": [
                     "audio_base64",
                     "content",
-                    "alignment"
+                    "alignment",
+                    "chunk_seq",
+                    "chunk_audio_offset_sec"
                   ],
                   "title": "TTSTimestampStreamEvent",
                   "type": "object"
@@ -3115,15 +3389,15 @@
                 "examples": {
                   "first_event": {
                     "summary": "First text chunk event with alignment",
-                    "value": "data: {\"audio_base64\": \"SUQzBAAAAAAA...\", \"content\": \"I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start.\", \"alignment\": {\"segments\": [{\"text\": \"I\", \"start\": 0.0, \"end\": 0.16}, {\"text\": \"can't\", \"start\": 0.16, \"end\": 0.48}, {\"text\": \"believe\", \"start\": 0.48, \"end\": 0.8}, {\"text\": \"its\", \"start\": 0.8, \"end\": 1.12}, {\"text\": \"been\", \"start\": 1.2, \"end\": 1.44}, {\"text\": \"this\", \"start\": 1.44, \"end\": 1.76}, {\"text\": \"long\", \"start\": 1.76, \"end\": 2.48}, {\"text\": \"It\", \"start\": 2.56, \"end\": 2.64}, {\"text\": \"feels\", \"start\": 2.72, \"end\": 3.04}, {\"text\": \"like\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"forever\", \"start\": 3.36, \"end\": 4.0}, {\"text\": \"since\", \"start\": 4.0, \"end\": 4.32}, {\"text\": \"we\", \"start\": 4.32, \"end\": 4.48}, {\"text\": \"last\", \"start\": 4.48, \"end\": 4.96}, {\"text\": \"really\", \"start\": 4.96, \"end\": 5.28}, {\"text\": \"talked\", \"start\": 5.28, \"end\": 5.84}, {\"text\": \"Ive\", \"start\": 6.0, \"end\": 6.24}, {\"text\": \"missed\", \"start\": 6.24, \"end\": 6.64}, {\"text\": \"hearing\", \"start\": 6.64, \"end\": 6.96}, {\"text\": \"your\", \"start\": 6.96, \"end\": 7.2}, {\"text\": \"voice\", \"start\": 7.2, \"end\": 7.76}, {\"text\": \"your\", \"start\": 7.76, \"end\": 7.92}, {\"text\": \"stories\", \"start\": 7.92, \"end\": 8.48}, {\"text\": \"even\", \"start\": 8.48, \"end\": 8.72}, {\"text\": \"the\", \"start\": 8.72, \"end\": 8.8}, {\"text\": \"little\", \"start\": 8.8, \"end\": 9.2}, {\"text\": \"things\", \"start\": 9.2, \"end\": 9.52}, {\"text\": \"you\", \"start\": 9.52, \"end\": 9.68}, {\"text\": \"used\", \"start\": 9.68, \"end\": 10.0}, {\"text\": \"to\", \"start\": 10.0, \"end\": 10.08}, {\"text\": \"say\", \"start\": 10.08, \"end\": 10.64}, {\"text\": \"How\", \"start\": 10.64, \"end\": 10.96}, {\"text\": \"have\", \"start\": 10.96, \"end\": 11.12}, {\"text\": \"you\", \"start\": 11.12, \"end\": 11.36}, {\"text\": \"been\", \"start\": 11.36, \"end\": 11.92}, {\"text\": \"Ive\", \"start\": 12.0, \"end\": 12.24}, {\"text\": \"thought\", \"start\": 12.24, \"end\": 12.48}, {\"text\": \"about\", \"start\": 12.48, \"end\": 12.8}, {\"text\": \"calling\", \"start\": 12.8, \"end\": 13.2}, {\"text\": \"you\", \"start\": 13.2, \"end\": 13.36}, {\"text\": \"so\", \"start\": 13.36, \"end\": 13.68}, {\"text\": \"many\", \"start\": 13.68, \"end\": 13.92}, {\"text\": \"times\", \"start\": 13.92, \"end\": 14.56}, {\"text\": \"but\", \"start\": 14.56, \"end\": 14.72}, {\"text\": \"I\", \"start\": 14.72, \"end\": 14.88}, {\"text\": \"never\", \"start\": 14.88, \"end\": 15.2}, {\"text\": \"knew\", \"start\": 15.2, \"end\": 15.36}, {\"text\": \"where\", \"start\": 15.36, \"end\": 15.6}, {\"text\": \"to\", \"start\": 15.6, \"end\": 15.6}, {\"text\": \"start\", \"start\": 15.68, \"end\": 16.24}], \"audio_duration\": 16.24}}\n\n"
+                    "value": "data: {\"audio_base64\": \"SUQzBAAAAAAA...\", \"content\": \"I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start.\", \"alignment\": {\"segments\": [{\"text\": \"I\", \"start\": 0.0, \"end\": 0.16}, {\"text\": \"can't\", \"start\": 0.16, \"end\": 0.48}, {\"text\": \"believe\", \"start\": 0.48, \"end\": 0.8}, {\"text\": \"its\", \"start\": 0.8, \"end\": 1.12}, {\"text\": \"been\", \"start\": 1.2, \"end\": 1.44}, {\"text\": \"this\", \"start\": 1.44, \"end\": 1.76}, {\"text\": \"long\", \"start\": 1.76, \"end\": 2.48}, {\"text\": \"It\", \"start\": 2.56, \"end\": 2.64}, {\"text\": \"feels\", \"start\": 2.72, \"end\": 3.04}, {\"text\": \"like\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"forever\", \"start\": 3.36, \"end\": 4.0}, {\"text\": \"since\", \"start\": 4.0, \"end\": 4.32}, {\"text\": \"we\", \"start\": 4.32, \"end\": 4.48}, {\"text\": \"last\", \"start\": 4.48, \"end\": 4.96}, {\"text\": \"really\", \"start\": 4.96, \"end\": 5.28}, {\"text\": \"talked\", \"start\": 5.28, \"end\": 5.84}, {\"text\": \"Ive\", \"start\": 6.0, \"end\": 6.24}, {\"text\": \"missed\", \"start\": 6.24, \"end\": 6.64}, {\"text\": \"hearing\", \"start\": 6.64, \"end\": 6.96}, {\"text\": \"your\", \"start\": 6.96, \"end\": 7.2}, {\"text\": \"voice\", \"start\": 7.2, \"end\": 7.76}, {\"text\": \"your\", \"start\": 7.76, \"end\": 7.92}, {\"text\": \"stories\", \"start\": 7.92, \"end\": 8.48}, {\"text\": \"even\", \"start\": 8.48, \"end\": 8.72}, {\"text\": \"the\", \"start\": 8.72, \"end\": 8.8}, {\"text\": \"little\", \"start\": 8.8, \"end\": 9.2}, {\"text\": \"things\", \"start\": 9.2, \"end\": 9.52}, {\"text\": \"you\", \"start\": 9.52, \"end\": 9.68}, {\"text\": \"used\", \"start\": 9.68, \"end\": 10.0}, {\"text\": \"to\", \"start\": 10.0, \"end\": 10.08}, {\"text\": \"say\", \"start\": 10.08, \"end\": 10.64}, {\"text\": \"How\", \"start\": 10.64, \"end\": 10.96}, {\"text\": \"have\", \"start\": 10.96, \"end\": 11.12}, {\"text\": \"you\", \"start\": 11.12, \"end\": 11.36}, {\"text\": \"been\", \"start\": 11.36, \"end\": 11.92}, {\"text\": \"Ive\", \"start\": 12.0, \"end\": 12.24}, {\"text\": \"thought\", \"start\": 12.24, \"end\": 12.48}, {\"text\": \"about\", \"start\": 12.48, \"end\": 12.8}, {\"text\": \"calling\", \"start\": 12.8, \"end\": 13.2}, {\"text\": \"you\", \"start\": 13.2, \"end\": 13.36}, {\"text\": \"so\", \"start\": 13.36, \"end\": 13.68}, {\"text\": \"many\", \"start\": 13.68, \"end\": 13.92}, {\"text\": \"times\", \"start\": 13.92, \"end\": 14.56}, {\"text\": \"but\", \"start\": 14.56, \"end\": 14.72}, {\"text\": \"I\", \"start\": 14.72, \"end\": 14.88}, {\"text\": \"never\", \"start\": 14.88, \"end\": 15.2}, {\"text\": \"knew\", \"start\": 15.2, \"end\": 15.36}, {\"text\": \"where\", \"start\": 15.36, \"end\": 15.6}, {\"text\": \"to\", \"start\": 15.6, \"end\": 15.6}, {\"text\": \"start\", \"start\": 15.68, \"end\": 16.24}], \"audio_duration\": 16.24}, \"chunk_seq\": 0, \"chunk_audio_offset_sec\": 0.0}\n\n"
                   },
                   "following_event": {
-                    "summary": "Following audio-only event for the same text chunk",
-                    "value": "data: {\"audio_base64\": \"//uSxOAAF...\", \"content\": \"I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start.\", \"alignment\": null}\n\n"
+                    "summary": "Following audio event with latest alignment snapshot",
+                    "value": "data: {\"audio_base64\": \"//uSxOAAF...\", \"content\": \"I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start.\", \"alignment\": {\"segments\": [{\"text\": \"I\", \"start\": 0.0, \"end\": 0.16}, {\"text\": \"can't\", \"start\": 0.16, \"end\": 0.48}, {\"text\": \"believe\", \"start\": 0.48, \"end\": 0.8}, {\"text\": \"its\", \"start\": 0.8, \"end\": 1.12}, {\"text\": \"been\", \"start\": 1.2, \"end\": 1.44}, {\"text\": \"this\", \"start\": 1.44, \"end\": 1.76}, {\"text\": \"long\", \"start\": 1.76, \"end\": 2.48}, {\"text\": \"It\", \"start\": 2.56, \"end\": 2.64}, {\"text\": \"feels\", \"start\": 2.72, \"end\": 3.04}, {\"text\": \"like\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"forever\", \"start\": 3.36, \"end\": 4.0}, {\"text\": \"since\", \"start\": 4.0, \"end\": 4.32}, {\"text\": \"we\", \"start\": 4.32, \"end\": 4.48}, {\"text\": \"last\", \"start\": 4.48, \"end\": 4.96}, {\"text\": \"really\", \"start\": 4.96, \"end\": 5.28}, {\"text\": \"talked\", \"start\": 5.28, \"end\": 5.84}, {\"text\": \"Ive\", \"start\": 6.0, \"end\": 6.24}, {\"text\": \"missed\", \"start\": 6.24, \"end\": 6.64}, {\"text\": \"hearing\", \"start\": 6.64, \"end\": 6.96}, {\"text\": \"your\", \"start\": 6.96, \"end\": 7.2}, {\"text\": \"voice\", \"start\": 7.2, \"end\": 7.76}, {\"text\": \"your\", \"start\": 7.76, \"end\": 7.92}, {\"text\": \"stories\", \"start\": 7.92, \"end\": 8.48}, {\"text\": \"even\", \"start\": 8.48, \"end\": 8.72}, {\"text\": \"the\", \"start\": 8.72, \"end\": 8.8}, {\"text\": \"little\", \"start\": 8.8, \"end\": 9.2}, {\"text\": \"things\", \"start\": 9.2, \"end\": 9.52}, {\"text\": \"you\", \"start\": 9.52, \"end\": 9.68}, {\"text\": \"used\", \"start\": 9.68, \"end\": 10.0}, {\"text\": \"to\", \"start\": 10.0, \"end\": 10.08}, {\"text\": \"say\", \"start\": 10.08, \"end\": 10.64}, {\"text\": \"How\", \"start\": 10.64, \"end\": 10.96}, {\"text\": \"have\", \"start\": 10.96, \"end\": 11.12}, {\"text\": \"you\", \"start\": 11.12, \"end\": 11.36}, {\"text\": \"been\", \"start\": 11.36, \"end\": 11.92}, {\"text\": \"Ive\", \"start\": 12.0, \"end\": 12.24}, {\"text\": \"thought\", \"start\": 12.24, \"end\": 12.48}, {\"text\": \"about\", \"start\": 12.48, \"end\": 12.8}, {\"text\": \"calling\", \"start\": 12.8, \"end\": 13.2}, {\"text\": \"you\", \"start\": 13.2, \"end\": 13.36}, {\"text\": \"so\", \"start\": 13.36, \"end\": 13.68}, {\"text\": \"many\", \"start\": 13.68, \"end\": 13.92}, {\"text\": \"times\", \"start\": 13.92, \"end\": 14.56}, {\"text\": \"but\", \"start\": 14.56, \"end\": 14.72}, {\"text\": \"I\", \"start\": 14.72, \"end\": 14.88}, {\"text\": \"never\", \"start\": 14.88, \"end\": 15.2}, {\"text\": \"knew\", \"start\": 15.2, \"end\": 15.36}, {\"text\": \"where\", \"start\": 15.36, \"end\": 15.6}, {\"text\": \"to\", \"start\": 15.6, \"end\": 15.6}, {\"text\": \"start\", \"start\": 15.68, \"end\": 16.24}], \"audio_duration\": 16.24}, \"chunk_seq\": 0, \"chunk_audio_offset_sec\": 0.0}\n\n"
                   },
                   "later_text_chunk_event": {
                     "summary": "Later text chunk event with another alignment",
-                    "value": "data: {\"audio_base64\": \"//uSxImAl...\", \"content\": \"Seeing you again now makes me realize just how much I’ve missed you. We have so much to catch up on, and I don’t even know which part of my life to tell you about first.\", \"alignment\": {\"segments\": [{\"text\": \"Seeing\", \"start\": 0.4, \"end\": 0.8}, {\"text\": \"you\", \"start\": 0.8, \"end\": 0.96}, {\"text\": \"again\", \"start\": 0.96, \"end\": 1.44}, {\"text\": \"now\", \"start\": 1.44, \"end\": 1.68}, {\"text\": \"makes\", \"start\": 1.68, \"end\": 2.08}, {\"text\": \"me\", \"start\": 2.08, \"end\": 2.24}, {\"text\": \"realize\", \"start\": 2.24, \"end\": 2.8}, {\"text\": \"just\", \"start\": 2.8, \"end\": 3.12}, {\"text\": \"how\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"much\", \"start\": 3.28, \"end\": 3.6}, {\"text\": \"Ive\", \"start\": 3.6, \"end\": 3.76}, {\"text\": \"missed\", \"start\": 3.84, \"end\": 4.24}, {\"text\": \"you\", \"start\": 4.24, \"end\": 4.56}, {\"text\": \"We\", \"start\": 4.64, \"end\": 4.8}, {\"text\": \"have\", \"start\": 4.8, \"end\": 5.04}, {\"text\": \"so\", \"start\": 5.04, \"end\": 5.36}, {\"text\": \"much\", \"start\": 5.36, \"end\": 5.76}, {\"text\": \"to\", \"start\": 5.76, \"end\": 5.76}, {\"text\": \"catch\", \"start\": 5.76, \"end\": 6.16}, {\"text\": \"up\", \"start\": 6.16, \"end\": 6.4}, {\"text\": \"on\", \"start\": 6.4, \"end\": 6.72}, {\"text\": \"and\", \"start\": 6.8, \"end\": 6.96}, {\"text\": \"I\", \"start\": 6.96, \"end\": 7.04}, {\"text\": \"dont\", \"start\": 7.04, \"end\": 7.36}, {\"text\": \"even\", \"start\": 7.36, \"end\": 7.6}, {\"text\": \"know\", \"start\": 7.6, \"end\": 7.84}, {\"text\": \"which\", \"start\": 7.84, \"end\": 8.08}, {\"text\": \"part\", \"start\": 8.08, \"end\": 8.4}, {\"text\": \"of\", \"start\": 8.4, \"end\": 8.48}, {\"text\": \"my\", \"start\": 8.56, \"end\": 8.72}, {\"text\": \"life\", \"start\": 8.72, \"end\": 8.96}, {\"text\": \"to\", \"start\": 9.12, \"end\": 9.12}, {\"text\": \"tell\", \"start\": 9.12, \"end\": 9.44}, {\"text\": \"you\", \"start\": 9.44, \"end\": 9.6}, {\"text\": \"about\", \"start\": 9.6, \"end\": 10.0}, {\"text\": \"first\", \"start\": 10.08, \"end\": 10.48}], \"audio_duration\": 10.48}}\n\n"
+                    "value": "data: {\"audio_base64\": \"//uSxImAl...\", \"content\": \"Seeing you again now makes me realize just how much I’ve missed you. We have so much to catch up on, and I don’t even know which part of my life to tell you about first.\", \"alignment\": {\"segments\": [{\"text\": \"Seeing\", \"start\": 0.4, \"end\": 0.8}, {\"text\": \"you\", \"start\": 0.8, \"end\": 0.96}, {\"text\": \"again\", \"start\": 0.96, \"end\": 1.44}, {\"text\": \"now\", \"start\": 1.44, \"end\": 1.68}, {\"text\": \"makes\", \"start\": 1.68, \"end\": 2.08}, {\"text\": \"me\", \"start\": 2.08, \"end\": 2.24}, {\"text\": \"realize\", \"start\": 2.24, \"end\": 2.8}, {\"text\": \"just\", \"start\": 2.8, \"end\": 3.12}, {\"text\": \"how\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"much\", \"start\": 3.28, \"end\": 3.6}, {\"text\": \"Ive\", \"start\": 3.6, \"end\": 3.76}, {\"text\": \"missed\", \"start\": 3.84, \"end\": 4.24}, {\"text\": \"you\", \"start\": 4.24, \"end\": 4.56}, {\"text\": \"We\", \"start\": 4.64, \"end\": 4.8}, {\"text\": \"have\", \"start\": 4.8, \"end\": 5.04}, {\"text\": \"so\", \"start\": 5.04, \"end\": 5.36}, {\"text\": \"much\", \"start\": 5.36, \"end\": 5.76}, {\"text\": \"to\", \"start\": 5.76, \"end\": 5.76}, {\"text\": \"catch\", \"start\": 5.76, \"end\": 6.16}, {\"text\": \"up\", \"start\": 6.16, \"end\": 6.4}, {\"text\": \"on\", \"start\": 6.4, \"end\": 6.72}, {\"text\": \"and\", \"start\": 6.8, \"end\": 6.96}, {\"text\": \"I\", \"start\": 6.96, \"end\": 7.04}, {\"text\": \"dont\", \"start\": 7.04, \"end\": 7.36}, {\"text\": \"even\", \"start\": 7.36, \"end\": 7.6}, {\"text\": \"know\", \"start\": 7.6, \"end\": 7.84}, {\"text\": \"which\", \"start\": 7.84, \"end\": 8.08}, {\"text\": \"part\", \"start\": 8.08, \"end\": 8.4}, {\"text\": \"of\", \"start\": 8.4, \"end\": 8.48}, {\"text\": \"my\", \"start\": 8.56, \"end\": 8.72}, {\"text\": \"life\", \"start\": 8.72, \"end\": 8.96}, {\"text\": \"to\", \"start\": 9.12, \"end\": 9.12}, {\"text\": \"tell\", \"start\": 9.12, \"end\": 9.44}, {\"text\": \"you\", \"start\": 9.44, \"end\": 9.6}, {\"text\": \"about\", \"start\": 9.6, \"end\": 10.0}, {\"text\": \"first\", \"start\": 10.08, \"end\": 10.48}], \"audio_duration\": 10.48}, \"chunk_seq\": 1, \"chunk_audio_offset_sec\": 16.24}\n\n"
                   }
                 }
               }
@@ -4022,6 +4296,204 @@
           "text"
         ],
         "title": "TTSRequest",
+        "type": "object"
+      },
+      "TTSStreamWithTimestampRequest": {
+        "description": "Request body for streaming text-to-speech synthesis with timestamp alignment. The request fields match the standard TTS endpoint, but the response is delivered as a Server-Sent Events stream. Each SSE payload includes an audio chunk and, when available, the latest cumulative alignment snapshot for a `chunk_seq`. Clients should concatenate `audio_base64` chunks in arrival order and replace the stored alignment for each `chunk_seq` whenever a newer snapshot is received.",
+        "properties": {
+          "text": {
+            "description": "Text to convert to speech.",
+            "title": "Text",
+            "type": "string"
+          },
+          "temperature": {
+            "default": 0.7,
+            "description": "Controls expressiveness. Higher is more varied, lower is more consistent.",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Temperature",
+            "type": "number"
+          },
+          "top_p": {
+            "default": 0.7,
+            "description": "Controls diversity via nucleus sampling.",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Top P",
+            "type": "number"
+          },
+          "references": {
+            "anyOf": [
+              {
+                "description": "Single speaker: array of reference audio samples",
+                "items": {
+                  "$ref": "#/components/schemas/ReferenceAudio"
+                },
+                "type": "array"
+              },
+              {
+                "description": "Multiple speakers: array of arrays, where each inner array contains reference samples for one speaker",
+                "items": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReferenceAudio"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Inline voice references for zero-shot cloning. Requires MessagePack (not JSON). For single speaker, provide an array of ReferenceAudio objects. For multiple speakers, provide an array of arrays where each inner array contains references for one speaker. **Multi-speaker is only available with the S2-Pro model.** The speaker index corresponds to the index in reference_id array. Example for multi-speaker: [[{audio, text}], [{audio, text}, {audio, text}]] for 2 speakers where speaker 1 has 2 reference samples.",
+            "title": "References"
+          },
+          "reference_id": {
+            "anyOf": [
+              {
+                "description": "Single speaker: voice model ID string",
+                "type": "string"
+              },
+              {
+                "description": "Multiple speakers: array of voice model IDs, one per speaker",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Voice model ID(s) from Fish Audio library or your custom models. For single-speaker synthesis, provide a string. For multi-speaker synthesis (dialogue), provide an array of model IDs. **Multi-speaker is only available with the S2-Pro model.** When using multiple speakers, use speaker tags in your text like `<|speaker:0|>` and `<|speaker:1|>` to indicate speaker changes. Example: `<|speaker:0|>Hello!<|speaker:1|>Hi there!<|speaker:0|>How are you?` with `reference_id: [\"speaker-a-id\", \"speaker-b-id\"]`.",
+            "title": "Reference Id"
+          },
+          "prosody": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProsodyControl"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Speed and volume adjustments for the output."
+          },
+          "chunk_length": {
+            "default": 300,
+            "description": "Text segment size for processing.",
+            "maximum": 300,
+            "minimum": 100,
+            "title": "Chunk Length",
+            "type": "integer"
+          },
+          "normalize": {
+            "default": true,
+            "description": "Normalizes text for English and Chinese, improving stability for numbers.",
+            "title": "Normalize",
+            "type": "boolean"
+          },
+          "format": {
+            "default": "mp3",
+            "description": "Output audio format.",
+            "enum": [
+              "wav",
+              "pcm",
+              "mp3",
+              "opus"
+            ],
+            "title": "Format",
+            "type": "string"
+          },
+          "sample_rate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Audio sample rate in Hz. When null, uses the format's default (44100 Hz for most formats, 48000 Hz for opus).",
+            "title": "Sample Rate"
+          },
+          "mp3_bitrate": {
+            "default": 128,
+            "description": "MP3 bitrate in kbps. Only applies when format is mp3.",
+            "enum": [
+              64,
+              128,
+              192
+            ],
+            "title": "Mp3 Bitrate",
+            "type": "integer"
+          },
+          "opus_bitrate": {
+            "default": -1000,
+            "description": "Opus bitrate in bps. -1000 for automatic. Only applies when format is opus.",
+            "enum": [
+              -1000,
+              24000,
+              32000,
+              48000,
+              64000
+            ],
+            "title": "Opus Bitrate",
+            "type": "integer"
+          },
+          "latency": {
+            "default": "normal",
+            "description": "Latency-quality trade-off. normal: best quality, balanced: reduced latency, low: lowest latency.",
+            "enum": [
+              "low",
+              "normal",
+              "balanced"
+            ],
+            "title": "Latency",
+            "type": "string"
+          },
+          "max_new_tokens": {
+            "default": 1024,
+            "description": "Maximum audio tokens to generate per text chunk.",
+            "title": "Max New Tokens",
+            "type": "integer"
+          },
+          "repetition_penalty": {
+            "default": 1.2,
+            "description": "Penalty for repeating audio patterns. Values above 1.0 reduce repetition.",
+            "title": "Repetition Penalty",
+            "type": "number"
+          },
+          "min_chunk_length": {
+            "default": 50,
+            "description": "Minimum characters before splitting into a new chunk.",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Min Chunk Length",
+            "type": "integer"
+          },
+          "condition_on_previous_chunks": {
+            "default": true,
+            "description": "Use previous audio as context for voice consistency.",
+            "title": "Condition On Previous Chunks",
+            "type": "boolean"
+          },
+          "early_stop_threshold": {
+            "default": 1,
+            "description": "Early stopping threshold for batch processing.",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Early Stop Threshold",
+            "type": "number"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "TTSStreamWithTimestampRequest",
         "type": "object"
       },
       "TTSTimestampAlignment": {
