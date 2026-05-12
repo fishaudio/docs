@@ -1,7 +1,7 @@
 ---
 openapi: post /v1/tts/stream/with-timestamp
 title: "Text to Speech Stream with Timestamps"
-description: "Stream generated speech and timestamp alignment events"
+description: "Stream generated speech with timestamp alignment snapshots"
 icon: "waveform-lines"
 iconType: "solid"
 ---
@@ -22,27 +22,42 @@ iconType: "solid"
 
 The response is a Server-Sent Events stream. Every event includes:
 
-| Field          | Type             | Description                                                                                                   |
-| -------------- | ---------------- | ------------------------------------------------------------------------------------------------------------- |
-| `audio_base64` | `string`         | One base64-encoded audio chunk. Concatenate all chunks in arrival order to reconstruct the complete audio.    |
-| `content`      | `string`         | The text covered by this event's generated audio chunk. Long input can be split into multiple content chunks. |
-| `alignment`    | `object \| null` | Timestamp alignment for this content chunk. Audio-only continuation events can return `null`.                 |
+| Field                    | Type             | Description                                                                                                                                               |
+| ------------------------ | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `audio_base64`           | `string`         | One base64-encoded audio chunk. Concatenate all chunks in arrival order to reconstruct the complete audio.                                                |
+| `content`                | `string`         | Text content described by this event's latest alignment snapshot. Long input can be split into multiple content chunks.                                   |
+| `alignment`              | `object \| null` | Latest cumulative timestamp snapshot for `chunk_seq`. When present, replace the previous snapshot for that `chunk_seq`; do not append segments.           |
+| `chunk_seq`              | `integer`        | Sequence number of the text chunk described by `alignment`. Bucket alignment snapshots by this value.                                                     |
+| `chunk_audio_offset_sec` | `number`         | Absolute start time of this text chunk within the full audio, in seconds. Add this to segment-local `start` and `end` values for a global audio timeline. |
 
-When `latency` is set to `balanced`, long input can be split into several text chunks. Each text chunk may produce one non-null `alignment` event, followed by one or more audio-only events where `alignment` is `null`.
+`audio_base64` is the transport stream. `alignment` is a metadata snapshot for
+`chunk_seq`. They are delivered together in the same SSE event, but the
+alignment is not a per-audio-packet delta.
+
+When `latency` is set to `balanced`, long input can be split into several text
+chunks. A chunk may produce multiple non-null alignment snapshots as more audio
+is rendered. Each newer snapshot supersedes the previous snapshot for the same
+`chunk_seq`.
 
 <Tip>
-  Collect every non-null `alignment` in stream order. Do not keep only the first
-  or last alignment event.
+  Store alignments in a map keyed by `chunk_seq`. On every non-null `alignment`,
+  replace the stored value for that key. Do not collect every non-null alignment
+  as a separate final result.
 </Tip>
 
 ## Alignment Shape
 
-Each non-null `alignment` contains the generated audio duration and ordered timing segments:
+Each non-null `alignment` contains the current cumulative timing segments for a
+single text chunk:
 
 ```json
 {
+  "audio_base64": "SUQzBAAAAAAA...",
+  "content": "Hello world",
+  "chunk_seq": 0,
+  "chunk_audio_offset_sec": 0.0,
   "alignment": {
-    "audio_duration": 16.24,
+    "audio_duration": 0.86,
     "segments": [
       {
         "text": "Hello",
@@ -59,7 +74,14 @@ Each non-null `alignment` contains the generated audio duration and ordered timi
 }
 ```
 
-`start` and `end` are measured in seconds from the start of that content chunk's generated audio. Use `audio_duration` to offset later chunks when you need a single global timeline.
+`start` and `end` are measured in seconds from the start of that text chunk's
+generated audio. Add `chunk_audio_offset_sec` to get timestamps on the complete
+audio timeline.
+
+`alignment` can be `null` before the first snapshot is available or when
+alignment is unavailable. After a snapshot exists, later audio events may repeat
+the latest snapshot so clients can continue using a simple latest-wins update
+model.
 
 ## Minimal Request
 
@@ -79,7 +101,9 @@ curl --no-buffer --request POST \
 
 ## Parsing the Stream
 
-The stream payload uses standard SSE framing. Parse each `data:` line as JSON, append every decoded `audio_base64` chunk to your audio buffer, and store non-null alignments separately.
+The stream payload uses standard SSE framing. Parse each `data:` line as JSON,
+append every decoded `audio_base64` chunk to your audio buffer, and replace the
+latest alignment snapshot for `chunk_seq` whenever `alignment` is non-null.
 
 <Tabs>
   <Tab title="Python">
@@ -106,7 +130,7 @@ The stream payload uses standard SSE framing. Parse each `data:` line as JSON, a
     )
 
     audio_chunks = []
-    alignments = []
+    alignment_by_chunk = {}
 
     for line in response.iter_lines(decode_unicode=True):
         if not line or not line.startswith("data: "):
@@ -116,7 +140,11 @@ The stream payload uses standard SSE framing. Parse each `data:` line as JSON, a
         audio_chunks.append(base64.b64decode(event["audio_base64"]))
 
         if event["alignment"] is not None:
-            alignments.append(event["alignment"])
+            alignment_by_chunk[event["chunk_seq"]] = {
+                "content": event["content"],
+                "offset": event["chunk_audio_offset_sec"],
+                "alignment": event["alignment"],
+            }
 
     audio = b"".join(audio_chunks)
     ```
@@ -144,7 +172,7 @@ The stream payload uses standard SSE framing. Parse each `data:` line as JSON, a
     );
 
     const audioChunks = [];
-    const alignments = [];
+    const alignmentByChunk = new Map();
     const decoder = new TextDecoder();
     let buffer = "";
 
@@ -156,7 +184,7 @@ The stream payload uses standard SSE framing. Parse each `data:` line as JSON, a
       for (const eventText of events) {
         const dataLine = eventText
           .split("\n")
-          .find(line => line.startsWith("data: "));
+          .find((line) => line.startsWith("data: "));
 
         if (!dataLine) continue;
 
@@ -164,7 +192,11 @@ The stream payload uses standard SSE framing. Parse each `data:` line as JSON, a
         audioChunks.push(Buffer.from(event.audio_base64, "base64"));
 
         if (event.alignment !== null) {
-          alignments.push(event.alignment);
+          alignmentByChunk.set(event.chunk_seq, {
+            content: event.content,
+            offset: event.chunk_audio_offset_sec,
+            alignment: event.alignment,
+          });
         }
       }
     }
@@ -177,38 +209,41 @@ The stream payload uses standard SSE framing. Parse each `data:` line as JSON, a
 
 ## Handling Split Content Chunks
 
-Long input can produce multiple `content` chunks. Treat audio and alignment as two related streams:
+Long input can produce multiple text chunks. Treat audio and alignment as two
+related streams:
 
 1. Append every decoded `audio_base64` chunk in event order. Do this even when `alignment` is `null`.
-2. Keep only non-null `alignment` objects for timing data.
-3. Convert each alignment's local segment times into global times by adding the duration of all previous aligned content chunks.
+2. For non-null `alignment`, replace the stored snapshot for `chunk_seq`.
+3. Convert each snapshot's local segment times into global times by adding `chunk_audio_offset_sec`.
 
 <Note>
   `audio_base64` chunks are transport chunks, not sentence or word boundaries.
   Do not try to align each audio chunk individually. Use `alignment.segments`
-  for text timing, and use `alignment.audio_duration` to offset later aligned
-  content chunks.
+  plus `chunk_audio_offset_sec` for text timing.
 </Note>
 
-For example, if the first aligned content chunk has `audio_duration: 16.24`, add `16.24` seconds to every segment in the next non-null alignment before rendering it on the complete audio timeline.
+For example, if an event has `chunk_audio_offset_sec: 16.24`, add `16.24`
+seconds to every segment in that event's `alignment` before rendering it on the
+complete audio timeline.
 
 <Tabs>
   <Tab title="Python">
 
     ```python
-    def build_global_timeline(alignments):
+    def build_global_timeline(alignment_by_chunk):
         timeline = []
-        offset_seconds = 0.0
 
-        for alignment in alignments:
+        for chunk_seq, item in sorted(alignment_by_chunk.items()):
+            offset_seconds = item["offset"]
+            alignment = item["alignment"]
+
             for segment in alignment["segments"]:
                 timeline.append({
                     "text": segment["text"],
                     "start": segment["start"] + offset_seconds,
                     "end": segment["end"] + offset_seconds,
+                    "chunk_seq": chunk_seq,
                 })
-
-            offset_seconds += alignment["audio_duration"]
 
         return timeline
     ```
@@ -217,20 +252,20 @@ For example, if the first aligned content chunk has `audio_duration: 16.24`, add
   <Tab title="Node.js">
 
     ```javascript
-    function buildGlobalTimeline(alignments) {
+    function buildGlobalTimeline(alignmentByChunk) {
       const timeline = [];
-      let offsetSeconds = 0;
 
-      for (const alignment of alignments) {
-        for (const segment of alignment.segments) {
+      for (const [chunkSeq, item] of [...alignmentByChunk.entries()].sort(
+        ([a], [b]) => a - b
+      )) {
+        for (const segment of item.alignment.segments) {
           timeline.push({
             text: segment.text,
-            start: segment.start + offsetSeconds,
-            end: segment.end + offsetSeconds,
+            start: segment.start + item.offset,
+            end: segment.end + item.offset,
+            chunk_seq: chunkSeq,
           });
         }
-
-        offsetSeconds += alignment.audio_duration;
       }
 
       return timeline;
@@ -242,16 +277,20 @@ For example, if the first aligned content chunk has `audio_duration: 16.24`, add
 
 ## Format Guidance
 
-For timestamped streaming, we recommend `opus` with the default 48 kHz sample rate when your client supports it. Opus is designed for streaming and gives the best balance of quality, latency, and bandwidth for this endpoint.
+For timestamped streaming, we recommend `opus` with the default 48 kHz sample
+rate when your client supports it. Opus is designed for streaming and gives the
+best balance of quality, latency, and bandwidth for this endpoint.
 
-`wav` and `pcm` avoid lossy codec artifacts and are straightforward to align, but they produce much larger payloads. Use them when you need uncompressed audio, direct sample-level processing, or a playback pipeline that already expects raw audio.
+`wav` and `pcm` avoid lossy codec artifacts and are straightforward to align,
+but they produce much larger payloads. Use them when you need uncompressed
+audio, direct sample-level processing, or a playback pipeline that already
+expects raw audio.
 
 <Warning>
   Use `mp3` only when broad playback compatibility is more important than the
   cleanest streaming boundaries. MP3 encoding uses overlapping audio windows, so
-  this endpoint must flush complete sentence audio before emitting alignment
-  data. Around sentence boundaries, that flush can introduce a small quality
-  loss or discontinuity compared with `opus`.
+  its encoded chunks may not line up as neatly with timestamp snapshot updates
+  as Opus.
 </Warning>
 
 This endpoint accepts the same TTS request fields as the [Text to Speech API](/api-reference/endpoint/openapi-v1/text-to-speech), including `reference_id`, `references`, `prosody`, `temperature`, `top_p`, `chunk_length`, `format`, and `latency`.
