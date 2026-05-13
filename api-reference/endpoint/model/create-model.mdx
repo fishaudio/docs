@@ -1,11 +1,13 @@
 ---
 openapi: post /model
-title: 'Create Model'
-description: 'Create a new voice model'
+title: "Create Model"
+description: "Create a new voice model"
 icon: "circle-plus"
 iconType: "solid"
 ---
 
 <Warning>
-Since this endpoint requires uploading file, it only accepts `multipart/form-data` and `application/msgpack`.
+  Since this endpoint uploads files, use `multipart/form-data` for regular REST
+  requests. Let your HTTP client set the multipart `Content-Type` boundary
+  automatically.
 </Warning>
