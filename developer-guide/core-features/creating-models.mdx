@@ -3,13 +3,14 @@ title: "Creating Voice Models"
 description: "Learn how to create custom voice models with Fish Audio"
 icon: "wand-magic-sparkles"
 ---
-import { AudioTranscript } from '/snippets/audio-transcript.jsx';
+
+import { AudioTranscript } from "/snippets/audio-transcript.jsx";
 
 {/* speak-mintlify-hash: 6a43e7312895ae0c33a68fad2e95821fbecd8a5bfe0c250d3ee631871dc8d410 */}
+
 <Visibility for="humans">
   <AudioTranscript page="core-features-creating-models" />
 </Visibility>
-
 
 ## Overview
 
@@ -23,21 +24,15 @@ The easiest way to create a voice model:
   <Step title="Go to Fish Audio">
     Visit [fish.audio](https://fish.audio) and log in
   </Step>
-  <Step title="Navigate to Models">
-    Click on "Models" in your dashboard
-  </Step>
-  <Step title="Click Create Model">
-    Select "Create New Model"
-  </Step>
+  <Step title="Navigate to Models">Click on "Models" in your dashboard</Step>
+  <Step title="Click Create Model">Select "Create New Model"</Step>
   <Step title="Upload Your Audio">
     Add 1 or more voice samples (at least 10 seconds each)
   </Step>
   <Step title="Configure Settings">
     Choose privacy settings and training options
   </Step>
-  <Step title="Start Training">
-    Click "Create" and wait for processing
-  </Step>
+  <Step title="Start Training">Click "Create" and wait for processing</Step>
 </Steps>
 
 ## Using the API
@@ -57,24 +52,23 @@ Create models with the Python or JavaScript SDK:
     Then create a model:
 
     ```python
-    from fish_audio_sdk import Session
+    from fishaudio import FishAudio
 
-    # Initialize session with your API key
-    session = Session("your_api_key")
+    client = FishAudio(api_key="your_api_key_here")
 
-    # Create the model
-    model = session.create_model(
-        title="My Voice Model",
-        description="Custom voice for storytelling",
-        voices=[
-            voice_file1.read(),
-            voice_file2.read()
-        ],
-        cover_image=image_file.read()  # Optional
-    )
+    with open("sample1.mp3", "rb") as f1, open("sample2.wav", "rb") as f2:
+        voice = client.voices.create(
+            title="My Voice Model",
+            voices=[f1.read(), f2.read()],
+            description="Custom voice for storytelling",
+            visibility="private",
+            enhance_audio_quality=True,
+        )
 
-    print(f"Model created: {model.id}")
+    # The Python SDK maps the REST `_id` field to `voice.id`.
+    print(f"Voice model ID: {voice.id}")
     ```
+
   </Tab>
   <Tab title="JavaScript">
     First, install the SDK:
@@ -84,30 +78,27 @@ Create models with the Python or JavaScript SDK:
     ```
 
     Then create a model:
-    
+
     ```javascript
     import { FishAudioClient } from "fish-audio";
     import { createReadStream } from "fs";
 
     const fishAudio = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 
-    const title = "My Voice Model";
-    const audioFile1 = createReadStream("sample1.mp3");
-    // Optionally add more samples:
-    // const audioFile2 = createReadStream("sample2.wav");
-    const coverImageFile = createReadStream("cover.png"); // optional
-
     try {
       const response = await fishAudio.voices.ivc.create({
-        title,
-        voices: [audioFile1],
-        cover_image: coverImageFile,
+        title: "My Voice Model",
+        voices: [
+          createReadStream("sample1.mp3"),
+          createReadStream("sample2.wav"),
+        ],
         description: "Custom voice for storytelling",
         visibility: "private",
+        enhance_audio_quality: true,
       });
 
       console.log("Voice created:", {
-        id: response._id,
+        _id: response._id,
         title: response.title,
         state: response.state,
       });
@@ -115,6 +106,7 @@ Create models with the Python or JavaScript SDK:
       console.error("Create voice request failed:", err);
     }
     ```
+
   </Tab>
 </Tabs>
 
@@ -122,33 +114,54 @@ Create models with the Python or JavaScript SDK:
 
 Create models directly using the REST API:
 
+<Note>
+  The REST API accepts uploaded audio as `multipart/form-data`. Let your HTTP
+  client set the multipart `Content-Type` boundary for you.
+</Note>
+
 <Tabs>
+  <Tab title="cURL">
+    ```bash
+    curl --request POST "https://api.fish.audio/model" \
+      --header "Authorization: Bearer $FISH_API_KEY" \
+      --form "type=tts" \
+      --form "train_mode=fast" \
+      --form "title=My Voice Model" \
+      --form "visibility=private" \
+      --form "description=Custom voice model" \
+      --form "voices=@sample1.mp3" \
+      --form "voices=@sample2.wav" \
+      --form "enhance_audio_quality=true"
+    ```
+  </Tab>
   <Tab title="Python">
     ```python
     import requests
 
-    response = requests.post(
-        "https://api.fish.audio/model",
-        files=[
-            ("voices", open("sample1.mp3", "rb")),
-            ("voices", open("sample2.wav", "rb"))
-        ],
-        data=[
-            ("title", "My Voice Model"),
-            ("description", "Custom voice model"),
-            ("visibility", "private"),
-            ("type", "tts"),
-            ("train_mode", "fast"),
-            ("enhance_audio_quality", "true")
-        ],
-        headers={
-            "Authorization": "Bearer YOUR_API_KEY"
-        }
-    )
+    with open("sample1.mp3", "rb") as f1, open("sample2.wav", "rb") as f2:
+        response = requests.post(
+            "https://api.fish.audio/model",
+            headers={"Authorization": "Bearer YOUR_API_KEY"},
+            data=[
+                ("type", "tts"),
+                ("train_mode", "fast"),
+                ("title", "My Voice Model"),
+                ("description", "Custom voice model"),
+                ("visibility", "private"),
+                ("enhance_audio_quality", "true"),
+            ],
+            files=[
+                ("voices", f1),
+                ("voices", f2),
+            ],
+        )
 
+    response.raise_for_status()
     result = response.json()
-    print(f"Model ID: {result['id']}")
+    print(f"Model ID: {result['_id']}")
+    print(f"State: {result['state']}")
     ```
+
   </Tab>
   <Tab title="JavaScript">
     ```javascript
@@ -164,8 +177,8 @@ Create models directly using the REST API:
 
     const v1 = await readFile("sample1.mp3");
     const v2 = await readFile("sample2.wav");
-    form.append("voices", new File([v1], "sample1.mp3"));
-    form.append("voices", new File([v2], "sample2.wav"));
+    form.append("voices", new Blob([v1]), "sample1.mp3");
+    form.append("voices", new Blob([v2]), "sample2.wav");
 
     const res = await fetch("https://api.fish.audio/model", {
       method: "POST",
@@ -173,9 +186,13 @@ Create models directly using the REST API:
       body: form,
     });
 
+    if (!res.ok) throw new Error(await res.text());
+
     const result = await res.json();
-    console.log("Model ID:", result.id);
+    console.log("Model ID:", result._id);
+    console.log("State:", result.state);
     ```
+
   </Tab>
 </Tabs>
 
@@ -183,25 +200,32 @@ Create models directly using the REST API:
 
 ### Required Parameters
 
-| Parameter | Description | Type | Options |
-|---|---|---|---|
-| **title** | Name of your model | `string` | Any text |
-| **voices** | Audio samples | `Array<File>` | .mp3, .wav, .m4a, .opus |
-| **type*** | Model type | `enum<string>`| `tts` |
-| **train_mode*** | Model train mode, fast means model instantly available after creation | `enum<string>` | `fast` |
+| Parameter        | Description                                                                    | Type                    | Options                 |
+| ---------------- | ------------------------------------------------------------------------------ | ----------------------- | ----------------------- |
+| **title**        | Name of your model                                                             | `string`                | Any text                |
+| **voices**       | One or more audio samples                                                      | `File` or `Array<File>` | .mp3, .wav, .m4a, .opus |
+| **type\***       | Model type                                                                     | `enum<string>`          | `tts`                   |
+| **train_mode\*** | Model train mode. `fast` means the model is instantly available after creation | `enum<string>`          | `fast`                  |
 
-*Automatically set by Python and JavaScript SDKs
+\*Automatically set by Python and JavaScript SDKs
 
 ### Optional Parameters
 
-| Parameter | Description | Type | Options |
-|---|---|---|---|
-| **visibility** | Who can use your model | `enum<string>` | `private`, `public`, `unlist`<br />`default: public` |
-| **description** | Model description | `string` | Any text |
-| **cover_image** | Model cover image, required if the model is public | `File` | .jpg, .png |
-| **texts** | Transcripts of audio samples | `Array<string>` | Must match number of audio files |
-| **tags** | Tags for your model | `string[]` | Any text |
-| **enhance_audio_quality** | Remove background noise | `boolean` | `true`, `false`<br />`default: false` |
+| Parameter                 | Description                                                         | Type                        | Options                                              |
+| ------------------------- | ------------------------------------------------------------------- | --------------------------- | ---------------------------------------------------- |
+| **visibility**            | Who can use your model                                              | `enum<string>`              | `private`, `public`, `unlist`<br />`default: public` |
+| **description**           | Model description                                                   | `string` or `null`          | Any text                                             |
+| **cover_image**           | Model cover image, required if the model is public                  | `File`                      | .jpg, .png                                           |
+| **texts**                 | Transcripts of audio samples. If omitted, ASR transcribes the audio | `string` or `Array<string>` | Must match number of audio files                     |
+| **tags**                  | Tags for your model                                                 | `string` or `Array<string>` | Any text                                             |
+| **enhance_audio_quality** | Remove background noise and normalize audio                         | `boolean`                   | `true`, `false`<br />`default: true`                 |
+| **generate_sample**       | Generate a default sample text for the model                        | `boolean`                   | `true`, `false`<br />`default: false`                |
+
+<Note>
+  The REST API defaults `visibility` to `public`. The SDK examples above set
+  `visibility` to `private`, which is safer for personal voice models and avoids
+  requiring a public `cover_image`.
+</Note>
 
 For detailed explanations view our [API reference](/api-reference/endpoint/model/create-model).
 
@@ -210,10 +234,12 @@ For detailed explanations view our [API reference](/api-reference/endpoint/model
 ### Quality Guidelines
 
 **Minimum Requirements:**
+
 - At least 1 audio sample
 - 10+ seconds per sample
 
 **Best Practices:**
+
 - Use multiple diverse samples
 - 1 consistent speaker throughout
 - Include different emotions and tones
@@ -227,21 +253,30 @@ Including text transcripts improves model quality:
 <Tabs>
   <Tab title="Python">
     ```python
-    response = requests.post(
-        "https://api.fish.audio/model",
-        files=[
-            ("voices", open("hello.mp3", "rb")),
-            ("voices", open("world.wav", "rb"))
-        ],
-        data=[
-            ("title", "Enhanced Model"),
-            ("texts", "Hello, this is my first recording."),
-            ("texts", "Welcome to the world of AI voices."),
-            # ... other parameters
-        ],
-        headers={"Authorization": "Bearer YOUR_API_KEY"}
-    )
+    import requests
+
+    with open("hello.mp3", "rb") as f1, open("world.wav", "rb") as f2:
+        response = requests.post(
+            "https://api.fish.audio/model",
+            headers={"Authorization": "Bearer YOUR_API_KEY"},
+            files=[
+                ("voices", f1),
+                ("voices", f2),
+            ],
+            data=[
+                ("type", "tts"),
+                ("train_mode", "fast"),
+                ("title", "Enhanced Model"),
+                ("texts", "Hello, this is my first recording."),
+                ("texts", "Welcome to the world of AI voices."),
+                ("visibility", "private"),
+            ],
+        )
+
+    response.raise_for_status()
+    print(response.json()["_id"])
     ```
+
   </Tab>
   <Tab title="JavaScript">
     ```javascript
@@ -267,35 +302,38 @@ Including text transcripts improves model quality:
 
     console.log("Model ID:", response._id);
     ```
+
   </Tab>
 </Tabs>
 
 <Note>
-Text transcripts must match the exact number of audio files. If you provide 3 audio files, you must provide exactly 3 text transcripts.
+  Text transcripts must match the exact number of audio files. If you provide 3
+  audio files, you must provide exactly 3 text transcripts.
 </Note>
 
 ## Using Your Model
 
 Once training is complete:
 
+Use the SDK `voice.id` or the REST response `_id` as the TTS `reference_id`.
+
 <Tabs>
   <Tab title="Python">
     ```python
-    # Generate speech with your model
-    response = requests.post(
-        "https://api.fish.audio/v1/tts",
-        json={
-            "text": "Hello from my custom voice!",
-            "model_id": model_id,
-            "format": "mp3"
-        },
-        headers={"Authorization": "Bearer YOUR_API_KEY"}
+    from fishaudio import FishAudio
+    from fishaudio.utils import save
+
+    client = FishAudio(api_key="your_api_key_here")
+
+    audio = client.tts.convert(
+        text="Hello from my custom voice!",
+        reference_id="your_voice_model_id",
+        format="mp3",
     )
 
-    # Save the audio
-    with open("output.mp3", "wb") as f:
-        f.write(response.content)
+    save(audio, "output.mp3")
     ```
+
   </Tab>
   <Tab title="JavaScript">
     ```javascript
@@ -306,7 +344,7 @@ Once training is complete:
 
     const audio = await fishAudio.textToSpeech.convert({
       text: "Hello from my custom voice!",
-      model_id: "your_model_id_here",
+      reference_id: "your_voice_model_id",
       format: "mp3",
     });
 
@@ -314,6 +352,7 @@ Once training is complete:
     await writeFile("output.mp3", buffer);
     console.log("✓ Audio saved to output.mp3");
     ```
+
   </Tab>
 </Tabs>
 
@@ -322,19 +361,32 @@ Once training is complete:
 ### Common Issues
 
 **Model training fails:**
+
 - Check audio quality and format
 - Ensure single speaker in all samples
 - Verify files are not corrupted
+- Confirm REST requests include `type=tts`, `train_mode=fast`, `title`, and at least one `voices` file
+- If `texts` are provided, make sure the count matches the number of `voices` files
 
 **Poor voice quality:**
+
 - Add more diverse audio samples
 - Enable audio enhancement
 - Use higher quality recording
 
+**Public model creation fails:**
+
+- Add a `cover_image`, or set `visibility` to `private` or `unlist`
+
+**Cannot use the created voice in TTS:**
+
+- Use REST `_id` or SDK `voice.id` as the TTS `reference_id`
+- If the model state is not `trained`, check it with [Get Model](/api-reference/endpoint/model/get-model)
+
 ## Best Practices
 
 1. **Start Simple:** Begin with 2-3 samples in fast mode to test
-2. **Iterate:** Refine with more samples and quality mode
+2. **Iterate:** Refine with cleaner samples, transcripts, and audio enhancement
 3. **Document:** Keep track of which samples work best
 4. **Test Thoroughly:** Try different texts and emotions
 5. **Privacy First:** Keep personal models private
