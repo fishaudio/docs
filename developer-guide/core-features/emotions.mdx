@@ -4,38 +4,42 @@ description: "Add natural emotions and expressions to your AI-generated speech"
 icon: "masks-theater"
 ---
 
-import BasicEmotions from '/snippets/emotion-list-basic.mdx';
-import AdvancedEmotions from '/snippets/emotion-list-advanced.mdx';
-import ToneMarkers from '/snippets/emotion-list-tones.mdx';
-import AudioEffects from '/snippets/emotion-list-effects.mdx';
-import SpecialEffects from '/snippets/emotion-list-special.mdx';
-import { AudioTranscript } from '/snippets/audio-transcript.jsx';
+import BasicEmotions from "/snippets/emotion-list-basic-s2.mdx";
+import AdvancedEmotions from "/snippets/emotion-list-advanced-s2.mdx";
+import ToneMarkers from "/snippets/emotion-list-tones-s2.mdx";
+import AudioEffects from "/snippets/emotion-list-effects-s2.mdx";
+import SpecialEffects from "/snippets/emotion-list-special-s2.mdx";
+import { AudioTranscript } from "/snippets/audio-transcript.jsx";
 
 {/* speak-mintlify-hash: 702d6176919d2e53007c71cc0850ac755add8d539e6fbd4c55fd20e8332821d7 */}
+{/* S1 requires markers wrapped in parentheses, e.g. (happy). This page intentionally shows S2 bracket syntax, e.g. [happy]. */}
+
 <Visibility for="humans">
   <AudioTranscript page="core-features-emotions" />
 </Visibility>
-
 
 ## Overview
 
 Fish Audio models support 64+ emotional expressions and voice styles that can be controlled through text markers in your input. Add natural pauses, laughter, and other human-like elements to make speech more engaging and realistic.
 
 <Tip>
-The `(parenthesis)` syntax on this page applies to the S1 model. S2 uses `[bracket]` syntax with natural language descriptions and is not limited to a fixed set of tags. See the [Models Overview](/developer-guide/models-pricing/models-overview#s2-natural-language-control) for details.
+  This page shows S2 usage with `[bracket]` cues. If you use S1, you must use
+  markers wrapped in parentheses. See the [Models
+  Overview](/developer-guide/models-pricing/models-overview#s2-natural-language-control)
+  for details.
 </Tip>
 
 ## How It Works
 
-Simply wrap emotion tags in parentheses within your text:
+Add emotional or stylistic cues in square brackets within your text:
 
-```
-(happy) What a beautiful day!
-(sad) I'm sorry to hear that.
-(excited) This is amazing news!
+```text
+[happy] What a beautiful day!
+[sad] I'm sorry to hear that.
+[excited] This is amazing news!
 ```
 
-The TTS models will automatically recognize these markers and adjust the voice accordingly.
+The S2 TTS models will interpret these markers and adjust the voice accordingly.
 
 ## Complete Emotion Reference
 
@@ -71,19 +75,18 @@ You can also use natural expressions like "Ha,ha,ha" for laughter without tags.
 
 ### Placement Rules
 
-**For English and Most Languages:**
-- Emotion tags MUST go at the beginning of sentences
+**For S2:**
+
+- Sentence-level emotion cues usually work best at the beginning of sentences
 - Tone controls can go anywhere in the text
 - Sound effects can go anywhere in the text
+- Bracket cues can use natural language descriptions and are not limited to a fixed set of tags
 
 **Correct:**
-```
-(happy) What a wonderful day!
-```
 
-**Incorrect:**
-```
-What a (happy) wonderful day!
+```text
+[happy] What a wonderful day!
+What a [warm and happy] wonderful day!
 ```
 
 ## Advanced Techniques
@@ -92,53 +95,54 @@ What a (happy) wonderful day!
 
 You can layer multiple emotions for complex expressions:
 
-```
-(sad)(whispering) I miss you so much.
-(angry)(shouting) Get out of here now!
-(excited)(laughing) We won! Ha ha!
+```text
+[sad][whispering] I miss you so much.
+[angry][shouting] Get out of here now!
+[excited][laughing] We won! Ha ha!
 ```
 
 ### Emotion Transitions
 
 Create natural emotional progressions:
 
-```
-(happy) I got the promotion!
-(uncertain) But... it means relocating.
-(sad) I'll miss everyone here.
-(hopeful) Though it's a great opportunity.
-(determined) I'm going to make it work!
+```text
+[happy] I got the promotion!
+[uncertain] But... it means relocating.
+[sad] I'll miss everyone here.
+[hopeful] Though it's a great opportunity.
+[determined] I'm going to make it work!
 ```
 
 ### Background Effects
 
 Add atmospheric sounds:
 
-```
-The comedy show was amazing (audience laughing)
-Everyone was having fun (background laughter)
-The crowd loved it (crowd laughing)
+```text
+The comedy show was amazing [audience laughing]
+Everyone was having fun [background laughter]
+The crowd loved it [crowd laughing]
 ```
 
 ### Intensity Modifiers
 
 Fine-tune emotional intensity with descriptive modifiers:
 
-```
-(slightly sad) I'm a bit disappointed.
-(very excited) This is absolutely amazing!
-(extremely angry) This is unacceptable!
+```text
+[slightly sad] I'm a bit disappointed.
+[very excited] This is absolutely amazing!
+[extremely angry] This is unacceptable!
 ```
 
 ## Language Support
 
-All 13 supported languages can use emotion markers. Emotions must be at sentence start for these languages:
+All 13 supported languages can use emotion markers. For sentence-level control, cues usually work best at the sentence start in these languages:
 
 - **English, Chinese, Japanese, German, French, Spanish, Korean, Arabic, Russian, Dutch, Italian, Polish, Portuguese**
 
 ## Best Practices
 
 ### Do's
+
 - Use one primary emotion per sentence
 - Test different emotion combinations
 - Match emotions to context logically
@@ -147,53 +151,58 @@ All 13 supported languages can use emotion markers. Emotions must be at sentence
 - Space out emotional changes for realism
 
 ### Don'ts
+
 - Don't overuse emotion tags in short text
 - Don't mix conflicting emotions
-- Don't create custom tags - use only supported ones
-- Don't forget parentheses
-- Don't place emotion tags mid-sentence in English
+- Don't make bracket descriptions so long that they interrupt readability
+- Don't forget brackets
+- Don't place sentence-level emotion cues far from the sentence they control
 
 ## Common Use Cases
 
 ### Customer Service
-```
-(friendly) Hello! How can I help you today?
-(empathetic) I understand your frustration.
-(confident) I'll resolve this for you right away.
-(grateful) Thank you for your patience!
+
+```text
+[friendly] Hello! How can I help you today?
+[empathetic] I understand your frustration.
+[confident] I'll resolve this for you right away.
+[grateful] Thank you for your patience!
 ```
 
 ### Storytelling
-```
-(narrator) Once upon a time...
-(mysterious)(whispering) The old house stood silent.
-(scared) "Is anyone there?" she called out.
-(relieved)(sighing) No one answered. Phew.
+
+```text
+[narrator] Once upon a time...
+[mysterious][whispering] The old house stood silent.
+[scared] "Is anyone there?" she called out.
+[relieved][sighing] No one answered. Phew.
 ```
 
 ### Educational Content
-```
-(enthusiastic) Welcome to today's lesson!
-(curious) Have you ever wondered why?
-(encouraging) That's a great question!
-(proud) Excellent work!
+
+```text
+[enthusiastic] Welcome to today's lesson!
+[curious] Have you ever wondered why?
+[encouraging] That's a great question!
+[proud] Excellent work!
 ```
 
 ### Marketing & Sales
-```
-(excited) Introducing our newest product!
-(confident) You won't find better quality anywhere.
-(urgent) Limited time offer!
-(satisfied) Join thousands of happy customers!
+
+```text
+[excited] Introducing our newest product!
+[confident] You won't find better quality anywhere.
+[urgent] Limited time offer!
+[satisfied] Join thousands of happy customers!
 ```
 
 ## Troubleshooting
 
 ### Emotion Not Working?
 
-1. **Check placement** - Emotions must be at the beginning of sentences for English
-2. **Verify spelling** - Tags must match exactly as listed
-3. **Include parentheses** - Tags must be wrapped in parentheses
+1. **Check placement** - Put the cue where the emotion or effect should begin
+2. **Keep wording clear** - Use concise natural language descriptions
+3. **Use the right syntax** - S2 cues use square brackets; S1 cues must use parentheses
 
 ### Unnatural Sound?
 
@@ -213,26 +222,26 @@ All 13 supported languages can use emotion markers. Emotions must be at sentence
 
 ### Emotion Intensity Scale
 
-| Base Emotion | Mild | Moderate | Intense |
-|--------------|------|----------|---------|
-| Happy | satisfied | happy | delighted |
-| Sad | disappointed | sad | depressed |
-| Angry | frustrated | angry | furious |
-| Scared | nervous | scared | terrified |
-| Excited | interested | excited | ecstatic |
+| Base Emotion | Mild         | Moderate | Intense   |
+| ------------ | ------------ | -------- | --------- |
+| Happy        | satisfied    | happy    | delighted |
+| Sad          | disappointed | sad      | depressed |
+| Angry        | frustrated   | angry    | furious   |
+| Scared       | nervous      | scared   | terrified |
+| Excited      | interested   | excited  | ecstatic  |
 
 ### Common Combinations
 
-| Scenario | Emotion Combo | Example |
-|----------|---------------|---------|
-| Whispered Secret | (mysterious)(whispering) | "I have something to tell you..." |
-| Angry Shout | (angry)(shouting) | "Stop right there!" |
-| Sad Sigh | (sad)(sighing) | "I wish things were different. Sigh." |
-| Excited Laugh | (excited)(laughing) | "We did it! Ha ha!" |
-| Nervous Question | (nervous)(uncertain) | "Are you sure about this?" |
+| Scenario         | Emotion Combo              | Example                               |
+| ---------------- | -------------------------- | ------------------------------------- |
+| Whispered Secret | `[mysterious][whispering]` | "I have something to tell you..."     |
+| Angry Shout      | `[angry][shouting]`        | "Stop right there!"                   |
+| Sad Sigh         | `[sad][sighing]`           | "I wish things were different. Sigh." |
+| Excited Laugh    | `[excited][laughing]`      | "We did it! Ha ha!"                   |
+| Nervous Question | `[nervous][uncertain]`     | "Are you sure about this?"            |
 
 ## See Also
 
-- [Emotion Reference Guide](/api-reference/emotion-reference) - Complete emotion list with examples
+- [Emotion Reference Guide](/api-reference/emotion-reference) - S1 emotion list with examples
 - [API Reference](/api-reference/introduction) - Implementation details
 - [Text-to-Speech Guide and Best Practices](/developer-guide/core-features/text-to-speech)
