@@ -539,7 +539,8 @@ from fishaudio.exceptions import (
     FishAudioError,
     AuthenticationError,
     RateLimitError,
-    ValidationError
+    NotFoundError,
+    APIError,
 )
 
 client = FishAudio()
@@ -550,13 +551,15 @@ except AuthenticationError:
     print("Invalid API key")
 except RateLimitError:
     print("Rate limit exceeded. Please wait before retrying.")
-except ValidationError as e:
-    print(f"Invalid request: {e}")
+except NotFoundError:
+    print("Voice model not found")
+except APIError as e:
+    print(f"API error {e.status}: {e.message}")  # any other HTTP error, including 422 validation
 except FishAudioError as e:
-    print(f"API error: {e}")
+    print(f"SDK error: {e}")
 ```
 
-The SDK includes exceptions for [`AuthenticationError`](/api-reference/sdk/python/exceptions#authenticationerror-objects), [`RateLimitError`](/api-reference/sdk/python/exceptions#ratelimiterror-objects), [`ValidationError`](/api-reference/sdk/python/exceptions#validationerror-objects), and [`FishAudioError`](/api-reference/sdk/python/exceptions#fishaudioerror-objects) for common error scenarios.
+HTTP failures raise [`APIError`](/api-reference/sdk/python/exceptions#apierror-objects) or one of its subclasses — [`AuthenticationError`](/api-reference/sdk/python/exceptions#authenticationerror-objects), [`RateLimitError`](/api-reference/sdk/python/exceptions#ratelimiterror-objects), [`NotFoundError`](/api-reference/sdk/python/exceptions#notfounderror-objects) — and everything inherits from [`FishAudioError`](/api-reference/sdk/python/exceptions#fishaudioerror-objects). Invalid request parameters arrive as an `APIError` with `status == 422` (there is no separate `ValidationError` raised at runtime).
 
 Learn more in the [API Reference - Exceptions](/api-reference/sdk/python/exceptions).
 

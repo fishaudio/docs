@@ -721,8 +721,13 @@ config = TTSConfig(
     # references=[ReferenceAudio(...)]  # For instant cloning
 
     # Model parameters
-    temperature=0.7,           # Randomness (0.0-1.0)
-    top_p=0.7                  # Token selection (0.0-1.0)
+    temperature=0.7,                   # Randomness (0.0-1.0)
+    top_p=0.7,                         # Token selection (0.0-1.0)
+    max_new_tokens=1024,               # Max tokens generated per chunk
+    repetition_penalty=1.2,            # >1.0 reduces repetition
+    min_chunk_length=50,               # Min chars before a new chunk
+    condition_on_previous_chunks=True, # Cross-chunk voice consistency
+    early_stop_threshold=1.0,          # Batch early-stop threshold
 )
 
 # Use with any client
@@ -741,9 +746,9 @@ Handle common TTS errors gracefully:
 from fishaudio import FishAudio
 from fishaudio.exceptions import (
     RateLimitError,
-    ValidationError,
     NotFoundError,
-    FishAudioError
+    APIError,
+    FishAudioError,
 )
 import time
 
@@ -759,13 +764,13 @@ except RateLimitError:
     time.sleep(60)  # Wait before retry
 except NotFoundError:
     print("Voice model not found. Check the reference_id")
-except ValidationError as e:
-    print(f"Invalid request: {e}")
+except APIError as e:
+    print(f"API error {e.status}: {e.message}")  # any other HTTP error, including 422 validation
 except FishAudioError as e:
-    print(f"API error: {e}")
+    print(f"SDK error: {e}")
 ```
 
-Common exceptions include [`RateLimitError`](/api-reference/sdk/python/exceptions#ratelimiterror-objects), [`ValidationError`](/api-reference/sdk/python/exceptions#validationerror-objects), [`NotFoundError`](/api-reference/sdk/python/exceptions#notfounderror-objects), and [`FishAudioError`](/api-reference/sdk/python/exceptions#fishaudioerror-objects).
+Common exceptions include [`RateLimitError`](/api-reference/sdk/python/exceptions#ratelimiterror-objects), [`NotFoundError`](/api-reference/sdk/python/exceptions#notfounderror-objects), [`APIError`](/api-reference/sdk/python/exceptions#apierror-objects), and the base [`FishAudioError`](/api-reference/sdk/python/exceptions#fishaudioerror-objects). Invalid request parameters surface as an `APIError` with `status == 422`.
 
 ## Best Practices
 

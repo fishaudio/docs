@@ -128,13 +128,20 @@ console.log(asr.text);
 Handle common errors:
 
 ```typescript
+import { FishAudioError, FishAudioTimeoutError } from "fish-audio";
+
 try {
   await fishAudio.speechToText.convert({ audio: createReadStream("audio.mp3") });
-} catch (e: any) {
-  const status = e?.status || e?.response?.status;
-  if (status === 413) console.error("Audio file too large (max 20MB)");
-  else if (status === 400) console.error("Invalid audio format");
-  else throw e;
+} catch (err) {
+  if (err instanceof FishAudioTimeoutError) {
+    console.error("Request timed out");
+  } else if (err instanceof FishAudioError) {
+    if (err.statusCode === 413) console.error("Audio file too large (max 20MB)");
+    else if (err.statusCode === 400) console.error("Invalid audio format");
+    else console.error(err.statusCode, err.body);
+  } else {
+    throw err;
+  }
 }
 ```
 

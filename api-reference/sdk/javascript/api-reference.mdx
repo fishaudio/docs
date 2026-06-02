@@ -13,6 +13,34 @@ import { FishAudioClient } from "fish-audio";
 const fishAudio = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 ```
 
+Client options: `apiKey` (defaults to the `FISH_API_KEY` environment variable), `baseUrl` / `environment`, and `headers`.
+
+## Request Options, Retries & Timeouts
+
+Every method takes an optional trailing `requestOptions` argument:
+
+```typescript
+await fishAudio.textToSpeech.convert({ text: "Hi" }, "s2-pro", {
+  timeoutInSeconds: 30, // default 240
+  maxRetries: 5, // auto-retries 408 / 429 / 5xx with backoff
+  abortSignal: controller.signal,
+  apiKey: "override", // per-request key
+  headers: { "X-Trace": "id" },
+  queryParams: {},
+});
+```
+
+- **Retries** are automatic for `408`, `429`, and `5xx` (exponential backoff with jitter, honoring `Retry-After`). Override the count with `maxRetries`.
+- **Timeout** defaults to 240 s; override per call with `timeoutInSeconds`. A timeout throws `FishAudioTimeoutError`.
+- **Raw response:** every method returns an awaitable that also exposes `.withRawResponse()`:
+
+```typescript
+const { data, rawResponse } = await fishAudio.textToSpeech
+  .convert({ text: "Hi" })
+  .withRawResponse();
+console.log(rawResponse.headers);
+```
+
 ## Text to Speech
 
 ### convert()
@@ -33,7 +61,7 @@ async function* textStream() { yield "Hello, "; yield "world!"; }
 const conn = await fishAudio.textToSpeech.convertRealtime({ text: "" }, textStream());
 ```
 
-Parameters: `request` (TTSRequest with `text: ""`), `textStream` (`AsyncIterable<string>`), `backend?` (Backends) <br />
+Parameters: `request` (TTSRequest with `text: ""`), `textStream` (`Iterable<string> | AsyncIterable<string>`), `backend?` (Backends, default `"s2-pro"`) <br />
 Returns: `RealtimeConnection` (`EventEmitter`-like connection) emitting `RealtimeEvents`
 
 ## Speech to Text
@@ -169,8 +197,16 @@ Fields: `speed` (0.5–2.0), `volume` (-20 to 20)
 The backend model to use.
 
 ```typescript
-Backends = 's1' | 's2-pro';
+Backends =
+  | "speech-1.5"
+  | "speech-1.6"
+  | "agent-x0"
+  | "s1"
+  | "s1-mini"
+  | "s2-pro";
 ```
+
+Default: `"s2-pro"`. Prefer `"s2-pro"` (latest) or `"s1"`; `"speech-1.5"` and `"speech-1.6"` are deprecated.
 
 ## Response Classes
 
@@ -244,8 +280,20 @@ Fields: `event` ("stop")
 
 ## Exceptions
 
+All HTTP errors extend `FishAudioError`.
+
 ### FishAudioError
-Generic error with status code, body, rawResponse.
+Thrown for any non-2xx response. Fields: `statusCode`, `body`, `rawResponse`. Branch on `statusCode` (401, 402, 404, …) to handle specific cases.
+
+### UnprocessableEntityError
+Thrown on `422` validation failures — the one typed HTTP subclass the client currently raises. `body` is `{ detail: [{ loc, msg, type }] }`.
 
 ### FishAudioTimeoutError
-Connection timeout error.
+Thrown when a request exceeds its timeout (default 240 s).
+
+<Note>
+  `BadRequestError`, `UnauthorizedError`, `ForbiddenError`, `NotFoundError`, and
+  `TooEarlyError` are also exported, but the client currently throws a generic
+  `FishAudioError` for those statuses. Branch on `err.statusCode` rather than
+  relying on `instanceof NotFoundError`.
+</Note>

@@ -239,8 +239,9 @@ audio = client.tts.convert(
 from fishaudio.exceptions import (
     AuthenticationError,
     RateLimitError,
-    ValidationError,
-    FishAudioError
+    NotFoundError,
+    APIError,
+    FishAudioError,
 )
 
 try:
@@ -249,10 +250,12 @@ except AuthenticationError:
     print("Invalid API key")
 except RateLimitError:
     print("Rate limit exceeded")
-except ValidationError as e:
-    print(f"Invalid request: {e}")
+except NotFoundError:
+    print("Voice model not found")
+except APIError as e:
+    print(f"API error {e.status}: {e.message}")  # any other HTTP error, including 422 validation
 except FishAudioError as e:
-    print(f"API error: {e}")
+    print(f"SDK error: {e}")
 ```
 
 ## Resources

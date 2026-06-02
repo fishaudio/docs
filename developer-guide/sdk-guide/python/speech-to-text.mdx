@@ -118,7 +118,7 @@ print(f"Full text: {result.text}")
 
 # Iterate through segments
 for segment in result.segments:
-    print(f"[{segment.start}ms - {segment.end}ms]: {segment.text}")
+    print(f"[{segment.start:.2f}s - {segment.end:.2f}s]: {segment.text}")
 ```
 
 ```python Asynchronous focus={7-16}
@@ -137,11 +137,16 @@ async def main():
 
     # Iterate through segments
     for segment in result.segments:
-        print(f"[{segment.start}ms - {segment.end}ms]: {segment.text}")
+        print(f"[{segment.start:.2f}s - {segment.end:.2f}s]: {segment.text}")
 
 asyncio.run(main())
 ```
 </CodeGroup>
+
+<Note>
+  Segment `start` / `end` are in **seconds**, while `result.duration` is in
+  **milliseconds**.
+</Note>
 
 ## Next Steps
 

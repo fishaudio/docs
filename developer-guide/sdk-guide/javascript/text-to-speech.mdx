@@ -132,7 +132,7 @@ const audio = await fishAudio.textToSpeech.convert({
 Fine-tune generation:
 
 ```typescript
-const audio = await client.textToSpeech.convert({
+const audio = await fishAudio.textToSpeech.convert({
   text: "Your text here",
   chunk_length: 200,    // Characters per chunk (100-300)
   normalize: true,      // Normalize text
@@ -159,22 +159,41 @@ For real-time streaming, see the [WebSocket guide](/developer-guide/sdk-guide/ja
 
 ## Error Handling
 
-Handle common errors:
+The SDK automatically retries transient failures (`408`, `429`, and `5xx`) with exponential backoff, so you don't need a manual retry loop. Catch the typed errors to handle the rest:
 
 ```typescript
-async function generateWithRetry(request: Record<string, unknown>, maxRetries = 3) {
-  const fishAudio = new FishAudioClient();
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      return await fishAudio.textToSpeech.convert(request);
-    } catch (e: any) {
-      const status = e?.status || e?.response?.status;
-      if (status === 429) await new Promise(r => setTimeout(r, 2 ** attempt * 1000));
-      else if (status === 401) throw new Error("Invalid API key");
-      else throw e;
-    }
+import {
+  FishAudioClient,
+  FishAudioError,
+  FishAudioTimeoutError,
+  UnprocessableEntityError,
+} from "fish-audio";
+
+const fishAudio = new FishAudioClient();
+
+try {
+  const audio = await fishAudio.textToSpeech.convert({ text: "Your text here" });
+  await play(audio);
+} catch (err) {
+  if (err instanceof UnprocessableEntityError) {
+    console.error("Invalid request (422):", err.body?.detail);
+  } else if (err instanceof FishAudioTimeoutError) {
+    console.error("Request timed out");
+  } else if (err instanceof FishAudioError) {
+    console.error(err.statusCode, err.body); // 401 bad key, 402 out of credit, 404 voice not found, ...
+  } else {
+    throw err;
   }
 }
+```
+
+To tune retries and timeout per call, pass `requestOptions` (the trailing argument):
+
+```typescript
+await fishAudio.textToSpeech.convert({ text: "Hi" }, "s2-pro", {
+  maxRetries: 5,
+  timeoutInSeconds: 30,
+});
 ```
 
 ## Request Parameters

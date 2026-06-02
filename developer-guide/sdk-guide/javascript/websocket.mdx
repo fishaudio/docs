@@ -152,7 +152,7 @@ const fishAudio = new FishAudioClient({
 const conn = await fishAudio.textToSpeech.convertRealtime(
   request,
   makeTextStream(),
-  backend: "s2-pro"
+  "s2-pro" // backend is the third positional argument
 );
 ```
 
