@@ -39,7 +39,10 @@ If your coding agent supports direct document fetching, start with `llms.txt` be
 
 ## Install as an Agent Skill
 
-Fish Audio publishes a ready-made [Agent Skill](https://github.com/vercel-labs/skills) that teaches your coding agent how to call the Fish Audio REST and WebSocket APIs directly, without an SDK. It covers authentication, every endpoint in our OpenAPI schema, MessagePack vs JSON vs multipart encoding rules, multi-speaker dialogue, and the WebSocket streaming protocol.
+Fish Audio publishes ready-made [Agent Skills](https://github.com/vercel-labs/skills) that teach your coding agent how to write correct Fish Audio code:
+
+- **`fish-audio-api`** — call the Fish Audio REST and WebSocket APIs directly, without an SDK. Covers authentication, every endpoint in our OpenAPI schema, MessagePack vs JSON vs multipart encoding rules, multi-speaker dialogue, and the WebSocket streaming protocol. Best for `curl`, languages without an official SDK, and edge runtimes.
+- **`fish-audio-sdk`** — write code with the official Python (`fish-audio-sdk`) and JavaScript/TypeScript (`fish-audio`) SDKs. Covers install and auth, sync + async Python, the TypeScript client, exact method signatures, model selection, the real exception types, and the Python↔JavaScript naming differences. Best when you've installed an official SDK.
 
 <Tabs>
   <Tab title="Install the raw-API skill">
@@ -48,6 +51,16 @@ Fish Audio publishes a ready-made [Agent Skill](https://github.com/vercel-labs/s
     ```
 
     This installs the skill into your agent's local skill directory (for example `~/.claude/skills/fish-audio-api/`). Once installed, ask your agent to "call the Fish Audio TTS API with curl" or "stream TTS over WebSocket in Python" and it will follow the skill's conventions.
+
+  </Tab>
+
+  <Tab title="Install the SDK skill">
+    ```bash
+    npx skills add https://docs.fish.audio --skill fish-audio-sdk
+    ```
+
+    This installs the SDK skill (for example into `~/.claude/skills/fish-audio-sdk/`). Once installed, ask your agent to "generate speech with the Fish Audio Python SDK" or "transcribe audio with the fish-audio npm package" and it will use the correct client, methods, and error types.
+
   </Tab>
 
   <Tab title="Install all Fish Audio skills">
@@ -56,6 +69,7 @@ Fish Audio publishes a ready-made [Agent Skill](https://github.com/vercel-labs/s
     ```
 
     Installs every skill advertised at [/.well-known/agent-skills/index.json](https://docs.fish.audio/.well-known/agent-skills/index.json), including the auto-generated product overview skill and the raw-API skill.
+
   </Tab>
 
   <Tab title="Inspect before installing">
@@ -65,15 +79,21 @@ Fish Audio publishes a ready-made [Agent Skill](https://github.com/vercel-labs/s
     npx skills add https://docs.fish.audio --list          # show available skills
     npx skills add https://docs.fish.audio --skill fish-audio-api
     ```
+
   </Tab>
 </Tabs>
 
 <Tip>
-The `skills` CLI works with any agent that uses `SKILL.md` conventions — Claude Code, Cursor, Windsurf, Codex, and others. See [`npx skills --help`](https://github.com/vercel-labs/skills) for agent-specific install flags such as `-a claude-code` or `-a cursor`.
+  The `skills` CLI works with any agent that uses `SKILL.md` conventions —
+  Claude Code, Cursor, Windsurf, Codex, and others. See [`npx skills
+  --help`](https://github.com/vercel-labs/skills) for agent-specific install
+  flags such as `-a claude-code` or `-a cursor`.
 </Tip>
 
 <Note>
-Prefer MCP if you want live documentation search inside your editor. Prefer the Agent Skill if you want a self-contained instruction file that works offline after install and doesn't rely on a running MCP server.
+  Prefer MCP if you want live documentation search inside your editor. Prefer
+  the Agent Skill if you want a self-contained instruction file that works
+  offline after install and doesn't rely on a running MCP server.
 </Note>
 
 ## Why Use MCP Integration?

@@ -19,13 +19,19 @@ In most cases, agents should read `llms.txt` first and only fetch `llms-full.txt
 
 ## Install the Agent Skill
 
-For coding agents that support [Agent Skills](https://github.com/vercel-labs/skills) (Claude Code, Cursor, Windsurf, Codex, and others), install the ready-made raw-API skill with a single command:
+For coding agents that support [Agent Skills](https://github.com/vercel-labs/skills) (Claude Code, Cursor, Windsurf, Codex, and others), install a ready-made skill with a single command. Pick the one that matches how you call Fish Audio:
 
 ```bash
+# Raw REST / WebSocket, no SDK (curl, any language, edge runtimes)
 npx skills add https://docs.fish.audio --skill fish-audio-api
+
+# Official Python (fish-audio-sdk) and JavaScript/TypeScript (fish-audio) SDKs
+npx skills add https://docs.fish.audio --skill fish-audio-sdk
 ```
 
-The skill teaches the agent how to call the Fish Audio REST and WebSocket APIs directly from `curl`, Python, Node.js, or any HTTP client — no SDK required. It covers authentication, every endpoint in our [OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json), MessagePack vs JSON vs multipart encoding rules, multi-speaker dialogue, and the WebSocket streaming protocol.
+`fish-audio-api` teaches the agent to call the Fish Audio REST and WebSocket APIs directly from `curl`, Python, Node.js, or any HTTP client — no SDK required. It covers authentication, every endpoint in our [OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json), MessagePack vs JSON vs multipart encoding rules, multi-speaker dialogue, and the WebSocket streaming protocol.
+
+`fish-audio-sdk` teaches the agent to write code with the official SDKs — install and auth, sync + async Python, the TypeScript client, exact method signatures, model selection, the real exception types, and the Python↔JavaScript naming differences.
 
 Discovery endpoint: [/.well-known/agent-skills/index.json](https://docs.fish.audio/.well-known/agent-skills/index.json). Run `npx skills add https://docs.fish.audio` (without `--skill`) to install every skill published here, including the auto-generated product overview skill.
 
