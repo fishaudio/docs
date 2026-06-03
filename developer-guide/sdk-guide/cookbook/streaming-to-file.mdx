@@ -1,0 +1,60 @@
+---
+title: "Stream TTS to a file"
+description: "Generate long audio and write it to disk chunk-by-chunk, without buffering it all in memory"
+icon: "file-audio"
+---
+
+import Prerequisites from "/snippets/prerequisites.mdx";
+
+## Prerequisites
+
+<Prerequisites />
+
+## Recipe
+
+For long text, use [`stream()`](/api-reference/sdk/python/resources#stream) and write each chunk as it arrives instead of holding the whole file in memory.
+
+<CodeGroup>
+```python Synchronous
+from fishaudio import FishAudio
+
+client = FishAudio()
+
+with open("output.mp3", "wb") as f:
+    for chunk in client.tts.stream(text="A very long passage of text..."):
+        f.write(chunk)
+```
+
+```python Asynchronous
+import asyncio
+from fishaudio import AsyncFishAudio
+
+async def main():
+    async with AsyncFishAudio() as client:
+        audio_stream = await client.tts.stream(text="A very long passage of text...")
+        with open("output.mp3", "wb") as f:
+            async for chunk in audio_stream:
+                f.write(chunk)
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+## Collect instead of iterate
+
+If you just want the full bytes, call `.collect()`:
+
+```python
+audio = client.tts.stream(text="Hello!").collect()  # -> bytes
+```
+
+<Tip>
+  `convert()` already returns the complete audio as `bytes` — reach for
+  `stream()` when you want to start writing/forwarding bytes before generation
+  finishes, or to avoid buffering large files.
+</Tip>
+
+## Related
+
+- [Text-to-Speech guide](/developer-guide/sdk-guide/python/text-to-speech)
+- [Realtime: LLM tokens → speech](/developer-guide/sdk-guide/cookbook/realtime-llm-to-speech)

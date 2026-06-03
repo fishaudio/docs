@@ -1,0 +1,75 @@
+---
+title: "Realtime: LLM tokens → speech"
+description: "Pipe a streaming LLM response straight into speech over a WebSocket as tokens arrive"
+icon: "bolt"
+---
+
+import Prerequisites from "/snippets/prerequisites.mdx";
+
+## Prerequisites
+
+<Prerequisites />
+
+## Recipe
+
+[`stream_websocket()`](/api-reference/sdk/python/resources#stream_websocket) takes an iterable of text chunks and yields audio chunks in real time. Feed it your LLM's token stream and play or forward the audio as it's produced.
+
+<CodeGroup>
+```python Synchronous
+from fishaudio import FishAudio
+from fishaudio.utils import play
+
+client = FishAudio()
+
+def llm_tokens():
+    # Replace with your real streaming LLM call
+    for token in ["The ", "first ", "move ", "sets ", "everything ", "in ", "motion."]:
+        yield token
+
+audio_stream = client.tts.stream_websocket(llm_tokens(), reference_id="<voice-id>")
+play(audio_stream)  # or: for chunk in audio_stream: send_to_client(chunk)
+```
+
+```python Asynchronous
+import asyncio
+from fishaudio import AsyncFishAudio
+
+async def llm_tokens():
+    for token in ["The ", "first ", "move ", "sets ", "everything ", "in ", "motion."]:
+        yield token
+
+async def main():
+    async with AsyncFishAudio() as client:
+        audio_stream = await client.tts.stream_websocket(llm_tokens())
+        with open("out.mp3", "wb") as f:
+            async for chunk in audio_stream:
+                f.write(chunk)
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+## Force generation at a boundary
+
+By default the engine buffers text until it has enough for natural prosody. Yield a [`FlushEvent`](/api-reference/sdk/python/types#flushevent-objects) to force synthesis of what's buffered — useful for turn-taking in a conversation:
+
+```python
+from fishaudio.types import TextEvent, FlushEvent
+
+def turns():
+    yield TextEvent(text="Are you ready?")
+    yield FlushEvent()              # speak the question now
+    yield TextEvent(text="Let's begin.")
+```
+
+The SDK sends the start/stop frames for you — you only supply text and optional flushes.
+
+<Tip>
+  Errors mid-stream surface as `WebSocketError`. Reconnect with a fresh call
+  rather than retrying on the same socket.
+</Tip>
+
+## Related
+
+- [Realtime WebSocket guide](/developer-guide/sdk-guide/python/websocket)
+- [Errors & Retries](/developer-guide/sdk-guide/python/errors)
