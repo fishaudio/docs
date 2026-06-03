@@ -51,7 +51,7 @@ const request: TTSRequest = {
   references: [referenceAudio]
 };
 
-const audio = await fishAudio.textToSpeech.convert(request);
+const audio = await client.textToSpeech.convert(request);
 ```
 
 ## Multiple References
@@ -189,19 +189,13 @@ await fishAudio.textToSpeech.convert({
 Common issues and solutions:
 
 ```typescript
-import { FishAudioError, UnprocessableEntityError } from "fish-audio";
-
 try {
   await fishAudio.textToSpeech.convert({ text: "Test speech", references: [referenceAudio] });
-} catch (err) {
-  if (err instanceof UnprocessableEntityError) {
-    // 422 — invalid reference audio (wrong format, too short, missing transcript, ...)
-    console.error("Invalid reference audio:", err.body?.detail);
-  } else if (err instanceof FishAudioError) {
-    console.error(err.statusCode, err.body);
-  } else {
-    throw err;
-  }
+} catch (e: any) {
+  const msg = String(e?.message || e);
+  if (msg.includes("Invalid audio format")) console.error("Check audio format - use WAV or MP3");
+  else if (msg.includes("Audio too short")) console.error("Reference audio should be at least 10 seconds");
+  else throw e;
 }
 ```
 
