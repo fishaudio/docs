@@ -12,14 +12,30 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Docs",
+        "tab": "Overview",
         "groups": [
           {
-            "group": "Getting Started",
+            "group": "Get Started",
             "pages": [
               "developer-guide/getting-started/introduction",
               "developer-guide/getting-started/quickstart",
               "developer-guide/getting-started/changelog"
+            ]
+          },
+          {
+            "group": "Capabilities",
+            "pages": ["overview/capabilities"]
+          },
+          {
+            "group": "Platform (Web App)",
+            "pages": ["overview/platform"]
+          },
+          {
+            "group": "Product Guides",
+            "pages": [
+              "developer-guide/products/tts",
+              "developer-guide/products/voice-cloning",
+              "developer-guide/products/story-studio"
             ]
           },
           {
@@ -30,7 +46,12 @@
               "developer-guide/models-pricing/deprecations",
               "developer-guide/models-pricing/pricing-and-rate-limits"
             ]
-          },
+          }
+        ]
+      },
+      {
+        "tab": "Developer Guide",
+        "groups": [
           {
             "group": "Core Features",
             "pages": [
@@ -51,34 +72,15 @@
             ]
           },
           {
-            "group": "Developer SDKs",
+            "group": "SDK",
             "pages": [
               "developer-guide/sdk-guide/quickstart",
-              {
-                "group": "Python SDK",
-                "icon": "python",
-                "pages": [
-                  "developer-guide/sdk-guide/python/overview",
-                  "developer-guide/sdk-guide/python/authentication",
-                  "developer-guide/sdk-guide/python/text-to-speech",
-                  "developer-guide/sdk-guide/python/voice-cloning",
-                  "developer-guide/sdk-guide/python/speech-to-text",
-                  "developer-guide/sdk-guide/python/websocket",
-                  "developer-guide/sdk-guide/python/errors"
-                ]
-              },
-              {
-                "group": "JavaScript SDK",
-                "icon": "js",
-                "pages": [
-                  "developer-guide/sdk-guide/javascript/installation",
-                  "developer-guide/sdk-guide/javascript/authentication",
-                  "developer-guide/sdk-guide/javascript/text-to-speech",
-                  "developer-guide/sdk-guide/javascript/voice-cloning",
-                  "developer-guide/sdk-guide/javascript/speech-to-text",
-                  "developer-guide/sdk-guide/javascript/websocket"
-                ]
-              },
+              "developer-guide/sdk-guide/python/authentication",
+              "developer-guide/sdk-guide/python/text-to-speech",
+              "developer-guide/sdk-guide/python/voice-cloning",
+              "developer-guide/sdk-guide/python/speech-to-text",
+              "developer-guide/sdk-guide/python/websocket",
+              "developer-guide/sdk-guide/python/errors",
               {
                 "group": "Cookbook",
                 "icon": "book",
@@ -99,11 +101,11 @@
             ]
           },
           {
-            "group": "Product Guides",
+            "group": "Integrations",
             "pages": [
-              "developer-guide/products/tts",
-              "developer-guide/products/voice-cloning",
-              "developer-guide/products/story-studio"
+              "developer-guide/integrations/pipecat",
+              "developer-guide/integrations/livekit",
+              "developer-guide/integrations/n8n"
             ]
           },
           {
@@ -113,26 +115,6 @@
               "developer-guide/self-hosting/docker-deployment",
               "developer-guide/self-hosting/running-inference"
             ]
-          },
-          {
-            "group": "Advanced Features",
-            "pages": []
-          },
-          {
-            "group": "Integrations",
-            "pages": [
-              "developer-guide/integrations/pipecat",
-              "developer-guide/integrations/livekit",
-              "developer-guide/integrations/n8n"
-            ]
-          },
-          {
-            "group": "Best Practices",
-            "pages": []
-          },
-          {
-            "group": "Safety & Ethics",
-            "pages": []
           },
           {
             "group": "Tutorials",
@@ -196,29 +178,34 @@
             ]
           },
           {
-            "group": "Python SDK",
-            "icon": "python",
+            "group": "SDK Reference",
             "pages": [
-              "api-reference/sdk/python/overview",
               {
-                "group": "Reference",
-                "icon": "book-open",
+                "group": "Python SDK",
+                "icon": "python",
                 "pages": [
-                  "api-reference/sdk/python/client",
-                  "api-reference/sdk/python/resources",
-                  "api-reference/sdk/python/types",
-                  "api-reference/sdk/python/core",
-                  "api-reference/sdk/python/utils",
-                  "api-reference/sdk/python/exceptions"
+                  "api-reference/sdk/python/overview",
+                  {
+                    "group": "Reference",
+                    "icon": "book-open",
+                    "pages": [
+                      "api-reference/sdk/python/client",
+                      "api-reference/sdk/python/resources",
+                      "api-reference/sdk/python/types",
+                      "api-reference/sdk/python/core",
+                      "api-reference/sdk/python/utils",
+                      "api-reference/sdk/python/exceptions"
+                    ]
+                  },
+                  "archive/python-sdk-legacy/index"
                 ]
               },
-              "archive/python-sdk-legacy/index"
+              {
+                "group": "JavaScript SDK",
+                "icon": "js",
+                "pages": ["api-reference/sdk/javascript/api-reference"]
+              }
             ]
-          },
-          {
-            "group": "JavaScript SDK",
-            "icon": "js",
-            "pages": ["api-reference/sdk/javascript/api-reference"]
           }
         ]
       }
