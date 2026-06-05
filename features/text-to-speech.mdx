@@ -1,0 +1,304 @@
+---
+title: "Text to Speech"
+sidebarTitle: "Overview"
+description: "Turn text into lifelike speech — use it however you build"
+icon: "microphone"
+---
+
+Generate natural speech from text with the `s2-pro` and `s1` models. Pick a voice, choose a format, and go — from the API directly, the Python library, or JavaScript.
+
+<CardGroup cols={3}>
+  <Card title="Use it in the web app" icon="browser" href="https://fish.audio/app/text-to-speech">
+    No code — type, pick a voice, generate.
+  </Card>
+  <Card title="API reference" icon="brackets-curly" href="/api-reference/endpoint/openapi-v1/text-to-speech">
+    Every parameter for `POST /v1/tts`.
+  </Card>
+  <Card title="Cookbooks" icon="book-open" href="/developer-guide/sdk-guide/cookbook/streaming-to-file">
+    Ready-made recipes: streaming, telephony, and more.
+  </Card>
+</CardGroup>
+
+## When to use it
+
+<CardGroup cols={2}>
+  <Card title="Voiceovers & narration" icon="film">
+    Audiobooks, explainers, ads, and video narration.
+  </Card>
+  <Card title="Conversational AI" icon="comments">
+    Speak an assistant's replies — pair with [streaming](/features/realtime-streaming) for low latency.
+  </Card>
+  <Card title="Accessibility & IVR" icon="universal-access">
+    Read content aloud, phone menus, notifications.
+  </Card>
+  <Card title="Custom voices" icon="clone">
+    Speak in a [cloned voice](/features/voice-cloning) you own.
+  </Card>
+</CardGroup>
+
+## Quick start
+
+Send text, get back audio. Choose your implementation:
+
+<CodeGroup>
+```python Python
+from fishaudio import FishAudio
+from fishaudio.utils import save
+
+client = FishAudio()  # reads FISH_API_KEY
+audio = client.tts.convert(text="Hello from Fish Audio!")
+save(audio, "out.mp3")
+```
+
+```bash API (curl)
+curl --request POST https://api.fish.audio/v1/tts \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --header "model: s2-pro" \
+  --data '{ "text": "Hello from Fish Audio!", "format": "mp3" }' \
+  --output out.mp3
+```
+
+```javascript JavaScript
+import { FishAudioClient } from "fish-audio";
+import { writeFile } from "fs/promises";
+
+const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+// `s2-pro` is passed explicitly (the SDK default is `s1`).
+const stream = await client.textToSpeech.convert(
+  { text: "Hello from Fish Audio!" },
+  "s2-pro",
+);
+
+const chunks = [];
+for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+await writeFile("hello.mp3", Buffer.concat(chunks));
+```
+</CodeGroup>
+
+## Use a specific voice
+
+Pass a **voice model id** (`reference_id`). Find ids in the [Voice Library](/overview/platform) or create your own via [Voice Cloning](/features/voice-cloning).
+
+<CodeGroup>
+```python Python
+audio = client.tts.convert(
+    text="This uses a specific voice.",
+    reference_id="802e3bc2b27e49c2995d23ef70e6ac89",
+)
+```
+
+```bash API (curl)
+curl --request POST https://api.fish.audio/v1/tts \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --header "model: s2-pro" \
+  --data '{
+    "text": "This uses a specific voice.",
+    "reference_id": "802e3bc2b27e49c2995d23ef70e6ac89",
+    "format": "mp3"
+  }' \
+  --output out.mp3
+```
+</CodeGroup>
+
+## Implementation details
+
+### Models
+
+- **`s2-pro`** (default) — highest quality, multi-speaker, natural-language expression control.
+- **`s1`** — previous generation, `(parenthesis)` emotion tags.
+
+In the API, select with the `model` request header. In Python, pass `model="s2-pro"`. See [Choosing a Model](/developer-guide/models-pricing/choosing-a-model).
+
+### Output formats
+
+`mp3` (default), `wav`, `pcm`, `opus`. Set `format` (and optionally `mp3_bitrate`, `sample_rate`).
+
+<CodeGroup>
+```python Python
+from fishaudio.types import TTSConfig
+
+audio = client.tts.convert(
+    text="High quality",
+    config=TTSConfig(format="wav", sample_rate=44100),
+)
+```
+
+```bash API (curl)
+curl --request POST https://api.fish.audio/v1/tts \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --header "model: s2-pro" \
+  --data '{ "text": "High quality", "format": "wav", "sample_rate": 44100 }' \
+  --output out.wav
+```
+</CodeGroup>
+
+### Speed & prosody
+
+Adjust speech speed (0.5–2.0) and volume.
+
+<CodeGroup>
+```python Python
+audio = client.tts.convert(text="Speaking faster.", speed=1.5)
+```
+
+```bash API (curl)
+curl --request POST https://api.fish.audio/v1/tts \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --header "model: s2-pro" \
+  --data '{ "text": "Speaking faster.", "prosody": { "speed": 1.5 } }' \
+  --output out.mp3
+```
+</CodeGroup>
+
+### Generation methods (Python)
+
+The Python SDK exposes three ways to generate, depending on whether you have the full text upfront and how you want to consume the audio:
+
+| Method | Returns | Use it for |
+|---|---|---|
+| `tts.convert()` | complete audio `bytes` | most cases — you have the text, you want the file |
+| `tts.stream()` | `AudioStream` (iterate chunks, or `.collect()`) | memory-efficient transfer of large audio; write chunks to disk as they arrive |
+| `tts.stream_websocket()` | iterator of audio `bytes` | text arriving in real time (LLM tokens, live captions) |
+
+```python
+# Memory-efficient: write each chunk as it arrives instead of buffering
+audio_stream = client.tts.stream(text="A very long passage...")
+with open("out.mp3", "wb") as f:
+    for chunk in audio_stream:
+        f.write(chunk)
+```
+
+For real-time text streaming with `stream_websocket()`, see [Realtime Streaming](/features/realtime-streaming).
+
+### Instant voice cloning (reference audio)
+
+Instead of a saved `reference_id`, pass raw audio plus its transcript to clone a voice on the fly — no training step. Best with a clean 10–30s sample.
+
+```python
+from fishaudio.types import ReferenceAudio
+
+with open("sample.wav", "rb") as f:
+    audio = client.tts.convert(
+        text="Spoken in the reference voice.",
+        references=[ReferenceAudio(audio=f.read(), text="Transcript of the sample.")],
+    )
+```
+
+To reuse a voice across many requests, [clone it once](/features/voice-cloning) and pass the resulting `reference_id` instead.
+
+### Format & bitrate
+
+Pick a format for your delivery channel, and tune bitrate to trade size against quality:
+
+| Format | Notes |
+|---|---|
+| `mp3` (default) | good size/quality balance; set `mp3_bitrate` to `64`, `128`, or `192` |
+| `wav` | uncompressed, highest quality; set `sample_rate` (e.g. `44100`) |
+| `pcm` | raw samples, no container — for low-latency playback and telephony pipelines |
+| `opus` | efficient for streaming; bitrate is automatic (`opus_bitrate=-1000`) |
+
+```python
+from fishaudio.types import TTSConfig
+
+audio = client.tts.convert(
+    text="Smaller file, lower bitrate.",
+    config=TTSConfig(format="mp3", mp3_bitrate=64),
+)
+```
+
+### Latency & chunk length
+
+`latency` trades stability for speed; `chunk_length` controls how much text the engine batches before it starts generating.
+
+- `latency="balanced"` (default) — lower time-to-first-audio (~300ms). Good for interactive use.
+- `latency="normal"` — most stable output, at slightly higher latency.
+- `chunk_length` (`100`–`300`, default `200`) — smaller chunks start audio sooner; larger chunks are more efficient for long text.
+
+<CodeGroup>
+```python Python
+from fishaudio.types import TTSConfig
+
+audio = client.tts.convert(
+    text="Quick, responsive output.",
+    config=TTSConfig(latency="balanced", chunk_length=150),
+)
+```
+
+```bash API (curl)
+curl --request POST https://api.fish.audio/v1/tts \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --header "model: s2-pro" \
+  --data '{ "text": "Quick, responsive output.", "latency": "balanced", "chunk_length": 150 }' \
+  --output out.mp3
+```
+</CodeGroup>
+
+### Direct API (MessagePack)
+
+`POST /v1/tts` also accepts a MessagePack body (`Content-Type: application/msgpack`) — the path the [API reference](/api-reference/endpoint/openapi-v1/text-to-speech) is built around. Use it to send binary reference audio in the request without base64 overhead, or when you don't want the SDK.
+
+```python
+import os
+import httpx
+import ormsgpack
+
+payload = {"text": "Hello from the direct API.", "reference_id": "YOUR_VOICE_ID", "format": "mp3"}
+
+resp = httpx.post(
+    "https://api.fish.audio/v1/tts",
+    content=ormsgpack.packb(payload),
+    headers={
+        "Authorization": f"Bearer {os.environ['FISH_API_KEY']}",
+        "Content-Type": "application/msgpack",
+        "model": "s2-pro",
+    },
+)
+with open("out.mp3", "wb") as f:
+    f.write(resp.content)
+```
+
+The `model` header is required on every request. JSON and MessagePack accept the same fields.
+
+### Advanced generation tuning
+
+For finer control, `TTSConfig` exposes the model's sampling parameters. The defaults are well-tuned — reach for these only when you need to dial in determinism or curb artifacts.
+
+```python
+from fishaudio.types import TTSConfig, Prosody
+
+config = TTSConfig(
+    prosody=Prosody(speed=1.1, volume=0),
+    temperature=0.7,            # lower = more deterministic
+    top_p=0.7,
+    repetition_penalty=1.2,     # >1.0 curbs repeated sounds
+    max_new_tokens=1024,        # cap audio length per chunk
+    normalize=True,             # expand numbers/dates for natural reading
+)
+
+audio = client.tts.convert(text="Carefully tuned output.", config=config)
+```
+
+A `TTSConfig` is reusable — define it once and pass it to many `convert()` calls. See the [full field list](/api-reference/sdk/python/types#ttsconfig-objects) for every parameter and default.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Stream as it generates" icon="bolt" href="/features/realtime-streaming">
+    Lowest latency for conversational and live apps.
+  </Card>
+  <Card title="Emotion & expression" icon="face-smile" href="/developer-guide/core-features/emotions">
+    Direct delivery with tags and prosody.
+  </Card>
+  <Card title="Full API parameters" icon="book-open" href="/api-reference/endpoint/openapi-v1/text-to-speech">
+    Every field, type, and default.
+  </Card>
+  <Card title="Python reference" icon="python" href="/api-reference/sdk/python/resources">
+    `tts.convert` / `stream` / `stream_websocket`.
+  </Card>
+</CardGroup>

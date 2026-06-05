@@ -54,6 +54,37 @@ async def main():
 
 asyncio.run(main())
 ```
+
+```javascript JavaScript
+import { FishAudioClient } from "fish-audio";
+import { readFile, writeFile } from "fs/promises";
+
+const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+const reference = new File(
+  [await readFile("reference.wav")],
+  "reference.wav",
+);
+
+const stream = await client.textToSpeech.convert(
+  {
+    text: "This sentence is spoken in the cloned voice.",
+    references: [
+      {
+        audio: reference,
+        text: "Exact transcript of what is said in reference.wav.",
+      },
+    ],
+    format: "mp3",
+  },
+  "s2-pro",
+);
+
+const chunks = [];
+for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+
+await writeFile("cloned.mp3", Buffer.concat(chunks));
+```
 </CodeGroup>
 
 <Tip>
@@ -63,7 +94,7 @@ asyncio.run(main())
 
 ## Reuse a voice across many requests
 
-If you'll use the voice repeatedly, create a persistent model once and pass its id as `reference_id` — see the [Voice Cloning guide](/developer-guide/sdk-guide/python/voice-cloning).
+If you'll use the voice repeatedly, create a persistent model once and pass its id as `reference_id` — see the [Voice Cloning guide](/features/voice-cloning).
 
 ```python
 with open("sample.wav", "rb") as f:
@@ -74,5 +105,5 @@ audio = client.tts.convert(text="Reusing my saved voice.", reference_id=voice.id
 
 ## Related
 
-- [Voice Cloning guide](/developer-guide/sdk-guide/python/voice-cloning)
+- [Voice Cloning guide](/features/voice-cloning)
 - [Stream TTS to a file](/developer-guide/sdk-guide/cookbook/streaming-to-file)

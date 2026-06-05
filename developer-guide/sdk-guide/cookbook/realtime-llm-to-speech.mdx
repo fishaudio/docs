@@ -40,7 +40,7 @@ async def llm_tokens():
 
 async def main():
     async with AsyncFishAudio() as client:
-        audio_stream = await client.tts.stream_websocket(llm_tokens())
+        audio_stream = client.tts.stream_websocket(llm_tokens())
         with open("out.mp3", "wb") as f:
             async for chunk in audio_stream:
                 f.write(chunk)
@@ -71,5 +71,5 @@ The SDK sends the start/stop frames for you — you only supply text and optiona
 
 ## Related
 
-- [Realtime WebSocket guide](/developer-guide/sdk-guide/python/websocket)
+- [Realtime WebSocket guide](/features/realtime-streaming)
 - [Errors & Retries](/developer-guide/sdk-guide/python/errors)

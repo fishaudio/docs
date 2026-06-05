@@ -1,0 +1,104 @@
+---
+title: "Errors"
+description: "HTTP status codes, the error response shape, and how to handle them in any language"
+icon: "triangle-exclamation"
+---
+
+Every Fish Audio error comes back as JSON with a `message` and a `status`:
+
+```json
+{ "message": "Invalid Token", "status": 401 }
+```
+
+(A request whose body can't be parsed returns a plain-text parse error instead.)
+
+## Status codes
+
+| Status | Meaning | What to do |
+|---|---|---|
+| `400` | Bad request — invalid parameters, or a `reference_id` / voice that doesn't exist | Fix the request; read the `message`. |
+| `401` | Invalid or missing API key | Send `Authorization: Bearer <key>`; check it on [API Keys](https://fish.audio/app/api-keys). |
+| `402` | Insufficient credits | Top up on [Billing](https://fish.audio/app/billing). |
+| `403` | Not permitted for this key/resource | Check the key's scope and the resource owner. |
+| `404` | Model or voice not found | Verify the `model_id` / `reference_id`. |
+| `429` | Rate limit exceeded | Back off and retry (see below). |
+| `5xx` | Server error | Retry with backoff; if it persists, contact support. |
+
+## Retries
+
+Retry `429` and `5xx` with exponential backoff. Don't retry other `4xx` codes — they won't succeed without a change to the request.
+
+```python
+import time
+from fishaudio import FishAudio
+from fishaudio.exceptions import RateLimitError, APIError
+
+client = FishAudio()
+
+for attempt in range(5):
+    try:
+        audio = client.tts.convert(text="Hello!")
+        break
+    except RateLimitError:
+        time.sleep(2 ** attempt)            # 1s, 2s, 4s, ...
+    except APIError as e:
+        if e.status >= 500:
+            time.sleep(2 ** attempt)
+        else:
+            raise                            # 4xx — fix the request
+```
+
+## Handling errors in the SDKs
+
+Both SDKs raise typed exceptions you can branch on. The base class carries the status and the parsed body.
+
+<CodeGroup>
+```python Python
+from fishaudio.exceptions import (
+    AuthenticationError,  # 401
+    RateLimitError,       # 429
+    NotFoundError,        # 404
+    APIError,             # any other HTTP error — has .status and .message
+    FishAudioError,       # base class for all SDK errors
+)
+
+try:
+    audio = client.tts.convert(text="Hello!")
+except AuthenticationError:
+    ...  # invalid or missing key
+except RateLimitError:
+    ...  # back off and retry
+except NotFoundError:
+    ...  # bad reference_id / model id
+except APIError as e:
+    print(e.status, e.message)  # 400, 402, 5xx, ...
+```
+
+```javascript JavaScript
+import {
+  UnauthorizedError,         // 401
+  TooEarlyError,             // 429
+  NotFoundError,             // 404
+  BadRequestError,           // 400
+  UnprocessableEntityError,  // 422
+  FishAudioError,            // base — has .statusCode and .body
+} from "fish-audio";
+
+try {
+  await client.textToSpeech.convert({ text: "Hello!" }, "s2-pro");
+} catch (err) {
+  if (err instanceof UnauthorizedError) {
+    // invalid or missing key
+  } else if (err instanceof TooEarlyError) {
+    // back off and retry
+  } else if (err instanceof FishAudioError) {
+    console.error(err.statusCode, err.body);
+  }
+}
+```
+</CodeGroup>
+
+<Note>
+  Audio playback via `play()` needs `ffmpeg`. If it's missing, the Python SDK raises
+  `DependencyError` — install `ffmpeg` or save the audio to a file instead.
+</Note>

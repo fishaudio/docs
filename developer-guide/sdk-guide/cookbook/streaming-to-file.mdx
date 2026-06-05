@@ -38,6 +38,26 @@ async def main():
 
 asyncio.run(main())
 ```
+
+```javascript JavaScript
+import { FishAudioClient } from "fish-audio";
+import { createWriteStream } from "fs";
+
+const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+// convert() returns a ReadableStream<Uint8Array>. Iterate it and write each
+// chunk as it arrives, so you never hold the whole file in memory.
+const stream = await client.textToSpeech.convert(
+  { text: "A very long passage of text...", format: "mp3" },
+  "s2-pro"
+);
+
+const file = createWriteStream("output.mp3");
+for await (const chunk of stream) {
+  file.write(Buffer.from(chunk));
+}
+file.end();
+```
 </CodeGroup>
 
 ## Collect instead of iterate
@@ -56,5 +76,5 @@ audio = client.tts.stream(text="Hello!").collect()  # -> bytes
 
 ## Related
 
-- [Text-to-Speech guide](/developer-guide/sdk-guide/python/text-to-speech)
+- [Text-to-Speech guide](/features/text-to-speech)
 - [Realtime: LLM tokens → speech](/developer-guide/sdk-guide/cookbook/realtime-llm-to-speech)

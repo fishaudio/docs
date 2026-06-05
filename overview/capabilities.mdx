@@ -1,44 +1,55 @@
 ---
-title: "Capabilities"
-description: "Everything Fish Audio can do — text-to-speech, speech-to-text, voice cloning, and more"
-icon: "shapes"
+title: "Overview"
+sidebarTitle: "Overview"
+description: "Everything Fish Audio can do — and how to build with it"
+icon: "house"
 ---
 
-Fish Audio is a voice AI platform. Every capability is available three ways: in the [web app](/overview/platform) (no code), through the [REST API](/api-reference/introduction), and via the official [SDKs](/developer-guide/sdk-guide/quickstart).
+Fish Audio is a voice AI platform. Every core feature is available three ways: in the [web app](/overview/platform) (no code), through the [REST API](/api-reference/introduction), and via the official [SDK](/developer-guide/sdk-guide/quickstart).
 
-## Browse by capability
+## Core features
 
 <CardGroup cols={2}>
-  <Card title="Text-to-Speech" icon="microphone" href="/developer-guide/core-features/text-to-speech">
-    Convert text into lifelike speech with the S2-Pro and S1 models, in many languages.
+  <Card title="Text to Speech" icon="microphone" href="/features/text-to-speech">
+    Convert text into lifelike speech with the `s2-pro` and `s1` models.
   </Card>
 
-  <Card title="Speech-to-Text" icon="waveform" href="/developer-guide/core-features/speech-to-text">
-    Transcribe audio to text with word-level timestamps.
+  <Card title="Speech to Text" icon="waveform" href="/features/speech-to-text">
+    Transcribe audio to text with per-segment timestamps.
   </Card>
 
-  <Card title="Voice Cloning" icon="clone" href="/developer-guide/products/voice-cloning">
-    Clone a voice instantly from a short clip, or create a persistent voice model.
+  <Card title="Voice Cloning" icon="clone" href="/features/voice-cloning">
+    Clone a voice instantly from a clip, or train a persistent model.
   </Card>
 
+  <Card title="Realtime Streaming" icon="bolt" href="/features/realtime-streaming">
+    Stream audio as it generates — for voice agents and live apps.
+  </Card>
+
+  <Card title="Manage Voices" icon="sliders" href="/features/manage-voices">
+    List, inspect, update, and delete your voice models.
+  </Card>
+</CardGroup>
+
+## Also in the web app
+
+These run in the browser, no code required — see the [Platform guide](/overview/platform).
+
+<CardGroup cols={2}>
   <Card title="Voice Changer" icon="wand-magic-sparkles" href="/overview/platform">
     Transform existing audio into a different voice.
   </Card>
 
-  <Card title="Story Studio" icon="book-open" href="/developer-guide/products/story-studio">
-    Produce multi-speaker, long-form audio — audiobooks, dialogue, and narration.
-  </Card>
-
-  <Card title="Emotion & Expression" icon="face-smile" href="/developer-guide/core-features/emotions">
-    Direct delivery with emotion tags and fine-grained prosody control.
+  <Card title="Story Studio" icon="book-open" href="/overview/platform">
+    Produce multi-speaker, long-form audio — audiobooks and narration.
   </Card>
 
   <Card title="Music & Sound Effects" icon="music" href="/overview/platform">
     Generate music and cinematic sound effects from a prompt.
   </Card>
 
-  <Card title="Audio Tools" icon="scissors" href="/overview/platform">
-    Audio separation and related processing utilities.
+  <Card title="Audio Separation" icon="scissors" href="/overview/platform">
+    Split audio into stems, and related processing utilities.
   </Card>
 </CardGroup>
 
@@ -53,16 +64,20 @@ See [Models Overview](/developer-guide/models-pricing/models-overview) and [Choo
 
 ## Pick your path
 
-<CardGroup cols={3}>
+<CardGroup cols={2}>
   <Card title="Use the web app" icon="browser" href="/overview/platform">
     No code — generate audio, clone voices, and produce projects in your browser.
   </Card>
 
-  <Card title="Build with an SDK" icon="code" href="/developer-guide/sdk-guide/quickstart">
-    Python and JavaScript libraries for your application.
+  <Card title="Build with the SDK" icon="code" href="/developer-guide/sdk-guide/quickstart">
+    The Python library for your application.
   </Card>
 
   <Card title="Call the API" icon="terminal" href="/api-reference/introduction">
     Raw REST and WebSocket endpoints for any language.
+  </Card>
+
+  <Card title="Use your AI coding agent" icon="robot" href="/developer-guide/resources/coding-agents">
+    Install the Fish Audio skill so your agent writes correct code.
   </Card>
 </CardGroup>

@@ -1,0 +1,135 @@
+---
+title: "Clone a voice and wait until it is ready"
+description: "Create a persistent voice from a reference clip, poll until training finishes, then synthesize with it"
+icon: "clock"
+---
+
+import Prerequisites from "/snippets/prerequisites.mdx";
+
+A persistent voice is trained asynchronously: `voices.create()` returns immediately with a voice whose `state` is `created` or `training`. Before you can synthesize with it, you need to wait until its `state` becomes `trained`.
+
+This recipe creates a voice from `reference.wav`, polls [`voices.get()`](/api-reference/sdk/python/resources#get) until training finishes (with a timeout), then synthesizes with `reference_id`.
+
+## Prerequisites
+
+<Prerequisites />
+
+## Recipe
+
+Poll `voices.get(voice.id).state` on an interval, stopping when it reaches `trained` (or raising if it `failed` or the timeout elapses). Then pass the voice id as `reference_id` on `convert()`.
+
+<CodeGroup>
+```python Synchronous
+import time
+
+from fishaudio import FishAudio
+from fishaudio.utils import save
+
+client = FishAudio()
+
+# 1. Create a persistent voice from a reference clip.
+with open("reference.wav", "rb") as f:
+    voice = client.voices.create(title="My Voice", voices=[f.read()])
+
+# 2. Poll until the voice finishes training.
+deadline = time.time() + 300  # 5-minute timeout
+while voice.state != "trained":
+    if voice.state == "failed":
+        raise RuntimeError(f"Voice {voice.id} failed to train")
+    if time.time() > deadline:
+        raise TimeoutError(f"Voice {voice.id} not ready (state={voice.state})")
+    time.sleep(5)
+    voice = client.voices.get(voice.id)
+
+# 3. Synthesize with the trained voice.
+audio = client.tts.convert(
+    text="My voice is ready to use.",
+    reference_id=voice.id,
+)
+save(audio, "out.mp3")
+```
+
+```python Asynchronous
+import asyncio
+
+from fishaudio import AsyncFishAudio
+from fishaudio.utils import save
+
+
+async def main():
+    async with AsyncFishAudio() as client:
+        # 1. Create a persistent voice from a reference clip.
+        with open("reference.wav", "rb") as f:
+            voice = await client.voices.create(title="My Voice", voices=[f.read()])
+
+        # 2. Poll until the voice finishes training.
+        deadline = asyncio.get_event_loop().time() + 300  # 5-minute timeout
+        while voice.state != "trained":
+            if voice.state == "failed":
+                raise RuntimeError(f"Voice {voice.id} failed to train")
+            if asyncio.get_event_loop().time() > deadline:
+                raise TimeoutError(f"Voice {voice.id} not ready (state={voice.state})")
+            await asyncio.sleep(5)
+            voice = await client.voices.get(voice.id)
+
+        # 3. Synthesize with the trained voice.
+        audio = await client.tts.convert(
+            text="My voice is ready to use.",
+            reference_id=voice.id,
+        )
+    save(audio, "out.mp3")
+
+
+asyncio.run(main())
+```
+
+```javascript JavaScript
+import { readFile, writeFile } from "fs/promises";
+
+import { FishAudioClient } from "fish-audio";
+
+const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+// 1. Create a persistent voice from a reference clip.
+const sample = new File([await readFile("reference.wav")], "reference.wav");
+let voice = await client.voices.ivc.create({
+  title: "My Voice",
+  visibility: "private",
+  voices: [sample],
+});
+
+// 2. Poll until the voice finishes training.
+const deadline = Date.now() + 300_000; // 5-minute timeout
+while (voice.state !== "trained") {
+  if (voice.state === "failed") {
+    throw new Error(`Voice ${voice._id} failed to train`);
+  }
+  if (Date.now() > deadline) {
+    throw new Error(`Voice ${voice._id} not ready (state=${voice.state})`);
+  }
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+  voice = await client.voices.get(voice._id);
+}
+
+// 3. Synthesize with the trained voice.
+const stream = await client.textToSpeech.convert(
+  { text: "My voice is ready to use.", reference_id: voice._id },
+  "s2-pro",
+);
+const chunks = [];
+for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+await writeFile("out.mp3", Buffer.concat(chunks));
+```
+</CodeGroup>
+
+A voice moves through `created` → `training` → `trained`, or ends in `failed`. Always handle `failed` and the timeout so a stuck voice cannot loop forever.
+
+<Tip>
+  Training a persistent voice takes time, so only create one when you will reuse the voice across many requests. For one-off synthesis, skip the wait entirely and pass a `ReferenceAudio` inline — see [Instant voice cloning](/developer-guide/sdk-guide/cookbook/instant-voice-cloning).
+</Tip>
+
+## Related
+
+- [Instant voice cloning](/developer-guide/sdk-guide/cookbook/instant-voice-cloning)
+- [Voice Cloning guide](/features/voice-cloning)
+- [Voices API reference](/api-reference/sdk/python/resources#voices)
