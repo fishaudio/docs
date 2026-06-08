@@ -13,6 +13,10 @@ You can generate a new API key at [https://fish.audio/app/api-keys/](https://fis
 
 See our [Quick Start](/developer-guide/getting-started/quickstart) guide to generate audio in under 2 minutes.
 
+## Errors
+
+Every error returns a JSON body with a `message` and a `status`. See [Errors](/api-reference/errors) for the full status-code table, retry guidance, and SDK exception handling.
+
 ## OpenAPI Schema
 
 Fish Audio publishes a canonical OpenAPI schema at [https://api.fish.audio/openapi.json](https://api.fish.audio/openapi.json).
@@ -28,7 +32,7 @@ Use our [/v1/tts endpoint](/api-reference/endpoint/openapi-v1/text-to-speech) to
 
 ## Real-time Streaming
 
-Use our [Python SDK](/developer-guide/sdk-guide/python/websocket) or [JavaScript SDK](/developer-guide/sdk-guide/javascript/websocket) for real-time audio streaming with WebSocket.
+Use our [Python SDK](/features/realtime-streaming) or [JavaScript SDK](/features/realtime-streaming) for real-time audio streaming with WebSocket.
 
 ## Rate Limits
 

@@ -1,0 +1,98 @@
+---
+title: "SDK Quickstart"
+description: "Install a Fish Audio SDK, authenticate, and generate your first audio in under a minute"
+icon: "rocket"
+---
+
+import Prerequisites from "/snippets/prerequisites.mdx";
+
+The fastest path from zero to playable audio with the official Fish Audio SDKs. By the end you'll have a script that turns text into an MP3.
+
+<Note>
+  The Python SDK is the recommended starting point and is fully covered below.
+  The JavaScript SDK is in early release — see the [JavaScript SDK
+  guide](/api-reference/sdk/javascript/api-reference) for its current
+  surface.
+</Note>
+
+## 1. Install
+
+<CodeGroup>
+```bash Python
+pip install fish-audio-sdk
+
+# optional: local audio playback (needs ffmpeg)
+pip install "fish-audio-sdk[utils]"
+```
+
+```bash JavaScript
+npm install fish-audio
+```
+</CodeGroup>
+
+## 2. Authenticate
+
+<Prerequisites />
+
+Both SDKs read your key from the `FISH_API_KEY` environment variable:
+
+```bash
+export FISH_API_KEY=your_api_key_here
+```
+
+## 3. Generate your first audio
+
+<CodeGroup>
+```python Python
+from fishaudio import FishAudio
+from fishaudio.utils import save
+
+client = FishAudio()  # reads FISH_API_KEY
+
+audio = client.tts.convert(text="Hello from Fish Audio!")
+save(audio, "output.mp3")
+```
+
+```typescript JavaScript
+import { FishAudioClient, play } from "fish-audio";
+
+const client = new FishAudioClient(); // reads FISH_API_KEY
+const audio = await client.textToSpeech.convert({ text: "Hello from Fish Audio!" });
+await play(audio);
+```
+</CodeGroup>
+
+Run it, and you'll have `output.mp3` (Python) or local playback (JavaScript). That's it — you're generating speech.
+
+<Tip>
+  Want async in Python? Every method mirrors onto `AsyncFishAudio`: `async with
+  AsyncFishAudio() as client: audio = await client.tts.convert(text="...")`.
+</Tip>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Text-to-Speech" icon="microphone" href="/features/text-to-speech">
+    Voices, formats, prosody, and model selection
+  </Card>
+
+  <Card title="Voice Cloning" icon="clone" href="/features/voice-cloning">
+    Instant cloning and persistent voice models
+  </Card>
+
+  <Card title="Realtime WebSocket" icon="bolt" href="/features/realtime-streaming">
+    Stream LLM tokens to speech as they arrive
+  </Card>
+
+  <Card title="Errors & Retries" icon="triangle-exclamation" href="/developer-guide/sdk-guide/python/errors">
+    Exception types, retries, and timeouts
+  </Card>
+
+  <Card title="Cookbook" icon="book" href="/developer-guide/sdk-guide/cookbook/streaming-to-file">
+    Task-focused recipes
+  </Card>
+
+  <Card title="API Reference" icon="book-open" href="/api-reference/sdk/python/overview">
+    Full Python SDK reference
+  </Card>
+</CardGroup>

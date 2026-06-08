@@ -90,7 +90,7 @@ Choose your preferred method to generate speech:
         from fishaudio.utils import save
 
         # Initialize with your API key
-        client = FishAudio(api_key="your_api_key_here")
+        client = FishAudio()  # reads FISH_API_KEY
 
         # Generate speech
         audio = client.tts.convert(text="Hello! Welcome to Fish Audio.")
@@ -182,6 +182,17 @@ Choose your preferred method to generate speech:
   </Tab>
 </Tabs>
 
+## If your first request fails
+
+| Status | Likely cause | Fix |
+|---|---|---|
+| `401` | Invalid or missing API key | Check `FISH_API_KEY` and your key on [API Keys](https://fish.audio/app/api-keys). |
+| `402` | Out of credits | Top up on [Billing](https://fish.audio/app/billing). |
+| `400` | Bad `reference_id` / parameters | Verify the voice id; read the error `message`. |
+| `429` | Rate limit | Wait and retry with backoff. |
+
+See [Errors](/api-reference/errors) for the full table and retry handling.
+
 ## Customizing Your Voice
 
 The examples above use the default voice. To use a different voice, add the `reference_id` parameter with a model ID from [fish.audio](https://fish.audio). You can find the model ID in the URL or use the copy button when viewing any voice.
@@ -214,7 +225,7 @@ Then generate speech with your chosen voice:
     curl -X POST https://api.fish.audio/v1/tts \
       -H "Authorization: Bearer $FISH_API_KEY" \
       -H "Content-Type: application/json" \
-      -H "model: s2" \
+      -H "model: s2-pro" \
       -d '{
         "text": "This is a custom voice from Fish Audio! You can explore hundreds of different voices on the platform, or even create your own.",
         "reference_id": "'"$REFERENCE_ID"'",
@@ -230,7 +241,7 @@ Then generate speech with your chosen voice:
     from fishaudio import FishAudio
     from fishaudio.utils import save
 
-    client = FishAudio(api_key="your_api_key_here")
+    client = FishAudio()  # reads FISH_API_KEY
 
     # Generate speech with custom voice
     audio = client.tts.convert(

@@ -1,0 +1,123 @@
+---
+title: "Build a voice agent loop: speech in, reply, speech out"
+description: "Transcribe an utterance, generate a reply with your own LLM, and stream that reply back out as speech"
+icon: "comments"
+---
+
+import Prerequisites from "/snippets/prerequisites.mdx";
+
+## Prerequisites
+
+<Prerequisites />
+
+## Recipe
+
+A voice agent is three stages chained together: [`asr.transcribe()`](/api-reference/sdk/python/resources#transcribe) turns the caller's audio into text, your own LLM turns that text into a reply, and [`tts.stream()`](/api-reference/sdk/python/resources#stream) turns the reply back into speech. The transcript and the reply are just strings, so the only Fish Audio-specific parts are the first and last calls. Streaming the reply lets you start writing (or forwarding) audio before the whole sentence is synthesized.
+
+<CodeGroup>
+```python Synchronous
+from fishaudio import FishAudio
+from fishaudio.utils import save
+
+client = FishAudio()
+
+def reply_from_llm(text: str) -> str:
+    # ---- PLACEHOLDER ----
+    # Call your own LLM here and return its reply as a string.
+    # e.g. return openai_client.chat.completions.create(...).choices[0].message.content
+    return f"You said: {text}. How can I help?"
+
+def voice_agent_turn(audio_path: str, out_path: str) -> str:
+    with open(audio_path, "rb") as f:
+        heard = client.asr.transcribe(audio=f.read())
+
+    reply = reply_from_llm(heard.text)
+
+    audio_stream = client.tts.stream(text=reply, reference_id="<voice-id>")
+    save(audio_stream, out_path)  # writes chunks as they arrive
+    return reply
+
+reply = voice_agent_turn("speech.wav", "reply.mp3")
+print("Agent:", reply)
+```
+
+```python Asynchronous
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.utils import save
+
+def reply_from_llm(text: str) -> str:
+    # ---- PLACEHOLDER ----
+    # Call your own LLM here and return its reply as a string.
+    return f"You said: {text}. How can I help?"
+
+async def main():
+    async with AsyncFishAudio() as client:
+        with open("speech.wav", "rb") as f:
+            heard = await client.asr.transcribe(audio=f.read())
+
+        reply = reply_from_llm(heard.text)
+
+        audio_stream = await client.tts.stream(text=reply, reference_id="<voice-id>")
+        with open("reply.mp3", "wb") as out:
+            async for chunk in audio_stream:
+                out.write(chunk)
+        print("Agent:", reply)
+
+asyncio.run(main())
+```
+
+```javascript JavaScript
+import { FishAudioClient } from "fish-audio";
+import { readFile, writeFile } from "fs/promises";
+
+const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+function replyFromLlm(text) {
+  // ---- PLACEHOLDER ----
+  // Call your own LLM here and return its reply as a string.
+  // e.g. return openaiClient.chat.completions.create(...).choices[0].message.content
+  return `You said: ${text}. How can I help?`;
+}
+
+async function voiceAgentTurn(audioPath, outPath) {
+  const heard = await client.speechToText.convert({
+    audio: new File([await readFile(audioPath)], audioPath),
+    language: "en",
+  });
+
+  const reply = replyFromLlm(heard.text);
+
+  const stream = await client.textToSpeech.convert(
+    { text: reply, reference_id: "<voice-id>", format: "mp3" },
+    "s2-pro"
+  );
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+  await writeFile(outPath, Buffer.concat(chunks));
+  return reply;
+}
+
+const reply = await voiceAgentTurn("speech.wav", "reply.mp3");
+console.log("Agent:", reply);
+```
+</CodeGroup>
+
+`heard` is an [`ASRResponse`](/api-reference/sdk/python/types#asrresponse-objects): `heard.text` is the full transcript and `heard.duration` is the clip length in seconds. Pass `language="en"` to `transcribe()` to skip auto-detection when you already know the input language.
+
+<Tip>
+  For the lowest latency, feed your LLM's token stream straight into
+  [`stream_websocket()`](/api-reference/sdk/python/resources#stream_websocket)
+  instead of waiting for the full reply string — see
+  [Realtime: LLM tokens → speech](/developer-guide/sdk-guide/cookbook/realtime-llm-to-speech).
+</Tip>
+
+## Reply in the caller's voice
+
+`reference_id` points the reply at a saved voice. Drop it to use the default voice, or clone the caller's voice from the same clip you just transcribed by passing `references` instead — see [Instant voice cloning](/developer-guide/sdk-guide/cookbook/instant-voice-cloning).
+
+## Related
+
+- [Speech-to-Text guide](/features/speech-to-text)
+- [Realtime: LLM tokens → speech](/developer-guide/sdk-guide/cookbook/realtime-llm-to-speech)
+- [Stream TTS to a file](/developer-guide/sdk-guide/cookbook/streaming-to-file)

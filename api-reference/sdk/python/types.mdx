@@ -57,7 +57,7 @@ Represents a TTS voice that can be used for synthesis.
 - `description` - Detailed description of the voice model
 - `cover_image` - URL to the voice model's cover image
 - `train_mode` - Training mode used. Options: "fast"
-- `state` - Current model state (e.g., "ready", "training", "failed")
+- `state` - Current model state: "created", "training", "trained", or "failed"
 - `tags` - List of tags for categorization (e.g., ["male", "english", "young"])
 - `samples` - List of audio samples demonstrating the voice
 - `created_at` - Timestamp when the model was created
@@ -378,12 +378,12 @@ Response from speech-to-text transcription.
 **Attributes**:
 
 - `text` - Complete transcription of the entire audio
-- `duration` - Total audio duration in milliseconds
+- `duration` - Total audio duration in seconds
 - `segments` - List of timestamped text segments. Empty if include_timestamps=False
 
 <a id="fishaudio.types.asr.ASRResponse.duration"></a>
 
 #### duration
 
-Duration in milliseconds
+Duration in seconds
 

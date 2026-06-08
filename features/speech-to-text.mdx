@@ -1,0 +1,212 @@
+---
+title: "Speech to Text"
+description: "Transcribe audio to text with per-segment timestamps"
+icon: "waveform"
+---
+
+Turn spoken audio into accurate text — with timed segments — using Fish Audio's ASR model. Send an audio file, get back the transcript, its duration, and timestamped segments. Works the same from the API directly, the Python library, or JavaScript.
+
+<CardGroup cols={3}>
+  <Card title="Use it in the web app" icon="browser" href="https://fish.audio/app/speech-to-text">
+    No code — upload audio, get a transcript.
+  </Card>
+  <Card title="API reference" icon="brackets-curly" href="/api-reference/endpoint/openapi-v1/speech-to-text">
+    Every parameter for `POST /v1/asr`.
+  </Card>
+  <Card title="Cookbooks" icon="book-open" href="/developer-guide/sdk-guide/cookbook/transcribe-to-captions">
+    Captions, batch transcription, and more.
+  </Card>
+</CardGroup>
+
+## When to use it
+
+<CardGroup cols={2}>
+  <Card title="Captions & subtitles" icon="closed-captioning">
+    Timed segments map straight to SRT/VTT cues.
+  </Card>
+  <Card title="Meeting & call notes" icon="users">
+    Transcribe recordings for summaries and search.
+  </Card>
+  <Card title="Voice commands & notes" icon="microphone-lines">
+    Turn short utterances into text your app can act on.
+  </Card>
+  <Card title="Accessibility" icon="universal-access">
+    Make audio and video content readable.
+  </Card>
+</CardGroup>
+
+## Quick start
+
+Read an audio file, send the bytes, get the transcript. Choose your implementation:
+
+<CodeGroup>
+```python Python
+from fishaudio import FishAudio
+
+client = FishAudio()  # reads FISH_API_KEY
+
+with open("speech.wav", "rb") as f:
+    result = client.asr.transcribe(audio=f.read(), language="en")
+
+print(result.text)
+```
+
+```bash API (curl)
+curl --request POST https://api.fish.audio/v1/asr \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --form audio=@speech.wav \
+  --form language=en
+```
+
+```javascript JavaScript
+import { FishAudioClient } from "fish-audio";
+import { readFile } from "fs/promises";
+
+const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+const result = await client.speechToText.convert({
+  audio: new File([await readFile("speech.wav")], "speech.wav"),
+  language: "en",
+});
+
+console.log(result.text);
+```
+</CodeGroup>
+
+The response gives you the full `text`, the audio `duration` in seconds, and timed `segments`.
+
+## Read the timestamps
+
+Each segment carries `start` and `end` times in seconds — ideal for captions. With the API, ask for them explicitly with `ignore_timestamps=false`.
+
+<CodeGroup>
+```python Python
+result = client.asr.transcribe(audio=audio_bytes, language="en", include_timestamps=True)
+
+print(f"{result.duration:.1f}s total")
+for seg in result.segments:
+    print(f"[{seg.start:6.2f} - {seg.end:6.2f}] {seg.text}")
+```
+
+```bash API (curl)
+curl --request POST https://api.fish.audio/v1/asr \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --form audio=@speech.wav \
+  --form language=en \
+  --form ignore_timestamps=false | jq '.segments'
+
+# Each segment: { "text": "One", "start": 0.0, "end": 0.24 }
+```
+</CodeGroup>
+
+<Note>
+  In the Python SDK, segment timestamps are **on by default** — pass `include_timestamps=False` to skip them. That's the *inverse* of the API/JavaScript flag `ignore_timestamps`.
+</Note>
+
+## Implementation details
+
+### Language
+
+`language` is optional — Fish Audio auto-detects it when you omit it. Pass an ISO code (`en`, `zh`, `ja`, …) to pin it and improve accuracy on short or noisy clips.
+
+<CodeGroup>
+```python Python
+# Auto-detect
+result = client.asr.transcribe(audio=audio_bytes)
+
+# Pin the language
+result = client.asr.transcribe(audio=audio_bytes, language="zh")
+```
+
+```bash API (curl)
+# Omit the form field to auto-detect, or set it explicitly:
+curl --request POST https://api.fish.audio/v1/asr \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --form audio=@speech.wav \
+  --form language=zh
+```
+</CodeGroup>
+
+### Input audio
+
+Common formats work directly — `wav`, `mp3`, `opus`, and more. Send the raw file bytes; no pre-processing required. The endpoint accepts `multipart/form-data` (shown above) or `application/msgpack`.
+
+### File limits
+
+One request transcribes one audio file. The endpoint accepts files up to **20 MB** and **60 minutes** long, with a minimum of **1 second** of audio. For longer recordings, split them into chunks and transcribe each, then stitch the segment timestamps back together (offset each chunk's `start`/`end` by where it began in the full recording).
+
+### Async transcription
+
+The Python SDK ships an async client with the same surface — useful when you're transcribing many files concurrently or already running inside an event loop. Use `AsyncFishAudio` and `await` the call:
+
+```python
+import asyncio
+from fishaudio import AsyncFishAudio
+
+async def main():
+    client = AsyncFishAudio()  # reads FISH_API_KEY
+    with open("speech.wav", "rb") as f:
+        result = await client.asr.transcribe(audio=f.read(), language="en")
+    print(result.text)
+
+asyncio.run(main())
+```
+
+To run several files in parallel, gather the coroutines:
+
+```python
+import asyncio
+from fishaudio import AsyncFishAudio
+
+async def transcribe_all(paths):
+    client = AsyncFishAudio()
+    clips = [open(p, "rb").read() for p in paths]
+    return await asyncio.gather(*[
+        client.asr.transcribe(audio=clip, language="en") for clip in clips
+    ])
+
+for result in asyncio.run(transcribe_all(["speech.wav"])):
+    print(result.text)
+```
+
+### Direct API (MessagePack)
+
+`POST /v1/asr` also accepts a [MessagePack](https://msgpack.org) body instead of multipart form data — the same path the API reference links to for low-overhead, server-side calls. Pack the audio bytes and options into one payload and set `Content-Type: application/msgpack`:
+
+```python
+import os
+import httpx
+import ormsgpack
+
+with open("speech.wav", "rb") as f:
+    audio = f.read()
+
+payload = {"audio": audio, "language": "en", "ignore_timestamps": False}
+
+resp = httpx.post(
+    "https://api.fish.audio/v1/asr",
+    content=ormsgpack.packb(payload),
+    headers={
+        "Authorization": f"Bearer {os.environ['FISH_API_KEY']}",
+        "Content-Type": "application/msgpack",
+    },
+)
+result = resp.json()
+print(result["text"])
+```
+
+The response shape is identical to the multipart path: `text`, `duration` (seconds), and `segments`.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Generate speech" icon="microphone" href="/features/text-to-speech">
+    The reverse direction — text to lifelike audio.
+  </Card>
+  <Card title="Full API parameters" icon="book-open" href="/api-reference/endpoint/openapi-v1/speech-to-text">
+    Every field and the raw response schema.
+  </Card>
+  <Card title="Python reference" icon="python" href="/api-reference/sdk/python/resources">
+    `asr.transcribe` options and the `ASRResponse` type.
+  </Card>
+</CardGroup>

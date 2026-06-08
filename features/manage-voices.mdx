@@ -1,0 +1,155 @@
+---
+title: "Manage Voices"
+description: "List, inspect, update, and delete your voice models"
+icon: "sliders"
+---
+
+Every voice you [clone](/features/voice-cloning) becomes a model you own. List your library, look up a model's details, rename or re-share it, and delete what you no longer need — all from the API directly, the Python library, or JavaScript.
+
+<CardGroup cols={3}>
+  <Card title="Use it in the web app" icon="browser" href="https://fish.audio/app/my-voices">
+    No code — manage voices in the browser.
+  </Card>
+  <Card title="API reference" icon="brackets-curly" href="/api-reference/endpoint/model/list-models">
+    Every endpoint for voice models.
+  </Card>
+  <Card title="Cookbooks" icon="book-open" href="/developer-guide/sdk-guide/cookbook/discover-library-voice">
+    Search and reuse Library voices.
+  </Card>
+</CardGroup>
+
+## When to use it
+
+<CardGroup cols={2}>
+  <Card title="Browse your library" icon="folder-open">
+    List the voices you've created or saved.
+  </Card>
+  <Card title="Find a voice id" icon="magnifying-glass">
+    Look up the `reference_id` to use in [Text to Speech](/features/text-to-speech).
+  </Card>
+  <Card title="Update metadata" icon="pen">
+    Rename, re-tag, or change a model's visibility.
+  </Card>
+  <Card title="Clean up" icon="trash">
+    Delete models you no longer use.
+  </Card>
+</CardGroup>
+
+## List your voices
+
+Page through your library. The response carries the `total` count and the `items` for the current page.
+
+<CodeGroup>
+```python Python
+from fishaudio import FishAudio
+
+client = FishAudio()  # reads FISH_API_KEY
+
+page = client.voices.list(self_only=True, page_size=20)
+
+print(f"{page.total} voices")
+for v in page.items:
+    print(v.id, v.title, v.state, v.visibility)
+```
+
+```bash API (curl)
+curl "https://api.fish.audio/model?self=true&page_size=20" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+
+# Response: { "total": 42, "items": [ ... ], "has_more": true }
+```
+
+```javascript JavaScript
+import { FishAudioClient } from "fish-audio";
+
+const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+const page = await client.voices.search({ page_size: 20 });
+
+console.log(`${page.total} voices`);
+for (const v of page.items) {
+  console.log(v._id ?? v.id, v.title, v.state, v.visibility);
+}
+```
+</CodeGroup>
+
+## Get, update, and delete
+
+Use a voice **id** to inspect a single model, change its metadata, or remove it.
+
+<CodeGroup>
+```python Python
+# Inspect one model
+voice = client.voices.get("YOUR_VOICE_ID")
+print(voice.title, voice.state)
+
+# Update metadata (only the fields you pass change)
+client.voices.update(
+    "YOUR_VOICE_ID",
+    title="Updated title",
+    visibility="unlist",
+)
+
+# Delete
+client.voices.delete("YOUR_VOICE_ID")
+```
+
+```bash API (curl)
+# Inspect one model
+curl https://api.fish.audio/model/YOUR_VOICE_ID \
+  --header "Authorization: Bearer $FISH_API_KEY"
+
+# Update metadata
+curl --request PATCH https://api.fish.audio/model/YOUR_VOICE_ID \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "title": "Updated title", "visibility": "unlist" }'
+
+# Delete
+curl --request DELETE https://api.fish.audio/model/YOUR_VOICE_ID \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+</CodeGroup>
+
+## Implementation details
+
+### Filtering and pagination
+
+Narrow the list with `title`, `tags`, or `language`, and page with `page_size` and `page_number`. Omit `self_only` (API: `self`) to search the public [Voice Library](/overview/platform) instead of just your own models.
+
+<CodeGroup>
+```python Python
+page = client.voices.list(
+    self_only=True,
+    title="narration",
+    page_size=50,
+    page_number=2,
+)
+```
+
+```bash API (curl)
+curl "https://api.fish.audio/model?self=true&title=narration&page_size=50&page_number=2" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+</CodeGroup>
+
+### Visibility
+
+Switch a model between `private`, `unlist` (shareable link), and `public` (listed in the Voice Library) with `update`. Publishing a model lets anyone use it as a `reference_id`.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Clone a voice" icon="clone" href="/features/voice-cloning">
+    Create a new model from audio samples.
+  </Card>
+  <Card title="Speak with a voice" icon="microphone" href="/features/text-to-speech">
+    Use any voice id as `reference_id`.
+  </Card>
+  <Card title="Voice Models API" icon="book-open" href="/api-reference/endpoint/model/list-models">
+    Every endpoint for listing and managing models.
+  </Card>
+  <Card title="Python reference" icon="python" href="/api-reference/sdk/python/resources">
+    The full `voices` resource surface.
+  </Card>
+</CardGroup>

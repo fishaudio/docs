@@ -1,0 +1,96 @@
+---
+title: "Discover and reuse a Voice Library voice"
+description: "Search the public Voice Library by title, pick a result, and synthesize speech with it as your reference_id"
+icon: "magnifying-glass"
+---
+
+import Prerequisites from "/snippets/prerequisites.mdx";
+
+## Prerequisites
+
+<Prerequisites />
+
+## Recipe
+
+Set `self_only=False` on [`voices.list()`](/api-reference/sdk/python/resources#list) to search the public [Voice Library](/features/manage-voices) instead of only your own models. The response carries `total` (matches across all pages) and `items` (this page). Pick a result's `id` and pass it straight to [`tts.convert()`](/api-reference/sdk/python/resources#convert) as `reference_id` — no cloning, no model to manage.
+
+<CodeGroup>
+```python Python
+from fishaudio import FishAudio
+from fishaudio.utils import save
+
+client = FishAudio()  # reads FISH_API_KEY
+
+# Search the public library by title (not just your own voices)
+page = client.voices.list(title="narration", self_only=False, page_size=10)
+print(f"{page.total} public voices match")
+
+# Pick the first result; fall back to a known id if the search is empty
+reference_id = "<voice-id>"
+for voice in page.items:
+    print(voice.id, voice.title, voice.languages)
+    reference_id = reference_id if reference_id != "<voice-id>" else voice.id
+
+# Synthesize with the discovered voice as the reference
+audio = client.tts.convert(
+    text="Speaking with a voice I found in the public library.",
+    reference_id=reference_id,
+)
+save(audio, "out.mp3")
+```
+
+```javascript JavaScript
+import { FishAudioClient } from "fish-audio";
+import { writeFile } from "fs/promises";
+
+const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+// Search the public Voice Library by title (not just your own voices)
+const page = await client.voices.search({ title: "narration", page_size: 10 });
+console.log(`${page.total} public voices match`);
+
+// Pick the first result; fall back to a known id if the search is empty
+let referenceId = "<voice-id>";
+for (const voice of page.items) {
+  console.log(voice._id, voice.title, voice.languages);
+  referenceId = referenceId !== "<voice-id>" ? referenceId : voice._id;
+}
+
+// Synthesize with the discovered voice as the reference
+const stream = await client.textToSpeech.convert(
+  {
+    text: "Speaking with a voice I found in the public library.",
+    reference_id: referenceId,
+    format: "mp3",
+  },
+  "s2-pro"
+);
+
+const chunks = [];
+for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+await writeFile("out.mp3", Buffer.concat(chunks));
+```
+</CodeGroup>
+
+`page.total` is the full match count, so `total > len(page.items)` tells you there are more pages — bump `page_number` to walk them. Any public voice `id` is a ready-to-use `reference_id`; nothing is saved to your account.
+
+You can hit the same endpoint directly:
+
+```bash
+curl "https://api.fish.audio/model?title=narration&page_size=10" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+
+# Response: { "total": 128, "items": [ { "_id": "...", "title": "...", ... } ] }
+```
+
+<Tip>
+  Title search is fuzzy and ranked by usage, so the top result is usually the
+  most popular match. Add `language=["en"]` to narrow by spoken language, or
+  raise `page_size` and page with `page_number` to scan deeper.
+</Tip>
+
+## Related
+
+- [Manage Voices](/features/manage-voices)
+- [Instant voice cloning](/developer-guide/sdk-guide/cookbook/instant-voice-cloning)
+- [Python reference: voices](/api-reference/sdk/python/resources)

@@ -1,0 +1,140 @@
+---
+title: "Errors & Retries"
+description: "Exception types, retry strategy, and timeouts in the Fish Audio Python SDK"
+icon: "triangle-exclamation"
+---
+
+import Prerequisites from "/snippets/prerequisites.mdx";
+
+## Prerequisites
+
+<Prerequisites />
+
+## Exception hierarchy
+
+Every SDK error inherits from [`FishAudioError`](/api-reference/sdk/python/exceptions#fishaudioerror-objects). HTTP failures raise [`APIError`](/api-reference/sdk/python/exceptions#apierror-objects) or one of its subclasses, which expose `.status`, `.message`, and `.body`.
+
+| Exception | Raised when | Notes |
+| --- | --- | --- |
+| `AuthenticationError` | `401` | Missing or invalid API key |
+| `PermissionError` | `403` | Key lacks permission for the resource |
+| `NotFoundError` | `404` | Voice model id not found |
+| `RateLimitError` | `429` | Rate limit / quota exceeded |
+| `ServerError` | `5xx` | Transient server-side failure |
+| `APIError` | any other non-2xx | Base for the above; `status == 422` for invalid parameters |
+| `WebSocketError` | realtime stream failed mid-session | Reconnect rather than retrying the same socket |
+| `DependencyError` | a required system tool is missing (e.g. ffmpeg for `play()`) | Carries `.dependency` and `.install_command` |
+
+<Warning>
+  There is no separate `ValidationError` raised at runtime. Invalid request
+  parameters come back as an `APIError` with `status == 422` — catch `APIError`,
+  not `ValidationError`.
+</Warning>
+
+## Handling errors
+
+<CodeGroup>
+```python Synchronous
+from fishaudio import FishAudio
+from fishaudio.exceptions import (
+    AuthenticationError,
+    RateLimitError,
+    NotFoundError,
+    APIError,
+    FishAudioError,
+)
+
+client = FishAudio()
+
+try:
+    audio = client.tts.convert(text="Hello!", reference_id="maybe-missing")
+except AuthenticationError:
+    print("Invalid API key")
+except RateLimitError:
+    print("Rate limited — back off and retry")
+except NotFoundError:
+    print("That voice model does not exist")
+except APIError as e:
+    print(f"API error {e.status}: {e.message}")  # includes 422 validation
+except FishAudioError as e:
+    print(f"SDK error: {e}")  # e.g. WebSocketError, DependencyError
+```
+
+```python Asynchronous
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.exceptions import RateLimitError, APIError, FishAudioError
+
+async def main():
+    async with AsyncFishAudio() as client:
+        try:
+            audio = await client.tts.convert(text="Hello!")
+        except RateLimitError:
+            print("Rate limited — back off and retry")
+        except APIError as e:
+            print(f"API error {e.status}: {e.message}")
+        except FishAudioError as e:
+            print(f"SDK error: {e}")
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+## Retries
+
+The Python client does **not** retry automatically — each call makes a single request and raises on failure. Add your own backoff where it matters, typically around `RateLimitError` and `ServerError`:
+
+```python
+import time
+from fishaudio import FishAudio
+from fishaudio.exceptions import RateLimitError, ServerError
+
+client = FishAudio()
+
+def convert_with_retry(text: str, max_retries: int = 3) -> bytes:
+    for attempt in range(max_retries):
+        try:
+            return client.tts.convert(text=text)
+        except (RateLimitError, ServerError):
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(2 ** attempt)  # exponential backoff
+    raise RuntimeError("unreachable")
+```
+
+<Note>
+  `RequestOptions` accepts a `max_retries` field, but the current client does
+  not act on it — use an explicit loop like the one above.
+</Note>
+
+## Timeouts
+
+The request timeout is set on the client (seconds; default `240`):
+
+```python
+from fishaudio import FishAudio
+
+client = FishAudio(timeout=30.0)
+```
+
+Override headers or timeout for a single request with `request_options`:
+
+```python
+from fishaudio.core.request_options import RequestOptions
+
+audio = client.tts.convert(
+    text="Hello!",
+    request_options=RequestOptions(timeout=15.0, additional_headers={"X-Trace": "abc"}),
+)
+```
+
+<Warning>
+  If you inject your own `httpx_client`, the SDK uses it as-is — the client-level
+  `timeout`, `base_url`, and the `Authorization` header are **not** applied to
+  it. Configure those on the client you pass in.
+</Warning>
+
+## Related
+
+- [Exceptions API reference](/api-reference/sdk/python/exceptions)
+- [Real-time WebSocket](/features/realtime-streaming) — `WebSocketError` handling

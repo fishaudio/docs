@@ -12,14 +12,49 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Docs",
+        "tab": "Overview",
         "groups": [
           {
-            "group": "Getting Started",
+            "group": "Get Started",
             "pages": [
-              "developer-guide/getting-started/introduction",
+              "overview/capabilities",
+              "developer-guide/getting-started/api-key",
               "developer-guide/getting-started/quickstart",
+              "developer-guide/resources/agent-quickstart",
               "developer-guide/getting-started/changelog"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              {
+                "group": "Text to Speech",
+                "icon": "microphone",
+                "pages": [
+                  "features/text-to-speech",
+                  "developer-guide/core-features/emotions",
+                  {
+                    "group": "Fine-grained Control",
+                    "icon": "sliders",
+                    "pages": [
+                      "developer-guide/core-features/fine-grained-control",
+                      "developer-guide/core-features/fine-grained-control/english",
+                      "developer-guide/core-features/fine-grained-control/chinese",
+                      "developer-guide/core-features/fine-grained-control/japanese"
+                    ]
+                  }
+                ]
+              },
+              "features/speech-to-text",
+              "features/voice-cloning",
+              "features/realtime-streaming",
+              "features/manage-voices"
+            ]
+          },
+          {
+            "group": "Platform (Web App)",
+            "pages": [
+              "overview/platform"
             ]
           },
           {
@@ -30,51 +65,57 @@
               "developer-guide/models-pricing/deprecations",
               "developer-guide/models-pricing/pricing-and-rate-limits"
             ]
-          },
+          }
+        ]
+      },
+      {
+        "tab": "Resources",
+        "groups": [
           {
-            "group": "Core Features",
+            "group": "Set Up the SDK",
             "pages": [
-              "developer-guide/core-features/text-to-speech",
-              "developer-guide/core-features/emotions",
-              {
-                "group": "Fine-grained Control",
-                "icon": "sliders",
-                "pages": [
-                  "developer-guide/core-features/fine-grained-control",
-                  "developer-guide/core-features/fine-grained-control/english",
-                  "developer-guide/core-features/fine-grained-control/chinese",
-                  "developer-guide/core-features/fine-grained-control/japanese"
-                ]
-              },
-              "developer-guide/core-features/creating-models",
-              "developer-guide/core-features/speech-to-text"
+              "developer-guide/sdk-guide/quickstart",
+              "developer-guide/sdk-guide/python/authentication",
+              "developer-guide/sdk-guide/python/errors"
             ]
           },
           {
-            "group": "Developer SDKs",
+            "group": "Cookbook",
+            "icon": "book",
             "pages": [
               {
-                "group": "Python SDK",
-                "icon": "python",
+                "group": "Text to Speech",
                 "pages": [
-                  "developer-guide/sdk-guide/python/overview",
-                  "developer-guide/sdk-guide/python/authentication",
-                  "developer-guide/sdk-guide/python/text-to-speech",
-                  "developer-guide/sdk-guide/python/voice-cloning",
-                  "developer-guide/sdk-guide/python/speech-to-text",
-                  "developer-guide/sdk-guide/python/websocket"
+                  "developer-guide/sdk-guide/cookbook/streaming-to-file",
+                  "developer-guide/sdk-guide/cookbook/telephony-8khz-audio"
                 ]
               },
               {
-                "group": "JavaScript SDK",
-                "icon": "js",
+                "group": "Speech to Text",
                 "pages": [
-                  "developer-guide/sdk-guide/javascript/installation",
-                  "developer-guide/sdk-guide/javascript/authentication",
-                  "developer-guide/sdk-guide/javascript/text-to-speech",
-                  "developer-guide/sdk-guide/javascript/voice-cloning",
-                  "developer-guide/sdk-guide/javascript/speech-to-text",
-                  "developer-guide/sdk-guide/javascript/websocket"
+                  "developer-guide/sdk-guide/cookbook/transcribe-to-captions",
+                  "developer-guide/sdk-guide/cookbook/batch-transcribe-with-language-hint"
+                ]
+              },
+              {
+                "group": "Voice Cloning",
+                "pages": [
+                  "developer-guide/sdk-guide/cookbook/instant-voice-cloning",
+                  "developer-guide/sdk-guide/cookbook/clone-and-wait-until-ready",
+                  "developer-guide/sdk-guide/cookbook/oneshot-vs-persistent-cloning"
+                ]
+              },
+              {
+                "group": "Realtime Streaming",
+                "pages": [
+                  "developer-guide/sdk-guide/cookbook/realtime-llm-to-speech",
+                  "developer-guide/sdk-guide/cookbook/voice-agent-loop"
+                ]
+              },
+              {
+                "group": "Manage Voices",
+                "pages": [
+                  "developer-guide/sdk-guide/cookbook/discover-library-voice"
                 ]
               }
             ]
@@ -88,11 +129,11 @@
             ]
           },
           {
-            "group": "Product Guides",
+            "group": "Integrations",
             "pages": [
-              "developer-guide/products/tts",
-              "developer-guide/products/voice-cloning",
-              "developer-guide/products/story-studio"
+              "developer-guide/integrations/pipecat",
+              "developer-guide/integrations/livekit",
+              "developer-guide/integrations/n8n"
             ]
           },
           {
@@ -104,36 +145,9 @@
             ]
           },
           {
-            "group": "Advanced Features",
-            "pages": []
-          },
-          {
-            "group": "Integrations",
+            "group": "More",
             "pages": [
-              "developer-guide/integrations/pipecat",
-              "developer-guide/integrations/livekit",
-              "developer-guide/integrations/n8n"
-            ]
-          },
-          {
-            "group": "Best Practices",
-            "pages": []
-          },
-          {
-            "group": "Safety & Ethics",
-            "pages": []
-          },
-          {
-            "group": "Tutorials",
-            "pages": ["developer-guide/tutorials/tutorials"]
-          },
-          {
-            "group": "Resources",
-            "pages": [
-              "developer-guide/resources/migration",
-              "developer-guide/resources/agent-quickstart",
               "developer-guide/resources/coding-agents",
-              "developer-guide/resources/roadmap",
               "contributing",
               "developer-guide/resources/brand"
             ]
@@ -147,7 +161,7 @@
             "group": "API Reference",
             "pages": [
               "api-reference/introduction",
-              "api-reference/emotion-reference"
+              "api-reference/errors"
             ]
           },
           {
@@ -185,29 +199,36 @@
             ]
           },
           {
-            "group": "Python SDK",
-            "icon": "python",
+            "group": "SDK Reference",
             "pages": [
-              "api-reference/sdk/python/overview",
               {
-                "group": "Reference",
-                "icon": "book-open",
+                "group": "Python SDK",
+                "icon": "python",
                 "pages": [
-                  "api-reference/sdk/python/client",
-                  "api-reference/sdk/python/resources",
-                  "api-reference/sdk/python/types",
-                  "api-reference/sdk/python/core",
-                  "api-reference/sdk/python/utils",
-                  "api-reference/sdk/python/exceptions"
+                  "api-reference/sdk/python/overview",
+                  {
+                    "group": "Reference",
+                    "icon": "book-open",
+                    "pages": [
+                      "api-reference/sdk/python/client",
+                      "api-reference/sdk/python/resources",
+                      "api-reference/sdk/python/types",
+                      "api-reference/sdk/python/core",
+                      "api-reference/sdk/python/utils",
+                      "api-reference/sdk/python/exceptions"
+                    ]
+                  },
+                  "archive/python-sdk-legacy/index"
                 ]
               },
-              "archive/python-sdk-legacy/index"
+              {
+                "group": "JavaScript SDK",
+                "icon": "js",
+                "pages": [
+                  "api-reference/sdk/javascript/api-reference"
+                ]
+              }
             ]
-          },
-          {
-            "group": "JavaScript SDK",
-            "icon": "js",
-            "pages": ["api-reference/sdk/javascript/api-reference"]
           }
         ]
       }
@@ -271,7 +292,11 @@
     },
     {
       "source": "/roadmap",
-      "destination": "/developer-guide/resources/roadmap"
+      "destination": "/developer-guide/getting-started/changelog"
+    },
+    {
+      "source": "/developer-guide/resources/roadmap",
+      "destination": "/developer-guide/getting-started/changelog"
     },
     {
       "source": "/developer-guide/resources/contributing",
@@ -303,11 +328,15 @@
     },
     {
       "source": "/developer-guide/migration",
-      "destination": "/developer-guide/resources/migration"
+      "destination": "/overview/capabilities"
     },
     {
       "source": "/resources/migration",
-      "destination": "/developer-guide/resources/migration"
+      "destination": "/overview/capabilities"
+    },
+    {
+      "source": "/developer-guide/resources/migration",
+      "destination": "/overview/capabilities"
     },
     {
       "source": "/developer-guide/sdks-tools/coding-agents",
@@ -335,11 +364,19 @@
     },
     {
       "source": "/resources/tutorials",
-      "destination": "/developer-guide/tutorials/tutorials"
+      "destination": "/developer-guide/sdk-guide/quickstart"
+    },
+    {
+      "source": "/developer-guide/tutorials/tutorials",
+      "destination": "/developer-guide/sdk-guide/quickstart"
     },
     {
       "source": "/resources/emotion-reference",
-      "destination": "/api-reference/emotion-reference"
+      "destination": "/developer-guide/core-features/emotions"
+    },
+    {
+      "source": "/api-reference/emotion-reference",
+      "destination": "/developer-guide/core-features/emotions"
     },
     {
       "source": "/resources/best-practices/text-to-speech",
@@ -376,6 +413,78 @@
     {
       "source": "/n8n",
       "destination": "/developer-guide/integrations/n8n"
+    },
+    {
+      "source": "/developer-guide/products/tts",
+      "destination": "/features/text-to-speech"
+    },
+    {
+      "source": "/developer-guide/products/voice-cloning",
+      "destination": "/features/voice-cloning"
+    },
+    {
+      "source": "/developer-guide/products/story-studio",
+      "destination": "/overview/platform"
+    },
+    {
+      "source": "/developer-guide/core-features/text-to-speech",
+      "destination": "/features/text-to-speech"
+    },
+    {
+      "source": "/developer-guide/core-features/speech-to-text",
+      "destination": "/features/speech-to-text"
+    },
+    {
+      "source": "/developer-guide/core-features/creating-models",
+      "destination": "/features/voice-cloning"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/python/text-to-speech",
+      "destination": "/features/text-to-speech"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/python/voice-cloning",
+      "destination": "/features/voice-cloning"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/python/speech-to-text",
+      "destination": "/features/speech-to-text"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/python/websocket",
+      "destination": "/features/realtime-streaming"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/python/overview",
+      "destination": "/api-reference/sdk/python/overview"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/javascript/installation",
+      "destination": "/api-reference/sdk/javascript/api-reference"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/javascript/authentication",
+      "destination": "/developer-guide/getting-started/api-key"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/javascript/text-to-speech",
+      "destination": "/features/text-to-speech"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/javascript/speech-to-text",
+      "destination": "/features/speech-to-text"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/javascript/voice-cloning",
+      "destination": "/features/voice-cloning"
+    },
+    {
+      "source": "/developer-guide/sdk-guide/javascript/websocket",
+      "destination": "/features/realtime-streaming"
+    },
+    {
+      "source": "/developer-guide/getting-started/introduction",
+      "destination": "/overview/capabilities"
     }
   ],
   "footer": {

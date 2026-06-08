@@ -1,478 +1,153 @@
 ---
 title: "AI Coding Agents"
-description: "Connect AI coding assistants to Fish Audio documentation via MCP for real-time API guidance"
+description: "Install the Fish Audio skill so your coding agent writes correct SDK and API code"
 icon: "robot"
 ---
 
 import { AudioTranscript } from "/snippets/audio-transcript.jsx";
 
-{/* speak-mintlify-hash: bb48040abec73604a76c532d042b645b95eeccb2d2d82929888bf41b3180935a */}
-
 <Visibility for="humans">
   <AudioTranscript page="resources-coding-agents" />
 </Visibility>
 
-## Overview
+Install the Fish Audio **agent skill**, and your coding agent — Claude Code, Cursor, Codex, and others — writes correct, current Fish Audio code: right method names, units, and error types, instead of guessing.
 
-Integrate Fish Audio's comprehensive documentation directly into your AI coding assistants. Using MCP (Model Context Protocol), coding agents like Claude Code, Cursor, and Windsurf can access our latest API references, guides, and examples in real-time.
+## Install the skill
 
-<Tip>
-The Fish Audio MCP server provides instant access to:
-- Complete API documentation
-- SDK usage examples
-- Best practices and implementation patterns
-- Troubleshooting guides
+```bash
+npx skills add https://docs.fish.audio
+```
 
-Connect once and get accurate, up-to-date Fish Audio knowledge in your coding environment.
+This installs both Fish Audio skills into your agent (a canonical copy in `.agents/skills/`, with symlinks for Claude Code and Cursor). Run `npx skills update` later to refresh them.
 
-</Tip>
-
-<Note>
-This documentation site also exposes built-in LLM-friendly indexes:
-
-- [llms.txt](https://docs.fish.audio/llms.txt) for the curated page index
-- [llms-full.txt](https://docs.fish.audio/llms-full.txt) for broader site context
-
-If your coding agent supports direct document fetching, start with `llms.txt` before pulling individual pages.
-
-</Note>
-
-## Install as an Agent Skill
-
-Fish Audio publishes a ready-made [Agent Skill](https://github.com/vercel-labs/skills) that teaches your coding agent how to call the Fish Audio REST and WebSocket APIs directly, without an SDK. It covers authentication, every endpoint in our OpenAPI schema, MessagePack vs JSON vs multipart encoding rules, multi-speaker dialogue, and the WebSocket streaming protocol.
-
-<Tabs>
-  <Tab title="Install the raw-API skill">
-    ```bash
-    npx skills add https://docs.fish.audio --skill fish-audio-api
-    ```
-
-    This installs the skill into your agent's local skill directory (for example `~/.claude/skills/fish-audio-api/`). Once installed, ask your agent to "call the Fish Audio TTS API with curl" or "stream TTS over WebSocket in Python" and it will follow the skill's conventions.
-  </Tab>
-
-  <Tab title="Install all Fish Audio skills">
-    ```bash
-    npx skills add https://docs.fish.audio
-    ```
-
-    Installs every skill advertised at [/.well-known/agent-skills/index.json](https://docs.fish.audio/.well-known/agent-skills/index.json), including the auto-generated product overview skill and the raw-API skill.
-  </Tab>
-
-  <Tab title="Inspect before installing">
-    The discovery index lives at [/.well-known/agent-skills/index.json](https://docs.fish.audio/.well-known/agent-skills/index.json) and each skill's raw markdown is served at [/.well-known/agent-skills/&lt;skill&gt;/SKILL.md](https://docs.fish.audio/.well-known/agent-skills/fish-audio-api/SKILL.md). Review the skill content first, then install with:
-
-    ```bash
-    npx skills add https://docs.fish.audio --list          # show available skills
-    npx skills add https://docs.fish.audio --skill fish-audio-api
-    ```
-  </Tab>
-</Tabs>
-
-<Tip>
-The `skills` CLI works with any agent that uses `SKILL.md` conventions — Claude Code, Cursor, Windsurf, Codex, and others. See [`npx skills --help`](https://github.com/vercel-labs/skills) for agent-specific install flags such as `-a claude-code` or `-a cursor`.
-</Tip>
-
-<Note>
-Prefer MCP if you want live documentation search inside your editor. Prefer the Agent Skill if you want a self-contained instruction file that works offline after install and doesn't rely on a running MCP server.
-</Note>
-
-## Why Use MCP Integration?
-
-<CardGroup cols={3}>
-  <Card title="Real-Time Docs" icon="clock">
-    Access the latest API documentation without leaving your editor
+<CardGroup cols={2}>
+  <Card title="fish-audio-sdk" icon="cube">
+    Python (`fish-audio-sdk`) and JavaScript (`fish-audio`) — exact method signatures and defaults, sync + async, model selection, and the real exception types.
   </Card>
-
-<Card title="Accurate Code" icon="check">
-  Generate working code based on current API specifications
-</Card>
-
-  <Card title="Smart Assistance" icon="brain">
-    Get context-aware help for debugging and optimization
+  <Card title="fish-audio-api" icon="code">
+    Raw REST + WebSocket for any language or edge runtime — auth, endpoints, MessagePack/JSON/multipart rules, and the streaming protocol.
   </Card>
 </CardGroup>
 
-## Setup
+### Install options
+
+<CodeGroup>
+```bash All skills
+npx skills add https://docs.fish.audio
+```
+
+```bash One skill
+npx skills add https://docs.fish.audio --skill fish-audio-sdk
+```
+
+```bash Target an agent
+# claude-code, cursor, codex, ...
+npx skills add https://docs.fish.audio -a claude-code
+```
+
+```bash List / inspect first
+npx skills add https://docs.fish.audio --list
+```
+</CodeGroup>
+
+Want to read them before installing? The skills are served at [/.well-known/agent-skills/index.json](https://docs.fish.audio/.well-known/agent-skills/index.json), with each skill's markdown at `/.well-known/agent-skills/<name>/SKILL.md`.
+
+## Try it
+
+Once installed, ask your agent in plain language — it will use the correct client, methods, and error types:
+
+<CardGroup cols={2}>
+  <Card title="TTS in a cloned voice" icon="microphone">
+    "Generate speech with Fish Audio in a cloned voice and save it to a file."
+  </Card>
+
+  <Card title="Transcribe with timestamps" icon="waveform">
+    "Transcribe `speech.wav` with Fish Audio and print the segments."
+  </Card>
+
+  <Card title="Stream from an LLM" icon="bolt">
+    "Stream an LLM's tokens to Fish Audio TTS over the WebSocket."
+  </Card>
+
+  <Card title="Raw API, any language" icon="code">
+    "Call the Fish Audio TTS REST API from Go, no SDK."
+  </Card>
+</CardGroup>
+
+## Or connect via MCP
+
+Prefer live documentation search inside your editor over a self-contained skill file? Connect the Fish Audio MCP server, which serves the latest docs to your agent.
 
 <Tabs>
   <Tab title="Claude Code">
-    <Steps>
-      <Step title="Run Installation Command">
-        Open your terminal in your project directory and run:
+    ```bash
+    claude mcp add --transport http fish-audio --scope project https://docs.fish.audio/mcp
+    ```
 
-        ```bash
-        claude mcp add --transport http fish-audio --scope project https://docs.fish.audio/mcp
-        ```
+    This writes a `.mcp.json` in your project root. Verify with `claude mcp list` (you should see `fish-audio`), then ask "What Fish Audio TTS models are available?"
 
-        This creates a `.mcp.json` file in your project root with the Fish Audio documentation server configuration.
-
-        <Accordion title="Understanding Installation Scopes">
-          Claude Code supports three installation scopes:
-
-          - **`--scope project`** (recommended): Stores configuration in `.mcp.json` at project root. Version-controlled and shared with your team.
-          - **`--scope user`**: Available globally across all your projects, but private to your account.
-          - **`--scope local`** (default): Project-specific but private to you only. Good for experimentation.
-
-          For team collaboration, use project scope and commit the `.mcp.json` file to git.
-        </Accordion>
-      </Step>
-
-      <Step title="Verify Connection">
-        Check that the server is connected:
-
-        ```bash
-        claude mcp list
-        ```
-
-        You should see `fish-audio` in the list of configured servers.
-      </Step>
-
-      <Step title="Test Integration">
-        Ask Claude Code: "What Fish Audio models are available?" or "How do I use Fish Audio's TTS API?"
-      </Step>
-    </Steps>
-
+    <Accordion title="Installation scopes">
+      - **`--scope project`** (recommended): config in `.mcp.json`, version-controlled and shared with your team.
+      - **`--scope user`**: global across your projects, private to your account.
+      - **`--scope local`** (default): project-specific and private to you.
+    </Accordion>
   </Tab>
 
   <Tab title="Cursor">
-    <Steps>
-      <Step title="Open MCP Settings">
-        Use `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux) to open the command palette, then search for "Open MCP settings".
-      </Step>
+    Open the command palette (`Cmd/Ctrl+Shift+P`) → "Open MCP settings" → "Add custom MCP", and add:
 
-      <Step title="Add Custom MCP Server">
-        Select "Add custom MCP" to open the `mcp.json` configuration file.
-      </Step>
+    ```json
+    {
+      "mcpServers": {
+        "fish-audio": { "url": "https://docs.fish.audio/mcp" }
+      }
+    }
+    ```
 
-      <Step title="Configure Fish Audio Server">
-        Add the Fish Audio documentation server:
-
-        ```json
-        {
-          "mcpServers": {
-            "fish-audio": {
-              "url": "https://docs.fish.audio/mcp"
-            }
-          }
-        }
-        ```
-      </Step>
-
-      <Step title="Save and Reload">
-        Save the configuration file and reload Cursor to apply changes.
-      </Step>
-
-      <Step title="Test Integration">
-        In Cursor's chat, ask: "What tools do you have available?" You should see the Fish Audio MCP server listed. Then try: "What Fish Audio TTS models are available?"
-      </Step>
-    </Steps>
-
-    <Note>
-    Cursor's MCP support was added in early 2025. Ensure you're running the latest version for full functionality.
-    </Note>
-
+    Save and reload Cursor, then ask "What Fish Audio TTS models are available?"
   </Tab>
 
   <Tab title="Windsurf">
-    <Steps>
-      <Step title="Access MCP Configuration">
-        Go to `File > Preferences > Windsurf Settings`, then navigate to `Cascade > Model Context Protocol (MCP) Servers`.
-      </Step>
+    Go to `Settings → Cascade → MCP Servers → View raw config` (`~/.codeium/windsurf/mcp_config.json`) and add:
 
-      <Step title="Add Custom Server">
-        Click "Add custom server +" or "View raw config" to edit the configuration file at `~/.codeium/windsurf/mcp_config.json`.
-      </Step>
+    ```json
+    {
+      "mcpServers": {
+        "fish-audio": { "url": "https://docs.fish.audio/mcp" }
+      }
+    }
+    ```
 
-      <Step title="Configure Fish Audio Server">
-        Add the Fish Audio documentation server:
-
-        ```json
-        {
-          "mcpServers": {
-            "fish-audio": {
-              "url": "https://docs.fish.audio/mcp"
-            }
-          }
-        }
-        ```
-      </Step>
-
-      <Step title="Save and Refresh">
-        Save the configuration and click the refresh button in Windsurf to apply changes.
-      </Step>
-
-      <Step title="Test Integration">
-        Open Cascade chat (Ctrl+L) and ask: "Search Fish Audio docs for TTS API usage" or "What emotion parameters does Fish Audio support?"
-      </Step>
-    </Steps>
-
-    <Note>
-    Windsurf's MCP support was introduced in Wave 3 (February 2025). Ensure you're running the latest version.
-    </Note>
-
+    Save, refresh, then in Cascade ask "Search Fish Audio docs for TTS API usage."
   </Tab>
 </Tabs>
 
-## Using the Integration
+<Note>
+  **Skill vs MCP:** the skill is a self-contained instruction file that works offline after install; MCP fetches the latest docs live. You can use both. This site also exposes [llms.txt](https://docs.fish.audio/llms.txt) and [llms-full.txt](https://docs.fish.audio/llms-full.txt) for agents that fetch docs directly.
+</Note>
 
-### Example Queries
-
-Once connected, ask your coding agent questions naturally:
-
-<CardGroup cols={2}>
-  <Card title="Authentication" icon="key">
-    "How do I authenticate with Fish Audio API?"
-  </Card>
-
-<Card title="TTS Example" icon="microphone">
-  "Show me Python code for text-to-speech"
-</Card>
-
-<Card title="Emotions" icon="masks-theater">
-  "What emotion parameters are available?"
-</Card>
-
-  <Card title="WebSocket" icon="plug">
-    "Help me implement real-time streaming"
-  </Card>
-</CardGroup>
-
-### Code Generation Examples
-
-<Tabs>
-  <Tab title="Basic TTS">
-    Ask: "Generate a Python function for text-to-speech with Fish Audio"
-
-    ```python
-    from fish_audio import FishAudioClient
-
-    def text_to_speech(text: str, voice_id: str, output_file: str):
-        """Convert text to speech using Fish Audio API"""
-        client = FishAudioClient(api_key="your-api-key")
-
-        response = client.tts.create(
-            text=text,
-            model_id=voice_id,
-            format="mp3"
-        )
-
-        with open(output_file, "wb") as f:
-            f.write(response.audio_data)
-
-        return output_file
-    ```
-
-  </Tab>
-
-  <Tab title="Voice Cloning">
-    Ask: "Create a voice cloning pipeline with error handling"
-
-    ```python
-    from fish_audio import FishAudioClient
-    import logging
-
-    def clone_voice(audio_path: str, name: str):
-        """Clone a voice from audio sample"""
-        client = FishAudioClient(api_key="your-api-key")
-
-        try:
-            # Upload audio sample
-            with open(audio_path, "rb") as f:
-                model = client.models.create(
-                    name=name,
-                    audio_data=f.read(),
-                    description="Custom cloned voice"
-                )
-
-            logging.info(f"Voice cloned: {model.id}")
-            return model.id
-
-        except Exception as e:
-            logging.error(f"Cloning failed: {e}")
-            raise
-    ```
-
-  </Tab>
-
-  <Tab title="Streaming">
-    Ask: "Implement real-time TTS streaming"
-
-    ```python
-    from fish_audio import FishAudioClient
-    import asyncio
-
-    async def stream_tts(text: str, voice_id: str):
-        """Stream TTS audio in real-time"""
-        client = FishAudioClient(api_key="your-api-key")
-
-        async for chunk in client.tts.stream(
-            text=text,
-            model_id=voice_id,
-            chunk_size=1024
-        ):
-            # Process audio chunk
-            yield chunk
-    ```
-
-  </Tab>
-</Tabs>
-
-## Available Documentation
-
-Your coding agent can access:
-
-<CardGroup cols={3}>
-  <Card title="API Reference" icon="code">
-    Complete endpoint documentation with parameters
-  </Card>
-
-<Card title="SDK Guides" icon="book">
-  Python SDK usage and examples
-</Card>
-
-<Card title="Best Practices" icon="lightbulb">
-  Optimization patterns and tips
-</Card>
-
-<Card title="Models & Pricing" icon="tags">
-  Available models and rate limits
-</Card>
-
-<Card title="Voice Cloning" icon="copy">
-  Custom voice creation guides
-</Card>
-
-  <Card title="Troubleshooting" icon="wrench">
-    Common issues and solutions
-  </Card>
-</CardGroup>
-
-## Advanced Usage
-
-### Custom Commands
-
-Create agent workflows for common tasks:
-
-<CodeGroup>
-```text Voice Pipeline
-"Create a complete voice generation pipeline with:
-- Authentication
-- Voice selection
-- Emotion control
-- Error handling
-- Audio export"
-```
-
-```text Batch Processing
-"Build a batch TTS processor that:
-- Reads from CSV
-- Handles rate limits
-- Retries on failure
-- Tracks progress"
-```
-
-```text WebSocket Client
-"Implement a WebSocket client for:
-- Real-time streaming
-- Auto-reconnection
-- Buffer management
-- Error recovery"
-```
-
-</CodeGroup>
-
-### Context-Aware Features
-
-With MCP integration, your agent can:
-
-- Suggest appropriate models based on use case
-- Handle rate limiting automatically
-- Provide inline documentation
-- Validate API calls against specifications
-- Recommend optimization strategies
-
-## Troubleshooting
-
-<AccordionGroup>
-  <Accordion title="Connection Issues">
-    If the MCP server isn't connecting:
-
-    1. Verify internet connectivity
-    2. Check `https://docs.fish.audio/mcp` is accessible
-    3. Ensure your agent supports MCP protocol
-    4. Restart your coding environment
-    5. Clear any cached configurations
-
-  </Accordion>
-
-  <Accordion title="Outdated Information">
-    The MCP server always serves the latest documentation:
-
-    1. Refresh the MCP connection in settings
-    2. Clear documentation cache if available
-    3. Report persistent issues to support@fish.audio
-
-  </Accordion>
-
-  <Accordion title="Missing Features">
-    If certain features aren't available:
-
-    1. Verify you're using the latest agent version
-    2. Check MCP protocol compatibility
-    3. Ensure proper server configuration
-    4. Contact support for assistance
-
-  </Accordion>
-</AccordionGroup>
-
-## Security
-
-<Info>
-  **Your data is safe:** - MCP provides read-only access to public documentation
-  - No API keys are transmitted through MCP - All connections use HTTPS
-  encryption - No user queries or usage data is stored
-</Info>
-
-## Next Steps
+## Next steps
 
 <CardGroup cols={2}>
-  <Card
-    title="API Introduction"
-    icon="play"
-    href="/api-reference/introduction"
-  >
-    Start with Fish Audio API basics
+  <Card title="Get your API key" icon="key" href="/developer-guide/getting-started/api-key">
+    Create a key and make your first request.
   </Card>
 
-<Card
-  title="Python SDK"
-  icon="python"
-  href="/developer-guide/sdk-guide/python/installation"
->
-  Install and configure the Python SDK
-</Card>
+  <Card title="Text to Speech" icon="microphone" href="/features/text-to-speech">
+    Voices, formats, streaming, and the direct API.
+  </Card>
 
-<Card
-  title="TTS Guide and Best Practices"
-  icon="microphone"
-  href="/developer-guide/core-features/text-to-speech"
->
-  Learn text-to-speech optimization
-</Card>
+  <Card title="API reference" icon="book-open" href="/api-reference/introduction">
+    Endpoints, parameters, and the OpenAPI schema.
+  </Card>
 
-  <Card
-    title="Voice Cloning Guide"
-    icon="copy"
-    href="/developer-guide/core-features/creating-models"
-  >
-    Create custom voice models
+  <Card title="Errors" icon="triangle-exclamation" href="/api-reference/errors">
+    Status codes, retries, and SDK exception handling.
   </Card>
 </CardGroup>
 
 ## Support
 
-Need help with MCP integration?
-
-- **Technical Support**: [support@fish.audio](mailto:support@fish.audio)
-- **Documentation Issues**: [GitHub](https://github.com/fishaudio)
+- **Technical support**: [support@fish.audio](mailto:support@fish.audio)
+- **Issues**: [GitHub](https://github.com/fishaudio)
 - **Community**: [Discord](https://discord.gg/dF9Db2Tt3Y)

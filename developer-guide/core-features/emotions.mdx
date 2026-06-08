@@ -9,6 +9,11 @@ import AdvancedEmotions from "/snippets/emotion-list-advanced-s2.mdx";
 import ToneMarkers from "/snippets/emotion-list-tones-s2.mdx";
 import AudioEffects from "/snippets/emotion-list-effects-s2.mdx";
 import SpecialEffects from "/snippets/emotion-list-special-s2.mdx";
+import BasicEmotionsS1 from "/snippets/emotion-list-basic.mdx";
+import AdvancedEmotionsS1 from "/snippets/emotion-list-advanced.mdx";
+import ToneMarkersS1 from "/snippets/emotion-list-tones.mdx";
+import AudioEffectsS1 from "/snippets/emotion-list-effects.mdx";
+import SpecialEffectsS1 from "/snippets/emotion-list-special.mdx";
 import { AudioTranscript } from "/snippets/audio-transcript.jsx";
 
 {/* speak-mintlify-hash: 702d6176919d2e53007c71cc0850ac755add8d539e6fbd4c55fd20e8332821d7 */}
@@ -18,15 +23,19 @@ import { AudioTranscript } from "/snippets/audio-transcript.jsx";
   <AudioTranscript page="core-features-emotions" />
 </Visibility>
 
+<Card title="Try it live in the API playground" icon="flask" href="/api-reference/endpoint/openapi-v1/text-to-speech" horizontal>
+  Drop text with the markers below into the `text` field and send a real request to hear the emotion.
+</Card>
+
 ## Overview
 
 Fish Audio models support 64+ emotional expressions and voice styles that can be controlled through text markers in your input. Add natural pauses, laughter, and other human-like elements to make speech more engaging and realistic.
 
 <Tip>
-  This page shows S2 usage with `[bracket]` cues. If you use S1, you must use
-  markers wrapped in parentheses. See the [Models
-  Overview](/developer-guide/models-pricing/models-overview#s2-natural-language-control)
-  for details.
+  This page shows S2 usage with `[bracket]` cues. If you use the legacy S1 model,
+  wrap markers in parentheses instead — see [S1 (legacy) syntax](#s1-legacy-syntax)
+  below for the full list, or the [Models
+  Overview](/developer-guide/models-pricing/models-overview#s2-natural-language-control).
 </Tip>
 
 ## How It Works
@@ -240,8 +249,34 @@ All 13 supported languages can use emotion markers. For sentence-level control, 
 | Excited Laugh    | `[excited][laughing]`      | "We did it! Ha ha!"                   |
 | Nervous Question | `[nervous][uncertain]`     | "Are you sure about this?"            |
 
+## S1 (legacy) syntax
+
+The default **S2-Pro** model uses `[bracket]` cues with free-form natural language. The previous-generation **S1** model uses the same emotion names but requires `(parentheses)` and a fixed tag set:
+
+```text
+(happy) What a beautiful day!
+(sad)(whispering) I'll miss you so much.
+```
+
+<AccordionGroup>
+  <Accordion title="Basic emotions (S1)">
+    <BasicEmotionsS1 />
+  </Accordion>
+  <Accordion title="Advanced emotions (S1)">
+    <AdvancedEmotionsS1 />
+  </Accordion>
+  <Accordion title="Tone markers (S1)">
+    <ToneMarkersS1 />
+  </Accordion>
+  <Accordion title="Audio effects (S1)">
+    <AudioEffectsS1 />
+  </Accordion>
+  <Accordion title="Special effects (S1)">
+    <SpecialEffectsS1 />
+  </Accordion>
+</AccordionGroup>
+
 ## See Also
 
-- [Emotion Reference Guide](/api-reference/emotion-reference) - S1 emotion list with examples
 - [API Reference](/api-reference/introduction) - Implementation details
-- [Text-to-Speech Guide and Best Practices](/developer-guide/core-features/text-to-speech)
+- [Text-to-Speech Guide and Best Practices](/features/text-to-speech)

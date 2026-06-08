@@ -64,7 +64,7 @@ Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set
 | `format` | `wav` \| `pcm` \| `mp3` \| `opus` | `mp3` | Output format. |
 | `sample_rate` | int \| null | null (44100, or 48000 for opus) | Output sample rate. |
 | `mp3_bitrate` | 64 \| 128 \| 192 | 128 | Only when `format=mp3`. |
-| `opus_bitrate` | -1000 \| 24 \| 32 \| 48 \| 64 | -1000 (auto) | Only when `format=opus`. |
+| `opus_bitrate` | -1000 \| 24000 \| 32000 \| 48000 \| 64000 | -1000 (auto) | Opus bitrate in **bps**. Only when `format=opus`. |
 | `latency` | `low` \| `normal` \| `balanced` | `normal` | Quality vs latency. |
 | `max_new_tokens` | int | 1024 | Per-chunk audio token cap. |
 | `repetition_penalty` | number | 1.2 | >1.0 reduces repeats. |

@@ -1,0 +1,107 @@
+---
+title: "Batch-transcribe files with a language hint"
+description: "Loop over local audio files and transcribe each with an explicit language, collecting text and duration per file"
+icon: "layer-group"
+---
+
+import Prerequisites from "/snippets/prerequisites.mdx";
+
+## Prerequisites
+
+<Prerequisites />
+
+## Recipe
+
+Read each file's bytes from disk and pass them to [`asr.transcribe()`](/api-reference/sdk/python/resources#transcribe) with an explicit `language`. A language hint is more reliable than auto-detection when you already know the source language, especially for phonetically similar languages. Collect one result row per file as you go.
+
+<CodeGroup>
+```python Synchronous
+from fishaudio import FishAudio
+
+client = FishAudio()
+
+paths = ["speech.wav"]  # add more file paths here
+language = "en"
+
+results = []
+for path in paths:
+    with open(path, "rb") as f:
+        audio = f.read()
+
+    transcript = client.asr.transcribe(audio=audio, language=language)
+    results.append({
+        "file": path,
+        "text": transcript.text,
+        "duration": transcript.duration,  # seconds
+    })
+
+for row in results:
+    print(f"{row['file']} ({row['duration']:.1f}s): {row['text']}")
+```
+
+```python Asynchronous
+import asyncio
+from fishaudio import AsyncFishAudio
+
+async def main():
+    async with AsyncFishAudio() as client:
+        paths = ["speech.wav"]  # add more file paths here
+        language = "en"
+
+        results = []
+        for path in paths:
+            with open(path, "rb") as f:
+                audio = f.read()
+
+            transcript = await client.asr.transcribe(audio=audio, language=language)
+            results.append({
+                "file": path,
+                "text": transcript.text,
+                "duration": transcript.duration,  # seconds
+            })
+
+    for row in results:
+        print(f"{row['file']} ({row['duration']:.1f}s): {row['text']}")
+
+asyncio.run(main())
+```
+
+```javascript JavaScript
+import { FishAudioClient } from "fish-audio";
+import { readFile } from "fs/promises";
+
+const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+const paths = ["speech.wav"]; // add more file paths here
+const language = "en";
+
+const results = [];
+for (const path of paths) {
+  const audio = new File([await readFile(path)], path);
+
+  const transcript = await client.speechToText.convert({ audio, language });
+  results.push({
+    file: path,
+    text: transcript.text,
+    duration: transcript.duration, // seconds
+  });
+}
+
+for (const row of results) {
+  console.log(`${row.file} (${row.duration.toFixed(1)}s): ${row.text}`);
+}
+```
+</CodeGroup>
+
+Each call returns an [`ASRResponse`](/api-reference/sdk/python/types#asrresponse-objects) with `.text`, a `.duration` in seconds, and per-phrase `.segments`. The loop keeps files independent, so one bad file does not block the rest of the batch.
+
+<Tip>
+  Auto-detection (omit `language`) works well, but passing an explicit
+  `language` improves accuracy for similar-sounding languages. Use one
+  `language` per batch — split mixed-language files into separate lists.
+</Tip>
+
+## Related
+
+- [Speech-to-Text guide](/features/speech-to-text)
+- [Instant voice cloning](/developer-guide/sdk-guide/cookbook/instant-voice-cloning)

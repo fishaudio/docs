@@ -1,0 +1,102 @@
+---
+title: "Transcribe audio to SRT/VTT captions"
+description: "Transcribe audio with timestamps and write valid SRT and WebVTT caption files from the segments"
+icon: "closed-captioning"
+---
+
+import Prerequisites from "/snippets/prerequisites.mdx";
+
+## Prerequisites
+
+<Prerequisites />
+
+## Recipe
+
+Call [`asr.transcribe()`](/api-reference/sdk/python/resources#transcribe) with `include_timestamps=True`, then turn each [`ASRSegment`](/api-reference/sdk/python/types#asrsegment-objects) into a numbered cue. Segment `start` / `end` are in **seconds**, so the only real work is formatting them — SRT wants `HH:MM:SS,mmm` (comma), WebVTT wants `HH:MM:SS.mmm` (dot).
+
+<CodeGroup>
+```python Python
+from fishaudio import FishAudio
+
+client = FishAudio()
+
+
+def to_srt_timestamp(seconds: float) -> str:
+    """Format a time in seconds as an SRT timestamp: HH:MM:SS,mmm."""
+    millis = round(seconds * 1000)
+    hours, millis = divmod(millis, 3_600_000)
+    minutes, millis = divmod(millis, 60_000)
+    secs, millis = divmod(millis, 1000)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
+
+
+with open("speech.wav", "rb") as f:
+    result = client.asr.transcribe(audio=f.read(), include_timestamps=True)
+
+# SRT: 1-based index, comma decimal separator, blank line between cues.
+with open("captions.srt", "w", encoding="utf-8") as srt:
+    for i, segment in enumerate(result.segments, start=1):
+        start = to_srt_timestamp(segment.start)
+        end = to_srt_timestamp(segment.end)
+        srt.write(f"{i}\n{start} --> {end}\n{segment.text.strip()}\n\n")
+
+# WebVTT: same cues, "WEBVTT" header, dot decimal separator.
+with open("captions.vtt", "w", encoding="utf-8") as vtt:
+    vtt.write("WEBVTT\n\n")
+    for segment in result.segments:
+        start = to_srt_timestamp(segment.start).replace(",", ".")
+        end = to_srt_timestamp(segment.end).replace(",", ".")
+        vtt.write(f"{start} --> {end}\n{segment.text.strip()}\n\n")
+
+print(f"Wrote {len(result.segments)} cues to captions.srt and captions.vtt")
+```
+
+```javascript JavaScript
+import { FishAudioClient } from "fish-audio";
+import { readFile, writeFile } from "fs/promises";
+
+const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+// Format a time in seconds as an SRT timestamp: HH:MM:SS,mmm.
+function toSrtTimestamp(seconds) {
+  let millis = Math.round(seconds * 1000);
+  const hours = Math.floor(millis / 3_600_000);
+  millis -= hours * 3_600_000;
+  const minutes = Math.floor(millis / 60_000);
+  millis -= minutes * 60_000;
+  const secs = Math.floor(millis / 1000);
+  millis -= secs * 1000;
+  const pad = (n, width) => String(n).padStart(width, "0");
+  return `${pad(hours, 2)}:${pad(minutes, 2)}:${pad(secs, 2)},${pad(millis, 3)}`;
+}
+
+const result = await client.speechToText.convert({
+  audio: new File([await readFile("speech.wav")], "speech.wav"),
+  language: "en",
+  ignore_timestamps: false,
+});
+
+// SRT: 1-based index, comma decimal separator, blank line between cues.
+const cues = result.segments.map((segment, i) => {
+  const start = toSrtTimestamp(segment.start);
+  const end = toSrtTimestamp(segment.end);
+  return `${i + 1}\n${start} --> ${end}\n${segment.text.trim()}\n`;
+});
+await writeFile("captions.srt", cues.join("\n"), "utf-8");
+
+console.log(`Wrote ${result.segments.length} cues to captions.srt`);
+```
+</CodeGroup>
+
+Both files share one timestamp helper — WebVTT is just the SRT formatting with `,` swapped for `.`, so there is no second formatter to keep in sync.
+
+<Tip>
+  Pass `language=` (for example `"en"` or `"zh"`) when you know it — explicit
+  language selection sharpens segment boundaries, which keeps your cue timing
+  tight.
+</Tip>
+
+## Related
+
+- [Speech-to-Text guide](/features/speech-to-text)
+- [ASR Types Reference](/api-reference/sdk/python/types#asr)

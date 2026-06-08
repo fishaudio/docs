@@ -1,0 +1,101 @@
+---
+title: "Telephony-grade audio (8 kHz) for IVR and phone"
+description: "Generate 8 kHz mono WAV/PCM that matches the narrowband sample rate phone networks expect for IVR and call-center playback"
+icon: "phone"
+---
+
+import Prerequisites from "/snippets/prerequisites.mdx";
+
+## Prerequisites
+
+<Prerequisites />
+
+## Recipe
+
+Phone networks carry narrowband audio at 8 kHz. Generating at a higher rate just forces the carrier to downsample on the way through — wasting bandwidth and often softening the result. Synthesize at 8 kHz directly and the bytes are ready to hand to your IVR or SIP stack.
+
+Set the sample rate on [`TTSConfig`](/api-reference/sdk/python/types#ttsconfig-objects) (it is not a top-level argument) and write the WAV to disk.
+
+<CodeGroup>
+```python Synchronous
+from fishaudio import FishAudio
+from fishaudio.types import TTSConfig
+from fishaudio.utils import save
+
+client = FishAudio()
+
+audio = client.tts.convert(
+    text="Thank you for calling. Press one to speak with an agent.",
+    config=TTSConfig(format="wav", sample_rate=8000),
+)
+
+save(audio, "out.wav")
+```
+
+```python Asynchronous
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.types import TTSConfig
+from fishaudio.utils import save
+
+async def main():
+    async with AsyncFishAudio() as client:
+        audio = await client.tts.convert(
+            text="Thank you for calling. Press one to speak with an agent.",
+            config=TTSConfig(format="wav", sample_rate=8000),
+        )
+    save(audio, "out.wav")
+
+asyncio.run(main())
+```
+
+```javascript JavaScript
+import { FishAudioClient } from "fish-audio";
+import { writeFile } from "fs/promises";
+
+const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+const stream = await client.textToSpeech.convert(
+  {
+    text: "Thank you for calling. Press one to speak with an agent.",
+    format: "wav",
+    sample_rate: 8000,
+  },
+  "s2-pro"
+);
+
+const chunks = [];
+for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+
+await writeFile("out.wav", Buffer.concat(chunks));
+```
+</CodeGroup>
+
+The output is a mono 8 kHz WAV — the standard for G.711 PCM telephony. For a headerless stream to feed straight into a SIP or RTP pipeline, switch to raw PCM with `format="pcm"`; the sample rate stays on `TTSConfig`.
+
+```python
+audio = client.tts.convert(
+    text="Thank you for calling. Press one to speak with an agent.",
+    config=TTSConfig(format="pcm", sample_rate=8000),
+)
+```
+
+```bash API (curl)
+curl --request POST https://api.fish.audio/v1/tts \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --header "model: s2-pro" \
+  --data '{ "text": "Thank you for calling. Press one to speak with an agent.", "format": "wav", "sample_rate": 8000 }' \
+  --output out.wav
+```
+
+<Tip>
+  8 kHz discards everything above ~4 kHz, so plosives and sibilance lose detail.
+  Keep prompts short and articulate, and reserve higher sample rates (16/24 kHz)
+  for VoIP or recordings that never touch the legacy phone network.
+</Tip>
+
+## Related
+
+- [Text-to-Speech guide](/features/text-to-speech)
+- [Stream TTS to a file](/developer-guide/sdk-guide/cookbook/streaming-to-file)

@@ -1,0 +1,109 @@
+---
+title: "Instant voice cloning"
+description: "Clone a voice on the fly from a short reference clip, with no model to manage"
+icon: "clone"
+---
+
+import Prerequisites from "/snippets/prerequisites.mdx";
+
+## Prerequisites
+
+<Prerequisites />
+
+## Recipe
+
+Pass a [`ReferenceAudio`](/api-reference/sdk/python/types#referenceaudio-objects) (raw audio bytes + an exact transcript) on the `convert` call. Nothing is saved server-side — the clone applies to that request only.
+
+<CodeGroup>
+```python Synchronous
+from fishaudio import FishAudio
+from fishaudio.types import ReferenceAudio
+from fishaudio.utils import save
+
+client = FishAudio()
+
+with open("reference.wav", "rb") as f:
+    audio = client.tts.convert(
+        text="This sentence is spoken in the cloned voice.",
+        references=[ReferenceAudio(
+            audio=f.read(),
+            text="Exact transcript of what is said in reference.wav.",
+        )],
+    )
+
+save(audio, "cloned.mp3")
+```
+
+```python Asynchronous
+import asyncio
+from fishaudio import AsyncFishAudio
+from fishaudio.types import ReferenceAudio
+from fishaudio.utils import save
+
+async def main():
+    async with AsyncFishAudio() as client:
+        with open("reference.wav", "rb") as f:
+            audio = await client.tts.convert(
+                text="This sentence is spoken in the cloned voice.",
+                references=[ReferenceAudio(
+                    audio=f.read(),
+                    text="Exact transcript of what is said in reference.wav.",
+                )],
+            )
+    save(audio, "cloned.mp3")
+
+asyncio.run(main())
+```
+
+```javascript JavaScript
+import { FishAudioClient } from "fish-audio";
+import { readFile, writeFile } from "fs/promises";
+
+const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+const reference = new File(
+  [await readFile("reference.wav")],
+  "reference.wav",
+);
+
+const stream = await client.textToSpeech.convert(
+  {
+    text: "This sentence is spoken in the cloned voice.",
+    references: [
+      {
+        audio: reference,
+        text: "Exact transcript of what is said in reference.wav.",
+      },
+    ],
+    format: "mp3",
+  },
+  "s2-pro",
+);
+
+const chunks = [];
+for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+
+await writeFile("cloned.mp3", Buffer.concat(chunks));
+```
+</CodeGroup>
+
+<Tip>
+  Use 10–30 s of clean speech, and make `text` match the audio exactly
+  (including punctuation) for the best prosody.
+</Tip>
+
+## Reuse a voice across many requests
+
+If you'll use the voice repeatedly, create a persistent model once and pass its id as `reference_id` — see the [Voice Cloning guide](/features/voice-cloning).
+
+```python
+with open("sample.wav", "rb") as f:
+    voice = client.voices.create(title="My Voice", voices=[f.read()])
+
+audio = client.tts.convert(text="Reusing my saved voice.", reference_id=voice.id)
+```
+
+## Related
+
+- [Voice Cloning guide](/features/voice-cloning)
+- [Stream TTS to a file](/developer-guide/sdk-guide/cookbook/streaming-to-file)
