@@ -3773,6 +3773,182 @@
           "OpenAPI v1"
         ]
       }
+    },
+    "/v1/voice-design": {
+      "post": {
+        "summary": "Voice Design",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "model",
+            "description": "Specify which voice-design model to use.",
+            "required": true,
+            "schema": {
+              "const": "voice-design-1",
+              "default": "voice-design-1",
+              "title": "Model",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoiceDesignRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "candidates": {
+                      "description": "Generated voice candidates.",
+                      "items": {
+                        "$ref": "#/components/schemas/VoiceDesignCandidate"
+                      },
+                      "title": "Candidates",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "candidates"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "No payment -- see charging schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "loc": {
+                        "title": "Location",
+                        "description": "error field",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "type": {
+                        "title": "Type",
+                        "description": "error type",
+                        "type": "string"
+                      },
+                      "msg": {
+                        "title": "Message",
+                        "description": "error message",
+                        "type": "string"
+                      },
+                      "ctx": {
+                        "title": "Context",
+                        "description": "error context",
+                        "type": "string"
+                      },
+                      "in": {
+                        "title": "In",
+                        "type": "string",
+                        "enum": [
+                          "path",
+                          "query",
+                          "header",
+                          "cookie",
+                          "body"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "loc",
+                      "type",
+                      "msg"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "OpenAPI v1"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "Voice Design",
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/voice-design \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: voice-design-1' \\\n  --data '{\n    \"instruction\": \"Warm, confident studio narrator with a natural tone\",\n    \"reference_text\": \"Welcome to Fish Audio.\",\n    \"language\": \"en\",\n    \"n\": 2,\n    \"speed\": 1,\n    \"num_step\": 32,\n    \"guidance_scale\": 2,\n    \"instruct_guidance_scale\": 0,\n    \"seed\": 42\n  }'"
+          }
+        ]
+      }
     }
   },
   "tags": [],
@@ -4602,6 +4778,195 @@
           "end"
         ],
         "title": "ASRSegment",
+        "type": "object"
+      },
+      "VoiceDesignRequest": {
+        "additionalProperties": false,
+        "description": "Request body for synchronous voice design generation. The endpoint returns generated voice candidates with base64-encoded audio.",
+        "examples": [
+          {
+            "guidance_scale": 2,
+            "instruct_guidance_scale": 0,
+            "instruction": "Warm, confident studio narrator with a natural tone",
+            "language": "en",
+            "n": 2,
+            "num_step": 32,
+            "reference_text": "Welcome to Fish Audio.",
+            "seed": 42,
+            "speed": 1
+          }
+        ],
+        "properties": {
+          "instruction": {
+            "description": "Voice design prompt. Must contain 1 to 2000 characters.",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Instruction",
+            "type": "string"
+          },
+          "reference_text": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional text used as reference content for the generated voice.",
+            "title": "Reference Text"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional BCP-47 language hint, such as `en`, `zh`, or `ja`.",
+            "title": "Language"
+          },
+          "n": {
+            "default": 2,
+            "description": "Number of voice candidates to generate.",
+            "maximum": 4,
+            "minimum": 1,
+            "title": "N",
+            "type": "integer"
+          },
+          "speed": {
+            "default": 1,
+            "description": "Speaking speed multiplier for candidate generation.",
+            "exclusiveMinimum": 0,
+            "maximum": 3,
+            "title": "Speed",
+            "type": "number"
+          },
+          "num_step": {
+            "default": 32,
+            "description": "Number of diffusion steps used by the voice-design model.",
+            "maximum": 128,
+            "minimum": 1,
+            "title": "Num Step",
+            "type": "integer"
+          },
+          "guidance_scale": {
+            "default": 2,
+            "description": "Classifier-free guidance scale. Higher values follow the prompt more strongly.",
+            "minimum": 0,
+            "title": "Guidance Scale",
+            "type": "number"
+          },
+          "instruct_guidance_scale": {
+            "default": 0,
+            "description": "Instruction guidance scale for prompt conditioning.",
+            "minimum": 0,
+            "title": "Instruct Guidance Scale",
+            "type": "number"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional deterministic seed for candidate generation.",
+            "title": "Seed"
+          }
+        },
+        "required": [
+          "instruction"
+        ],
+        "title": "VoiceDesignRequest",
+        "type": "object"
+      },
+      "VoiceDesignCandidate": {
+        "properties": {
+          "id": {
+            "description": "Stable candidate identifier.",
+            "title": "Id",
+            "type": "string"
+          },
+          "index": {
+            "description": "Candidate index in this response.",
+            "minimum": 0,
+            "title": "Index",
+            "type": "integer"
+          },
+          "audio_base64": {
+            "description": "Base64 encoded generated audio.",
+            "title": "Audio Base64",
+            "type": "string"
+          },
+          "sample_rate": {
+            "description": "Audio sample rate in Hz.",
+            "exclusiveMinimum": 0,
+            "title": "Sample Rate",
+            "type": "integer"
+          },
+          "duration_ms": {
+            "description": "Audio duration in milliseconds.",
+            "minimum": 0,
+            "title": "Duration Ms",
+            "type": "integer"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Preview text associated with this generated voice, when available.",
+            "title": "Text"
+          },
+          "instruct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Instruction text associated with this candidate, when available.",
+            "title": "Instruct"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Detected or requested candidate language, when available.",
+            "title": "Language"
+          }
+        },
+        "required": [
+          "id",
+          "index",
+          "audio_base64",
+          "sample_rate",
+          "duration_ms"
+        ],
+        "title": "VoiceDesignCandidate",
         "type": "object"
       }
     }

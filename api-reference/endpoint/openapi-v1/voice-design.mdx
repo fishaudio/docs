@@ -1,0 +1,49 @@
+---
+openapi: post /v1/voice-design
+title: "Voice Design"
+description: "Generate candidate voices from a prompt"
+icon: "wand-magic-sparkles"
+iconType: "solid"
+---
+
+<Warning>
+This endpoint only accepts `application/json`.
+
+You must include the `model: voice-design-1` header. Extra request fields are rejected.
+
+</Warning>
+
+<Note>
+  A successful request returns generated voice candidates with `audio_base64`
+  audio payloads. Decode the base64 value to write the candidate audio to a
+  file.
+</Note>
+
+## Example
+
+```bash
+curl --request POST https://api.fish.audio/v1/voice-design \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --header "model: voice-design-1" \
+  --data '{
+    "instruction": "Warm, confident studio narrator with a natural tone",
+    "reference_text": "Welcome to Fish Audio.",
+    "language": "en",
+    "n": 2,
+    "speed": 1,
+    "num_step": 32,
+    "guidance_scale": 2,
+    "instruct_guidance_scale": 0,
+    "seed": 42
+  }'
+```
+
+## Usage notes
+
+- `instruction` is required and must be 1 to 2000 characters.
+- `reference_text` is optional preview text and can be up to 300 characters.
+- `n` controls how many candidates are returned. The supported range is 1 to 4.
+- `seed` is optional and can help reproduce candidate generation.
+- The endpoint is stateless: it does not create batches, samples, voice models, or presigned URLs.
+- Billing happens once per successful generation request, not once per candidate.

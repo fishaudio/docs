@@ -40,6 +40,17 @@ TTS pricing is based on the size of input text, measured in millions of UTF-8 by
 - Charges are based on the duration of audio processed
 - Duration is rounded up to the nearest second
 
+### Voice Design
+
+| Model Name       | Price (USD)                    |
+|------------------|--------------------------------|
+| `voice-design-1` | $0.01 / successful API request |
+
+**How Voice Design billing works:**
+- Charges are based on successful `POST /v1/voice-design` requests
+- One successful request is charged once, even when it returns multiple candidates
+- Authentication, validation, balance, concurrency, and service errors are not billed
+
 ## Rate Limits
 
 These limits help us ensure fair usage and maintain service quality for all users.

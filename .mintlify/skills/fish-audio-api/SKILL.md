@@ -1,6 +1,6 @@
 ---
 name: fish-audio-api
-description: Write direct HTTP / WebSocket calls to the Fish Audio platform (TTS, ASR, voice models, wallet, real-time TTS streaming) without depending on the Python or JavaScript SDK. Use when the user asks to call Fish Audio from curl, a language without an official SDK, an edge/runtime environment that cannot install the SDK, or when they explicitly want raw REST / WebSocket code. Covers authentication, endpoint URLs, required headers, request / response schemas, MessagePack vs JSON vs multipart encoding rules, multi-speaker dialogue, and the WebSocket streaming protocol.
+description: Write direct HTTP / WebSocket calls to the Fish Audio platform (TTS, ASR, voice design, voice models, wallet, real-time TTS streaming) without depending on the Python or JavaScript SDK. Use when the user asks to call Fish Audio from curl, a language without an official SDK, an edge/runtime environment that cannot install the SDK, or when they explicitly want raw REST / WebSocket code. Covers authentication, endpoint URLs, required headers, request / response schemas, MessagePack vs JSON vs multipart encoding rules, multi-speaker dialogue, voice-design candidate generation, and the WebSocket streaming protocol.
 ---
 
 # Fish Audio Raw API Skill
@@ -27,6 +27,7 @@ This file condenses those into rules an agent can apply directly.
 | --- | --- | --- |
 | POST | `/v1/tts` | Text-to-Speech (streams audio bytes) |
 | POST | `/v1/asr` | Speech-to-Text (returns JSON transcript) |
+| POST | `/v1/voice-design` | Voice Design (returns generated voice candidates) |
 | GET | `/model` | List voice models |
 | POST | `/model` | Create voice model (voice cloning) |
 | GET | `/model/{id}` | Get voice model metadata |
@@ -238,6 +239,77 @@ with open("input.wav", "rb") as f:
 r.raise_for_status()
 print(r.json()["text"])
 ```
+
+## Voice Design — `POST /v1/voice-design`
+
+Required headers:
+
+- `Authorization: Bearer <FISH_API_KEY>`
+- `Content-Type: application/json`
+- `model: voice-design-1` (required; currently the only public Voice Design model)
+
+Response: JSON `{ candidates: VoiceDesignCandidate[] }`. Each candidate includes `audio_base64`; decode it to write the generated audio bytes to a file. The current candidate audio payload is WAV bytes encoded as base64.
+
+### Request body fields (VoiceDesignRequest)
+
+| Field                     | Type           | Default      | Notes                                                                       |
+| ------------------------- | -------------- | ------------ | --------------------------------------------------------------------------- |
+| `instruction`             | string         | — (required) | Voice design prompt. 1 to 2000 characters.                                  |
+| `reference_text`          | string \| null | null         | Optional preview text to read in the generated voice. Up to 300 characters. |
+| `language`                | string \| null | null         | Optional language hint such as `en`, `zh`, or `ja`.                         |
+| `n`                       | int            | 2            | Number of candidates. Range: 1 to 4.                                        |
+| `speed`                   | number         | 1.0          | Speaking speed multiplier. Must be greater than 0 and at most 3.             |
+| `num_step`                | int            | 32           | Diffusion steps. Range: 1 to 128.                                           |
+| `guidance_scale`          | number         | 2.0          | Prompt guidance. Must be at least 0.                                        |
+| `instruct_guidance_scale` | number         | 0.0          | Instruction guidance. Must be at least 0.                                   |
+| `seed`                    | int \| null    | null         | Optional deterministic seed for candidate generation.                       |
+
+Do **not** send MessagePack, multipart form data, inline reference audio, or service-internal fields such as `features`, `features_json_file`, or `include_audio_base64`.
+
+### curl
+
+```bash
+curl --request POST https://api.fish.audio/v1/voice-design \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --header "model: voice-design-1" \
+  --data '{
+    "instruction": "Warm, confident studio narrator with a natural tone",
+    "reference_text": "Welcome to Fish Audio.",
+    "language": "en",
+    "n": 2
+  }' | jq -r '.candidates[0].audio_base64' | base64 --decode > voice.wav
+```
+
+### Python
+
+```python
+import base64
+import os
+import httpx
+
+r = httpx.post(
+    "https://api.fish.audio/v1/voice-design",
+    headers={
+        "Authorization": f"Bearer {os.environ['FISH_API_KEY']}",
+        "Content-Type": "application/json",
+        "model": "voice-design-1",
+    },
+    json={
+        "instruction": "Warm, confident studio narrator with a natural tone",
+        "reference_text": "Welcome to Fish Audio.",
+        "language": "en",
+        "n": 2,
+    },
+    timeout=120,
+)
+r.raise_for_status()
+candidate = r.json()["candidates"][0]
+with open("voice.wav", "wb") as f:
+    f.write(base64.b64decode(candidate["audio_base64"]))
+```
+
+Billing: one successful generation request is charged once, even when it returns multiple candidates. Authentication, validation, balance, concurrency, and service errors are not billed.
 
 ## Voice models — `/model`
 
