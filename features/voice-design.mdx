@@ -1,0 +1,184 @@
+---
+title: "Voice Design"
+description: "Generate candidate voices from a prompt"
+icon: "wand-magic-sparkles"
+---
+
+Voice Design creates short voice candidates from a natural-language prompt. Use it when you want to explore a voice direction before building a longer text-to-speech workflow or creating a persistent voice model.
+
+<CardGroup cols={3}>
+  <Card
+    title="API reference"
+    icon="brackets-curly"
+    href="/api-reference/endpoint/openapi-v1/voice-design"
+  >
+    Every parameter for `POST /v1/voice-design`.
+  </Card>
+  <Card
+    title="Pricing"
+    icon="dollar-sign"
+    href="/developer-guide/models-pricing/pricing-and-rate-limits#voice-design"
+  >
+    Voice Design is billed per successful generation request.
+  </Card>
+  <Card title="Voice cloning" icon="clone" href="/features/voice-cloning">
+    Create a reusable voice model from reference audio.
+  </Card>
+</CardGroup>
+
+## When to use it
+
+<CardGroup cols={2}>
+  <Card title="Explore voice concepts" icon="lightbulb">
+    Generate several candidate voices from a short creative brief.
+  </Card>
+  <Card title="Preview narration styles" icon="headphones">
+    Provide preview text to hear how a generated voice reads a specific line.
+  </Card>
+  <Card title="Seed creative workflows" icon="sparkles">
+    Use generated candidates to choose a voice direction before longer TTS
+    production.
+  </Card>
+  <Card title="Stateless API calls" icon="bolt">
+    Get generated audio directly without creating batches, samples, or voice
+    models.
+  </Card>
+</CardGroup>
+
+## Quick start
+
+Send a JSON request with a prompt and receive generated candidates. The current candidate audio payload is WAV bytes encoded as base64.
+
+<CodeGroup>
+```bash API (curl)
+curl --request POST https://api.fish.audio/v1/voice-design \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --header "model: voice-design-1" \
+  --data '{
+    "instruction": "Warm, confident studio narrator with a natural tone",
+    "reference_text": "Welcome to Fish Audio.",
+    "language": "en",
+    "n": 2
+  }' | jq -r '.candidates[0].audio_base64' | base64 --decode > voice.wav
+```
+
+```python Python
+import base64
+import os
+import requests
+
+response = requests.post(
+    "https://api.fish.audio/v1/voice-design",
+    headers={
+        "Authorization": f"Bearer {os.environ['FISH_API_KEY']}",
+        "Content-Type": "application/json",
+        "model": "voice-design-1",
+    },
+    json={
+        "instruction": "Warm, confident studio narrator with a natural tone",
+        "reference_text": "Welcome to Fish Audio.",
+        "language": "en",
+        "n": 2,
+    },
+    timeout=120,
+)
+response.raise_for_status()
+
+candidate = response.json()["candidates"][0]
+with open("voice.wav", "wb") as f:
+    f.write(base64.b64decode(candidate["audio_base64"]))
+
+print(candidate["sample_rate"], candidate["duration_ms"])
+```
+
+```javascript JavaScript
+import { writeFile } from "node:fs/promises";
+
+const response = await fetch("https://api.fish.audio/v1/voice-design", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.FISH_API_KEY}`,
+    "Content-Type": "application/json",
+    model: "voice-design-1",
+  },
+  body: JSON.stringify({
+    instruction: "Warm, confident studio narrator with a natural tone",
+    reference_text: "Welcome to Fish Audio.",
+    language: "en",
+    n: 2,
+  }),
+});
+
+if (!response.ok)
+  throw new Error(`${response.status} ${await response.text()}`);
+
+const { candidates } = await response.json();
+await writeFile("voice.wav", Buffer.from(candidates[0].audio_base64, "base64"));
+console.log(candidates[0].sample_rate, candidates[0].duration_ms);
+```
+
+</CodeGroup>
+
+## Prompt and preview text
+
+`instruction` is the main voice design prompt. Describe the voice, age, delivery, tone, accent, pacing, and context in natural language.
+
+```json
+{
+  "instruction": "Energetic young presenter, bright tone, crisp diction, friendly but not cartoonish",
+  "reference_text": "Here is your weekly product update.",
+  "language": "en",
+  "n": 3
+}
+```
+
+`reference_text` is optional. When you provide it, candidates read that text so you can compare voices on the same line. Keep it short; the API accepts up to 300 characters.
+
+## Parameters
+
+| Field                     | Default  | Notes                                                              |
+| ------------------------- | -------- | ------------------------------------------------------------------ |
+| `instruction`             | Required | Voice design prompt. 1 to 2000 characters.                         |
+| `reference_text`          | `null`   | Optional preview text. Up to 300 characters.                       |
+| `language`                | `null`   | Optional language hint such as `en`, `zh`, or `ja`.                |
+| `n`                       | `2`      | Number of candidates to generate. Range: 1 to 4.                   |
+| `speed`                   | `1.0`    | Speaking speed multiplier. Must be greater than 0 and at most 3.   |
+| `num_step`                | `32`     | Diffusion steps. Range: 1 to 128.                                  |
+| `guidance_scale`          | `2.0`    | Higher values follow the prompt more strongly. Must be at least 0. |
+| `instruct_guidance_scale` | `0.0`    | Prompt conditioning guidance. Must be at least 0.                  |
+| `seed`                    | `null`   | Optional deterministic seed for candidate generation.              |
+
+<Warning>
+  Voice Design accepts JSON only. Do not send MessagePack, multipart form data,
+  inline reference audio, or service-internal fields such as `features`,
+  `features_json_file`, or `include_audio_base64`.
+</Warning>
+
+## Response
+
+The response contains one or more generated candidates:
+
+```json
+{
+  "candidates": [
+    {
+      "id": "candidate-id",
+      "index": 0,
+      "audio_base64": "UklGRg...",
+      "sample_rate": 44100,
+      "duration_ms": 3100,
+      "text": "Welcome to Fish Audio.",
+      "language": "en"
+    }
+  ]
+}
+```
+
+Use `index` to preserve the order returned by the model. `id` is a stable candidate identifier for this response. Optional fields such as `text`, `instruct`, and `language` appear only when available.
+
+## Billing and errors
+
+Voice Design is billed once per successful generation request, not once per candidate. Authentication errors, validation errors, insufficient API credit, concurrency limits, upstream service errors, and empty candidate responses are not billed.
+
+For the full error format and retry guidance, see [Errors](/api-reference/errors).
