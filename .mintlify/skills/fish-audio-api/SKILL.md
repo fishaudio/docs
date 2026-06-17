@@ -17,6 +17,7 @@ This file condenses those into rules an agent can apply directly.
 - Base URL: `https://api.fish.audio`
 - WebSocket base: `wss://api.fish.audio`
 - Auth (all endpoints): `Authorization: Bearer <FISH_API_KEY>`
+- Optional distributed tracing for inference APIs: see `https://docs.fish.audio/api-reference/observability`.
 - Get API keys: `https://fish.audio/app/api-keys`
 - Never hardcode keys — read from an env var like `FISH_API_KEY`.
 - Errors are JSON `{status, message}` for 401 / 402 / 404, and an array of `{loc, type, msg, ctx, in}` for 422 (validation).
