@@ -1,0 +1,189 @@
+---
+title: "Tracing & Performance Analysis"
+description: "Correlate Fish Audio inference spans with your own distributed traces"
+icon: "chart-line"
+iconType: "solid"
+---
+
+Fish Audio inference APIs accept the standard W3C Trace Context `traceparent`
+header. Send this header when your application already has an active trace and
+you want Fish Audio edge, inference, alignment, and upstream ASR spans to appear
+under the same trace ID.
+
+Supported inference surfaces:
+
+- `POST /v1/tts`
+- `POST /v1/tts/stream/with-timestamp`
+- `POST /v1/asr`
+- `wss://api.fish.audio/v1/tts/live`
+
+If `traceparent` is omitted or invalid, Fish Audio starts a new trace for the
+request. Tracing does not change authentication, rate limits, billing, request
+priority, or generated output.
+
+## Header Format
+
+Use the W3C `traceparent` format:
+
+```text
+traceparent: 00-<trace-id>-<parent-id>-<trace-flags>
+```
+
+Example:
+
+```text
+traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+```
+
+In this example, `4bf92f3577b34da6a3ce929d0e0e4736` is the trace ID. Fish Audio
+continues that trace ID when it calls the inference backend and related services.
+
+<Tip>
+  Prefer letting your tracing SDK inject `traceparent` instead of hand-building
+  it. For each Fish Audio request, create a child span in your business service
+  and inject that span context into the outgoing HTTP or WebSocket headers.
+</Tip>
+
+## Bind Business and Inference Traces
+
+To bind your business-side trace to Fish Audio's inference-side trace:
+
+1. Start or continue a trace in your application for the user workflow.
+2. Create a child span around the Fish Audio request.
+3. Inject that span context into the request headers.
+4. Send the request with `traceparent`.
+5. Use the same trace ID in your observability tool to inspect both your
+   business spans and Fish Audio inference spans.
+
+For multiple Fish Audio calls in one workflow, keep the same trace ID by using
+the same parent trace, but let your tracing SDK create a fresh parent/span ID for
+each outgoing request.
+
+## REST Example
+
+```bash
+TRACEPARENT="00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+
+curl --request POST https://api.fish.audio/v1/tts \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --header "model: s2-pro" \
+  --header "traceparent: $TRACEPARENT" \
+  --data '{
+    "text": "Hello from a traced Fish Audio request.",
+    "reference_id": "model-id",
+    "format": "mp3"
+  }' \
+  --output out.mp3
+```
+
+## OpenTelemetry Examples
+
+<Tabs>
+  <Tab title="Python">
+
+    ```python
+    import os
+    import requests
+    from opentelemetry import trace
+    from opentelemetry.propagate import inject
+
+    tracer = trace.get_tracer("my-service")
+
+    with tracer.start_as_current_span("fish_audio.tts"):
+        headers = {
+            "Authorization": f"Bearer {os.environ['FISH_API_KEY']}",
+            "Content-Type": "application/json",
+            "model": "s2-pro",
+        }
+        inject(headers)
+
+        response = requests.post(
+            "https://api.fish.audio/v1/tts",
+            headers=headers,
+            json={
+                "text": "Hello from a traced request.",
+                "reference_id": "model-id",
+                "format": "mp3",
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+    ```
+
+  </Tab>
+  <Tab title="Node.js">
+
+    ```javascript
+    import { context, propagation, trace } from "@opentelemetry/api";
+
+    const tracer = trace.getTracer("my-service");
+    const span = tracer.startSpan("fish_audio.tts");
+    const ctx = trace.setSpan(context.active(), span);
+
+    try {
+      await context.with(ctx, async () => {
+        const headers = {
+          Authorization: `Bearer ${process.env.FISH_API_KEY}`,
+          "Content-Type": "application/json",
+          model: "s2-pro",
+        };
+        propagation.inject(ctx, headers);
+
+        const response = await fetch("https://api.fish.audio/v1/tts", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            text: "Hello from a traced request.",
+            reference_id: "model-id",
+            format: "mp3",
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`${response.status} ${await response.text()}`);
+        }
+      });
+    } finally {
+      span.end();
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+## WebSocket Tracing
+
+Pass `traceparent` on the WebSocket upgrade request:
+
+```javascript
+import WebSocket from "ws";
+
+const ws = new WebSocket("wss://api.fish.audio/v1/tts/live", {
+  headers: {
+    Authorization: `Bearer ${process.env.FISH_API_KEY}`,
+    model: "s2-pro",
+    traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+  },
+});
+```
+
+<Note>
+  Browser WebSocket APIs do not allow custom headers. For browser clients,
+  inject `traceparent` from a trusted server-side proxy or use REST endpoints
+  where your frontend can send the header through `fetch`.
+</Note>
+
+## Enterprise Performance Analysis
+
+<Info>
+  Fish Audio supports trace-based performance analysis for enterprise customers
+  with a signed enterprise agreement. When this support is enabled, share the
+  W3C trace ID with Fish Audio support so we can correlate your business span
+  with Fish Audio edge routing, backend inference, reference-audio encoding,
+  TTFT, response-time, alignment, and upstream ASR spans.
+</Info>
+
+Only share the trace ID or `traceparent` value needed for investigation. Do not
+place API keys, user identifiers, transcripts, audio URLs, or other sensitive
+data in trace IDs or span names.

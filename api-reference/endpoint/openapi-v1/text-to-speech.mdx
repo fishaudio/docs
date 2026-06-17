@@ -15,6 +15,12 @@ To upload audio clips directly, without pre-uploading, serialize the request bod
 </Warning>
 
 <Note>
+  This endpoint accepts the optional W3C `traceparent` header for distributed
+  tracing across your business service and Fish Audio inference. See [Tracing &
+  Performance Analysis](/api-reference/observability).
+</Note>
+
+<Note>
 Audio formats supported:
 - WAV / PCM
   - Sample Rate: 8kHz, 16kHz, 24kHz, 32kHz, 44.1kHz

@@ -65,12 +65,16 @@ channels:
                 - s1
                 - s2-pro
               description: TTS model to use for this session. Use `s2-pro` for multi-speaker dialogue synthesis.
+            traceparent:
+              type: string
+              description: Optional W3C Trace Context header used to correlate your business trace with Fish Audio inference spans.
     description: |
       Real-time TTS streaming channel. Clients send text chunks and receive audio chunks concurrently.
 
       ## Connection Headers
       - `Authorization: Bearer <api_key>` - Required for authentication (see security section)
       - `model: <model_name>` - Required to specify which TTS model to use (see bindings)
+      - `traceparent: <w3c_traceparent>` - Optional W3C Trace Context header for distributed tracing
 
 operations:
   receiveText:
