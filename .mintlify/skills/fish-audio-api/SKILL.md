@@ -17,7 +17,7 @@ This file condenses those into rules an agent can apply directly.
 - Base URL: `https://api.fish.audio`
 - WebSocket base: `wss://api.fish.audio`
 - Auth (all endpoints): `Authorization: Bearer <FISH_API_KEY>`
-- Optional distributed tracing for inference APIs: send W3C `traceparent` on `/v1/tts`, `/v1/tts/stream/with-timestamp`, `/v1/asr`, and `/v1/tts/live` to bind the caller's business trace to Fish Audio inference spans.
+- Optional distributed tracing for inference APIs: see `https://docs.fish.audio/api-reference/observability`.
 - Get API keys: `https://fish.audio/app/api-keys`
 - Never hardcode keys — read from an env var like `FISH_API_KEY`.
 - Errors are JSON `{status, message}` for 401 / 402 / 404, and an array of `{loc, type, msg, ctx, in}` for 422 (validation).
@@ -45,10 +45,6 @@ Required headers:
 - `Authorization: Bearer <FISH_API_KEY>`
 - `Content-Type: application/json` **or** `application/msgpack`
 - `model: s2-pro` (required). Values: `s1`, `s2-pro`. Default to `s2-pro` unless the user explicitly asks otherwise.
-
-Optional tracing header:
-
-- `traceparent: 00-<trace-id>-<parent-id>-<trace-flags>` for W3C distributed tracing.
 
 Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set by `format`. Write to a file or pipe to a player. There is **no JSON wrapper** on success.
 
@@ -201,8 +197,6 @@ await pipeline(Readable.fromWeb(res.body), createWriteStream("out.mp3"));
 ## Speech-to-Text — `POST /v1/asr`
 
 Required headers: `Authorization`. Content type: `multipart/form-data` or `application/msgpack`.
-
-Optional tracing header: `traceparent` in W3C Trace Context format.
 
 Form fields:
 
@@ -377,7 +371,6 @@ For low-latency / streaming TTS (e.g. LLM token stream → speech). All frames a
 
 - `Authorization: Bearer <FISH_API_KEY>`
 - `model: s2-pro` (or `s1`) — **required**
-- `traceparent` — optional W3C Trace Context header for distributed tracing. Browser WebSocket clients cannot set custom headers directly; use a server-side proxy when trace propagation is required.
 
 ### Event sequence
 

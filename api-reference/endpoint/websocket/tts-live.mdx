@@ -11,13 +11,5 @@ The WebSocket TTS endpoint enables bidirectional streaming for low-latency text-
 </Note>
 
 <Note>
-  The WebSocket upgrade request accepts the optional W3C `traceparent` header
-  for distributed tracing across your business service and Fish Audio inference.
-  Browser WebSocket clients cannot set custom headers directly; use a trusted
-  server-side proxy when you need trace propagation from the browser. See
-  [Tracing & Performance Analysis](/api-reference/observability).
-</Note>
-
-<Note>
 The `request` payload inside `StartEvent` uses the same parameters as the HTTP [Text to Speech API](/api-reference/endpoint/openapi-v1/text-to-speech). For more detailed field guidance, model-specific behavior, and examples, see that page. In WebSocket mode, `request.text` is typically empty in `StartEvent`, and the text content is sent through subsequent `TextEvent` messages.
 </Note>
