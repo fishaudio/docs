@@ -215,9 +215,14 @@ audio = client.tts.convert(
 
 `latency` trades stability for speed; `chunk_length` controls how much text the engine batches before it starts generating.
 
-- `latency="balanced"` (default) — lower time-to-first-audio (~300ms). Good for interactive use.
+- `latency="balanced"` (Python SDK default) — lower time-to-first-audio (~300ms). Good for interactive use.
 - `latency="normal"` — most stable output, at slightly higher latency.
+- `latency="low"` (raw API only) — lowest latency.
 - `chunk_length` (`100`–`300`, default `200`) — smaller chunks start audio sooner; larger chunks are more efficient for long text.
+
+<Note>
+  The raw HTTP/WebSocket API defaults `latency` to `normal` (quality-tuned), while the Python SDK defaults to `balanced`. For real-time use over the raw API, set `latency` to `balanced` or `low` explicitly — see [Tune latency vs. quality](/features/realtime-streaming#tune-latency-vs-quality).
+</Note>
 
 <CodeGroup>
 ```python Python

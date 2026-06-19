@@ -151,13 +151,25 @@ for chunk in client.tts.stream_websocket(script(), reference_id="YOUR_VOICE_ID")
 
 Both streaming paths take a `latency` mode:
 
-- `latency="balanced"` (default) — lowest time-to-first-audio. Use it for voice agents and live LLM output.
+- `latency="balanced"` (Python SDK default) — lowest time-to-first-audio. Use it for voice agents and live LLM output.
 - `latency="normal"` — slightly higher latency, best audio quality. Use it for narration where you can afford a beat.
 
 ```python
 for chunk in client.tts.stream_websocket(llm_tokens(), latency="balanced"):
     ...
 ```
+
+<Warning>
+  **Set `latency` explicitly for real-time use.** The Python SDK defaults to `balanced`, but the raw HTTP/WebSocket API defaults to `normal`, which is tuned for quality and noticeably increases time-to-first-audio — you may wait several seconds for the first chunk. If you call the API directly, or through a third-party integration such as the LiveKit plugin, pass `balanced` (or `low`) for interactive latency.
+</Warning>
+
+The available modes differ slightly between the raw API and the SDK:
+
+| Mode       | Raw HTTP/WebSocket API | Python SDK    | Behavior                                       |
+| ---------- | ---------------------- | ------------- | ---------------------------------------------- |
+| `low`      | Supported              | Not available | Lowest latency                                 |
+| `balanced` | Supported              | Default       | Reduced latency — recommended for real-time    |
+| `normal`   | Default                | Supported     | Best quality, highest time-to-first-audio      |
 
 For finer control, pass a `TTSConfig` with chunk tuning. Smaller chunks emit audio sooner (lower latency); larger chunks give the model more context (smoother prosody):
 
