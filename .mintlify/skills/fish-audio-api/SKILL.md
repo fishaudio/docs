@@ -256,7 +256,7 @@ Response: JSON `{ candidates: VoiceDesignCandidate[] }`. Each candidate includes
 | Field                     | Type           | Default      | Notes                                                                       |
 | ------------------------- | -------------- | ------------ | --------------------------------------------------------------------------- |
 | `instruction`             | string         | — (required) | Voice design prompt. 1 to 2000 characters.                                  |
-| `reference_text`          | string \| null | null         | Optional preview text to read in the generated voice. Up to 300 characters. |
+| `reference_text`          | string \| null | null         | Optional preview text to read in the generated voice. Up to 150 characters. |
 | `language`                | string \| null | null         | Optional language hint such as `en`, `zh`, or `ja`.                         |
 | `n`                       | int            | 2            | Number of candidates. Range: 1 to 4.                                        |
 | `speed`                   | number         | 1.0          | Speaking speed multiplier. Must be greater than 0 and at most 3.             |
