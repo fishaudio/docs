@@ -1345,7 +1345,11 @@
                       "type": "string"
                     },
                     "train_mode": {
-                      "const": "fast",
+                      "default": "full",
+                      "enum": [
+                        "fast",
+                        "full"
+                      ],
                       "title": "Train Mode",
                       "type": "string"
                     },
@@ -1643,7 +1647,7 @@
                       "type": "string"
                     },
                     "train_mode": {
-                      "default": "fast",
+                      "default": "full",
                       "enum": [
                         "fast",
                         "full"
@@ -4048,7 +4052,7 @@
             "type": "string"
           },
           "train_mode": {
-            "default": "fast",
+            "default": "full",
             "enum": [
               "fast",
               "full"
