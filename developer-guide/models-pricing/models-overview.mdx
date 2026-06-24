@@ -20,10 +20,32 @@ Fish Audio offers state-of-the-art text-to-speech models optimized for different
 
 ### Recommended Model
 
-<Card title="s2-pro" icon="star">
-  **Fish Audio S2-Pro** - Our next-generation TTS model with best-in-class performance
+<Card title="s2.1-pro" icon="star">
+  **Fish Audio S2.1-Pro** - Our recommended production TTS model and an improved version of S2-Pro
   - Natural language control with `[bracket]` syntax — not limited to a fixed set (e.g., `[whispers sweetly]`, `[laughing nervously]`)
-  - Multi-speaker dialogue support **(S2-Pro exclusive)**
+  - Multi-speaker dialogue support
+  - 83 languages
+  - Improved quality, latency, and throughput over S2-Pro
+  - Production option for workloads that need TTFA and DPA guarantees
+</Card>
+
+### Free Development Model
+
+<Card title="s2.1-pro-free" icon="flask">
+  **Fish Audio S2.1-Pro Free** - The same model as S2.1-Pro, available at $0 for development and testing
+  - Use the `s2.1-pro-free` model string with the same TTS API endpoint
+  - Same model quality and language coverage as `s2.1-pro`
+  - Free to use under fair-use limits
+  - No TTFA or DPA guarantees
+  - Best for testing, prototyping, development, and smaller businesses
+</Card>
+
+### Previous S2 Model
+
+<Card title="s2-pro" icon="microchip">
+  **Fish Audio S2-Pro** - Previous-generation S2 TTS model
+  - Natural language control with `[bracket]` syntax — not limited to a fixed set (e.g., `[whispers sweetly]`, `[laughing nervously]`)
+  - Multi-speaker dialogue support
   - 80+ languages
   - 100ms time-to-first-audio
   - Full SGLang-based serving stack
@@ -31,7 +53,7 @@ Fish Audio offers state-of-the-art text-to-speech models optimized for different
 </Card>
 
 <Note>
-We recommend using `s2-pro` for all new projects to access the latest capabilities and performance improvements. S1 remains available for existing integrations.
+We recommend using `s2.1-pro` for production projects. Use `s2.1-pro-free` when you want the same model for evaluation, prototyping, development, and smaller businesses without TTFA or DPA guarantees. S1 remains available for existing integrations.
 </Note>
 
 ### Previous Model
@@ -54,9 +76,9 @@ We recommend using `s2-pro` for all new projects to access the latest capabiliti
 
 ## Supported Languages
 
-### S2-Pro
+### S2.1-Pro and S2-Pro
 
-S2-Pro supports 80+ languages with automatic language detection and inline emotion and paralinguistic cue support.
+S2.1-Pro supports 83 languages, while S2-Pro supports 80+ languages. Both use automatic language detection and support inline emotion and paralinguistic cues.
 
 <Info>
 Language detection is automatic - simply provide text in your target language.
@@ -76,9 +98,9 @@ Russian, Dutch, Italian, Polish, Portuguese
 
 Fish Audio models support emotional expressions and voice styles that can be controlled through text markers in your input.
 
-### S2-Pro Natural Language Control
+### S2.1-Pro and S2-Pro Natural Language Control
 
-S2-Pro treats `[bracket]` tags as standard text rather than dedicated control tokens. Through training on massive datasets, the model learned implicit mappings between natural language descriptions and acoustic variations. This means you are not limited to a predefined set of tags — you can use any descriptive expression and the model will interpret it, such as `[whispers sweetly]` or `[laughing nervously]`.
+S2.1-Pro and S2-Pro treat `[bracket]` tags as standard text rather than dedicated control tokens. Through training on massive datasets, the models learned implicit mappings between natural language descriptions and acoustic variations. This means you are not limited to a predefined set of tags — you can use any descriptive expression and the model will interpret it, such as `[whispers sweetly]` or `[laughing nervously]`.
 
 Common examples include:
 
@@ -88,7 +110,7 @@ Common examples include:
 ```
 
 <Tip>
-S2-Pro cues can be placed anywhere in your text to control emotion at specific positions. For example: `"I can't believe it [gasp] you actually did it [laugh]"`
+S2 cues can be placed anywhere in your text to control emotion at specific positions. For example: `"I can't believe it [gasp] you actually did it [laugh]"`
 </Tip>
 
 ### S1 Voice Styles and Emotions
