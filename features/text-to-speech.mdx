@@ -5,7 +5,7 @@ description: "Turn text into lifelike speech — use it however you build"
 icon: "microphone"
 ---
 
-Generate natural speech from text with the `s2-pro` and `s1` models. Pick a voice, choose a format, and go — from the API directly, the Python library, or JavaScript.
+Generate natural speech from text with the `s2.1-pro`, `s2-pro`, and `s1` models. Pick a voice, choose a format, and go — from the API directly, the Python library, or JavaScript.
 
 <CardGroup cols={3}>
   <Card title="Use it in the web app" icon="browser" href="https://fish.audio/app/text-to-speech">
@@ -107,7 +107,9 @@ curl --request POST https://api.fish.audio/v1/tts \
 
 ### Models
 
-- **`s2-pro`** (default) — highest quality, multi-speaker, natural-language expression control.
+- **`s2.1-pro`** — recommended for production, with improved quality, latency, and throughput over S2-Pro.
+- **`s2.1-pro-free`** — the same model at $0 for testing, prototyping, development, and smaller businesses, without TTFA or DPA guarantees.
+- **`s2-pro`** (default) — previous-generation S2 model with multi-speaker and natural-language expression control.
 - **`s1`** — previous generation, `(parenthesis)` emotion tags.
 
 In the API, select with the `model` request header. In Python, pass `model="s2-pro"`. See [Choosing a Model](/developer-guide/models-pricing/choosing-a-model).
