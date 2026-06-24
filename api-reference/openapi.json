@@ -2430,13 +2430,15 @@
           {
             "in": "header",
             "name": "model",
-            "description": "Specify which TTS model to use. We recommend `s2-pro`.",
+            "description": "Specify which TTS model to use. Use `s2.1-pro-free` for the free developer tier.",
             "required": true,
             "schema": {
-              "default": "s2-pro",
+              "default": "s2.1-pro-free",
               "enum": [
                 "s1",
-                "s2-pro"
+                "s2-pro",
+                "s2.1-pro",
+                "s2.1-pro-free"
               ],
               "title": "Model",
               "type": "string"
@@ -2584,12 +2586,12 @@
           {
             "lang": "bash",
             "label": "Single Speaker",
-            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/tts \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2-pro' \\\n  --data '{\n    \"text\": \"Hello! Welcome to Fish Audio.\",\n    \"reference_id\": \"model-id\",\n    \"temperature\": 0.7,\n    \"top_p\": 0.7,\n    \"prosody\": {\n      \"speed\": 1,\n      \"volume\": 0,\n      \"normalize_loudness\": true\n    },\n    \"chunk_length\": 300,\n    \"normalize\": true,\n    \"format\": \"mp3\",\n    \"sample_rate\": 44100,\n    \"mp3_bitrate\": 128,\n    \"latency\": \"normal\",\n    \"max_new_tokens\": 1024,\n    \"repetition_penalty\": 1.2,\n    \"min_chunk_length\": 50,\n    \"condition_on_previous_chunks\": true,\n    \"early_stop_threshold\": 1\n  }'"
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/tts \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2.1-pro-free' \\\n  --data '{\n    \"text\": \"Hello! Welcome to Fish Audio.\",\n    \"reference_id\": \"model-id\",\n    \"temperature\": 0.7,\n    \"top_p\": 0.7,\n    \"prosody\": {\n      \"speed\": 1,\n      \"volume\": 0,\n      \"normalize_loudness\": true\n    },\n    \"chunk_length\": 300,\n    \"normalize\": true,\n    \"format\": \"mp3\",\n    \"sample_rate\": 44100,\n    \"mp3_bitrate\": 128,\n    \"latency\": \"normal\",\n    \"max_new_tokens\": 1024,\n    \"repetition_penalty\": 1.2,\n    \"min_chunk_length\": 50,\n    \"condition_on_previous_chunks\": true,\n    \"early_stop_threshold\": 1\n  }'"
           },
           {
             "lang": "bash",
-            "label": "Multi Speaker (S2-Pro only)",
-            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/tts \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2-pro' \\\n  --data '{\n    \"text\": \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\",\n    \"reference_id\": [\"speaker-a-id\", \"speaker-b-id\"],\n    \"temperature\": 0.7,\n    \"top_p\": 0.7,\n    \"prosody\": {\n      \"speed\": 1,\n      \"volume\": 0,\n      \"normalize_loudness\": true\n    },\n    \"chunk_length\": 300,\n    \"normalize\": true,\n    \"format\": \"mp3\",\n    \"sample_rate\": 44100,\n    \"mp3_bitrate\": 128,\n    \"latency\": \"normal\",\n    \"max_new_tokens\": 1024,\n    \"repetition_penalty\": 1.2,\n    \"min_chunk_length\": 50,\n    \"condition_on_previous_chunks\": true,\n    \"early_stop_threshold\": 1\n  }'"
+            "label": "Multi Speaker (S2.1 Pro only)",
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/tts \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2.1-pro-free' \\\n  --data '{\n    \"text\": \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\",\n    \"reference_id\": [\"speaker-a-id\", \"speaker-b-id\"],\n    \"temperature\": 0.7,\n    \"top_p\": 0.7,\n    \"prosody\": {\n      \"speed\": 1,\n      \"volume\": 0,\n      \"normalize_loudness\": true\n    },\n    \"chunk_length\": 300,\n    \"normalize\": true,\n    \"format\": \"mp3\",\n    \"sample_rate\": 44100,\n    \"mp3_bitrate\": 128,\n    \"latency\": \"normal\",\n    \"max_new_tokens\": 1024,\n    \"repetition_penalty\": 1.2,\n    \"min_chunk_length\": 50,\n    \"condition_on_previous_chunks\": true,\n    \"early_stop_threshold\": 1\n  }'"
           }
         ]
       }
@@ -2606,13 +2608,15 @@
           {
             "in": "header",
             "name": "model",
-            "description": "Specify which TTS model to use. We recommend `s2-pro`.",
+            "description": "Specify which TTS model to use. Use `s2.1-pro-free` for the free developer tier.",
             "required": true,
             "schema": {
-              "default": "s2-pro",
+              "default": "s2.1-pro-free",
               "enum": [
                 "s1",
-                "s2-pro"
+                "s2-pro",
+                "s2.1-pro",
+                "s2.1-pro-free"
               ],
               "title": "Model",
               "type": "string"
@@ -3540,7 +3544,7 @@
           {
             "lang": "bash",
             "label": "Stream With Timestamps",
-            "source": "curl --no-buffer --request POST \\\n  --url https://api.fish.audio/v1/tts/stream/with-timestamp \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2-pro' \\\n  --data '{\n    \"text\": \"[happy] I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start. Seeing you again now makes me realize just how much I’ve missed you. We have so much to catch up on, and I don’t even know which part of my life to tell you about first.\",\n    \"format\": \"opus\",\n    \"normalize\": true,\n    \"temperature\": 0.9,\n    \"chunk_length\": 100,\n    \"top_p\": 0.9,\n    \"latency\": \"balanced\",\n    \"sample_rate\": 48000,\n    \"reference_id\": \"fbe02f8306fc4d3d915e9871722a39d5\"\n  }'"
+            "source": "curl --no-buffer --request POST \\\n  --url https://api.fish.audio/v1/tts/stream/with-timestamp \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2.1-pro-free' \\\n  --data '{\n    \"text\": \"[happy] I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start. Seeing you again now makes me realize just how much I’ve missed you. We have so much to catch up on, and I don’t even know which part of my life to tell you about first.\",\n    \"format\": \"opus\",\n    \"normalize\": true,\n    \"temperature\": 0.9,\n    \"chunk_length\": 100,\n    \"top_p\": 0.9,\n    \"latency\": \"balanced\",\n    \"sample_rate\": 48000,\n    \"reference_id\": \"fbe02f8306fc4d3d915e9871722a39d5\"\n  }'"
           }
         ]
       }
