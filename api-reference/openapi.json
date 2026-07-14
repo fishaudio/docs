@@ -166,6 +166,18 @@
                       "default": null,
                       "title": "Last Synced At"
                     },
+                    "subscription_currency": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Subscription Currency"
+                    },
                     "extra_balance": {
                       "anyOf": [
                         {
@@ -4531,6 +4543,15 @@
             "minimum": 0,
             "title": "Early Stop Threshold",
             "type": "number"
+          },
+          "features": {
+            "default": [],
+            "description": "Optional request-scoped TTS feature flags forwarded verbatim to the inference backend. Use [\"quality-guard\"] to enable the quality guard for this synthesis request. Feature availability is determined by the inference backend.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Features",
+            "type": "array"
           }
         },
         "required": [
@@ -4729,6 +4750,15 @@
             "minimum": 0,
             "title": "Early Stop Threshold",
             "type": "number"
+          },
+          "features": {
+            "default": [],
+            "description": "Optional request-scoped TTS feature flags forwarded verbatim to the inference backend. Use [\"quality-guard\"] to enable the quality guard for this synthesis request. Feature availability is determined by the inference backend.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Features",
+            "type": "array"
           }
         },
         "required": [
