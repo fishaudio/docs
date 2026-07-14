@@ -17,7 +17,7 @@ save(audio, "out.mp3")
 # Use a specific voice model by id
 audio = client.tts.convert(
     text="Using a saved voice.",
-    reference_id="802e3bc2b27e49c2995d23ef70e6ac89",
+    reference_id="9a9cf47702da476aa4629e2506d4a857",
 )
 
 # Pick a model and adjust speed
@@ -95,7 +95,7 @@ await play(audio);
 const audio2 = await client.textToSpeech.convert(
   {
     text: "Using a saved voice.",
-    reference_id: "802e3bc2b27e49c2995d23ef70e6ac89",
+    reference_id: "9a9cf47702da476aa4629e2506d4a857",
   },
   "s1" // <-- positional backend, not { backend: "s1" }
 );

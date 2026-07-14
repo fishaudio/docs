@@ -85,7 +85,7 @@ Pass a **voice model id** (`reference_id`). Find ids in the [Voice Library](/ove
 ```python Python
 audio = client.tts.convert(
     text="This uses a specific voice.",
-    reference_id="802e3bc2b27e49c2995d23ef70e6ac89",
+    reference_id="9a9cf47702da476aa4629e2506d4a857",
 )
 ```
 
@@ -96,7 +96,7 @@ curl --request POST https://api.fish.audio/v1/tts \
   --header "model: s2-pro" \
   --data '{
     "text": "This uses a specific voice.",
-    "reference_id": "802e3bc2b27e49c2995d23ef70e6ac89",
+    "reference_id": "9a9cf47702da476aa4629e2506d4a857",
     "format": "mp3"
   }' \
   --output out.mp3
