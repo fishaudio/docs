@@ -14,8 +14,14 @@ import { AudioTranscript } from "/snippets/audio-transcript.jsx";
   <AudioTranscript page="core-features-fine-grained-control" />
 </Visibility>
 
-<Card title="Try it live in the API playground" icon="flask" href="/api-reference/endpoint/openapi-v1/text-to-speech" horizontal>
-  Put your phoneme or paralanguage tags into the `text` field and send a real request to hear the result.
+<Card
+  title="Try it live in the API playground"
+  icon="flask"
+  href="/api-reference/endpoint/openapi-v1/text-to-speech"
+  horizontal
+>
+  Put your phoneme or paralanguage tags into the `text` field and send a real
+  request to hear the result.
 </Card>
 
 ## Getting Started
@@ -24,7 +30,7 @@ To use fine-grained control, you can use either our SDK, API, or Playground.
 
 SDK/API: Phoneme tags are preserved by text normalization, so you can keep the default normalization behavior for pronunciation control. Set `"normalize": false` only when you want to prevent normalization from rewriting the surrounding text, such as numbers, dates, or URLs.
 
-Playground: You can use V1.6 Control Model, without setting any other options.
+Playground: Use `s2-pro` or `s1`. Both models support phoneme control with `<|phoneme_start|>` and `<|phoneme_end|>` tags.
 
 <Note>
   Disabling normalization may reduce the stability of reading numbers, dates,
@@ -88,41 +94,14 @@ Japanese:
 <|phoneme_start|>ha0shi1ga0<|phoneme_end|>見えます。
 ```
 
-## Paralanguage
+## Emotion and Paralanguage Control
 
-Paralanguage controls allow you to add natural speech elements and pauses to make the generated speech sound more human-like. There are two main types of controls:
+For pauses, laughter, breathing, emotion, tone, and other paralinguistic cues, use the [Emotion Control](/developer-guide/core-features/emotions) guide.
 
-### Pause Words
+`s2-pro` uses `[bracket]` cues such as `[laughing]` and `[break]`. `s1` uses `(parentheses)` syntax. See the Emotion Control guide for the current supported marker lists and examples.
 
-You can use common pause words like "um", "uh", "嗯", "啊" to control the rhythm of the speech.
-
-### Special Effects
-
-The following special effects can be added using parentheses:
-
-| Effect           | Description        | First Available | Stage        |
-| ---------------- | ------------------ | --------------- | ------------ |
-| `(break)`        | Short pause        | V1.6            | Experimental |
-| `(long-break)`   | Extended pause     | V1.6            | Experimental |
-| `(breath)`       | Breathing sound    | V1.6            | Experimental |
-| `(laugh)`        | Laughter sound     | V1.6            | Experimental |
-| `(cough)`        | Coughing sound     | V1.6            | Experimental |
-| `(lip-smacking)` | Lip smacking sound | V1.6            | Experimental |
-| `(sigh)`         | Sighing sound      | V1.6            | Experimental |
-
-<Warning>
-  The effects `(laugh)`, `(cough)`, `(lip-smacking)`, and `(sigh)` are
-  developing. You may need to repeat them multiple times for better results.
-</Warning>
-
-Example:
+You can combine emotion or paralanguage cues and phoneme control in the same text:
 
 ```text
-I am, um, an (break) engineer.
-```
-
-You can combine paralanguage and phoneme control in the same text:
-
-```text
-I am, um, an (break) <|phoneme_start|>EH1 N JH AH0 N IH1 R<|phoneme_end|>.
+[calmly] I am an <|phoneme_start|>EH1 N JH AH0 N IH1 R<|phoneme_end|>.
 ```
