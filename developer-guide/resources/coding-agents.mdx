@@ -76,54 +76,10 @@ Once installed, ask your agent in plain language — it will use the correct cli
 
 ## Or connect via MCP
 
-Prefer live documentation search inside your editor over a self-contained skill file? Connect the Fish Audio MCP server, which serves the latest docs to your agent.
-
-<Tabs>
-  <Tab title="Claude Code">
-    ```bash
-    claude mcp add --transport http fish-audio --scope project https://docs.fish.audio/mcp
-    ```
-
-    This writes a `.mcp.json` in your project root. Verify with `claude mcp list` (you should see `fish-audio`), then ask "What Fish Audio TTS models are available?"
-
-    <Accordion title="Installation scopes">
-      - **`--scope project`** (recommended): config in `.mcp.json`, version-controlled and shared with your team.
-      - **`--scope user`**: global across your projects, private to your account.
-      - **`--scope local`** (default): project-specific and private to you.
-    </Accordion>
-  </Tab>
-
-  <Tab title="Cursor">
-    Open the command palette (`Cmd/Ctrl+Shift+P`) → "Open MCP settings" → "Add custom MCP", and add:
-
-    ```json
-    {
-      "mcpServers": {
-        "fish-audio": { "url": "https://docs.fish.audio/mcp" }
-      }
-    }
-    ```
-
-    Save and reload Cursor, then ask "What Fish Audio TTS models are available?"
-  </Tab>
-
-  <Tab title="Windsurf">
-    Go to `Settings → Cascade → MCP Servers → View raw config` (`~/.codeium/windsurf/mcp_config.json`) and add:
-
-    ```json
-    {
-      "mcpServers": {
-        "fish-audio": { "url": "https://docs.fish.audio/mcp" }
-      }
-    }
-    ```
-
-    Save, refresh, then in Cascade ask "Search Fish Audio docs for TTS API usage."
-  </Tab>
-</Tabs>
+The [Fish Audio MCP server](/overview/mcp) at `https://api.fish.audio/mcp` gives your agent tools instead of docs: it can search the voice library, generate speech, and transcribe audio with your Fish Audio account (OAuth sign-in, no API key). See the [MCP server guide](/overview/mcp) for client setup and the tool list.
 
 <Note>
-  **Skill vs MCP:** the skill is a self-contained instruction file that works offline after install; MCP fetches the latest docs live. You can use both. This site also exposes [llms.txt](https://docs.fish.audio/llms.txt) and [llms-full.txt](https://docs.fish.audio/llms-full.txt) for agents that fetch docs directly.
+  This site also exposes [llms.txt](https://docs.fish.audio/llms.txt) and [llms-full.txt](https://docs.fish.audio/llms-full.txt) for agents that fetch docs directly.
 </Note>
 
 ## Next steps
