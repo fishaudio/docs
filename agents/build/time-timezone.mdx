@@ -1,0 +1,100 @@
+---
+title: "Time & Timezone"
+description: "Your agent knows the current date and time by default — how the timezone is chosen and how to opt out"
+icon: "clock"
+---
+
+Agents are time-aware out of the box: every session knows today's date and the current time in the session's timezone. You don't reference a variable or add anything to your prompt — "tomorrow morning" and "next Tuesday" ground correctly from the first turn, on every channel (voice, text, and phone).
+
+## What the agent knows
+
+Fish Audio injects two pieces of world context server-side:
+
+| When | What | Example |
+| ------------------ | ---------------------------- | ------------------------------------------------------------------ |
+| At session start | Today's date and the session timezone | `Today is Thursday, July 23, 2026. Session timezone: Asia/Shanghai (UTC+8).` |
+| Before every reply | The current time, minute precision | `Current date and time: Thursday, July 23, 2026 at 13:00 (Asia/Shanghai).` |
+
+The time is refreshed on every turn, so it stays accurate through long conversations and past midnight — it never freezes at the session's start time.
+
+<Note>
+  The injected context is always English, whatever the session language — the
+  agent still speaks dates and times naturally in the conversation's language.
+  Injection happens outside your configuration, so it never counts toward the
+  system prompt's character limit.
+</Note>
+
+## Which timezone a session uses
+
+The timezone is resolved once, when the session is created, taking the first that applies:
+
+1. **`timezone`** in the creation request — your explicit per-session choice, as an IANA name like `Asia/Shanghai`. An invalid name rejects the request with `422`.
+2. **The agent's configured timezone** — set on the agent in the Builder (**Configuration → Timezone**) or via the [agent config API](/agents/build/configuration). Pin one when your agent serves a single region regardless of who calls.
+3. **`client_timezone`** — a hint with the end user's browser timezone, sent automatically by the [Web SDK](/agents/integrate/web-sdk) in public-agent mode. Used only when neither of the above is set; an invalid hint is ignored rather than failing the session.
+4. **The caller's phone number** — inbound calls infer the timezone from the caller's country when that country has a single timezone.
+5. **UTC** otherwise.
+
+In the browser, this means zero configuration: the SDK detects the visitor's real timezone and the agent talks about "today" in the user's local terms, not yours.
+
+With [session token](/agents/integrate/authentication) auth, the SDK's automatic hint doesn't apply — your backend creates the session, so set `timezone` (or forward the browser's value as `client_timezone`) in the creation request:
+
+```bash API (curl)
+curl --request POST https://api.fish.audio/v1/agent/sessions \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "agent_id": "YOUR_AGENT_ID",
+    "timezone": "Asia/Shanghai"
+  }'
+```
+
+<Note>
+  Phone-number inference is country-level only. Countries that span several
+  timezones (the US, Canada, Australia, Russia, Brazil) are skipped — set the
+  agent's timezone for those. Calls that resolve nothing run in UTC.
+</Note>
+
+## Turn it off
+
+Time awareness is on by default. To withhold both the date and the per-turn time from a session — for example a role-play agent set on a fictional date, or a test that must be reproducible — set `world_context: false` when creating the session:
+
+<CodeGroup>
+```bash API (curl)
+curl --request POST https://api.fish.audio/v1/agent/sessions \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "agent_id": "YOUR_AGENT_ID",
+    "world_context": false
+  }'
+```
+
+```javascript JavaScript SDK
+import { AgentSession } from "@fishaudio/agent-client";
+
+// Public agent: the SDK forwards the opt-out in its creation request.
+const session = await AgentSession.start({
+  agentId: "YOUR_AGENT_ID",
+  worldContext: false,
+});
+```
+</CodeGroup>
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card
+    title="Authentication"
+    icon="key"
+    href="/agents/integrate/authentication"
+  >
+    All session-creation parameters, including `timezone` and `world_context`.
+  </Card>
+  <Card
+    title="Dynamic variables"
+    icon="brackets-curly"
+    href="/agents/build/dynamic-variables"
+  >
+    Personalize the rest of the prompt at session creation.
+  </Card>
+</CardGroup>

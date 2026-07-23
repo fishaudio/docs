@@ -1,0 +1,153 @@
+---
+title: "Configuration"
+description: "Set your agent's system prompt, first message, and conversation behavior — in the Builder or through the API"
+icon: "sliders"
+---
+
+Configuration is the Builder's home tab: define how your agent behaves, how it opens each conversation, and how it paces its turns. Every edit is saved to the agent's **draft** automatically — callers only hear your changes after you [publish](/agents/build/versions-publishing). New to Agents? Start with the [Quickstart](/agents/quickstart).
+
+## System prompt
+
+The system prompt sets the personality, goals, and guardrails that steer every reply. It is capped at **4,000 characters** — the Builder shows a live counter, and the API rejects longer prompts with `422 Unprocessable Entity`.
+
+<Tip>
+Keep the prompt focused:
+
+- State who the agent is and what it should accomplish, in a few sentences each.
+- Spell out guardrails explicitly ("If asked about pricing, direct the caller to sales").
+- Write for the ear — replies are spoken aloud, so ask for short, conversational answers.
+</Tip>
+
+## First message
+
+Choose how the agent opens each conversation:
+
+| Mode | Behavior | Field on the wire |
+|---|---|---|
+| **Off** | The agent stays silent and waits for the caller to speak first. | — |
+| **Fixed message** | The agent opens with the exact text you provide, every time. | `first_message` |
+| **Prompt** | The agent generates its opening line from instructions you provide. | `first_message_prompt` |
+
+`first_message` and `first_message_prompt` can each hold up to 10,000 characters. The active mode (`first_message_mode`: `off`, `fixed`, or `prompt`) decides what callers hear.
+
+## Voice
+
+The Voice panel selects the voice profile your agent speaks with (`voice_profile_id`) and its speaking language (`speaking_language`: `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`). See [Voice & language](/agents/build/voice-language) for picking a voice and how automatic language detection interacts with this setting.
+
+## Conversation settings
+
+### Turn-taking
+
+`conversation.eagerness` controls how quickly the agent starts talking after the caller stops:
+
+- `relaxed` — waits longer, never talks over the caller.
+- `balanced` (default) — waits for a natural pause.
+- `eager` — jumps in quickly.
+
+### Interruptions
+
+- `conversation.interruptible` (default `true`) — whether the caller can barge in while the agent is speaking. Turn it off for announcements the agent must finish reading, such as compliance disclosures.
+- `conversation.interruption_sensitivity` — how much caller speech counts as an interruption:
+  - `low` — ignores background noise and short acknowledgements; requires clear speech to interrupt.
+  - `balanced` (default) — interrupts on normal speech.
+  - `high` — the agent stops the moment the caller starts speaking.
+
+### Call duration
+
+`conversation.max_duration_seconds` (60–3600, default `3600`) ends the session automatically when the limit is reached.
+
+<Note>
+[Preview calls](/agents/test/preview-calls) in the Builder are capped at 10 minutes regardless of this setting.
+</Note>
+
+### Timezone
+
+`conversation.timezone` is the default IANA timezone (like `Asia/Shanghai`) the agent uses for dates and times in conversation. Leave it empty for **automatic** — each session follows the caller's device or phone number, falling back to UTC. Set one when your agent serves a single region regardless of who calls. A per-session `timezone` on the [session request](/agents/build/time-timezone) overrides this. See [Time & timezone](/agents/build/time-timezone) for the full resolution order.
+
+## Autosave and publishing
+
+There is no Save button. Each change is written to the agent's draft moments after you stop editing, and the **Saving… / Saved** indicator next to the breadcrumb shows the current state. If a save fails, the Builder tells you and keeps your pending edits so nothing is lost.
+
+Drafts never affect live traffic: active integrations keep using the last published version until you press **Publish**, which snapshots the draft as a new immutable version. The Publish button lights up whenever the draft differs from what is published. See [Versions & publishing](/agents/build/versions-publishing).
+
+## Configure through the API
+
+The same draft is readable and writable over REST — useful for provisioning agents from your own systems.
+
+### Read the draft
+
+<CodeGroup>
+```bash Request
+curl --request GET "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+```json Response (abridged)
+{
+  "config_hash": "sha256:5f2c1a9e…",
+  "prompt": {
+    "system_prompt": "You are Aria, a friendly support agent for Acme…",
+    "first_message_mode": "fixed",
+    "first_message": "Hi, thanks for calling Acme. How can I help?"
+  },
+  "voice": {
+    "voice_profile_id": "802e3bc2b27e49c2995d23ef70e6ac89",
+    "speaking_language": "en"
+  },
+  "conversation": {
+    "max_duration_seconds": 3600,
+    "eagerness": "balanced",
+    "interruptible": true,
+    "interruption_sensitivity": "balanced",
+    "timezone": ""
+  }
+}
+```
+</CodeGroup>
+
+The response also includes the `tools`, `knowledge_base`, `analysis`, and `webhooks` sections, each covered on its own page. `config_hash` identifies this draft revision — it changes whenever an edit changes the draft's content, and a mismatch with the published version is what marks an agent as having unpublished changes.
+
+### Update sections
+
+`PATCH` takes a partial body and deep-merges it into the draft: send only the sections and fields you want to change, and everything else keeps its value.
+
+```bash
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "prompt": { "system_prompt": "You are Aria, a concise support agent for Acme." },
+    "conversation": { "eagerness": "relaxed" }
+  }'
+```
+
+The response includes the draft's new `config_hash`. Values outside the documented limits — a system prompt over 4,000 characters, `max_duration_seconds` outside 60–3600 — are rejected with `422 Unprocessable Entity` and the draft is left unchanged.
+
+### Config sections
+
+| Section | What it holds | Documented in |
+|---|---|---|
+| `prompt` | System prompt and first-message settings | This page |
+| `voice` | Voice profile and speaking language | [Voice & language](/agents/build/voice-language) |
+| `conversation` | Call duration, turn-taking, interruption behavior, and timezone | This page |
+| `tools` | Attached webhook tools and system tool switches | [Tools](/agents/build/tools) |
+| `knowledge_base` | Attached knowledge sources | [Knowledge base](/agents/build/knowledge-base) |
+| `analysis` | Post-call summary, data fields, and success criteria | [Post-call analysis](/agents/monitor/post-call-analysis) |
+| `webhooks` | Post-call webhook delivery | [Webhooks](/agents/monitor/webhooks) |
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Voice & language" icon="waveform-lines" href="/agents/build/voice-language">
+    Choose a voice profile and control the speaking language.
+  </Card>
+  <Card title="Versions & publishing" icon="code-branch" href="/agents/build/versions-publishing">
+    Turn the draft into an immutable live version.
+  </Card>
+  <Card title="Preview calls" icon="phone" href="/agents/test/preview-calls">
+    Talk to your draft in the Builder before publishing.
+  </Card>
+  <Card title="Tools" icon="wrench" href="/agents/build/tools">
+    Let the agent call your backend mid-conversation.
+  </Card>
+</CardGroup>

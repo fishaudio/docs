@@ -1,0 +1,141 @@
+---
+title: "Versions & Publishing"
+description: "Edit safely in a draft, then publish an immutable version that live sessions run"
+icon: "code-branch"
+---
+
+Every agent has one **draft** and a linear history of **published versions**. Edits in the Builder or via the API always land in the draft — production sessions never see them until you publish. Publishing snapshots the draft into an immutable, numbered version, so you can iterate freely without touching live traffic.
+
+<CardGroup cols={3}>
+  <Card title="Edit the draft" icon="sliders" href="/agents/build/configuration">
+    Prompt, voice, and conversation settings — all autosaved.
+  </Card>
+  <Card title="Test before publishing" icon="phone" href="/agents/test/preview-calls">
+    Preview calls talk to the draft, not the live version.
+  </Card>
+  <Card title="Automate via API" icon="brackets-curly" href="/agents/integrate/overview">
+    Manage drafts, publishing, and version history programmatically.
+  </Card>
+</CardGroup>
+
+## Draft vs. published
+
+| | Draft | Published version |
+|---|---|---|
+| Mutability | Editable — Builder and `PATCH .../config` write here | Immutable snapshot |
+| Used by | [Preview calls](/agents/test/preview-calls) and [agent tests](/agents/test/agent-tests) | Production sessions — web, SDK, and phone |
+| History | One per agent, always current | `version_number` increments with each publish |
+
+<Note>
+  An agent that has never been published cannot take production sessions — session creation returns `409` until the first publish. Publishing is the single gate between editing and live traffic.
+</Note>
+
+## Publish from the Builder
+
+<Steps>
+  <Step title="Edit — changes autosave">
+    There is no Save button. Every change is written to the draft automatically; the **Saving… / Draft saved** indicator in the top bar shows the current state.
+  </Step>
+  <Step title="Watch the unpublished-changes indicator">
+    When the draft differs from the last published version, the **Publish** button becomes active with an unpublished-changes hint next to it. When there is nothing new to publish, the button is disabled. An agent that has never been published always counts as having changes.
+  </Step>
+  <Step title="Publish">
+    Click **Publish**. Any pending edits are saved first, then the draft is snapshotted as the next version. A confirmation shows the new version number, and the agent shows as **Live** in your agents list.
+  </Step>
+</Steps>
+
+New sessions use the newly published version from that point on. To hear a change before it goes live, run a [preview call](/agents/test/preview-calls) — previews always use the draft.
+
+## Publish via the API
+
+Configuration edits (`PATCH`) go to the draft; a separate `publish` call rolls them out. A `version_title` and `version_description` are optional and make the version history easier to audit:
+
+<CodeGroup>
+```bash Update the draft
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "prompt": { "system_prompt": "You are a concise support agent for Acme." }
+  }'
+```
+
+```bash Publish
+curl --request POST "https://api.fish.audio/v1/agent/agents/$AGENT_ID/publish" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "version_title": "Tighten support tone" }'
+```
+</CodeGroup>
+
+The publish response includes the new `version_number`.
+
+## Version history
+
+List published versions, or fetch the complete configuration snapshot of any one of them — including the version currently serving production:
+
+<CodeGroup>
+```bash List versions
+curl "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+```bash Get one version's snapshot
+curl "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions/3" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+</CodeGroup>
+
+Each version record includes:
+
+| Field | Description |
+|---|---|
+| `version_number` | Auto-incrementing, unique per agent |
+| `config_hash` | Fingerprint of the configuration snapshot |
+| `published_at` | When the version was published |
+| `published_by` | Who published it |
+
+Fetching a single version returns the full configuration as it was published. Because `GET .../config` always shows the draft, the snapshot endpoint is how you read back what is actually running in production.
+
+<Warning>
+  Version snapshots never echo credential secrets. Write-only fields — such as webhook secrets and tool authorization headers — return a `has_secret: true` marker instead of the value, in every version including historical ones.
+</Warning>
+
+## Restore a previous version
+
+Roll back by restoring any published version into the draft:
+
+```bash
+curl --request POST "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions/2/restore" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+Restoring copies that version's configuration into the draft — it does **not** publish. Review or [preview](/agents/test/preview-calls) the restored draft, then publish it as a new version. The rollback itself becomes part of the linear history, so the audit trail stays intact.
+
+## Clone an agent
+
+Cloning creates a new agent from an existing one's **draft** configuration:
+
+```bash
+curl --request POST "https://api.fish.audio/v1/agent/agents/$AGENT_ID/clone" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+The clone starts with a copy of the source's current draft. Published versions do not carry over — the new agent is unpublished until you publish it yourself. Use clones to template a base configuration across many agents, or to experiment without risking an agent that is already live.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Agent configuration" icon="sliders" href="/agents/build/configuration">
+    Everything that lives in the draft: prompt, voice, conversation settings.
+  </Card>
+  <Card title="Preview calls" icon="phone" href="/agents/test/preview-calls">
+    Talk to the draft before it ships.
+  </Card>
+  <Card title="Agent tests" icon="vial" href="/agents/test/agent-tests">
+    Run regression tests against the draft, then publish with confidence.
+  </Card>
+  <Card title="Integration overview" icon="plug" href="/agents/integrate/overview">
+    Connect published agents to your product via SDK and API.
+  </Card>
+</CardGroup>

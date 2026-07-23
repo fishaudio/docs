@@ -1,0 +1,99 @@
+---
+title: "Integrate Your Agent"
+sidebarTitle: "Overview"
+description: "Pick a channel — browser SDK, React bindings, phone calls, or the REST API"
+icon: "plug"
+---
+
+Once your agent is [published](/agents/build/versions-publishing), users can talk to it from your website, your React app, or a phone number — and your backend can create and inspect sessions over REST. Every channel runs the same agent with the same configuration.
+
+## Choose a channel
+
+<CardGroup cols={2}>
+  <Card title="Web SDK" icon="browser" href="/agents/integrate/web-sdk">
+    `@fishaudio/agent-client` — real-time voice calls in any browser app.
+    Events, transcripts, client tools.
+  </Card>
+  <Card title="React SDK" icon="react" href="/agents/integrate/react-sdk">
+    `@fishaudio/agent-react` — hooks and components on top of the Web SDK.
+  </Card>
+  <Card title="Phone calls" icon="phone" href="/agents/telephony/phone-numbers">
+    Connect a phone number so callers reach your agent — no client code at all.
+  </Card>
+  <Card
+    title="REST API"
+    icon="brackets-curly"
+    href="/agents/integrate/authentication"
+  >
+    Create sessions from your backend and pull conversation history.
+  </Card>
+</CardGroup>
+
+Still deciding?
+
+| You are building                                   | Start with                                                                                                          |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Voice calls inside a web app                       | [Web SDK](/agents/integrate/web-sdk)                                                                                |
+| A React or Next.js frontend                        | [React SDK](/agents/integrate/react-sdk)                                                                            |
+| A phone line callers dial in to                    | [Inbound calls](/agents/telephony/inbound-calls)                                                                    |
+| Server-side session creation and history retrieval | [Authentication](/agents/integrate/authentication) and [conversation history](/agents/monitor/conversation-history) |
+| A client on a stack the SDKs don't cover           | [Realtime protocol](/agents/integrate/protocol)                                                                     |
+
+## How a browser session starts
+
+For private agents, your backend creates the session — your API key never ships to the browser. The browser SDK takes the resulting session token and handles audio and transport from there.
+
+<CodeGroup>
+```bash Your backend
+curl --request POST https://api.fish.audio/v1/agent/sessions \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "agent_id": "YOUR_AGENT_ID" }'
+# → 201 session token — return it to your frontend as-is
+```
+
+```javascript Your frontend
+import { AgentSession } from "@fishaudio/agent-client";
+
+// sessionToken = the create-session response, passed through unchanged
+const session = await AgentSession.start({ sessionToken });
+```
+
+</CodeGroup>
+
+<Tip>
+  Agents marked [public](/agents/integrate/public-agents) skip the backend step
+  entirely — the SDK connects with just an `agentId`, gated by an origin
+  allowlist and rate limits.
+</Tip>
+
+For phone calls there is no client integration: assign a number, and inbound calls connect directly to your agent. See [Phone numbers](/agents/telephony/phone-numbers).
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card
+    title="Authentication"
+    icon="key"
+    href="/agents/integrate/authentication"
+  >
+    API keys, session tokens, and which one belongs where.
+  </Card>
+  <Card
+    title="Public agents"
+    icon="globe"
+    href="/agents/integrate/public-agents"
+  >
+    Let browsers connect without a backend, safely.
+  </Card>
+  <Card
+    title="Conversation history"
+    icon="clock-rotate-left"
+    href="/agents/monitor/conversation-history"
+  >
+    List sessions and read full transcripts over REST.
+  </Card>
+  <Card title="Realtime protocol" icon="code" href="/agents/integrate/protocol">
+    The wire-level session contract, for building your own client.
+  </Card>
+</CardGroup>

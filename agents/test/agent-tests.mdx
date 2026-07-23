@@ -1,0 +1,125 @@
+---
+title: "Agent Tests"
+description: "Script conversations and let an LLM judge score your agent's replies — catch regressions before you publish"
+icon: "vial"
+---
+
+Write a conversation once, run it against any agent, and get a **Pass** or **Fail** verdict with the judge's reasoning. Tests live in a shared workspace library, run against your agent's current draft, and never touch what's published — so you can iterate on a prompt and re-run in seconds.
+
+## How a test works
+
+A **Next reply** test hands your agent a scripted conversation and asks it to produce the next reply:
+
+1. You script a conversation history of agent and user messages.
+2. The agent generates the next reply using its current **draft** configuration and the same language model that answers in live conversations.
+3. An LLM judge scores the reply against your **Expectation**, optionally calibrated by success and failure examples, and returns a verdict with its reasoning.
+
+<Note>
+  Tests run as text — no audio is synthesized, tools are not called, and the
+  [knowledge base](/agents/build/knowledge-base) is not consulted. For
+  end-to-end verification with voice and tools, use [preview
+  calls](/agents/test/preview-calls).
+</Note>
+
+## Create a test
+
+Tests are workspace-level resources, managed under **Library → Tests** in the console and shareable across every agent in your workspace.
+
+<Steps>
+  <Step title="Start a new test">
+    Open **Library → Tests** and click **New test**. Give it a name and keep the
+    type as **Next reply**.
+  </Step>
+  <Step title="Script the conversation">
+    Under **Conversation**, click **Add message** to build the history the agent
+    sees — each message is either an **Agent** or **User** turn. When the test
+    runs, the agent generates the reply that comes next.
+  </Step>
+  <Step title="Define the judging criteria">
+    Under **Judging**, write the **Expectation** — what a correct reply must do.
+    Optionally click **Add example** to provide success and failure examples;
+    they calibrate the judge but aren't required.
+  </Step>
+  <Step title="Save">
+    Click **Save**. The test is now in your library, ready to attach to agents.
+  </Step>
+</Steps>
+
+If the agent's First message is configured as a fixed message, it is prepended as the opening agent turn of the conversation. See [Configuration](/agents/build/configuration).
+
+<Note>
+  The type picker also shows **Simulation** (multi-turn) tests — coming soon.
+</Note>
+
+## Attach tests to agents
+
+A test only runs against agents it's attached to. Attach from either side:
+
+- **From the library** — open the test's **Access** tab and toggle it on for each agent.
+- **From the Builder** — on the agent's **Tests** page, click **Add tests** and pick from the library.
+
+One test can be attached to many agents, and each agent keeps its own last result. **Remove from agent** detaches the test from that agent only; **Delete** in the library removes the test from all agents.
+
+## Run a single test
+
+Open the test and switch to its **Run** tab. Pick an agent that has access, then click **Run test**. The verdict card shows:
+
+| Result          | What you see                                       |
+| --------------- | -------------------------------------------------- |
+| Verdict         | **Pass** (green) or **Fail** (red)                 |
+| Latency         | Time to generate and judge the reply, e.g. `1.8 s` |
+| Agent reply     | The full reply the agent generated                 |
+| Judge reasoning | Why the judge passed or failed the reply           |
+
+If the run can't complete, the verdict shows **Error** with the error message in place of the reply and reasoning.
+
+## Run every test for an agent
+
+On the agent's **Tests** page in the Builder, click **Run all**. Each row moves through **queued → running → Pass/Fail** — or **Error** if a run can't complete — and the page header summarizes the latest batch — for example, `4 passed, 1 failed on last run`. Use the row menu to re-run a single test, edit it, or remove it from the agent.
+
+## Tests run against the draft
+
+Tests always exercise the agent's latest **draft** configuration — including unpublished changes to the system prompt. That makes the loop fast:
+
+<Steps>
+  <Step title="Edit the draft">
+    Change the system prompt or first message in
+    [Configuration](/agents/build/configuration).
+  </Step>
+  <Step title="Re-run">Click **Run all** — no publish needed.</Step>
+  <Step title="Publish when green">
+    Once results look right, [publish the
+    draft](/agents/build/versions-publishing). Running tests never publishes
+    anything and doesn't affect your agent's publish state.
+  </Step>
+</Steps>
+
+## Limits
+
+| Field                     | Limit                                       |
+| ------------------------- | ------------------------------------------- |
+| Test name                 | 200 characters                              |
+| Conversation message      | 2,000 characters each, at least one message |
+| Expectation               | 400 characters                              |
+| Success / failure example | 400 characters each                         |
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Preview calls" icon="phone" href="/agents/test/preview-calls">
+    Talk to your draft agent live, with voice, tools, and transcripts.
+  </Card>
+  <Card
+    title="Versions & publishing"
+    icon="rocket"
+    href="/agents/build/versions-publishing"
+  >
+    How drafts become immutable published versions.
+  </Card>
+  <Card title="Configuration" icon="sliders" href="/agents/build/configuration">
+    System prompt, first message, and everything tests exercise.
+  </Card>
+  <Card title="Core concepts" icon="lightbulb" href="/agents/concepts">
+    Agents, drafts, sessions, and the workspace library model.
+  </Card>
+</CardGroup>

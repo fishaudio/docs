@@ -1,0 +1,108 @@
+---
+title: "Tools"
+description: "Give your agent the ability to act during a conversation — call your backend, trigger actions in your app, or use built-in capabilities"
+icon: "wrench"
+---
+
+Out of the box, an agent can only talk. Tools let it act: fetch an order status mid-call, open a page in your app, or hang up when the conversation is over. You describe what a tool does and what arguments it takes; the agent decides when to call it.
+
+<CardGroup cols={3}>
+  <Card title="Webhook tools" icon="globe" href="/agents/build/webhook-tools">
+    The platform calls your HTTP endpoint and speaks the result.
+  </Card>
+  <Card title="Client tools" icon="code" href="/agents/build/client-tools">
+    Your application executes the tool through the SDK.
+  </Card>
+  <Card title="System tools" icon="toggle-on" href="/agents/build/system-tools">
+    Built-in capabilities you switch on per agent.
+  </Card>
+</CardGroup>
+
+## Choose a tool type
+
+| Type | Executed by | Use it for |
+|---|---|---|
+| [Webhook](/agents/build/webhook-tools) | Fish Audio — we call your HTTP endpoint during the conversation | Order lookups, CRM reads, bookings — anything your backend can answer |
+| [Client](/agents/build/client-tools) | Your app — the SDK hands the call to code you register | Navigation, UI updates, device actions — anything only the client can do |
+| [System](/agents/build/system-tools) | The platform — no code involved | Language detection, hanging up the call |
+
+Webhook and client tools are **custom tools**: you define a name, a description, and arguments, and the agent fills in the argument values when it calls. System tools are ready-made — enable them with a switch on each agent.
+
+## Where tools live
+
+Custom tools are **workspace resources**, not part of a single agent. Define a `lookup_order` tool once and attach it to your support, sales, and after-hours agents. You manage them in two places:
+
+- **Builder → Tools** shows the tools attached to the agent you are editing, plus that agent's system-tool switches. Tools you create here are attached to the agent immediately.
+- **The workspace tool library** lists every custom tool with how many agents use it. Tools you create here start unattached — grant agents access afterwards.
+
+<Note>
+Editing a shared tool updates the draft of **every** agent that uses it. Those agents show unpublished changes until they are published again — see [Versions & publishing](/agents/build/versions-publishing).
+</Note>
+
+## Detach vs. delete
+
+- **Detach** is agent-scoped. Removing a tool from an agent in the Builder leaves the tool — and its other attachments — untouched.
+- **Delete** is workspace-wide. Deleting a tool from the library in the console detaches it from every agent that uses it, and those agents show unpublished changes.
+
+Over the API, `DELETE` is stricter: it returns `409` while the tool is still attached to any agent. List the tool's dependent agents first and detach it from each one.
+
+## Manage tools over the API
+
+Every endpoint requires your API key — see [Authentication](/agents/integrate/authentication).
+
+| Endpoint | Description |
+|---|---|
+| `GET /v1/agent/tools` | List the custom tools in your workspace |
+| `POST /v1/agent/tools` | Create a tool — starts unattached |
+| `GET /v1/agent/tools/{tool_id}` | Retrieve a tool's configuration |
+| `PATCH /v1/agent/tools/{tool_id}` | Update a tool — every field is optional |
+| `DELETE /v1/agent/tools/{tool_id}` | Delete a tool — returns `409` while any agent still uses it |
+| `GET /v1/agent/tools/{tool_id}/agents` | List the agents that use this tool |
+
+Create a webhook tool:
+
+```bash
+curl --request POST https://api.fish.audio/v1/agent/tools \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "tool_type": "webhook",
+    "name": "lookup_order",
+    "description": "Look up the status of a customer order.",
+    "arguments": [
+      { "name": "order_number", "description": "The order number the caller provides." }
+    ],
+    "method": "GET",
+    "url": "https://api.example.com/orders/{{order_number}}",
+    "timeout_seconds": 10
+  }'
+```
+
+Arguments can be referenced anywhere in the request with `{{name}}` placeholders. Before deleting a tool, check which agents depend on it:
+
+```bash
+curl https://api.fish.audio/v1/agent/tools/{tool_id}/agents \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+The response lists each dependent agent's `agent_id` and `name`, plus a
+`total` count.
+
+Field-level configuration — custom headers, request body templates, timeouts, error handling, and mock responses — is covered in [Webhook tools](/agents/build/webhook-tools).
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Test it live" icon="phone" href="/agents/test/preview-calls">
+    Call your draft agent before publishing.
+  </Card>
+  <Card title="Versions & publishing" icon="code-branch" href="/agents/build/versions-publishing">
+    Drafts, published versions, and what "unpublished changes" means.
+  </Card>
+  <Card title="Web SDK" icon="js" href="/agents/integrate/web-sdk">
+    Register client tool handlers in your application.
+  </Card>
+  <Card title="Authentication" icon="key" href="/agents/integrate/authentication">
+    API keys for the endpoints above.
+  </Card>
+</CardGroup>

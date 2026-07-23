@@ -1,0 +1,134 @@
+---
+title: "Phone Numbers"
+description: "List, label, and bind phone numbers to your agents over the REST API"
+icon: "phone"
+---
+
+Phone numbers connect your agents to the telephone network. Each number belongs to your workspace and is bound to at most one agent — calls to the number are answered by that agent. Manage your inventory through the `/v1/agent/phone-numbers` API: list numbers, inspect one, relabel it, and move it between agents as part of your deployment flow.
+
+<Note>
+  Purchasing and releasing phone numbers through the API is coming soon. Until
+  then, acquire numbers in the console — everything on this page works on
+  numbers you already own.
+</Note>
+
+## List your numbers
+
+Returns the phone numbers in your workspace.
+
+<CodeGroup>
+```bash Request
+curl https://api.fish.audio/v1/agent/phone-numbers \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+```json Response
+{
+  "phone_numbers": [
+    {
+      "phone_number_id": "7c9e6f2a4b8d4e1f9a3c5d7e8f0b1a2c",
+      "phone_number": "+14155550123",
+      "provider": "livekit",
+      "label": "Support line (US)",
+      "agent_id": "4f2a8c6e1b3d5f7a9c0e2d4b6a8f1c3e",
+      "status": "active"
+    }
+  ],
+  "has_more": false
+}
+```
+
+</CodeGroup>
+
+| Field             | Description                                                      |
+| ----------------- | ---------------------------------------------------------------- |
+| `phone_number_id` | Unique identifier — use it in URL paths                          |
+| `phone_number`    | The number in E.164 format                                       |
+| `provider`        | Telephony provider backing the number                            |
+| `label`           | Free-form label you assign                                       |
+| `agent_id`        | The agent that answers calls to this number; `null` when unbound |
+| `status`          | `provisioning`, `active`, or `error`                             |
+
+## Get a single number
+
+```bash Request
+curl https://api.fish.audio/v1/agent/phone-numbers/$PHONE_NUMBER_ID \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+Returns the same number object as the list endpoint.
+
+## Bind or unbind an agent
+
+`PATCH` the number with an `agent_id` to change which agent answers it. Binding is resolved per call, so the change applies from the next inbound call — nothing to redeploy.
+
+<CodeGroup>
+```bash Bind
+curl --request PATCH https://api.fish.audio/v1/agent/phone-numbers/$PHONE_NUMBER_ID \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "agent_id": "4f2a8c6e1b3d5f7a9c0e2d4b6a8f1c3e" }'
+```
+
+```bash Unbind
+curl --request PATCH https://api.fish.audio/v1/agent/phone-numbers/$PHONE_NUMBER_ID \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "agent_id": null }'
+```
+
+</CodeGroup>
+
+Omitted fields are left unchanged — only an explicit `"agent_id": null` unbinds the number.
+
+<Tip>
+  Re-binding is how you promote an agent behind a stable number: point the
+  number at a staging agent while you iterate, then `PATCH` it over to the
+  production agent when you're ready. The number itself never changes.
+</Tip>
+
+## Label your numbers
+
+Labels are free-form text for keeping an inventory readable — by team, region, campaign, or environment.
+
+```bash Request
+curl --request PATCH https://api.fish.audio/v1/agent/phone-numbers/$PHONE_NUMBER_ID \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "label": "Support line (US)" }'
+```
+
+The response is the updated number object.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card
+    title="Inbound calls"
+    icon="phone-arrow-down-left"
+    href="/agents/telephony/inbound-calls"
+  >
+    What happens when someone dials a bound number.
+  </Card>
+  <Card
+    title="Authentication"
+    icon="key"
+    href="/agents/integrate/authentication"
+  >
+    API keys and workspace scoping for every request.
+  </Card>
+  <Card
+    title="Conversation history"
+    icon="clock-rotate-left"
+    href="/agents/monitor/conversation-history"
+  >
+    Review phone sessions, transcripts, and recordings.
+  </Card>
+  <Card
+    title="Versions & publishing"
+    icon="rocket"
+    href="/agents/build/versions-publishing"
+  >
+    Publish configuration changes behind a stable number.
+  </Card>
+</CardGroup>

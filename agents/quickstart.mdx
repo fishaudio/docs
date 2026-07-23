@@ -1,0 +1,154 @@
+---
+title: "Quickstart"
+description: "Create a voice agent and have your first conversation in minutes"
+icon: "rocket"
+---
+
+Build a voice agent and talk to it in a few minutes. Use the dashboard for a no-code path, or provision everything over the API and connect from the browser with the SDK.
+
+**Prerequisites**
+
+- A Fish Audio account
+- For the API path: a Fish Audio API key — see [Authentication](/agents/integrate/authentication)
+
+<Tabs>
+  <Tab title="Dashboard">
+    <Steps>
+      <Step title="Create an agent">
+        Go to [Agents](https://fish.audio/app/agents) and click **New agent**. Give it a name — you land in the Builder immediately.
+      </Step>
+      <Step title="Write the system prompt">
+        On the **Configuration** page, write the system prompt that defines who your agent is and how it should behave (up to 4,000 characters). Optionally set a **First message** so the agent opens the conversation.
+
+        Edits save automatically as a draft — there is no Save button.
+      </Step>
+      <Step title="Pick a voice">
+        Choose a voice and a speaking language for your agent. You can pick from the featured voices or browse the full library. See [Voice & language](/agents/build/voice-language) for details.
+      </Step>
+      <Step title="Test it with a preview call">
+        Click **Test call** in the top bar. Your browser asks for microphone access, then you talk to the agent directly — with a live transcript, call timer, and mute and hang-up controls in the side panel.
+
+        Preview calls always run against your current draft, so you can iterate on the prompt and immediately hear the difference. See [Preview calls](/agents/test/preview-calls).
+      </Step>
+      <Step title="Publish">
+        Click **Publish** to turn the draft into an immutable version. Published versions are what real sessions connect to — drafts stay private to the Builder.
+
+        You can keep editing the draft afterwards; nothing goes live until you publish again. See [Versions & publishing](/agents/build/versions-publishing).
+      </Step>
+    </Steps>
+
+  </Tab>
+  <Tab title="API">
+    <Steps>
+      <Step title="Create an agent">
+        Create the agent and configure it in one call — the `config` section is optional at creation time, and you can update it later with `PATCH /v1/agent/agents/{agent_id}/config`.
+
+        ```bash Create an agent
+        curl --request POST https://api.fish.audio/v1/agent/agents \
+          --header "Authorization: Bearer $FISH_API_KEY" \
+          --header "Content-Type: application/json" \
+          --data '{
+            "name": "Support agent",
+            "config": {
+              "prompt": {
+                "system_prompt": "You are a friendly support agent for Acme. Keep answers short and conversational."
+              },
+              "voice": {
+                "voice_profile_id": "802e3bc2b27e49c2995d23ef70e6ac89"
+              }
+            }
+          }'
+        ```
+
+        The response includes the agent's `agent_id` — use it as `$AGENT_ID` below. `voice_profile_id` accepts any voice model id from the Voice Library.
+
+        <Note>
+        `system_prompt` is limited to 4,000 characters; longer prompts return `422`.
+        </Note>
+      </Step>
+      <Step title="Publish it">
+        Sessions only run **published** configuration. Creating a session for an agent that has never been published returns `409`.
+
+        ```bash Publish the draft
+        curl --request POST https://api.fish.audio/v1/agent/agents/$AGENT_ID/publish \
+          --header "Authorization: Bearer $FISH_API_KEY"
+        ```
+
+        Each publish creates an immutable version with an auto-incremented `version_number`.
+      </Step>
+      <Step title="Create a session">
+        From your backend, exchange your API key for a short-lived session token. This is the credential the browser uses to join the call — your API key never leaves your server.
+
+        ```bash Create a session
+        curl --request POST https://api.fish.audio/v1/agent/sessions \
+          --header "Authorization: Bearer $FISH_API_KEY" \
+          --header "Content-Type: application/json" \
+          --data '{ "agent_id": "'$AGENT_ID'" }'
+        ```
+
+        ```json Response
+        {
+          "session_id": "...",
+          "expires_at": "2026-07-23T12:34:56Z",
+          "max_duration_seconds": 3600,
+          "transport": "livekit",
+          "livekit_url": "wss://...",
+          "token": "<participant token>"
+        }
+        ```
+
+        Return this response to your frontend as-is — the SDK consumes it unchanged. `expires_at` is the deadline for joining the call.
+      </Step>
+      <Step title="Connect from the browser">
+        Install the client SDK:
+
+        ```bash Install
+        npm install @fishaudio/agent-client
+        ```
+
+        Pass the session token to `AgentSession.start` — the SDK requests the microphone, connects, and streams audio both ways:
+
+        ```typescript Connect and talk
+        import { AgentSession } from "@fishaudio/agent-client";
+
+        // sessionToken: the JSON response from POST /v1/agent/sessions,
+        // fetched from your backend
+        const session = await AgentSession.start({
+          sessionToken,
+          callbacks: {
+            userTranscript: ({ text }) => console.log("You:", text),
+            agentResponse: ({ text }) => console.log("Agent:", text),
+          },
+        });
+
+        // When you are done:
+        await session.end();
+        ```
+
+        Start talking — you hear the agent reply and both sides of the conversation arrive as transcript events. See the [Web SDK](/agents/integrate/web-sdk) for the full event and method surface, or the [React SDK](/agents/integrate/react-sdk) for hooks.
+      </Step>
+    </Steps>
+
+  </Tab>
+</Tabs>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Core concepts" icon="sitemap" href="/agents/concepts">
+    Agents, drafts, versions, and sessions — how the pieces fit together.
+  </Card>
+  <Card title="Web SDK" icon="code" href="/agents/integrate/web-sdk">
+    Events, transcripts, client tools, and audio controls in the browser.
+  </Card>
+  <Card title="Knowledge base" icon="book" href="/agents/build/knowledge-base">
+    Ground your agent in your own documents.
+  </Card>
+  <Card
+    title="Conversation history"
+    icon="clock-rotate-left"
+    href="/agents/monitor/conversation-history"
+  >
+    Review transcripts, tool calls, and recordings for every session.
+  </Card>
+</CardGroup>

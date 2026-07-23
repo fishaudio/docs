@@ -1,0 +1,202 @@
+---
+title: "Webhooks"
+description: "Get an HTTP POST when a call ends and when its analysis completes — no polling"
+icon: "bell"
+---
+
+Point your agent at an endpoint on your server and Fish Audio calls it when things happen: `call.ended` the moment a session reaches a terminal state, `call.analyzed` when [post-call analysis](/agents/monitor/post-call-analysis) finishes. Use them to write results into your CRM, ticketing system, or data warehouse without polling the sessions API.
+
+## Events
+
+| Event           | Fires                                                                                            | Payload                                       |
+| --------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| `call.ended`    | When a session reaches a terminal state — every real call, whether or not analysis is configured | Session facts plus the reason the call ended  |
+| `call.analyzed` | When post-call analysis completes                                                                | Session facts plus the full `analysis` entity |
+
+For a given session, `call.ended` is always delivered before `call.analyzed`. `call.analyzed` is sent only when analysis actually completes — calls where analysis is skipped (no user speech, or analysis disabled entirely) or fails produce `call.ended` only.
+
+<Note>
+  Transcripts are deliberately excluded from webhook payloads — fetch them on
+  demand with `GET /v1/agent/sessions/{session_id}`. See [conversation
+  history](/agents/monitor/conversation-history).
+</Note>
+
+## Configure the endpoint
+
+Webhooks live in the `webhooks` section of your agent's configuration. Set them in the console under your agent's **Settings**, or via the config API:
+
+<CodeGroup>
+```bash API (curl)
+curl --request PATCH https://api.fish.audio/v1/agent/agents/YOUR_AGENT_ID/config \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "webhooks": {
+      "post_call": {
+        "url": "https://example.com/fish-webhooks",
+        "secret": "your-signing-secret"
+      }
+    }
+  }'
+```
+
+```python Python
+import httpx, os
+
+httpx.patch(
+    "https://api.fish.audio/v1/agent/agents/YOUR_AGENT_ID/config",
+    headers={"Authorization": f"Bearer {os.environ['FISH_API_KEY']}"},
+    json={
+        "webhooks": {
+            "post_call": {
+                "url": "https://example.com/fish-webhooks",
+                "secret": "your-signing-secret",
+            }
+        }
+    },
+)
+```
+
+</CodeGroup>
+
+The `post_call` object is replaced as a whole on each update; set it to `null` to stop deliveries.
+
+| Field    | Rules                                                                                                                                                                        |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `url`    | Required. Up to 4000 characters. Must resolve to a public address — localhost and private-network hosts are rejected with `422`, and the check is repeated at every delivery |
+| `secret` | Optional signing key, up to 256 characters. **Write-only**: reads return `has_secret: true`, never the value                                                                 |
+
+<Note>
+  Webhook settings are part of the agent configuration, so they follow the
+  draft-and-publish flow — [publish](/agents/build/versions-publishing) for
+  changes to apply to production calls.
+</Note>
+
+## Payload
+
+Every payload carries the `event` name and a `session` object — the same session facts the [sessions API](/agents/monitor/conversation-history) returns, minus the transcript. `call.analyzed` adds the `analysis` entity:
+
+```json call.analyzed
+{
+  "event": "call.analyzed",
+  "session": {
+    "id": "5f3e…",
+    "agent_id": "a1b2…",
+    "source": "phone",
+    "status": "completed",
+    "end_user_id": "customer-42",
+    "metadata": { "order_ref": "SO-1042" },
+    "config_hash": "9c41…"
+  },
+  "analysis": {
+    "status": "completed",
+    "summary": "Caller asked about a delayed order and accepted a reshipment.",
+    "data": [
+      {
+        "name": "callback_requested",
+        "type": "boolean",
+        "value": false,
+        "rationale": "…"
+      }
+    ],
+    "criteria_results": [
+      { "name": "issue_resolved", "result": "success", "rationale": "…" }
+    ]
+  }
+}
+```
+
+`end_user_id` and `metadata` are echoed exactly as you set them when creating the session — use them to correlate the event with records in your own system. What lands in `summary`, `data`, and `criteria_results` is defined by your [analysis configuration](/agents/monitor/post-call-analysis).
+
+## Verify the signature
+
+When a `secret` is configured, every request includes an HMAC-SHA256 signature of the raw request body:
+
+```http
+X-Fish-Webhook-Signature: sha256=8693a4b9…
+```
+
+Recompute it with your secret and compare in constant time. Always sign the raw bytes — verify before any JSON parsing or re-serialization.
+
+<CodeGroup>
+
+```javascript Node.js
+import crypto from "node:crypto";
+
+function verifyWebhook(rawBody, signatureHeader, secret) {
+  const expected =
+    "sha256=" +
+    crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+  const a = Buffer.from(signatureHeader ?? "");
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+```
+
+```python Python
+import hashlib
+import hmac
+
+def verify_webhook(raw_body: bytes, signature_header: str, secret: str) -> bool:
+    expected = "sha256=" + hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(signature_header or "", expected)
+```
+
+</CodeGroup>
+
+<Warning>
+  Reject requests with a missing or invalid signature. Without verification,
+  anyone who discovers your endpoint URL can forge call results.
+</Warning>
+
+## Delivery semantics
+
+| Property  | Behavior                                                                                         |
+| --------- | ------------------------------------------------------------------------------------------------ |
+| Guarantee | At-least-once                                                                                    |
+| Timeout   | 10 seconds per attempt                                                                           |
+| Retries   | 2 after the first attempt (3 attempts total), with backoff of 1s / 5s, then the event is dropped |
+| Ordering  | `call.ended` before `call.analyzed` for the same session                                         |
+
+Respond with a `2xx` status within the timeout; a `500` response or a timed-out request counts as a failed attempt. Acknowledge first and process asynchronously — slow handlers burn their own retry budget.
+
+**Idempotency.** At-least-once delivery means the same event can arrive more than once. Each session produces at most one `call.ended` and one `call.analyzed`, so dedupe on the pair (`event`, `session.id`) before writing to downstream systems.
+
+<Note>
+  [Preview calls](/agents/test/preview-calls) made from the Builder never
+  trigger webhooks — debugging sessions don't reach your production endpoint. To
+  test end to end, run a real session against your published agent.
+</Note>
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card
+    title="Post-call analysis"
+    icon="chart-simple"
+    href="/agents/monitor/post-call-analysis"
+  >
+    Define the summary, data fields, and criteria that `call.analyzed` delivers.
+  </Card>
+  <Card
+    title="Conversation history"
+    icon="clock-rotate-left"
+    href="/agents/monitor/conversation-history"
+  >
+    Fetch the transcript, tool timeline, and recordings by `session_id`.
+  </Card>
+  <Card
+    title="Versions & publishing"
+    icon="code-branch"
+    href="/agents/build/versions-publishing"
+  >
+    How configuration changes — including webhooks — go live.
+  </Card>
+  <Card
+    title="Agent configuration"
+    icon="sliders"
+    href="/agents/build/configuration"
+  >
+    The full config schema behind `PATCH /v1/agent/agents/{agent_id}/config`.
+  </Card>
+</CardGroup>

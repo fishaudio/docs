@@ -1,0 +1,98 @@
+---
+title: "Voice & Language"
+description: "Choose the voice your agent speaks with and the language it converses in"
+icon: "microphone"
+---
+
+Your agent speaks with a voice model from the Fish Audio Voice Library — the same voices you use for text to speech. Pick one in the Builder, or set it through the API, and choose the language the agent holds conversations in.
+
+<CardGroup cols={3}>
+  <Card title="Configuration page" icon="sliders" href="/agents/build/configuration">
+    Where the voice and language settings live in the Builder.
+  </Card>
+  <Card title="Voice Library" icon="book-open" href="/features/manage-voices">
+    Browse public voices and manage your own.
+  </Card>
+  <Card title="Voice Cloning" icon="clone">
+    Create a custom voice, then use it here. See [Voice Cloning](/features/voice-cloning).
+  </Card>
+</CardGroup>
+
+## Pick a voice in the Builder
+
+The voice picker on the **Configuration** page has two levels: a curated list for a fast start, and the full Voice Library when you want something specific.
+
+<Steps>
+  <Step title="Open the voice selector">
+    In your agent's **Configuration** page, open the voice card. The **Choose a voice** view shows a curated selection of voices.
+  </Step>
+  <Step title="Browse the full library (optional)">
+    Not seeing the right fit? Select **More voices** to open the **Select Voice** browser — the full Voice Library, with your own cloned voices under **My Voices**.
+  </Step>
+  <Step title="Save automatically">
+    Your selection is written to the agent's draft configuration as soon as you pick it — there is no Save button. Start a [preview call](/agents/test/preview-calls) to hear the voice in a real conversation.
+  </Step>
+  <Step title="Publish">
+    Draft changes don't affect live sessions until you **Publish**. See [Versions & publishing](/agents/build/versions-publishing).
+  </Step>
+</Steps>
+
+## Use any voice model
+
+The agent's voice is a **voice model id** (`voice_profile_id`) — the same ids used as `reference_id` in [Text to Speech](/features/text-to-speech). Any public voice model from the Voice Library works, including:
+
+- **Library voices** — ready-made public voices. Find ids in the [Voice Library](/features/manage-voices).
+- **Your cloned voices** — [clone a voice](/features/voice-cloning) once, then use its model id as your agent's voice.
+
+## Set the voice via API
+
+Voice settings live in the `voice` section of the agent's configuration. Patches are partial — only the fields you send change, and the result is saved to the draft:
+
+<CodeGroup>
+```bash API (curl)
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "voice": {
+      "voice_profile_id": "802e3bc2b27e49c2995d23ef70e6ac89"
+    }
+  }'
+```
+</CodeGroup>
+
+`voice.speaking_language` lives in the same section and is patched the same way. As in the Builder, API edits land in the draft — publish to roll them out.
+
+## Speaking language
+
+**Speaking language** sets the default language for the agent's conversations. Whether it is pinned or just a fallback depends on the **Language detection** [system tool](/agents/build/system-tools):
+
+| Language detection | Session behavior |
+|---|---|
+| On | The session runs in automatic language mode — the agent follows the language the caller actually speaks. |
+| Off (default) | Every session uses the configured speaking language. |
+
+<Tip>
+  If your agent must always converse in one specific language, leave Language detection off — the session then sticks to `speaking_language` regardless of what it hears.
+</Tip>
+
+<Note>
+  The voice model and the speaking language are independent settings: picking a voice does not change the language, and vice versa. Choose a voice that sounds natural in the language you configure.
+</Note>
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Agent configuration" icon="sliders" href="/agents/build/configuration">
+    System prompt, first message, and conversation settings.
+  </Card>
+  <Card title="System tools" icon="wrench" href="/agents/build/system-tools">
+    Language detection and other built-in capabilities.
+  </Card>
+  <Card title="Preview calls" icon="phone" href="/agents/test/preview-calls">
+    Talk to your draft agent and hear the voice live.
+  </Card>
+  <Card title="Versions & publishing" icon="rocket" href="/agents/build/versions-publishing">
+    How drafts become the live agent.
+  </Card>
+</CardGroup>

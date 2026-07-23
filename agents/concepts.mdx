@@ -1,0 +1,143 @@
+---
+title: "Core Concepts"
+sidebarTitle: "Concepts"
+description: "Workspaces, agents, versions, and sessions — the mental model behind Fish Agents"
+icon: "sitemap"
+---
+
+Four nouns cover the whole platform. A **workspace** holds everything your team builds. An **agent** is a voice assistant you configure. Publishing an agent's draft creates an immutable **version**. And every conversation with an agent — from your app, a phone call, or the console — is a **session**.
+
+## Workspaces
+
+A workspace is the isolation boundary for everything you create. Agents, tools, knowledge sources, and tests all belong to a workspace, and nothing in it is visible from any other workspace.
+
+Tools, knowledge sources, and tests are **workspace-level resources**, not per-agent ones: create a webhook tool once and attach it to as many agents as you like. Access controls in the console decide which agents can use each shared resource.
+
+Your API key is scoped to your workspace. Every request under `/v1/agent/*` operates on that workspace's resources:
+
+```bash List your workspace's agents
+curl https://api.fish.audio/v1/agent/agents \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+See [Authentication](/agents/integrate/authentication) for key setup.
+
+## Agents
+
+An agent is a bundle of configuration: a system prompt that steers behavior, a first-message policy, a [voice and speaking language](/agents/build/voice-language), attached [tools](/agents/build/tools), and [knowledge sources](/agents/build/knowledge-base). You assemble it in the Builder — the console page you land on after creating an agent — or through the API at `/v1/agent/agents`.
+
+Creating an agent takes only a name. Everything else is configured afterward, so start minimal and iterate.
+
+## Drafts and published versions
+
+Every agent has exactly one **draft** and any number of immutable **published versions**.
+
+<Steps>
+  <Step title="Edit the draft">
+    Everything you change in the Builder autosaves to the draft — there is no
+    Save button. Watch for the `Saving… / Saved` indicator.
+  </Step>
+  <Step title="Publish">
+    **Publish** snapshots the draft into a numbered, immutable version and makes
+    it the version that live traffic uses. The button is only enabled when the
+    draft actually differs from the latest published version.
+  </Step>
+  <Step title="Keep iterating">
+    Continue editing the draft without affecting live conversations. When you're
+    ready, publish again — the version number increments.
+  </Step>
+</Steps>
+
+### Live vs. Draft
+
+The agent list shows one of two states:
+
+| Badge     | Meaning                                    |
+| --------- | ------------------------------------------ |
+| **Live**  | The agent has been published at least once |
+| **Draft** | The agent has never been published         |
+
+Editing the draft of a Live agent does not change its badge — the Builder shows an unpublished-changes indicator next to **Publish** instead.
+
+### Which configuration runs
+
+- [Preview calls](/agents/test/preview-calls) in the Builder always run the **current draft**, so you can hear changes before anyone else does.
+- Sessions from the SDK, phone calls, and public agent links run the **latest published version**.
+
+<Tip>
+  This split is the core workflow: iterate on the draft, verify with a preview
+  call, then publish to roll the change out to real traffic.
+</Tip>
+
+### Restore and clone
+
+Past versions stay in the agent's history — review them or restore one back into the draft from [Versions & publishing](/agents/build/versions-publishing).
+
+**Clone** creates a new agent from an existing one's current draft: prompt, voice, and tool and knowledge attachments carry over (shared resources are referenced, not copied). The clone is named `{name} copy`, starts as Draft, and does not inherit the source's publish history.
+
+## Sessions
+
+A session is one conversation between one user and one agent. Sessions start from four places:
+
+<CardGroup cols={2}>
+  <Card title="Your app" icon="code" href="/agents/integrate/web-sdk">
+    A client connects with the [Web](/agents/integrate/web-sdk) or
+    [React](/agents/integrate/react-sdk) SDK.
+  </Card>
+  <Card title="Preview call" icon="headset" href="/agents/test/preview-calls">
+    You test the draft from the Builder.
+  </Card>
+  <Card title="Phone call" icon="phone" href="/agents/telephony/inbound-calls">
+    A caller dials a connected [phone number](/agents/telephony/phone-numbers).
+  </Card>
+  <Card
+    title="Public agent"
+    icon="globe"
+    href="/agents/integrate/public-agents"
+  >
+    Anyone talks to an agent you've shared publicly.
+  </Card>
+</CardGroup>
+
+Whatever the source, every session produces a transcript you can review in [Conversation history](/agents/monitor/conversation-history) or fetch from `/v1/agent/sessions`, and can trigger [post-call analysis](/agents/monitor/post-call-analysis) when configured.
+
+## Deleting resources
+
+Deletion is immediate and, from the console, cannot be undone: a deleted agent disappears from lists, the Builder, and all API responses. The same applies to tools, knowledge sources, and tests.
+
+<Note>
+  Names are freed on deletion — you can immediately create a new agent (or tool)
+  with the same name as one you deleted.
+</Note>
+
+## Where everything lives
+
+| Concept          | Console                                                                                                   | API resource                  |
+| ---------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| Agent            | **Agents** list → Builder                                                                                 | `/v1/agent/agents`            |
+| Draft & versions | Builder (autosave + **Publish**)                                                                          | `/v1/agent/agents`            |
+| Session          | [Preview calls](/agents/test/preview-calls), [Conversation history](/agents/monitor/conversation-history) | `/v1/agent/sessions`          |
+| Tool             | Builder **Tools** page                                                                                    | `/v1/agent/tools`             |
+| Knowledge source | Builder **Knowledge base** page                                                                           | `/v1/agent/knowledge-sources` |
+| Phone number     | **Phone numbers** page                                                                                    | `/v1/agent/phone-numbers`     |
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/agents/quickstart">
+    Create, configure, and talk to your first agent.
+  </Card>
+  <Card title="Configuration" icon="sliders" href="/agents/build/configuration">
+    System prompt, first message, and conversation settings.
+  </Card>
+  <Card
+    title="Versions & publishing"
+    icon="code-branch"
+    href="/agents/build/versions-publishing"
+  >
+    Publish history, restore, and rollout details.
+  </Card>
+  <Card title="Integrate" icon="plug" href="/agents/integrate/overview">
+    Put your agent in front of users with the SDKs.
+  </Card>
+</CardGroup>

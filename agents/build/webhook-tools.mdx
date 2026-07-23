@@ -1,0 +1,175 @@
+---
+title: "Webhook Tools"
+description: "Let your agent call your HTTP endpoints in the middle of a conversation"
+icon: "webhook"
+---
+
+A webhook tool lets your agent call an HTTP endpoint mid-conversation — look up an order, create a ticket, check availability — and use the response in its next reply. You declare the arguments; the agent fills them in from the conversation and the platform makes the request.
+
+<Note>
+Tools are workspace-level resources shared across agents. Removing a tool from an agent **detaches** it — the tool stays in your workspace and remains attached to other agents. Editing a tool updates every agent that uses it, and those agents show unpublished changes until you [publish](/agents/build/versions-publishing).
+</Note>
+
+## Create a webhook tool
+
+In the Builder, open **Tools** and choose **Add tool → Webhook**. A tool created from the Builder is attached to the current agent immediately; use the tool's **Access** tab to enable it for other agents.
+
+<Steps>
+  <Step title="Name and describe the tool">
+    The model decides when to call a tool based on its name and description. Write the description for the model: say what the tool does and when to use it — "Look up the status of an order. Use when the caller asks where their order is."
+  </Step>
+  <Step title="Declare arguments">
+    Each argument is a name plus a description. Arguments are exposed to the agent as tool parameters — the description tells the model what value to extract from the conversation.
+  </Step>
+  <Step title="Configure the request">
+    Pick a method (`GET`, `POST`, `PUT`, `PATCH`, or `DELETE` — default `POST`), the endpoint URL, a content type (default `application/json`), and an optional body template.
+  </Step>
+  <Step title="Add headers">
+    Attach authentication or any custom headers — they are sent with every webhook request.
+  </Step>
+  <Step title="Set response handling">
+    Choose a timeout (1–120 seconds, default 30) and how errors are surfaced to the agent.
+  </Step>
+</Steps>
+
+## Argument templating
+
+Reference any declared argument with `{{name}}` — in the URL, in the body template, or both. The platform substitutes the values the agent supplies before sending the request.
+
+```text Endpoint URL
+https://api.example.com/orders/{{order_number}}
+```
+
+```json Body template
+{
+  "subject": "{{subject}}",
+  "details": "{{details}}",
+  "source": "voice-agent"
+}
+```
+
+## Authentication headers
+
+Each header has a kind that identifies what it carries:
+
+| Kind | Wire value | Sent as |
+|---|---|---|
+| Custom | `custom` | The header name and value you provide, e.g. `X-API-Key` |
+| Bearer | `authorization_bearer` | An `Authorization` header — provide the full value, e.g. `Bearer <token>` |
+| Basic | `authorization_basic` | An `Authorization` header — provide the full value, e.g. `Basic <credentials>` |
+
+Header values are sent exactly as you store them. The Builder's Bearer and Basic presets create the `Authorization` header with the `Bearer ` or `Basic ` prefix pre-filled — complete the value with your credential.
+
+<Warning>
+Bearer and Basic authorization values are write-only. The API accepts them on create and update but never echoes them when you read the tool back: credential headers return `value: null`, with `has_secret: true` confirming a secret is stored. To rotate a secret, submit a new value.
+</Warning>
+
+## Timeouts and error handling
+
+`timeout_seconds` caps how long the platform waits for your endpoint: 1–120 seconds, default 30. Voice conversations happen live — keep endpoints fast, and lower the timeout so a slow backend can't stall the call.
+
+`error_handling` controls what the agent learns when a call fails (default `passthrough`):
+
+| Option | What the agent sees |
+|---|---|
+| `passthrough` | The error response, so the agent can react to it in conversation ("I couldn't find that order number"). |
+| `hide` | Only that the call failed — no error details reach the agent. |
+
+Use `hide` when error responses might leak internal details you don't want spoken aloud.
+
+## Mock responses
+
+Add mock responses to return canned payloads instead of calling the endpoint — useful while the real API doesn't exist yet, or to rehearse specific outcomes. Each mock has a `name`, a `status_code` (100–599), a `content_type`, and a `body`.
+
+## Test your tool
+
+The tool editor's **Test** tab fires a real request at your endpoint. Fill in the arguments as JSON (pre-filled with a sample based on your declared arguments) and send — you get back the status code, latency, response headers, and response body. A failing test never blocks saving the tool.
+
+The same check is available over the API:
+
+<CodeGroup>
+```bash Test request
+curl --request POST https://api.fish.audio/v1/agent/tools/{tool_id}/test \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "arguments": { "order_number": "A-1042" } }'
+```
+
+```json Response
+{
+  "status_code": 200,
+  "status_text": "OK",
+  "latency_ms": 184,
+  "response_body": "{\"status\":\"shipped\"}",
+  "response_headers": { "content-type": "application/json" },
+  "response_truncated": false,
+  "error": null
+}
+```
+</CodeGroup>
+
+Response bodies are captured up to 64 KB; larger bodies are cut off and flagged with `response_truncated`.
+
+## Create tools via the API
+
+`POST /v1/agent/tools` creates a tool in your workspace. Tools created this way are not attached to any agent — enable them per agent afterwards.
+
+```bash Create a webhook tool
+curl --request POST https://api.fish.audio/v1/agent/tools \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "tool_type": "webhook",
+    "name": "create_ticket",
+    "description": "Open a support ticket. Use when the issue cannot be resolved in conversation.",
+    "arguments": [
+      { "name": "subject", "description": "One-line summary of the issue." },
+      { "name": "details", "description": "Full description of the problem." }
+    ],
+    "method": "POST",
+    "url": "https://api.example.com/tickets",
+    "content_type": "application/json",
+    "body_template": "{ \"subject\": \"{{subject}}\", \"details\": \"{{details}}\" }",
+    "headers": [
+      { "name": "X-API-Key", "value": "YOUR_API_KEY", "kind": "custom" }
+    ],
+    "timeout_seconds": 30,
+    "error_handling": "passthrough"
+  }'
+```
+
+## Limits
+
+| Field | Limit |
+|---|---|
+| `name` | 1–120 characters |
+| `description` | up to 2,000 characters |
+| Argument `name` | 1–64 characters |
+| Argument `description` | up to 500 characters |
+| `url` | up to 4,000 characters |
+| `body_template` | up to 100,000 characters |
+| Mock response `body` | up to 100,000 characters |
+| Mock response `status_code` | 100–599 |
+| `timeout_seconds` | 1–120 seconds, default 30 |
+| Test response capture | first 64 KB (`response_truncated` set beyond that) |
+
+### URL restrictions
+
+Endpoint URLs must use `http` or `https`. Requests to localhost, private network ranges, and cloud metadata endpoints are rejected, and URLs may not embed credentials. The Builder validates the URL as you type; the API enforces the same rules.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Client tools" icon="browser" href="/agents/build/client-tools">
+    Run tool calls in your own app instead of over HTTP.
+  </Card>
+  <Card title="System tools" icon="gears" href="/agents/build/system-tools">
+    Built-in capabilities you toggle per agent.
+  </Card>
+  <Card title="Preview calls" icon="phone" href="/agents/test/preview-calls">
+    Talk to your agent and watch tool calls fire.
+  </Card>
+  <Card title="Agent tests" icon="vial" href="/agents/test/agent-tests">
+    Assert on agent behavior, tools included.
+  </Card>
+</CardGroup>

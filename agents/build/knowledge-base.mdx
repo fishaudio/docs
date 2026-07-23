@@ -1,0 +1,108 @@
+---
+title: "Knowledge Base"
+description: "Ground your agent in your own documents — add a source once, attach it to any agent in your workspace"
+icon: "book"
+---
+
+The knowledge base is a workspace-wide document library. Add a source once — an uploaded Markdown or plain-text file — and attach it to any number of agents. In conversation, the agent draws on attached sources to answer questions its [instructions](/agents/build/configuration) alone can't cover: product details, policies, FAQs, procedures.
+
+## Add sources
+
+Open your agent's **Knowledge base** tab and click **Add source**, then choose a `.md` or `.txt` file — UTF-8 text, up to 1 MB — and give the source a name and an optional description.
+
+Every source is plain text and stays editable after upload: open a source to view its content and edit the text in place — you never re-upload a file to make a change.
+
+<Note>
+PDF, Office, and scanned documents are not supported. Convert them to Markdown or plain text first.
+</Note>
+
+A source you add from an agent's Knowledge base tab is attached to that agent immediately.
+
+### Upload validation
+
+Files are validated, parsed, and indexed as part of the upload itself — there is no background processing to wait for. When **Add source** succeeds, the source is immediately available to attached agents. If the file is empty, over 1 MB, or not UTF-8 text, the upload is rejected with an error and nothing is created — fix the file and try again.
+
+### Folders
+
+Group sources into folders with **New folder**, and rename sources from the row menu. A folder must be empty before it can be deleted.
+
+## Share sources across agents
+
+Sources belong to the workspace, not to a single agent. The **Used by** column shows how many agents attach each source, and **Manage access** lists every agent with a toggle:
+
+- **Attach** — turn an agent on to give it access to the source.
+- **Detach** — turn an agent off. The source stays in the library and remains attached to other agents.
+
+Editing a source propagates to every agent that attaches it — you never update agents one by one. Each attached agent shows the edit as an unpublished draft change.
+
+<Warning>
+**Delete** removes a source from *all* agents that reference it, not just the one you're editing. To remove a source from a single agent, detach it with **Manage access** instead.
+</Warning>
+
+## How your agent uses knowledge
+
+### Small corpora are inlined
+
+If the total size of an agent's attached sources is **8 KB or less**, the full content is inlined into the agent's instructions. This is the fastest path: the agent has everything up front, with zero per-turn lookup cost.
+
+<Note>
+Inlined knowledge produces no retrieval events. If your corpus is small and you don't see retrieval activity, nothing is wrong — the content is already in the prompt.
+</Note>
+
+### Larger corpora are searched per turn
+
+Above 8 KB, the agent searches attached sources on every turn, using the user's latest message as the query, and injects the best-matching passages into that turn's context. The search runs under a fixed time budget: if it can't complete in time, the turn is answered without retrieved context. Retrieval never delays the agent's reply.
+
+### Publishing pins revisions
+
+When you [publish](/agents/build/versions-publishing) an agent, the published version pins the then-current revision of every attached source. Sessions read the pinned revisions, so edits you make mid-call never leak into an in-progress conversation. Publish again to roll updated content out.
+
+## Limits
+
+| Limit | Value |
+|---|---|
+| File upload formats | `.md`, `.txt` |
+| File size | 1 MB per file |
+| Sources per agent | 100 |
+| Inline threshold | 8 KB total attached content |
+
+Attaching more than 100 sources to one agent is rejected with `422`.
+
+## Manage sources over the API
+
+Knowledge sources are exposed at `/v1/agent/knowledge-sources`:
+
+| Endpoint | Description |
+|---|---|
+| `GET /v1/agent/knowledge-sources` | List sources in your workspace |
+| `POST /v1/agent/knowledge-sources` | Create a source — multipart upload with the `.md`/`.txt` file in the `source` field |
+| `GET /v1/agent/knowledge-sources/{source_id}` | Retrieve a source |
+| `PATCH /v1/agent/knowledge-sources/{source_id}` | Rename a source or replace its content |
+| `DELETE /v1/agent/knowledge-sources/{source_id}` | Delete a source |
+| `GET /v1/agent/knowledge-sources/{source_id}/agents` | List agents that attach the source |
+
+```bash Check dependents
+curl https://api.fish.audio/v1/agent/knowledge-sources/{source_id}/agents \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+<Note>
+`DELETE` returns `409` while the source is still attached to any agent — in its draft or its published version. Call the dependents endpoint to see which agents use it, then detach it from each — remove its id from `knowledge_base.knowledge_source_ids` in an agent update — and republish any agent whose published version still references it. Deleting from the console instead removes the source from all agents at once, after a confirmation.
+</Note>
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Agent configuration" icon="sliders" href="/agents/build/configuration">
+    Instructions, voice, and everything else your agent is made of.
+  </Card>
+  <Card title="Versions & publishing" icon="code-branch" href="/agents/build/versions-publishing">
+    How publishing snapshots your agent — knowledge revisions included.
+  </Card>
+  <Card title="Preview calls" icon="phone" href="/agents/test/preview-calls">
+    Talk to your draft and check knowledge answers before publishing.
+  </Card>
+  <Card title="Conversation history" icon="clock-rotate-left" href="/agents/monitor/conversation-history">
+    Review transcripts of past sessions.
+  </Card>
+</CardGroup>

@@ -1,0 +1,144 @@
+---
+title: "Inbound Calls"
+description: "Bind an agent to a phone number and it answers every call to that number"
+icon: "phone-arrow-down-left"
+---
+
+Point a phone number at an agent and it picks up every inbound call. Phone calls are ordinary agent sessions: they appear in session history with caller attribution, they are recorded and analyzed like any other conversation, and they trigger the same webhooks.
+
+<CardGroup cols={3}>
+  <Card
+    title="Phone numbers"
+    icon="hashtag"
+    href="/agents/telephony/phone-numbers"
+  >
+    Get a number and manage its agent binding.
+  </Card>
+  <Card
+    title="Conversation history"
+    icon="clock-rotate-left"
+    href="/agents/monitor/conversation-history"
+  >
+    Review transcripts, tool calls, and recordings.
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/agents/monitor/webhooks">
+    Get notified when calls end and analysis completes.
+  </Card>
+</CardGroup>
+
+## Set up inbound calling
+
+<Steps>
+  <Step title="Get a phone number">
+    Add a number to your workspace — see [Phone numbers](/agents/telephony/phone-numbers). Numbers are stored and displayed in E.164 format (for example `+15551234567`).
+  </Step>
+  <Step title="Publish your agent">
+    Calls connect to the agent's published configuration, not the draft. [Publish](/agents/build/versions-publishing) before pointing traffic at the number.
+  </Step>
+  <Step title="Bind the agent to the number">
+    Bind in the console, or set `agent_id` on the number via the API:
+
+    <CodeGroup>
+    ```bash Bind an agent
+    curl --request PATCH https://api.fish.audio/v1/agent/phone-numbers/PHONE_NUMBER_ID \
+      --header "Authorization: Bearer $FISH_API_KEY" \
+      --header "Content-Type: application/json" \
+      --data '{ "agent_id": "YOUR_AGENT_ID" }'
+    ```
+
+    ```bash Unbind
+    curl --request PATCH https://api.fish.audio/v1/agent/phone-numbers/PHONE_NUMBER_ID \
+      --header "Authorization: Bearer $FISH_API_KEY" \
+      --header "Content-Type: application/json" \
+      --data '{ "agent_id": null }'
+    ```
+    </CodeGroup>
+
+  </Step>
+</Steps>
+
+<Tip>
+  The number-to-agent binding is resolved on each incoming call, so a rebind
+  takes effect on the next call — useful for moving a number from a staging
+  agent to a production agent.
+</Tip>
+
+## Phone sessions in history
+
+Every answered call becomes a session with `source: "phone"` and two attribution fields:
+
+| Field           | Description                                                                 |
+| --------------- | --------------------------------------------------------------------------- |
+| `caller_number` | The caller's number, E.164. `null` for non-phone sessions.                  |
+| `dialed_number` | The workspace number that was called, E.164. `null` for non-phone sessions. |
+
+List calls with the standard sessions endpoint. The `caller_number` filter is an exact match; bare numbers are automatically prefixed with `+`, so `15551234567` matches `+15551234567`:
+
+```bash
+curl --request GET "https://api.fish.audio/v1/agent/sessions?agent_id=YOUR_AGENT_ID&caller_number=15551234567" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+```json
+{
+  "sessions": [
+    {
+      "session_id": "9c41f0d2e8a34b7f",
+      "agent_id": "YOUR_AGENT_ID",
+      "agent_name": "Support line",
+      "status": "completed",
+      "source": "phone",
+      "caller_number": "+15551234567",
+      "dialed_number": "+14155550100",
+      "created_at": "2026-07-23T09:14:01Z",
+      "started_at": "2026-07-23T09:14:02Z",
+      "ended_at": "2026-07-23T09:16:45Z",
+      "duration_seconds": 163,
+      "metadata": {}
+    }
+  ],
+  "has_more": false,
+  "next_cursor": null
+}
+```
+
+You can combine `caller_number` with the other list filters (`agent_id`, `status`, `created_after`, `created_before`) — see [Conversation history](/agents/monitor/conversation-history) for the full parameter list.
+
+## Phone sessions behave like any session
+
+Nothing about a phone call needs special handling downstream:
+
+- **Transcript and tool timeline** — `GET /v1/agent/sessions/{session_id}` returns the full conversation, including tool calls and results. See [Conversation history](/agents/monitor/conversation-history).
+- **Recording** — `GET /v1/agent/sessions/{session_id}/recording` returns signed URLs, one track per speaker.
+- **Post-call analysis** — summaries, data fields, and evaluation criteria run on phone sessions like any other. See [Post-call analysis](/agents/monitor/post-call-analysis).
+- **Webhooks** — `call.ended` and `call.analyzed` fire for phone sessions too. See [Webhooks](/agents/monitor/webhooks).
+- **Hang up via API** — end an in-progress call with `POST /v1/agent/sessions/{session_id}/end`.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card
+    title="Phone numbers"
+    icon="hashtag"
+    href="/agents/telephony/phone-numbers"
+  >
+    Number management and agent bindings.
+  </Card>
+  <Card
+    title="Versions & publishing"
+    icon="code-branch"
+    href="/agents/build/versions-publishing"
+  >
+    Control which configuration answers your calls.
+  </Card>
+  <Card
+    title="Post-call analysis"
+    icon="chart-simple"
+    href="/agents/monitor/post-call-analysis"
+  >
+    Extract structured data from every call.
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/agents/monitor/webhooks">
+    React to call lifecycle events from your backend.
+  </Card>
+</CardGroup>

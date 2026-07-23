@@ -1,0 +1,183 @@
+---
+title: "Wire Protocol"
+description: "The realtime message contract between clients and agent sessions — for platforms the SDKs don't cover"
+icon: "network-wired"
+---
+
+Everything the SDKs do rides a small, versioned wire protocol: two JSON message channels, plus the transport's standard transcription and state mechanisms. This page documents that contract for consumers that cannot use the SDKs — custom native stacks or ports to new platforms.
+
+<Note>
+  This is an escape hatch. For web and React apps, use the [Web
+  SDK](/agents/integrate/web-sdk) or [React SDK](/agents/integrate/react-sdk)
+  instead — they implement everything below (connection, reconnection, message
+  parsing, tool dispatch) and stay current as the protocol evolves.
+</Note>
+
+## The protocol package
+
+Every message shape on this page is published as TypeScript definitions in `@fishaudio/agent-protocol` — zero runtime dependencies, current version **0.3.0**. The package is the source of truth for shapes; this page fixes the semantics.
+
+```bash npm
+npm install @fishaudio/agent-protocol
+```
+
+## Connect to a session
+
+Create a session server-side ([authentication](/agents/integrate/authentication)), then connect to the transport named in the response. [Public agents](/agents/integrate/public-agents) can create sessions without the `Authorization` header.
+
+```bash Create a session
+curl --request POST https://api.fish.audio/v1/agent/sessions \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "agent_id": "YOUR_AGENT_ID" }'
+```
+
+```json Response (201)
+{
+  "session_id": "...",
+  "expires_at": "2026-07-23T12:34:56Z",
+  "max_duration_seconds": 3600,
+  "transport": "livekit",
+  "livekit_url": "wss://...",
+  "token": "<participant JWT>"
+}
+```
+
+The response is a discriminated union on `transport`. The `livekit` arm carries `livekit_url` and `token`: connect a LiveKit-compatible WebRTC client with them before `expires_at` (the join deadline), publish your microphone track, and subscribe to the agent's audio track.
+
+<Warning>
+  If you receive a `transport` value you don't recognize, fail with an explicit
+  "unsupported transport" error. Never guess or silently degrade — new transport
+  arms may be introduced, each with its own payload.
+</Warning>
+
+## Channels
+
+Once connected, a session uses these channels. The two `*-event` topics carry reliable data packets — one complete JSON object per packet.
+
+| Channel                                | Direction      | Carries                                                   |
+| -------------------------------------- | -------------- | --------------------------------------------------------- |
+| Audio tracks                           | both           | Your microphone up, the agent's speech down               |
+| `agent-event` topic                    | agent → client | Control events: client tool calls, tool lifecycle, errors |
+| `client-event` topic                   | client → agent | Text turns, activity, interrupts, hangup, tool results    |
+| `lk.transcription` text streams        | agent → client | Streaming transcripts for both sides                      |
+| `lk.agent.state` participant attribute | agent → client | Agent pipeline state (sticky)                             |
+
+Data-channel message fields are camelCase; REST bodies are snake_case.
+
+## Agent events — `agent-event`
+
+### `client_tool.call`
+
+The agent wants to run a [client tool](/agents/build/client-tools) in your app.
+
+```json client_tool.call
+{
+  "type": "client_tool.call",
+  "callId": "call_abc",
+  "toolName": "open_dashboard",
+  "params": { "tab": "billing" },
+  "expectsResponse": true
+}
+```
+
+Run the tool, then publish a `client_tool.result` with the same `callId`. While `expectsResponse` is `true`, the agent suspends the model's tool call until your result arrives or the tool's configured timeout elapses (default 30 seconds, configurable from 1 to 120). When `expectsResponse` is `false`, the call is fire-and-forget: the agent continues immediately and any result you send is ignored.
+
+### Tool lifecycle — `tool.started`, `tool.completed`, `tool.failed`
+
+Each tool the agent invokes emits one `tool.started`, resolved by exactly one terminal message (`tool.completed` or `tool.failed`) with the same `callId`. Terminal messages repeat `toolName` and `toolSource`, so a client that missed the start can still render a complete entry.
+
+| Field                                | Type    | Notes                                                                                   |
+| ------------------------------------ | ------- | --------------------------------------------------------------------------------------- |
+| `callId`                             | string  | Correlates a start with its terminal message                                            |
+| `toolName`                           | string  | The tool name as the model sees it                                                      |
+| `toolSource`                         | string  | Where the tool runs: `client`, `webhook`, `builtin`, or `unknown`; treat as an open set |
+| `input` / `output`                   | string  | JSON-serialized payload, truncated at the source at 4 KB                                |
+| `inputTruncated` / `outputTruncated` | boolean | Present when the payload was truncated                                                  |
+| `error`                              | string  | `tool.failed` only                                                                      |
+
+These events are on by default and their payloads travel to the end user's client. Pass `tool_events: false` when creating the session to keep tool data off the wire — the session then receives none of the three.
+
+### `error`
+
+```json error
+{ "type": "error", "code": "provider_error" }
+```
+
+`code` is a coarse category only: `provider_error` (an upstream model or voice provider failed) or `internal_error` (the runtime failed). The message deliberately carries no raw error detail.
+
+## Client events — `client-event`
+
+Publish these on the `client-event` topic. The agent ignores malformed JSON and unknown types.
+
+| Type                 | Effect                                                                |
+| -------------------- | --------------------------------------------------------------------- |
+| `user.message`       | Injects a text user turn; the agent replies as if the user had spoken |
+| `user.activity`      | Signals user activity (typing); suppresses idle re-engagement         |
+| `user.interrupt`     | Explicitly interrupts the agent's current speech                      |
+| `user.hangup`        | Ends the session gracefully                                           |
+| `client_tool.result` | Settles a pending `client_tool.call`                                  |
+
+```json user.message
+{ "type": "user.message", "text": "What's my balance?" }
+```
+
+```json client_tool.result
+{
+  "type": "client_tool.result",
+  "callId": "call_abc",
+  "result": { "opened": true }
+}
+```
+
+- `user.message` gets **no server echo** — you already hold the text, so render the bubble locally. Add `"audio": false` (protocol 0.3.0) to have the agent answer that turn in text only: no speech is synthesized and the reply arrives over transcription.
+- `client_tool.result` may carry `result` (any JSON value) or `"isError": true` to report the tool as failed to the model. Results for unknown or already-settled `callId`s are ignored.
+
+## Transcription and agent state
+
+These ride the transport's built-in mechanisms rather than custom messages.
+
+**Transcription** arrives as text streams on the `lk.transcription` topic. Segments are identified by the `lk.segment_id` stream attribute; `lk.transcription_final: "true"` marks a segment as final. Roles are distinguished by sender identity: the user's segments are sent under the user's own participant identity, the agent's under the agent participant.
+
+- Agent segments stream incrementally, paced to audio playback. An interrupted segment closes containing only the words actually spoken — there is no residual text.
+- User segments are interim until final; each interim update **replaces the entire segment text** under the same segment id.
+
+**Agent state** is published as the sticky `lk.agent.state` participant attribute with values `initializing`, `idle`, `listening`, `thinking`, and `speaking`. Sticky means a client that connects late or reconnects reads the current value immediately. The SDKs derive their three public modes from this attribute plus transcript segment open/close.
+
+## Compatibility rules
+
+1. **Ignore unknown `type` values and unknown fields.** This is required consumer behavior and the foundation of forward compatibility.
+2. **Evolution is additive-only.** Published fields never change name or meaning and are never removed; new fields are always optional. A semantic change ships as a new `type`.
+3. **No replay.** Data-channel delivery is reliable and ordered within a connection, but after a reconnect or late join, missed messages are gone — never wait for history. Tool terminal messages repeat their identifying fields, and the state attribute is sticky, precisely to soften this.
+
+## Version history
+
+| Version         | Changes                                                                                                              |
+| --------------- | -------------------------------------------------------------------------------------------------------------------- |
+| 0.2.0           | Added tool lifecycle events (`tool.started` / `tool.completed` / `tool.failed`) and the `tool_events` session option |
+| 0.3.0 (current) | Added the optional `audio` flag on `user.message` for per-turn text-only replies                                     |
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Web SDK" icon="js" href="/agents/integrate/web-sdk">
+    The supported implementation of this protocol for browsers.
+  </Card>
+  <Card title="Client tools" icon="wrench" href="/agents/build/client-tools">
+    Declare the tools your `client_tool.call` handlers implement.
+  </Card>
+  <Card
+    title="Authentication"
+    icon="key"
+    href="/agents/integrate/authentication"
+  >
+    Session creation, API keys, and token handling.
+  </Card>
+  <Card
+    title="Public agents"
+    icon="globe"
+    href="/agents/integrate/public-agents"
+  >
+    Let clients create sessions without a backend.
+  </Card>
+</CardGroup>

@@ -1,0 +1,139 @@
+---
+title: "Client Tools"
+description: "Let the agent trigger actions in your own app — declared on the agent, executed by your code through the SDK"
+icon: "code"
+---
+
+Client tools run inside your application, not on Fish Audio's servers. You declare the tool on the agent — name, description, parameters — and register a handler in your app with the [Web SDK](/agents/integrate/web-sdk). When the agent decides to call the tool mid-conversation, the SDK invokes your handler and returns its result to the agent.
+
+Use client tools for anything only your frontend can do: navigate to a page, highlight a product, open a modal, read app state, or hand off to a human.
+
+<Note>
+Client tools need code on your side. For tools that call an HTTP endpoint from Fish Audio's side, use [webhook tools](/agents/build/webhook-tools). For built-in capabilities like hanging up, see [system tools](/agents/build/system-tools).
+</Note>
+
+## How it works
+
+<Steps>
+  <Step title="Declare the tool on the agent">
+    Add a tool of type `client` to the agent's tool list, alongside any webhook tools. The name, description, and arguments tell the model what the tool does and when to call it.
+  </Step>
+  <Step title="Register a handler in your app">
+    Pass a handler for the same tool name when starting a session with `@fishaudio/agent-client`.
+  </Step>
+  <Step title="The agent calls the tool">
+    During the conversation, the agent invokes the tool with parameter values. The SDK dispatches the call to your handler.
+  </Step>
+  <Step title="Your result goes back to the agent">
+    The handler's return value is JSON-serialized and sent back, and the agent continues with the result — unless the tool is fire-and-forget.
+  </Step>
+</Steps>
+
+## Declare a client tool
+
+Client tools sit alongside webhook tools in the agent's tool list. A declaration looks like this:
+
+```json Tool definition
+{
+  "type": "client",
+  "name": "highlight_product",
+  "description": "Visually highlight a product on the page the user is viewing.",
+  "arguments": [
+    { "name": "product_id", "description": "ID of the product to highlight." }
+  ],
+  "expects_response": true
+}
+```
+
+| Field | Description |
+|---|---|
+| `name` | How the model refers to the tool — must match the name you register in the SDK exactly |
+| `description` | Tells the model what the tool does and when to use it |
+| `arguments` | Named inputs the model fills in; delivered to your handler as one JSON object |
+| `expects_response` | Whether the agent waits for your handler's return value before continuing |
+
+### Naming rules
+
+Tool names must match `^[a-zA-Z][a-zA-Z0-9_-]{0,63}$` — start with a letter, then letters, digits, underscores, or hyphens, up to 64 characters total.
+
+- Names starting with `_` are reserved for built-in tools and are rejected.
+- Names must be unique per agent — declaring a duplicate fails with a `400`.
+
+## Handle the call in your app
+
+Register handlers with the `clientTools` option when starting a session, or later with `registerClientTool`:
+
+<CodeGroup>
+```javascript At session start
+import { AgentSession } from "@fishaudio/agent-client";
+
+const session = await AgentSession.start({
+  agentId: "YOUR_AGENT_ID",
+  clientTools: {
+    highlight_product: async (params) => {
+      const el = document.getElementById(String(params.product_id));
+      el?.scrollIntoView({ behavior: "smooth" });
+      el?.classList.add("highlighted");
+      return { highlighted: true };
+    },
+  },
+});
+```
+
+```javascript After session start
+session.registerClientTool("open_page", (params, { callId, toolName }) => {
+  window.location.assign(`/products/${String(params.product_id)}`);
+});
+```
+</CodeGroup>
+
+A handler receives the parameter values as a single object, plus a context object with `callId` and `toolName`. It can be synchronous or async:
+
+```typescript Handler signature
+type ClientToolHandler = (
+  params: Record<string, unknown>,
+  ctx: { callId: string; toolName: string },
+) => unknown | Promise<unknown>;
+```
+
+<Tip>
+Parameter values are produced by the model. Validate them in your handler before acting on them, just as you would any external input.
+</Tip>
+
+### What the agent receives
+
+| Handler outcome | Result |
+|---|---|
+| Returns a value | JSON-serialized and sent back to the agent |
+| Throws | An error result is sent back; the SDK emits an `error` event with code `tool_failed` |
+| Exceeds the timeout (default 15 s) | An error result is sent back automatically; code `tool_timeout` |
+| Tool called but no handler registered | An error result is sent back automatically |
+
+The agent is never left hanging: while `expects_response` is `true` the agent suspends that tool call until your result arrives or the timeout fires, then continues either way. Errors and timeouts return to the model as tool errors, so the agent can recover in conversation ("I couldn't open that page — let me try something else"). To change the handler timeout, pass `clientToolTimeoutMs` (in milliseconds) when starting the session.
+
+## Fire-and-forget tools
+
+Set `expects_response` to `false` for tools that are pure side effects — the agent triggers your handler and keeps talking without waiting. Any return value is ignored.
+
+This suits UI actions where confirmation adds nothing: scrolling, opening a panel, firing an analytics event. If the agent should react to the outcome ("the page is open, now walk the user through it"), keep `expects_response: true`.
+
+## Observe tool activity
+
+Every tool call — client and webhook alike — emits `toolCallStarted`, `toolCallCompleted`, and `toolCallFailed` events on the session, with the call ID, tool name, and payloads. The events are on by default; sessions created with `tool_events: false` don't emit them. Use them to render tool activity in your UI. See the [Web SDK](/agents/integrate/web-sdk) for the event reference.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Web SDK" icon="js" href="/agents/integrate/web-sdk">
+    Full `@fishaudio/agent-client` API: sessions, events, audio.
+  </Card>
+  <Card title="Webhook tools" icon="webhook" href="/agents/build/webhook-tools">
+    Tools that call your HTTP endpoints server-side.
+  </Card>
+  <Card title="System tools" icon="gears" href="/agents/build/system-tools">
+    Built-in capabilities you toggle per agent.
+  </Card>
+  <Card title="Tools overview" icon="screwdriver-wrench" href="/agents/build/tools">
+    How the agent chooses and combines tools.
+  </Card>
+</CardGroup>

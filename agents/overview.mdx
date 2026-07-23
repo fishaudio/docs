@@ -1,0 +1,128 @@
+---
+title: "Agents Overview"
+sidebarTitle: "Overview"
+description: "Build voice agents in the console, ship them with the REST API and SDKs, and put them on the phone"
+icon: "robot"
+---
+
+Fish Agents is a hosted platform for real-time voice agents. Define an agent's prompt, voice, knowledge, and tools in the Builder console, publish it, and talk to it — from your web app through the SDK, over a phone number, or anywhere the REST API reaches. Speech recognition, turn-taking, and speech synthesis are handled for you.
+
+<CardGroup cols={3}>
+  <Card title="Quickstart" icon="rocket" href="/agents/quickstart">
+    Create an agent and have your first conversation in minutes.
+  </Card>
+  <Card title="Concepts" icon="lightbulb" href="/agents/concepts">
+    Agents, drafts, versions, sessions — the mental model.
+  </Card>
+  <Card
+    title="Integration overview"
+    icon="plug"
+    href="/agents/integrate/overview"
+  >
+    Pick the right surface for your app.
+  </Card>
+</CardGroup>
+
+## Three surfaces, one agent
+
+| Surface         | What it does                                                                                            | Start here                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| **Console**     | Design, test, and publish agents visually — no code.                                                    | [Configuration](/agents/build/configuration)       |
+| **REST API**    | Manage agents, sessions, tools, and knowledge programmatically under `/v1/agent/*`.                     | [Authentication](/agents/integrate/authentication) |
+| **Client SDKs** | Run live voice conversations in the browser with `@fishaudio/agent-client` or `@fishaudio/agent-react`. | [Web SDK](/agents/integrate/web-sdk)               |
+
+All three operate on the same agents. The core console workflow — creating agents, editing configuration, publishing versions — is also available over the API with your standard Fish Audio API key:
+
+```bash
+curl https://api.fish.audio/v1/agent/agents \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+## From draft to production
+
+<Steps>
+  <Step title="Configure">
+    Write the system prompt, set the first message, and pick a [voice and
+    speaking language](/agents/build/voice-language). Attach [knowledge
+    sources](/agents/build/knowledge-base) and [tools](/agents/build/tools).
+    Edits save to the agent's draft automatically.
+  </Step>
+  <Step title="Test">
+    Talk to the draft in a [preview call](/agents/test/preview-calls), or run
+    scripted [agent tests](/agents/test/agent-tests) that judge each reply pass
+    or fail.
+  </Step>
+  <Step title="Publish">
+    [Publishing](/agents/build/versions-publishing) freezes the draft into an
+    immutable, numbered version. Live sessions always run the published
+    configuration, so you can keep editing safely.
+  </Step>
+  <Step title="Integrate">
+    Drop the [web SDK](/agents/integrate/web-sdk) into your app, create sessions
+    over [REST](/agents/integrate/overview), or [bind a phone
+    number](/agents/telephony/phone-numbers) so the agent answers inbound calls.
+  </Step>
+  <Step title="Monitor">
+    Review each session's transcript, tool calls, and recordings in
+    [conversation history](/agents/monitor/conversation-history), let [post-call
+    analysis](/agents/monitor/post-call-analysis) summarize and evaluate every
+    call, and push results to your backend with
+    [webhooks](/agents/monitor/webhooks).
+  </Step>
+</Steps>
+
+## Capabilities
+
+<CardGroup cols={2}>
+  <Card
+    title="Prompt & voice"
+    icon="sliders"
+    href="/agents/build/configuration"
+  >
+    System prompt, first message, and any voice from the Fish Audio Voice
+    Library.
+  </Card>
+  <Card title="Knowledge base" icon="book" href="/agents/build/knowledge-base">
+    Upload documents the agent retrieves from during conversations. Update a
+    source and every agent using it picks up the new content.
+  </Card>
+  <Card title="Tools" icon="wrench" href="/agents/build/tools">
+    Call your backend with [webhook tools](/agents/build/webhook-tools), run
+    code in your app with [client tools](/agents/build/client-tools), and toggle
+    built-in [system tools](/agents/build/system-tools).
+  </Card>
+  <Card
+    title="Dynamic variables"
+    icon="brackets-curly"
+    href="/agents/build/dynamic-variables"
+  >
+    Personalize each session with values injected at call time.
+  </Card>
+  <Card
+    title="Versions & publishing"
+    icon="code-branch"
+    href="/agents/build/versions-publishing"
+  >
+    Draft safely, publish deliberately, and read back the full version history.
+  </Card>
+  <Card title="Telephony" icon="phone" href="/agents/telephony/inbound-calls">
+    Answer [inbound calls](/agents/telephony/inbound-calls) on [phone
+    numbers](/agents/telephony/phone-numbers) bound to your agents.
+  </Card>
+  <Card
+    title="Conversation history"
+    icon="clock-rotate-left"
+    href="/agents/monitor/conversation-history"
+  >
+    Transcripts and tool timelines for every session, plus per-speaker
+    recordings when enabled.
+  </Card>
+  <Card
+    title="Post-call analysis & webhooks"
+    icon="chart-simple"
+    href="/agents/monitor/post-call-analysis"
+  >
+    Automatic summaries, structured data extraction, and success criteria —
+    delivered to your systems via [webhooks](/agents/monitor/webhooks).
+  </Card>
+</CardGroup>

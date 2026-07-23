@@ -1,0 +1,41 @@
+---
+title: "System tools"
+description: "Built-in agent capabilities — language detection and hang up call — toggled per agent"
+icon: "toggle-on"
+---
+
+System tools are capabilities built into the platform. There is nothing to create, host, or configure — each agent simply switches them on or off.
+
+| Tool | Key | What it does |
+|---|---|---|
+| Language detection | `language_detection` | Lets the agent detect the language the user is speaking. |
+| Hang up call | `hang_up_call` | Lets the agent end the call itself. |
+
+<Note>
+Unlike [webhook tools](/agents/build/webhook-tools), system tools are not workspace resources shared across agents. The on/off state is stored per agent — toggling a system tool on one agent never affects another.
+</Note>
+
+## Toggle in the Builder
+
+Open your agent's **Tools** page in the Builder. The **System tools** card holds the **Hang up call** switch. The **Language detection** switch lives on the agent's **Configuration** page, next to **Speaking language** — see [Voice & language](/agents/build/voice-language). Flip a switch to enable or disable that capability for this agent.
+
+## Toggle via the API
+
+Over the REST API, system tool switches are part of the agent's configuration, in the same `tools` section that holds its attached webhook tools. See [Configuration](/agents/build/configuration) for reading and updating an agent's config.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Tools overview" icon="wrench" href="/agents/build/tools">
+    How webhook, client, and system tools fit together.
+  </Card>
+  <Card title="Webhook tools" icon="webhook" href="/agents/build/webhook-tools">
+    Call your own HTTP endpoints from a conversation.
+  </Card>
+  <Card title="Client tools" icon="browser" href="/agents/build/client-tools">
+    Run tool calls inside your own app via the SDK.
+  </Card>
+  <Card title="Voice & language" icon="language" href="/agents/build/voice-language">
+    Configure the agent's voice and speaking language.
+  </Card>
+</CardGroup>

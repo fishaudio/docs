@@ -1,0 +1,210 @@
+---
+title: "Conversation History"
+description: "List past sessions, replay the full timeline of messages and tool calls, and download recordings"
+icon: "clock-rotate-left"
+---
+
+Every production session your agents handle — from the API, the dashboard, [public agents](/agents/integrate/public-agents), or [phone calls](/agents/telephony/inbound-calls) — is queryable over REST: a lightweight list for browsing, a merged timeline of messages and tool activity per session, and per-speaker recordings. You can query a session while the call is still in progress.
+
+This is a server-side API — authenticate with your API key. The client SDKs deliberately expose no history interface; fetch history from your backend and pass it to your frontend as needed.
+
+## List sessions
+
+`GET /v1/agent/sessions` returns session facts, newest first. The list is intentionally thin — no transcripts or tool details — so it stays fast at any volume.
+
+<CodeGroup>
+```bash API (curl)
+curl "https://api.fish.audio/v1/agent/sessions?agent_id=YOUR_AGENT_ID&status=completed&page_size=50" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+```python Python
+import os
+import httpx
+
+resp = httpx.get(
+    "https://api.fish.audio/v1/agent/sessions",
+    params={"agent_id": "YOUR_AGENT_ID", "status": "completed", "page_size": 50},
+    headers={"Authorization": f"Bearer {os.environ['FISH_API_KEY']}"},
+)
+sessions = resp.json()["sessions"]
+```
+
+</CodeGroup>
+
+Each row carries the session facts:
+
+```json
+{
+  "sessions": [
+    {
+      "session_id": "…",
+      "agent_id": "…",
+      "agent_name": "Support agent",
+      "status": "completed",
+      "source": "phone",
+      "caller_number": "+15551234567",
+      "dialed_number": "+14155550100",
+      "started_at": "2026-07-22T09:14:02Z",
+      "ended_at": "2026-07-22T09:16:05Z",
+      "duration_seconds": 123,
+      "metadata": { "crm_ticket": "T-4821" }
+    }
+  ],
+  "has_more": true,
+  "next_cursor": "…"
+}
+```
+
+`caller_number` and `dialed_number` are set for phone sessions only (E.164) and are `null` for web sessions. `metadata` echoes back whatever you attached when creating the session.
+
+### Filters
+
+| Parameter                          | Behavior                                                                                              |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `agent_id`                         | Sessions of a single agent                                                                            |
+| `status`                           | One of `pending`, `active`, `completed`, `failed`, `unknown` — comma-separate values to match several |
+| `caller_number`                    | Exact match on the caller's E.164 number; a bare number gets `+` prepended automatically              |
+| `created_after` / `created_before` | ISO 8601 timestamps                                                                                   |
+
+<Note>
+  `pending` sessions — a session was created but no participant ever connected —
+  are excluded by default. Pass `status=pending` explicitly to see them. Preview
+  calls made from the Builder never appear in this API.
+</Note>
+
+### Pagination
+
+Two modes, mutually exclusive (combining them returns `400`):
+
+| Mode   | How                                                                                     | Use it for                  |
+| ------ | --------------------------------------------------------------------------------------- | --------------------------- |
+| Cursor | Pass the previous response's `next_cursor` as `cursor`; stop when `has_more` is `false` | Crawling, exports, syncing  |
+| Page   | Pass `page` (1-based); the response always includes `total`                             | Paged UIs with jump-to-page |
+
+`page_size` defaults to 30, maximum 100; values out of range return `400`. In cursor mode `total` is `null` unless you pass `include_total=true`. Page mode still returns `next_cursor`, so you can switch to cursor crawling from any page — and you must beyond an offset of 100,000 rows, where page mode cuts off.
+
+## Get a session
+
+`GET /v1/agent/sessions/{session_id}` returns the session facts plus a single `items` timeline: messages and tool activity merged in the order they actually happened.
+
+```bash API (curl)
+curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+```json
+{
+  "session_id": "…",
+  "status": "completed",
+  "items": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": "Can you check order A1?",
+      "turn_id": 3,
+      "created_at": "2026-07-22T09:14:05Z"
+    },
+    {
+      "type": "tool_call",
+      "call_id": "tool_8f2…",
+      "tool_name": "lookup_order",
+      "tool_source": "webhook",
+      "input": "{\"order_id\":\"A1\"}",
+      "created_at": "2026-07-22T09:14:06Z"
+    },
+    {
+      "type": "tool_result",
+      "call_id": "tool_8f2…",
+      "tool_name": "lookup_order",
+      "tool_source": "webhook",
+      "status": "completed",
+      "output": "{\"state\":\"shipped\"}",
+      "output_truncated": false,
+      "error": null,
+      "latency_ms": 812,
+      "created_at": "2026-07-22T09:14:07Z"
+    },
+    {
+      "type": "message",
+      "role": "assistant",
+      "content": "Order A1 shipped yesterday.",
+      "turn_id": 3,
+      "created_at": "2026-07-22T09:14:07Z"
+    }
+  ],
+  "analysis": {
+    "status": "completed",
+    "summary": "…",
+    "data": [],
+    "criteria_results": []
+  }
+}
+```
+
+### Item types
+
+| `type`        | What it is                                                                                                                                                 |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `message`     | One utterance. `role` is `user` or `assistant` (system prompt content is never exposed). `turn_id` groups items belonging to the same conversational turn. |
+| `tool_call`   | A tool invocation as it started. `input` is a JSON string, stored in full — no truncation.                                                                 |
+| `tool_result` | The paired outcome, matched by `call_id`. `status` is `completed` or `failed`. `latency_ms` is the execution time.                                         |
+
+Details worth knowing:
+
+- **Order** — items are sorted by `created_at` ascending; a `tool_result`'s timestamp is its completion time, so long-running tools appear where they actually finished, with messages in between. Items sharing a timestamp order `message`, then `tool_call`, then `tool_result`.
+- **`tool_source`** — where the tool ran: `client`, `webhook`, `builtin`, or `background`. See [Tools](/agents/build/tools).
+- **Payloads** — `input` and `output` are JSON strings, symmetric with the live SDK events, so one parser covers both. `output` and `error` are stored up to 256 KB; beyond that the text is cut and `output_truncated` is `true`.
+- **Mid-call queries** — you can fetch an `active` session; you get the items persisted so far, and `analysis` is `null` until [post-call analysis](/agents/monitor/post-call-analysis) completes.
+- A `tool_call` without a matching `tool_result` means the execution never resolved.
+
+<Warning>
+  `items` is a discriminated union on `type`, and it evolves additively. Ignore
+  item types and fields you don't recognize — new modalities and item kinds will
+  appear without a version bump.
+</Warning>
+
+### Correlate with live events
+
+`call_id` is the same identifier your client receives in the SDK's `toolCallStarted` / `toolCallCompleted` / `toolCallFailed` events. Log it live, and you can align in-call UI with the post-call record — jump from a tool chip in your interface straight to the matching `tool_call` / `tool_result` pair in history. See the [Web SDK](/agents/integrate/web-sdk).
+
+## Download recordings
+
+`GET /v1/agent/sessions/{session_id}/recording` returns the recording status and signed download URLs — one audio track per speaker, so you can play or process the agent and the user separately.
+
+```bash API (curl)
+curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID/recording" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+Signed URLs are short-lived. Don't store them — store the `session_id` and request fresh URLs when you need the audio. For the same reason, recordings are not embedded in the session detail response.
+
+## Access semantics
+
+- Your API key sees every production session in its workspace, across all sources.
+- A session that doesn't exist — or belongs to another workspace — always returns `404`, never `403`.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card
+    title="Post-call analysis"
+    icon="wand-magic-sparkles"
+    href="/agents/monitor/post-call-analysis"
+  >
+    What the embedded `analysis` object contains and how to configure it.
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/agents/monitor/webhooks">
+    Push instead of poll — get notified when sessions end.
+  </Card>
+  <Card title="Web SDK" icon="js" href="/agents/integrate/web-sdk">
+    The live `toolCall*` events that share `call_id` with history.
+  </Card>
+  <Card
+    title="Inbound calls"
+    icon="phone"
+    href="/agents/telephony/inbound-calls"
+  >
+    Where `caller_number` and `dialed_number` come from.
+  </Card>
+</CardGroup>

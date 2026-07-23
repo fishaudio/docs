@@ -1,0 +1,202 @@
+---
+title: "Authentication"
+description: "Connect clients to your agent with a public agent ID or a backend-minted session token"
+icon: "key"
+---
+
+There are exactly two ways for a client to start a conversation with your agent. Pick one — there is no third path, and your API key is never one of them in the browser.
+
+<CardGroup cols={2}>
+  <Card title="Public agent ID" icon="globe">
+    The browser calls Fish Audio directly with just an `agentId`. No credential
+    — requires the agent to be [public](/agents/integrate/public-agents).
+  </Card>
+  <Card title="Session token" icon="server">
+    Your backend creates a session with your API key and hands the short-lived
+    token to the SDK. The default for private agents.
+  </Card>
+</CardGroup>
+
+|                           | Public agent ID                                                             | Session token                         |
+| ------------------------- | --------------------------------------------------------------------------- | ------------------------------------- |
+| Credential in browser     | None                                                                        | Short-lived session token             |
+| Requires                  | Agent set to public + allowed origins                                       | Your own backend endpoint             |
+| Session parameters set by | The SDK (`overrides`, `dynamicVariables`, `language`, `toolEvents` options) | Your backend, in the creation request |
+| Best for                  | Demos, marketing pages, low-friction embeds                                 | Production apps with signed-in users  |
+
+## Public agents: connect with an agent ID
+
+If the agent is public, the SDK creates the session itself — no backend, no credential:
+
+```javascript JavaScript
+import { AgentSession } from "@fishaudio/agent-client";
+
+const session = await AgentSession.start({
+  agentId: "YOUR_AGENT_ID",
+  dynamicVariables: { name: "Ada" },
+});
+```
+
+Fish Audio accepts the request only when the agent has public access enabled and the page's `Origin` is on the agent's allow-list; requests are rate-limited per IP and per agent. Origins match on exact scheme, host, and port — `localhost` and `127.0.0.1` are different origins, so list both during development. See [Public agents](/agents/integrate/public-agents) for setup.
+
+## Session tokens: mint on your backend
+
+For private agents, your backend exchanges your API key for a single-conversation token.
+
+<Steps>
+  <Step title="Create a session from your backend">
+    Call `POST /v1/agent/sessions` with your API key. This is where you set
+    per-session parameters — user identity, overrides, dynamic variables.
+  </Step>
+  <Step title="Return the response to your frontend">
+    The response is the session token. Forward it verbatim.
+  </Step>
+  <Step title="Start the SDK with the token">
+    Pass the object to `AgentSession.start({sessionToken})` unmodified. The SDK
+    handles the connection from there.
+  </Step>
+</Steps>
+
+<CodeGroup>
+```bash API (curl)
+curl --request POST https://api.fish.audio/v1/agent/sessions \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "agent_id": "YOUR_AGENT_ID",
+    "end_user_id": "user_42",
+    "dynamic_variables": { "name": "Ada" }
+  }'
+```
+
+```javascript Backend (Express)
+app.post("/voice-session", async (req, res) => {
+  const upstream = await fetch("https://api.fish.audio/v1/agent/sessions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.FISH_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      agent_id: "YOUR_AGENT_ID",
+      end_user_id: req.user.id,
+      dynamic_variables: { name: req.user.name },
+    }),
+  });
+  res.status(upstream.status).json(await upstream.json());
+});
+```
+
+```javascript Browser
+import { AgentSession } from "@fishaudio/agent-client";
+
+const sessionToken = await fetch("/voice-session", { method: "POST" }).then(r =>
+  r.json()
+);
+
+const session = await AgentSession.start({ sessionToken });
+```
+
+</CodeGroup>
+
+<Note>
+  In session token mode, `overrides`, `dynamic_variables`, `language`,
+  `tool_events`, `timezone`, and `world_context` belong in your backend's
+  creation request — the SDK forwards these options only in public agent ID
+  mode.
+</Note>
+
+### Request fields
+
+| Field               | Type              | Description                                                                                                                                                                          |
+| ------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `agent_id`          | string, required  | The agent to talk to. It must have a [published version](/agents/build/versions-publishing).                                                                                         |
+| `language`          | string, optional  | Shorthand for `overrides.language`; subject to the same override allow-list. See [Voice & language](/agents/build/voice-language).                                                   |
+| `overrides`         | object, optional  | Per-session config overrides. Each field must be enabled in the agent's override allow-list — unauthorized fields are rejected with `400`.                                           |
+| `dynamic_variables` | object, optional  | Up to 50 entries of string, number, or boolean values, substituted into `{{placeholders}}`. See [Dynamic variables](/agents/build/dynamic-variables).                                |
+| `tool_events`       | boolean, optional | Stream tool lifecycle events (`toolCallStarted` / `toolCallCompleted` / `toolCallFailed`) to the client. Default `true`; set `false` to keep tool inputs and outputs off the client. |
+| `end_user_id`       | string, optional  | Your identifier for the end user, for attribution in [conversation history](/agents/monitor/conversation-history).                                                                   |
+| `metadata`          | object, optional  | Your own key-value namespace. Stored and returned verbatim on session queries and webhooks — never read or interpreted by the platform.                                              |
+| `record_audio`      | boolean, optional | Whether to record this session's audio. Overrides the agent's recording setting for this session only — it never changes the agent; omit it to use the agent's configuration.        |
+| `timezone`          | string, optional  | IANA timezone (like `Asia/Shanghai`) for the agent's sense of local time. Invalid names are rejected with `422`. See [Time & timezone](/agents/build/time-timezone).                 |
+| `client_timezone`   | string, optional  | The end user's browser timezone, filled automatically by the SDK in public-agent mode. Used only when `timezone` is absent; invalid values are ignored.                              |
+| `world_context`     | boolean, optional | Whether the agent knows the current date and time. Default `true`; set `false` to withhold both from this session.                                                                   |
+
+Unknown fields — top-level or inside `overrides` — are rejected with `422`.
+
+### Response
+
+```json JSON
+{
+  "session_id": "abc123",
+  "expires_at": "2026-07-23T12:00:00Z",
+  "max_duration_seconds": 3600,
+  "transport": "livekit",
+  "livekit_url": "wss://example.livekit.cloud",
+  "token": "<participant token>"
+}
+```
+
+| Field                  | Description                                                                                                 |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `session_id`           | The session's id — use it later to look up the [conversation record](/agents/monitor/conversation-history). |
+| `expires_at`           | Deadline for the client to connect. Mint the token right before starting, not ahead of time.                |
+| `max_duration_seconds` | Hard cap on session length.                                                                                 |
+| `transport`            | Which transport the SDK uses for this session; `livekit` today.                                             |
+| `livekit_url`, `token` | Connection details for that transport, consumed by the SDK.                                                 |
+
+Treat the response as opaque and pass it to `start()` unmodified. If the SDK does not recognize the `transport` value, it fails fast with an `unsupported_transport` error asking you to upgrade the SDK — it never silently degrades.
+
+### Token lifetime
+
+- A session token is **single-use**: `start()` consumes it once to establish the conversation.
+- On network drops the SDK reconnects at the transport level using the same connection state — it never re-creates the session, so you never need to re-mint mid-call.
+- Once a session ends, the token is spent. Mint a new token for each conversation.
+
+## Keep API keys on the server
+
+<Warning>
+  Your API key grants full access to every resource in your team — agents,
+  sessions, tools, phone numbers. Never embed it in a browser, mobile app, or
+  any code you ship to users. The only credential that belongs in a client is
+  the session token, and the only credential-free path is a public agent ID.
+</Warning>
+
+## Error responses
+
+Session creation fails with standard HTTP statuses; the SDK surfaces them as a `FishAgentError` with `statusCode` set.
+
+| Status | Meaning                                                                                                                                       |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  | An `overrides` field is not on the agent's override allow-list.                                                                               |
+| `401`  | Invalid API key. A request with no `Authorization` header at all is treated as a public-agent request instead.                                |
+| `402`  | Quota exceeded.                                                                                                                               |
+| `403`  | Public-agent request rejected: the agent is not public, or the page's `Origin` is not on the allow-list.                                      |
+| `409`  | Conflict — most commonly the agent has no published version yet. [Publish](/agents/build/versions-publishing) to resolve.                     |
+| `422`  | The request body failed validation — an unknown field, an unsupported `language` code, an invalid `timezone`, or an invalid dynamic variable. |
+| `429`  | Rate limited — a public-agent request exceeded the per-agent or per-IP limit.                                                                 |
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card
+    title="Public agents"
+    icon="globe"
+    href="/agents/integrate/public-agents"
+  >
+    Enable credential-free access with origin allow-lists.
+  </Card>
+  <Card title="Web SDK" icon="js" href="/agents/integrate/web-sdk">
+    Everything `AgentSession` can do once connected.
+  </Card>
+  <Card title="React SDK" icon="react" href="/agents/integrate/react-sdk">
+    Hooks and components for React apps.
+  </Card>
+  <Card
+    title="Dynamic variables"
+    icon="brackets-curly"
+    href="/agents/build/dynamic-variables"
+  >
+    Personalize each session at creation time.
+  </Card>
+</CardGroup>

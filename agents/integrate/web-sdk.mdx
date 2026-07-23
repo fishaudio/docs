@@ -1,0 +1,283 @@
+---
+title: "Web SDK"
+description: "Voice sessions in the browser with @fishaudio/agent-client — events, transcripts, text input, audio controls, and client tools"
+icon: "js"
+---
+
+`@fishaudio/agent-client` runs a live voice conversation with your agent from any web page: open the microphone, stream audio both ways, and react to typed events for transcripts, agent state, and tool calls. The SDK handles the realtime transport (WebRTC) internally — your code never touches connection plumbing.
+
+Using React? [`@fishaudio/agent-react`](/agents/integrate/react-sdk) wraps this SDK in hooks and a provider.
+
+## Install
+
+<CodeGroup>
+```bash npm
+npm install @fishaudio/agent-client
+```
+
+```bash pnpm
+pnpm add @fishaudio/agent-client
+```
+
+```bash yarn
+yarn add @fishaudio/agent-client
+```
+
+</CodeGroup>
+
+## Start a session
+
+`AgentSession.start()` creates the session, connects, and opens the microphone in one call. Authenticate one of two ways:
+
+- **`agentId`** — for [public agents](/agents/integrate/public-agents). The SDK creates the session directly from the browser; no backend needed.
+- **`sessionToken`** — for private agents. Your backend calls `POST /v1/agent/sessions` with your API key and hands the JSON response to the browser; pass it through unchanged. See [Authentication](/agents/integrate/authentication).
+
+<CodeGroup>
+
+```javascript Public agent
+import { AgentSession } from "@fishaudio/agent-client";
+
+const session = await AgentSession.start({
+  agentId: "YOUR_AGENT_ID",
+});
+```
+
+```javascript Private agent
+import { AgentSession } from "@fishaudio/agent-client";
+
+// Your backend calls POST /v1/agent/sessions and returns the
+// response body. Pass it to the SDK as-is — no reshaping.
+const resp = await fetch("/api/voice-session", { method: "POST" });
+const sessionToken = await resp.json();
+
+const session = await AgentSession.start({ sessionToken });
+```
+
+</CodeGroup>
+
+### Options
+
+| Option                     | Type                                          | Description                                                                                                                                                        |
+| -------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `agentId` / `sessionToken` | —                                             | One of the two, required                                                                                                                                           |
+| `clientTools`              | `Record<string, ClientToolHandler>`           | Handlers for [client tools](/agents/build/client-tools) declared on the agent                                                                                      |
+| `overrides`                | `SessionOverrides`                            | Per-session config overrides (`agentId` mode only — with `sessionToken`, your backend sends them when creating the session)                                        |
+| `dynamicVariables`         | `Record<string, string \| number \| boolean>` | Values for `{{placeholders}}` in the agent config — see [Dynamic variables](/agents/build/dynamic-variables)                                                       |
+| `language`                 | `string`                                      | Shorthand for overriding the agent's language                                                                                                                      |
+| `toolEvents`               | `boolean`                                     | Whether tool lifecycle events reach this client (default `true`; `agentId` mode only — with `sessionToken`, your backend sets `tool_events`)                       |
+| `timezone`                 | `string`                                      | IANA timezone for the agent's sense of local time — defaults to the browser's timezone, detected automatically. See [Time & timezone](/agents/build/time-timezone) |
+| `worldContext`             | `boolean`                                     | Whether the agent knows the current date and time (default `true`; `agentId` mode only — with `sessionToken`, your backend sets `world_context`)                   |
+| `audio`                    | `{ inputDeviceId?, outputDeviceId? }`         | Pick specific microphone and output devices                                                                                                                        |
+| `callbacks`                | `Partial<AgentSessionCallbacks>`              | Shorthand — each key is auto-subscribed via `.on()`                                                                                                                |
+
+## Session lifecycle
+
+A session moves through a fixed state machine, surfaced by the `statusChange` event and the `session.status` property:
+
+```text States
+idle → connecting → connected ⇄ reconnecting → ended(reason)
+         └────────────(failure)──────────────→ ended
+```
+
+When the session ends, `disconnect` fires with a reason (also available as `session.endReason`):
+
+| `EndReason`       | Meaning                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------ |
+| `user_hangup`     | You called `session.end()`                                                                       |
+| `agent_hangup`    | The agent ended the call (for example via the hang-up [system tool](/agents/build/system-tools)) |
+| `timeout`         | The session hit its maximum duration                                                             |
+| `connection_lost` | The connection dropped and could not be recovered                                                |
+| `server_error`    | The session failed on the server side                                                            |
+
+Brief network drops don't end the session: the SDK moves to `reconnecting` and back to `connected` automatically, reusing the same session.
+
+<Warning>
+  Events are not replayed after a reconnect. Anything emitted while you were in
+  `reconnecting` — transcript updates, tool events, errors — is dropped, not
+  resent. Design your UI to tolerate gaps: tool `toolCallCompleted` /
+  `toolCallFailed` events repeat the tool name and source, so a terminal event
+  still renders even if you missed `toolCallStarted`.
+</Warning>
+
+## Events
+
+The session is a typed event emitter — subscribe with `session.on(event, handler)`, remove with `off`, or use `once`.
+
+| Event                | Payload                                                 | Fires when                                                                  |
+| -------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `connect`            | `{ sessionId }`                                         | The session is connected and live                                           |
+| `disconnect`         | `{ reason: EndReason }`                                 | The session has ended                                                       |
+| `statusChange`       | `SessionStatus`                                         | Status transitions (`connecting` / `connected` / `reconnecting` / `ended`)  |
+| `modeChange`         | `AgentMode`                                             | The agent switches between `listening`, `thinking`, and `speaking`          |
+| `userTranscript`     | `{ segmentId, text, final }`                            | The user's speech is transcribed; interim updates replace the whole segment |
+| `agentResponseDelta` | `{ segmentId, delta, text }`                            | The agent speaks — `delta` is the new text, `text` the segment so far       |
+| `agentResponse`      | `{ segmentId, text }`                                   | An agent segment is finalized                                               |
+| `message`            | `{ role: "user" \| "agent", text }`                     | A finalized message from either side — a ready-made chat feed               |
+| `toolCallStarted`    | `{ callId, toolName, source, input, inputTruncated }`   | A tool call begins; `input` is a JSON string (truncated at 4 KB)            |
+| `toolCallCompleted`  | `{ callId, toolName, source, output, outputTruncated }` | A tool call succeeds                                                        |
+| `toolCallFailed`     | `{ callId, toolName, source, error }`                   | A tool call fails                                                           |
+| `error`              | `FishAgentError`                                        | A session or tool error occurs — see [Errors](#errors)                      |
+
+```javascript Subscribe to events
+session.on("userTranscript", ({ segmentId, text, final }) => {
+  upsertBubble("user", segmentId, text, final);
+});
+
+session.on("agentResponseDelta", ({ segmentId, text }) => {
+  upsertBubble("agent", segmentId, text, false);
+});
+
+session.on("modeChange", mode => setOrbState(mode));
+session.on("disconnect", ({ reason }) => showCallEnded(reason));
+```
+
+### Transcript semantics
+
+Transcripts on both sides arrive as **segments** — one segment per utterance or response, identified by `segmentId`:
+
+- **User segments**: interim results **replace the entire segment text** (they never append). Render by upserting on `segmentId`; `final: true` marks the segment as finalized.
+- **Agent segments**: text streams in sync with audio playback — what you display matches what the user has actually heard. If the agent is interrupted, the segment finalizes containing only the words that were spoken.
+- The `message` event delivers only finalized messages from both sides, in order — use it when you want a simple transcript list without handling interim updates.
+
+## Agent modes
+
+`session.mode` (and the `modeChange` event) tracks what the agent is doing, for driving an orb or status indicator:
+
+| Mode        | Meaning                                                      |
+| ----------- | ------------------------------------------------------------ |
+| `listening` | Default state — the agent is waiting for or hearing the user |
+| `thinking`  | The agent is preparing a response                            |
+| `speaking`  | Agent audio is playing; ends when playback finishes          |
+
+`session.isSpeaking` is a convenience boolean for the `speaking` mode. Mode does not react to the user's own speech — for instant "the mic hears you" feedback, poll `getInputVolume()` locally.
+
+## Send text
+
+Users can type instead of talking, in the same session:
+
+```javascript Text input
+// Send a typed user turn. There is no server echo — the SDK emits
+// the finalized `message` event locally from the text you passed.
+session.sendUserMessage("Do you ship to Norway?");
+
+// Text-only reply for this turn: the agent answers in text
+// (agentResponseDelta / agentResponse) without speaking out loud.
+session.sendUserMessage("What's my order status?", { audio: false });
+
+// Signal typing so the agent doesn't talk over the user.
+input.addEventListener("input", () => session.sendUserActivity());
+
+// Stop the agent's current speech immediately (explicit barge-in).
+session.interrupt();
+```
+
+## Audio controls
+
+| Method / property                                      | Description                                                                                                               |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `setMicMuted(muted)` / `micMuted`                      | Mute or unmute the microphone                                                                                             |
+| `setOutputVolume(v)`                                   | Set playback volume, `0`–`1`                                                                                              |
+| `getInputVolume()` / `getOutputVolume()`               | Current mic / agent volume, `0`–`1` — poll per frame                                                                      |
+| `getInputFrequencyData()` / `getOutputFrequencyData()` | FFT data as `Uint8Array`, for visualizers                                                                                 |
+| `startAudio()`                                         | Unlock playback under browser autoplay policies — call inside a user gesture (for example the click that starts the call) |
+
+Select specific devices at start with the `audio` option (`inputDeviceId` / `outputDeviceId`).
+
+```javascript Audio visualizer
+function draw() {
+  const fft = session.getOutputFrequencyData(); // Uint8Array
+  renderBars(canvas, fft);
+  rafId = requestAnimationFrame(draw);
+}
+draw();
+
+// Stop drawing when the session ends.
+session.on("disconnect", () => cancelAnimationFrame(rafId));
+```
+
+## Client tools
+
+Register handlers for tools of type `client` declared on the agent — the agent calls them mid-conversation and your return value goes back to the model:
+
+```javascript Register a client tool
+const session = await AgentSession.start({
+  agentId: "YOUR_AGENT_ID",
+  clientTools: {
+    open_page: async params => {
+      showPanel(String(params.page));
+      return { opened: true };
+    },
+  },
+});
+
+// Or after start:
+session.registerClientTool("highlight_product", handler);
+```
+
+Handlers can be sync or async; a thrown error or a timeout (default 15 s) is returned to the agent as a tool error. See [Client tools](/agents/build/client-tools) for declaration, naming rules, and dispatch semantics.
+
+## Errors
+
+Failures surface as `FishAgentError` — thrown from `AgentSession.start()` when the session can't be created, emitted on the `error` event otherwise. Each carries a `code`, an optional `statusCode` (set on session-creation HTTP errors), and `cause`.
+
+| Code                                | Meaning                                                                             |
+| ----------------------------------- | ----------------------------------------------------------------------------------- |
+| `session_request_failed`            | Session creation failed — check `statusCode`                                        |
+| `agent_not_public`                  | `agentId` mode, but the agent is not enabled for public access                      |
+| `origin_forbidden`                  | The page's origin is not in the agent's allowed origins                             |
+| `unsupported_transport`             | The session token uses a transport this SDK version doesn't know — upgrade the SDK  |
+| `mic_permission_denied`             | The user denied microphone access; the SDK ends the session                         |
+| `connection_failed`                 | Could not establish the realtime connection                                         |
+| `session_expired`                   | The session token's join deadline passed before connecting                          |
+| `tool_failed` / `tool_timeout`      | A client tool handler threw or timed out                                            |
+| `provider_error` / `internal_error` | The session failed server-side — upstream model/voice provider vs. platform runtime |
+
+<Note>
+  `provider_error` and `internal_error` carry only the category code — raw
+  provider or infrastructure details are never sent to the browser.
+</Note>
+
+```javascript Handle errors
+try {
+  const session = await AgentSession.start({ agentId: "YOUR_AGENT_ID" });
+  session.on("error", err => console.warn("session error:", err.code));
+} catch (err) {
+  if (err.code === "agent_not_public") showEnableHint();
+  else showRetry(err.code);
+}
+```
+
+## End the session
+
+```javascript Hang up
+await session.end(); // graceful hangup; disconnect fires with reason "user_hangup"
+```
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="React SDK" icon="react" href="/agents/integrate/react-sdk">
+    Hooks, provider, and visualizer components on top of this SDK.
+  </Card>
+  <Card
+    title="Authentication"
+    icon="key"
+    href="/agents/integrate/authentication"
+  >
+    Mint session tokens from your backend for private agents.
+  </Card>
+  <Card
+    title="Public agents"
+    icon="globe"
+    href="/agents/integrate/public-agents"
+  >
+    Backend-free sessions with origin allow-lists and rate limits.
+  </Card>
+  <Card
+    title="Realtime protocol"
+    icon="tower-broadcast"
+    href="/agents/integrate/protocol"
+  >
+    The wire-level events underneath the SDK.
+  </Card>
+</CardGroup>

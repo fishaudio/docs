@@ -1,0 +1,201 @@
+---
+title: "Post-call Analysis"
+description: "Automatic summaries, structured data extraction, and success evaluation after every conversation"
+icon: "chart-simple"
+---
+
+After a conversation ends, the platform runs an LLM pass over the transcript and produces three results: a **summary**, values for the **data fields** you define, and a verdict for each **success criterion**. Summaries are on by default for every agent — extraction and evaluation are opt-in, configured per agent on the Builder's **Analysis** page.
+
+<CardGroup cols={3}>
+  <Card
+    title="See it on a test call"
+    icon="phone"
+    href="/agents/test/preview-calls"
+  >
+    End a preview call and watch the analysis card fill in.
+  </Card>
+  <Card
+    title="Read results via API"
+    icon="brackets-curly"
+    href="/agents/monitor/conversation-history"
+  >
+    Analysis is embedded in every session detail response.
+  </Card>
+  <Card
+    title="Push to your backend"
+    icon="webhook"
+    href="/agents/monitor/webhooks"
+  >
+    Get notified the moment a conversation is analyzed.
+  </Card>
+</CardGroup>
+
+## What a run produces
+
+### Summary
+
+A concise recap of the conversation. Enabled by default — every conversation gets one out of the box.
+
+- **Custom prompt** (optional, up to 1,000 characters) — replace the platform's default summary instruction with your own, e.g. "Summarize in two sentences, focusing on the caller's request and the outcome."
+- **Output language** — fixed per agent, chosen from 10 locales (English, Chinese, Japanese, Korean, Spanish, French, German, Portuguese, Russian, Arabic). Default is English.
+
+<Note>
+  The summary language does **not** follow the conversation language. Summaries
+  and rationales are always written in the configured language, even when the
+  conversation happened in another one — so downstream systems see consistent
+  output.
+</Note>
+
+### Data fields
+
+Structured values extracted from the transcript — up to **20 fields** per agent. Each field is:
+
+| Property       | Description                                                                                                |
+| -------------- | ---------------------------------------------------------------------------------------------------------- |
+| `name`         | Unique per agent; lowercase letters, digits, and underscores, starting with a letter (up to 64 characters) |
+| `type`         | `boolean`, `text`, `number`, or `enum`                                                                     |
+| `description`  | Instruction telling the model what to extract (up to 500 characters)                                       |
+| `enum_options` | For `enum` fields only: 2–20 allowed values                                                                |
+
+When the conversation doesn't contain the information, the field's value is `null` with a rationale explaining why — the model never guesses.
+
+### Success criteria
+
+Up to **10 criteria** per agent, each a `name` plus a `description` (up to 500 characters) stating what a successful conversation looks like — "The agent resolved the caller's issue or set clear next steps."
+
+Every criterion gets a three-state verdict with a rationale:
+
+- **`success`** — the transcript shows the expectation was met.
+- **`failure`** — the transcript shows it was not.
+- **`unknown`** — the transcript is incomplete, the answer was ambiguous, or the information needed to judge is missing.
+
+<Tip>
+  The `unknown` state is deliberate: rather than forcing an ambiguous call into
+  a binary verdict, the model tells you it couldn't judge — so your success-rate
+  numbers stay honest.
+</Tip>
+
+## Configure analysis
+
+Open your agent's **Analysis** page in the Builder. Three cards — Summary, Data fields, and Criteria — autosave to the draft as you edit. You can also set the `analysis` section of the configuration via the API:
+
+```bash
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "analysis": {
+      "summary": { "enabled": true, "language": "en" },
+      "data_fields": [
+        {
+          "name": "callback_requested",
+          "type": "boolean",
+          "description": "Did the caller ask to be called back?"
+        },
+        {
+          "name": "issue_category",
+          "type": "enum",
+          "description": "The main topic of the call.",
+          "enum_options": ["billing", "shipping", "product", "other"]
+        }
+      ],
+      "criteria": [
+        {
+          "name": "issue_resolved",
+          "description": "The agent fully resolved the caller'\''s issue, or set clear next steps before the call ended."
+        }
+      ]
+    }
+  }'
+```
+
+Like all configuration, edits land in the [draft](/agents/build/versions-publishing). Preview calls use the draft immediately; production sessions pick up analysis changes after you **publish**.
+
+To disable analysis entirely, turn the summary off and leave both lists empty — conversations then finish with analysis status `skipped` and no LLM call is made.
+
+## When analysis runs
+
+Analysis starts automatically when a conversation ends — production sessions from any source, and preview calls when you end them. A run moves through these statuses:
+
+| Status      | Meaning                                                                             |
+| ----------- | ----------------------------------------------------------------------------------- |
+| `queued`    | Scheduled, waiting to run                                                           |
+| `running`   | The LLM pass is in progress                                                         |
+| `completed` | Results are available                                                               |
+| `skipped`   | Nothing to analyze — the conversation had no user messages, or analysis is disabled |
+| `error`     | The run failed; no results                                                          |
+
+Results are typically ready within seconds of the conversation ending.
+
+<Note>
+  Production sessions are analyzed against the agent version pinned when the
+  session started — editing your criteria afterwards never changes how past
+  conversations were judged, and each result stays attributable to the
+  configuration that produced it.
+</Note>
+
+## Read the results
+
+In the Builder, analysis appears in the call panel after a preview call ends. Programmatically, the [session detail](/agents/monitor/conversation-history) response embeds it under `analysis`:
+
+```bash
+curl "https://api.fish.audio/v1/agent/sessions/$SESSION_ID" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+```json
+{
+  "analysis": {
+    "status": "completed",
+    "summary": "The caller reported a delayed order and asked for a refund. The agent confirmed the delay, issued the refund, and offered a discount on the next purchase.",
+    "data": [
+      {
+        "name": "callback_requested",
+        "type": "boolean",
+        "value": false,
+        "rationale": "The caller did not ask to be called back."
+      },
+      {
+        "name": "issue_category",
+        "type": "enum",
+        "value": "shipping",
+        "rationale": "The conversation centered on a delayed delivery."
+      }
+    ],
+    "criteria_results": [
+      {
+        "name": "issue_resolved",
+        "result": "success",
+        "rationale": "The refund was issued and the caller confirmed they were satisfied."
+      }
+    ]
+  }
+}
+```
+
+To push results into your CRM or data warehouse as soon as they're ready, configure a [post-call webhook](/agents/monitor/webhooks) — it fires once analysis completes.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card
+    title="Conversation history"
+    icon="clock-rotate-left"
+    href="/agents/monitor/conversation-history"
+  >
+    Retrieve transcripts and session details for every conversation.
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/agents/monitor/webhooks">
+    Deliver analysis results to your systems automatically.
+  </Card>
+  <Card title="Preview calls" icon="phone" href="/agents/test/preview-calls">
+    Iterate on fields and criteria with instant feedback after each test call.
+  </Card>
+  <Card
+    title="Versions & publishing"
+    icon="code-branch"
+    href="/agents/build/versions-publishing"
+  >
+    How draft edits roll out to production sessions.
+  </Card>
+</CardGroup>

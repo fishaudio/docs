@@ -1,0 +1,209 @@
+---
+title: "React SDK"
+description: "Add voice conversations to your React app with hooks and drop-in components"
+icon: "react"
+---
+
+`@fishaudio/agent-react` wraps the [Web SDK](/agents/integrate/web-sdk) in idiomatic React: a `useConversation` hook for session control, an optional provider that shares one session across your component tree, and a ready-made audio visualizer. The SDK handles microphone capture, audio playback, and transport internally — you write UI.
+
+<CardGroup cols={3}>
+  <Card title="Web SDK reference" icon="js" href="/agents/integrate/web-sdk">
+    Every event, method, and error code.
+  </Card>
+  <Card
+    title="Authentication"
+    icon="key"
+    href="/agents/integrate/authentication"
+  >
+    Create session tokens on your backend.
+  </Card>
+  <Card
+    title="Public agents"
+    icon="globe"
+    href="/agents/integrate/public-agents"
+  >
+    Connect with just an agent id, no backend.
+  </Card>
+</CardGroup>
+
+## Install
+
+<CodeGroup>
+```bash npm
+npm install @fishaudio/agent-react
+```
+
+```bash pnpm
+pnpm add @fishaudio/agent-react
+```
+
+```bash yarn
+yarn add @fishaudio/agent-react
+```
+
+</CodeGroup>
+
+## Quick start
+
+A minimal call UI: start a call, show what the agent is doing, mute, hang up. This example connects to a [public agent](/agents/integrate/public-agents) by id.
+
+```tsx App.tsx
+import { useConversation } from "@fishaudio/agent-react";
+
+export function CallButton() {
+  const {
+    startSession,
+    endSession,
+    status,
+    mode,
+    isSpeaking,
+    micMuted,
+    setMicMuted,
+  } = useConversation();
+
+  if (status === "connected" || status === "reconnecting") {
+    const label = isSpeaking
+      ? "Agent is speaking"
+      : mode === "thinking"
+        ? "Thinking..."
+        : "Listening";
+
+    return (
+      <div>
+        <p>{label}</p>
+        <button onClick={() => setMicMuted(!micMuted)}>
+          {micMuted ? "Unmute" : "Mute"}
+        </button>
+        <button onClick={() => endSession()}>Hang up</button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      disabled={status === "connecting"}
+      onClick={() => startSession({ agentId: "YOUR_AGENT_ID" })}
+    >
+      Start call
+    </button>
+  );
+}
+```
+
+`status`, `mode`, and `isSpeaking` are React state — your component re-renders as the conversation progresses. When the component unmounts, the session ends automatically.
+
+<Note>
+  Call `startSession` from a user gesture (such as a click handler) so the
+  browser allows microphone capture and audio playback.
+</Note>
+
+### Connect to a private agent
+
+For agents that are not public, your backend creates the session with your API key (`POST /v1/agent/sessions`) and returns the response to the browser. Pass it to `startSession` unchanged.
+
+```tsx
+const res = await fetch("/api/voice-session", { method: "POST" });
+const sessionToken = await res.json();
+await startSession({ sessionToken });
+```
+
+See [Authentication](/agents/integrate/authentication) for the backend side. `startSession` accepts the same options as `AgentSession.start` in the [Web SDK](/agents/integrate/web-sdk), including [`clientTools`](/agents/build/client-tools). Session settings such as `overrides` and `dynamicVariables` apply when you connect with an `agentId`; with a `sessionToken`, your backend sets them in its session-creation request instead.
+
+## What `useConversation` returns
+
+| Field                             | Description                                                                               |
+| --------------------------------- | ----------------------------------------------------------------------------------------- |
+| `startSession(options)`           | Create and connect a session (`agentId` or `sessionToken`)                                |
+| `endSession()`                    | Hang up gracefully                                                                        |
+| `status`                          | `"idle"` (no session yet) / `"connecting"` / `"connected"` / `"reconnecting"` / `"ended"` |
+| `mode`                            | `"listening"` / `"thinking"` / `"speaking"`                                               |
+| `isSpeaking`                      | `true` while the agent is audibly speaking                                                |
+| `micMuted`, `setMicMuted(muted)`  | Microphone mute state                                                                     |
+| `sendUserMessage(text, options?)` | Send a typed message as a user turn                                                       |
+| `sendUserActivity()`              | Signal that the user is typing, so the agent holds back                                   |
+| `interrupt()`                     | Explicitly stop the agent mid-response                                                    |
+| `session`                         | The live `AgentSession` object (`null` before the first start) for direct event access    |
+
+<Tip>
+`sendUserMessage(text)` injects a typed turn; the agent's reply streams back as transcript and audio. Pass `{ audio: false }` to get a text-only reply for that turn — useful for a do-not-disturb typing mode.
+</Tip>
+
+For transcripts, tool-call events, and error handling, subscribe to events on `session` — see the [Web SDK event reference](/agents/integrate/web-sdk).
+
+## Share one session across components
+
+Wrap your tree in `AgentSessionProvider` when several components need the same conversation — call controls in the header, a transcript panel elsewhere.
+
+```tsx App.tsx
+import { AgentSessionProvider, useAgentMessages } from "@fishaudio/agent-react";
+
+export function App() {
+  return (
+    <AgentSessionProvider>
+      <CallButton />
+      <Transcript />
+    </AgentSessionProvider>
+  );
+}
+
+function Transcript() {
+  const messages = useAgentMessages();
+
+  return (
+    <ul>
+      {messages.map(m => (
+        <li key={m.key}>
+          <strong>{m.role === "agent" ? "Agent" : "You"}</strong>: {m.text}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+The provider hosts the conversation, so components inside it read the shared state with `useAgentSessionContext()` instead of calling `useConversation` themselves — it returns the same fields, so the quick-start `CallButton` only needs its hook call swapped.
+
+| Hook                             | Purpose                                                                                                                                 |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `useAgentSessionContext()`       | Access the active session from anywhere inside the provider                                                                             |
+| `useAgentMessages()`             | Live conversation as a list of `{ key, role, text, final }` messages — segments update in place as they stream, no manual aggregation   |
+| `useAudioLevels(session?, fps?)` | Live input and output volume as `{ input, output }` (0–1), polled `fps` times per second (default 20); lower `fps` to reduce re-renders |
+
+## Audio visualizer
+
+`<AgentAudioVisualizer>` renders animated canvas bars driven by the agent's output audio — a drop-in "the agent is talking" indicator. Inside an `AgentSessionProvider` it picks up the active session automatically; elsewhere, pass a `session` prop. Optional `bars`, `width`, `height`, and `className` props control the rendering, and the bars follow the element's CSS `color`.
+
+```tsx
+import { AgentAudioVisualizer } from "@fishaudio/agent-react";
+
+function CallScreen() {
+  return <AgentAudioVisualizer />;
+}
+```
+
+For a custom visualization, build on `useAudioLevels` or the session's frequency-data methods from the [Web SDK](/agents/integrate/web-sdk).
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Web SDK" icon="js" href="/agents/integrate/web-sdk">
+    Full event and method reference behind these hooks.
+  </Card>
+  <Card title="Client tools" icon="wrench" href="/agents/build/client-tools">
+    Let the agent call functions in your app.
+  </Card>
+  <Card
+    title="Authentication"
+    icon="key"
+    href="/agents/integrate/authentication"
+  >
+    Create session tokens server-side for private agents.
+  </Card>
+  <Card
+    title="Dynamic variables"
+    icon="brackets-curly"
+    href="/agents/build/dynamic-variables"
+  >
+    Personalize each session at start time.
+  </Card>
+</CardGroup>
