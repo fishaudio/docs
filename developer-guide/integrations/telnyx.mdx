@@ -9,6 +9,7 @@ icon: "/images/telnyx-logo.svg"
 ## Prerequisites
 
 - A [Telnyx account](https://telnyx.com/sign-up) with an API key
+- Python 3.9 or higher with `websockets` 14+ (`pip install websockets`) for the streaming example
 
 ## Voices
 
@@ -84,8 +85,10 @@ curl --request POST \
   --header 'Content-Type: application/json' \
   --data '{
     "text": "Hello from Fish Audio on Telnyx.",
-    "voice": "FishAudio.s2.1-pro.933563129e564b19a115bedd57b7406a"
-  }'
+    "voice": "FishAudio.s2.1-pro.933563129e564b19a115bedd57b7406a",
+    "voice_settings": {"format": "mp3", "sample_rate": 44100}
+  }' \
+  --output output.mp3
 ```
 
 The response streams back audio bytes. Set `output_type` to `base64_output` or `audio_id` for JSON responses instead.
