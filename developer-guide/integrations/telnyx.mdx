@@ -1,0 +1,101 @@
+---
+title: "Telnyx"
+description: "Use Fish Audio voices for real-time and in-call text-to-speech with Telnyx"
+icon: "/images/telnyx-logo.svg"
+---
+
+[Telnyx](https://telnyx.com) is a carrier-owned global communications platform providing infrastructure for real-time agents — voice AI, SIP trunking, programmable voice, and messaging. Fish Audio is available on Telnyx as a hosted text-to-speech provider: you synthesize Fish Audio voices directly through the Telnyx API and play them in live phone calls via Call Control and TeXML, with no Fish Audio API key required.
+
+## Prerequisites
+
+- A [Telnyx account](https://telnyx.com/sign-up) with an API key
+- Python 3.9 or higher with `websockets` 14+ (`pip install websockets`) for the streaming example
+
+## Voices
+
+Telnyx exposes a curated shortlist of voices from the [Fish Audio Voice Library](https://fish.audio/discovery) rather than accepting arbitrary voice IDs. Voices use the format `FishAudio.<Model>.<VoiceId>`, where the model is `s2.1-pro` (latest, default), `s2-pro`, or `s1`:
+
+```text
+FishAudio.s2.1-pro.933563129e564b19a115bedd57b7406a
+```
+
+All curated voices are cross-lingual — any voice can speak any language present in the input text. On S2 models, you can also control delivery with inline emotion tags like `[happy]` or `[whispering]` — see [emotion control](/developer-guide/best-practices/emotion-control) for the full syntax.
+
+See the [Telnyx Fish Audio provider page](https://developers.telnyx.com/docs/voice/tts/providers/fishaudio) for the current voice roster, supported audio formats, and sample rates.
+
+## WebSocket streaming
+
+Stream text in and receive base64-encoded audio chunks in real time:
+
+```python
+import asyncio
+import json
+import base64
+import websockets
+
+async def tts_stream():
+    url = "wss://api.telnyx.com/v2/text-to-speech/speech?voice=FishAudio.s2.1-pro.933563129e564b19a115bedd57b7406a"
+    headers = {"Authorization": "Bearer YOUR_TELNYX_API_KEY"}
+
+    async with websockets.connect(url, additional_headers=headers) as ws:
+        # 1. Handshake
+        await ws.send(json.dumps({
+            "text": " ",
+            "voice_settings": {"format": "mp3", "sample_rate": 44100}
+        }))
+
+        # 2. Send text
+        await ws.send(json.dumps({"text": "Hello from Fish Audio on Telnyx."}))
+
+        # 3. Signal end of input
+        await ws.send(json.dumps({"text": ""}))
+
+        # 4. Collect audio
+        audio_chunks = []
+        async for message in ws:
+            data = json.loads(message)
+
+            if data.get("error"):
+                print(f"Error: {data['error']}")
+                break
+
+            if data.get("audio"):
+                audio_chunks.append(base64.b64decode(data["audio"]))
+
+            if data.get("isFinal"):
+                break
+
+    with open("output.mp3", "wb") as f:
+        for chunk in audio_chunks:
+            f.write(chunk)
+
+asyncio.run(tts_stream())
+```
+
+The handshake requests MP3 output via `voice_settings`; without it, audio is delivered as raw PCM at 24 kHz.
+
+## REST API
+
+Synthesize a complete utterance with a single HTTP request:
+
+```bash
+curl --request POST \
+  --url https://api.telnyx.com/v2/text-to-speech/speech \
+  --header 'Authorization: Bearer YOUR_TELNYX_API_KEY' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "text": "Hello from Fish Audio on Telnyx.",
+    "voice": "FishAudio.s2.1-pro.933563129e564b19a115bedd57b7406a",
+    "voice_settings": {"format": "mp3", "sample_rate": 44100}
+  }' \
+  --output output.mp3
+```
+
+The response streams back audio bytes. Set `output_type` to `base64_output` or `audio_id` for JSON responses instead.
+
+## Resources
+
+- [Telnyx Fish Audio provider reference](https://developers.telnyx.com/docs/voice/tts/providers/fishaudio)
+- [Telnyx WebSocket streaming examples](https://developers.telnyx.com/docs/voice/tts/websocket-streaming/examples)
+- [Telnyx REST API examples](https://developers.telnyx.com/docs/voice/tts/rest-api/examples)
+- [Fish Audio Voice Library](https://fish.audio/discovery)
