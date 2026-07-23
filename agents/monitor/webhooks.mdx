@@ -168,6 +168,122 @@ Respond with a `2xx` status within the timeout; a `500` response or a timed-out 
   test end to end, run a real session against your published agent.
 </Note>
 
+## Auto-ticket unresolved calls
+
+`call.analyzed` closes the loop on conversations the agent couldn't: judge every call with a success criterion, and open a ticket in your helpdesk whenever the verdict isn't `success` — no mid-call decision, no dashboard watching.
+
+First give the agent's [analysis configuration](/agents/monitor/post-call-analysis) a criterion that captures resolution:
+
+```json analysis.criteria
+[
+  {
+    "name": "issue_resolved",
+    "description": "The agent fully resolved the caller's issue, or set clear next steps before the call ended."
+  }
+]
+```
+
+Then point `webhooks.post_call` at your endpoint (see [Configure the endpoint](#configure-the-endpoint)) and act on the verdict:
+
+<CodeGroup>
+
+```javascript Node.js (Express)
+import express from "express";
+
+const app = express();
+const seen = new Set(); // swap for your database
+
+app.post(
+  "/fish-webhooks",
+  express.raw({ type: "application/json" }),
+  (req, res) => {
+    const signature = req.get("X-Fish-Webhook-Signature");
+    if (!verifyWebhook(req.body, signature, process.env.FISH_WEBHOOK_SECRET)) {
+      return res.status(401).end();
+    }
+    res.status(200).end(); // acknowledge first, then process
+
+    const payload = JSON.parse(req.body);
+    if (payload.event !== "call.analyzed") return;
+
+    const key = `${payload.event}:${payload.session.id}`;
+    if (seen.has(key)) return; // at-least-once delivery: dedupe
+    seen.add(key);
+
+    const verdict = payload.analysis.criteria_results.find(
+      c => c.name === "issue_resolved"
+    );
+    if (!verdict || verdict.result === "success") return;
+
+    openTicket({
+      subject: `Unresolved call ${payload.session.id}`,
+      body:
+        `${payload.analysis.summary}\n\n` +
+        `issue_resolved: ${verdict.result} — ${verdict.rationale}`,
+      customer: payload.session.end_user_id,
+    });
+  }
+);
+```
+
+```python Python (FastAPI)
+import json
+import os
+
+from fastapi import FastAPI, Header, Request, Response
+
+app = FastAPI()
+seen: set[str] = set()  # swap for your database
+
+@app.post("/fish-webhooks")
+async def fish_webhooks(
+    request: Request,
+    x_fish_webhook_signature: str | None = Header(None),
+):
+    raw = await request.body()
+    secret = os.environ["FISH_WEBHOOK_SECRET"]
+    if not verify_webhook(raw, x_fish_webhook_signature, secret):
+        return Response(status_code=401)
+
+    payload = json.loads(raw)
+    if payload["event"] != "call.analyzed":
+        return {}
+
+    key = f"{payload['event']}:{payload['session']['id']}"
+    if key in seen:  # at-least-once delivery: dedupe
+        return {}
+    seen.add(key)
+
+    results = payload["analysis"]["criteria_results"]
+    verdict = next((c for c in results if c["name"] == "issue_resolved"), None)
+    if verdict and verdict["result"] != "success":
+        open_ticket(
+            subject=f"Unresolved call {payload['session']['id']}",
+            body=f"{payload['analysis']['summary']}\n\n"
+            f"issue_resolved: {verdict['result']} — {verdict['rationale']}",
+            customer=payload["session"]["end_user_id"],
+        )
+    return {}
+```
+
+</CodeGroup>
+
+`verifyWebhook` is the function from [Verify the signature](#verify-the-signature); `openTicket` stands in for your helpdesk's API. Escalating on anything but `success` includes `unknown` verdicts — the model couldn't judge the call, which usually deserves human eyes too. Tighten the check to `failure` only if unknowns prove noisy.
+
+Edges worth handling:
+
+- Calls with nothing to analyze never produce `call.analyzed` (see [Events](#events)). If every call must reach the helpdesk regardless of analysis, watch `call.ended` too.
+- Payloads carry no transcript. To include one in the ticket, fetch `GET /v1/agent/sessions/{session_id}` from your handler — see [conversation history](/agents/monitor/conversation-history).
+- Set `end_user_id` and `metadata` when creating sessions so tickets attach to the right customer record without a lookup.
+
+<Note>
+  Post-call ticketing is silent — the caller has already hung up. When the
+  caller should leave the call holding a ticket number, have the agent open it
+  mid-call with a [webhook
+  tool](/agents/build/webhook-tools#escalate-to-a-ticket-mid-call), and keep
+  this recipe as the safety net behind it.
+</Note>
+
 ## Going further
 
 <CardGroup cols={2}>

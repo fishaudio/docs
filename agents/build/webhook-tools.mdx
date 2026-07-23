@@ -138,6 +138,37 @@ curl --request POST https://api.fish.audio/v1/agent/tools \
   }'
 ```
 
+## Escalate to a ticket mid-call
+
+When the agent can't resolve an issue, the strongest close is a ticket opened while the caller is still on the line, with the ticket number read back aloud. The `create_ticket` tool above is the entire integration — what makes it work is the prompt around it and the response your endpoint returns.
+
+**Set the escalation policy in the prompt.** The tool description says what the tool does; the [system prompt](/agents/build/configuration) says when escalating is the right move:
+
+```text System prompt excerpt
+If you cannot resolve the caller's issue, offer to open a support ticket.
+Confirm they agree before calling create_ticket. Write a one-line subject and
+put what the caller reported and what you already tried into the details.
+After the tool returns, read the ticket number back and say when to expect a
+reply.
+```
+
+**Return something worth saying.** With `error_handling: passthrough` (the default), the agent sees your response body and uses it in its next reply — so respond with what the caller should hear:
+
+```json Endpoint response
+{ "ticket_id": "T-1042", "expected_reply": "within 24 hours" }
+```
+
+Ticket numbers get spoken aloud: short, pronounceable IDs survive text-to-speech far better than UUIDs.
+
+**Rehearse before the backend exists.** Add a [mock response](#mock-responses) that returns a canned ticket, then run a [preview call](/agents/test/preview-calls) and steer the conversation somewhere the agent can't win.
+
+<Note>
+  An in-call ticket depends on the model choosing to escalate. For a safety net
+  that catches every unresolved call — including those where the agent never
+  called the tool — pair this with [auto-ticketing from post-call
+  analysis](/agents/monitor/webhooks#auto-ticket-unresolved-calls).
+</Note>
+
 ## Limits
 
 | Field | Limit |
