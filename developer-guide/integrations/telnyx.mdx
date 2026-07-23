@@ -36,9 +36,12 @@ async def tts_stream():
     url = "wss://api.telnyx.com/v2/text-to-speech/speech?voice=FishAudio.s2.1-pro.933563129e564b19a115bedd57b7406a"
     headers = {"Authorization": "Bearer YOUR_TELNYX_API_KEY"}
 
-    async with websockets.connect(url, extra_headers=headers) as ws:
+    async with websockets.connect(url, additional_headers=headers) as ws:
         # 1. Handshake
-        await ws.send(json.dumps({"text": " "}))
+        await ws.send(json.dumps({
+            "text": " ",
+            "voice_settings": {"format": "mp3", "sample_rate": 44100}
+        }))
 
         # 2. Send text
         await ws.send(json.dumps({"text": "Hello from Fish Audio on Telnyx."}))
@@ -68,13 +71,15 @@ async def tts_stream():
 asyncio.run(tts_stream())
 ```
 
+The handshake requests MP3 output via `voice_settings`; without it, audio is delivered as raw PCM at 24 kHz.
+
 ## REST API
 
 Synthesize a complete utterance with a single HTTP request:
 
 ```bash
 curl --request POST \
-  --url https://api.telnyx.com/v2/text-to-speech \
+  --url https://api.telnyx.com/v2/text-to-speech/speech \
   --header 'Authorization: Bearer YOUR_TELNYX_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
