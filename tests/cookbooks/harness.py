@@ -15,7 +15,7 @@ from fishaudio import FishAudio as _FishAudio
 
 BASE_URL = "https://api.fish.audio"
 # Validated public voice ("Energetic Male"), used to fill <voice-id> placeholders.
-PUBLIC_VOICE = "802e3bc2b27e49c2995d23ef70e6ac89"
+PUBLIC_VOICE = "9a9cf47702da476aa4629e2506d4a857"
 _WORKSPACE_ENV = "/Users/shawnlai/project/fish-audio/.env"
 _LOCAL_KEYFILE = "/tmp/claude/fishdoctest/fishkey"
 
