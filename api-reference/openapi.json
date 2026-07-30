@@ -234,61 +234,6 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "loc": {
-                        "title": "Location",
-                        "description": "error field",
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "type": {
-                        "title": "Type",
-                        "description": "error type",
-                        "type": "string"
-                      },
-                      "msg": {
-                        "title": "Message",
-                        "description": "error message",
-                        "type": "string"
-                      },
-                      "ctx": {
-                        "title": "Context",
-                        "description": "error context",
-                        "type": "string"
-                      },
-                      "in": {
-                        "title": "In",
-                        "type": "string",
-                        "enum": [
-                          "path",
-                          "query",
-                          "header",
-                          "cookie",
-                          "body"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "loc",
-                      "type",
-                      "msg"
-                    ]
-                  }
-                }
-              }
-            }
           }
         },
         "tags": [
@@ -438,61 +383,6 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "loc": {
-                        "title": "Location",
-                        "description": "error field",
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "type": {
-                        "title": "Type",
-                        "description": "error type",
-                        "type": "string"
-                      },
-                      "msg": {
-                        "title": "Message",
-                        "description": "error message",
-                        "type": "string"
-                      },
-                      "ctx": {
-                        "title": "Context",
-                        "description": "error context",
-                        "type": "string"
-                      },
-                      "in": {
-                        "title": "In",
-                        "type": "string",
-                        "enum": [
-                          "path",
-                          "query",
-                          "header",
-                          "cookie",
-                          "body"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "loc",
-                      "type",
-                      "msg"
-                    ]
-                  }
-                }
-              }
-            }
           }
         },
         "tags": [
@@ -516,6 +406,7 @@
             "required": false,
             "schema": {
               "default": 10,
+              "maximum": 100,
               "minimum": 1,
               "title": "Page Size",
               "type": "integer"
@@ -582,7 +473,7 @@
           {
             "in": "query",
             "name": "self",
-            "description": "If True, only models created by the user will be returned",
+            "description": "If True, return models owned by the active workspace",
             "required": false,
             "schema": {
               "default": false,
@@ -594,7 +485,7 @@
           {
             "in": "query",
             "name": "author_id",
-            "description": "Author ID to filter models, this will be ignored if self is True",
+            "description": "Author ID to filter public models; ignored if self is True",
             "required": false,
             "schema": {
               "anyOf": [
@@ -686,6 +577,40 @@
               "application/json": {
                 "schema": {
                   "properties": {
+                    "max_offset": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Max Offset"
+                    },
+                    "accessible_upper_bound": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Accessible Upper Bound"
+                    },
+                    "window_limited": {
+                      "default": false,
+                      "title": "Window Limited",
+                      "type": "boolean"
+                    },
+                    "total_is_exact": {
+                      "default": true,
+                      "title": "Total Is Exact",
+                      "type": "boolean"
+                    },
                     "total": {
                       "title": "Total",
                       "type": "integer"
@@ -715,61 +640,6 @@
                     "items"
                   ],
                   "type": "object"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "loc": {
-                        "title": "Location",
-                        "description": "error field",
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "type": {
-                        "title": "Type",
-                        "description": "error type",
-                        "type": "string"
-                      },
-                      "msg": {
-                        "title": "Message",
-                        "description": "error message",
-                        "type": "string"
-                      },
-                      "ctx": {
-                        "title": "Context",
-                        "description": "error context",
-                        "type": "string"
-                      },
-                      "in": {
-                        "title": "In",
-                        "type": "string",
-                        "enum": [
-                          "path",
-                          "query",
-                          "header",
-                          "cookie",
-                          "body"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "loc",
-                      "type",
-                      "msg"
-                    ]
-                  }
                 }
               }
             }
@@ -854,6 +724,8 @@
                           "format": "binary",
                           "type": "string"
                         },
+                        "maxItems": 20,
+                        "minItems": 1,
                         "type": "array"
                       },
                       {
@@ -870,6 +742,7 @@
                         "items": {
                           "type": "string"
                         },
+                        "maxItems": 20,
                         "type": "array"
                       },
                       {
@@ -988,6 +861,8 @@
                           "format": "binary",
                           "type": "string"
                         },
+                        "maxItems": 20,
+                        "minItems": 1,
                         "type": "array"
                       },
                       {
@@ -1004,6 +879,7 @@
                         "items": {
                           "type": "string"
                         },
+                        "maxItems": 20,
                         "type": "array"
                       },
                       {
@@ -1122,6 +998,8 @@
                           "format": "binary",
                           "type": "string"
                         },
+                        "maxItems": 20,
+                        "minItems": 1,
                         "type": "array"
                       },
                       {
@@ -1138,6 +1016,7 @@
                         "items": {
                           "type": "string"
                         },
+                        "maxItems": 20,
                         "type": "array"
                       },
                       {
@@ -1256,6 +1135,8 @@
                           "format": "binary",
                           "type": "string"
                         },
+                        "maxItems": 20,
+                        "minItems": 1,
                         "type": "array"
                       },
                       {
@@ -1272,6 +1153,7 @@
                         "items": {
                           "type": "string"
                         },
+                        "maxItems": 20,
                         "type": "array"
                       },
                       {
@@ -1456,6 +1338,73 @@
                       "default": null,
                       "title": "Source"
                     },
+                    "pvc_release_state": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "released",
+                            "retiring"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Pvc Release State"
+                    },
+                    "pvc_notice_period_months": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Pvc Notice Period Months"
+                    },
+                    "pvc_released_at": {
+                      "anyOf": [
+                        {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Pvc Released At"
+                    },
+                    "pvc_retire_requested_at": {
+                      "anyOf": [
+                        {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Pvc Retire Requested At"
+                    },
+                    "pvc_retire_effective_at": {
+                      "anyOf": [
+                        {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Pvc Retire Effective At"
+                    },
                     "quality": {
                       "anyOf": [
                         {
@@ -1543,61 +1492,6 @@
                     "message"
                   ],
                   "type": "object"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "loc": {
-                        "title": "Location",
-                        "description": "error field",
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "type": {
-                        "title": "Type",
-                        "description": "error type",
-                        "type": "string"
-                      },
-                      "msg": {
-                        "title": "Message",
-                        "description": "error message",
-                        "type": "string"
-                      },
-                      "ctx": {
-                        "title": "Context",
-                        "description": "error context",
-                        "type": "string"
-                      },
-                      "in": {
-                        "title": "In",
-                        "type": "string",
-                        "enum": [
-                          "path",
-                          "query",
-                          "header",
-                          "cookie",
-                          "body"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "loc",
-                      "type",
-                      "msg"
-                    ]
-                  }
                 }
               }
             }
@@ -1758,6 +1652,73 @@
                       "default": null,
                       "title": "Source"
                     },
+                    "pvc_release_state": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "released",
+                            "retiring"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Pvc Release State"
+                    },
+                    "pvc_notice_period_months": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Pvc Notice Period Months"
+                    },
+                    "pvc_released_at": {
+                      "anyOf": [
+                        {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Pvc Released At"
+                    },
+                    "pvc_retire_requested_at": {
+                      "anyOf": [
+                        {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Pvc Retire Requested At"
+                    },
+                    "pvc_retire_effective_at": {
+                      "anyOf": [
+                        {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Pvc Retire Effective At"
+                    },
                     "quality": {
                       "anyOf": [
                         {
@@ -1870,61 +1831,6 @@
                     "message"
                   ],
                   "type": "object"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "loc": {
-                        "title": "Location",
-                        "description": "error field",
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "type": {
-                        "title": "Type",
-                        "description": "error type",
-                        "type": "string"
-                      },
-                      "msg": {
-                        "title": "Message",
-                        "description": "error message",
-                        "type": "string"
-                      },
-                      "ctx": {
-                        "title": "Context",
-                        "description": "error context",
-                        "type": "string"
-                      },
-                      "in": {
-                        "title": "In",
-                        "type": "string",
-                        "enum": [
-                          "path",
-                          "query",
-                          "header",
-                          "cookie",
-                          "body"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "loc",
-                      "type",
-                      "msg"
-                    ]
-                  }
                 }
               }
             }
@@ -2288,61 +2194,6 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "loc": {
-                        "title": "Location",
-                        "description": "error field",
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "type": {
-                        "title": "Type",
-                        "description": "error type",
-                        "type": "string"
-                      },
-                      "msg": {
-                        "title": "Message",
-                        "description": "error message",
-                        "type": "string"
-                      },
-                      "ctx": {
-                        "title": "Context",
-                        "description": "error context",
-                        "type": "string"
-                      },
-                      "in": {
-                        "title": "In",
-                        "type": "string",
-                        "enum": [
-                          "path",
-                          "query",
-                          "header",
-                          "cookie",
-                          "body"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "loc",
-                      "type",
-                      "msg"
-                    ]
-                  }
-                }
-              }
-            }
           }
         },
         "tags": [
@@ -2395,61 +2246,6 @@
                     "message"
                   ],
                   "type": "object"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "loc": {
-                        "title": "Location",
-                        "description": "error field",
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "type": {
-                        "title": "Type",
-                        "description": "error type",
-                        "type": "string"
-                      },
-                      "msg": {
-                        "title": "Message",
-                        "description": "error message",
-                        "type": "string"
-                      },
-                      "ctx": {
-                        "title": "Context",
-                        "description": "error context",
-                        "type": "string"
-                      },
-                      "in": {
-                        "title": "In",
-                        "type": "string",
-                        "enum": [
-                          "path",
-                          "query",
-                          "header",
-                          "cookie",
-                          "body"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "loc",
-                      "type",
-                      "msg"
-                    ]
-                  }
                 }
               }
             }
@@ -2561,61 +2357,6 @@
                     "message"
                   ],
                   "type": "object"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "loc": {
-                        "title": "Location",
-                        "description": "error field",
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "type": {
-                        "title": "Type",
-                        "description": "error type",
-                        "type": "string"
-                      },
-                      "msg": {
-                        "title": "Message",
-                        "description": "error message",
-                        "type": "string"
-                      },
-                      "ctx": {
-                        "title": "Context",
-                        "description": "error context",
-                        "type": "string"
-                      },
-                      "in": {
-                        "title": "In",
-                        "type": "string",
-                        "enum": [
-                          "path",
-                          "query",
-                          "header",
-                          "cookie",
-                          "body"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "loc",
-                      "type",
-                      "msg"
-                    ]
-                  }
                 }
               }
             }
@@ -3522,61 +3263,6 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "loc": {
-                        "title": "Location",
-                        "description": "error field",
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "type": {
-                        "title": "Type",
-                        "description": "error type",
-                        "type": "string"
-                      },
-                      "msg": {
-                        "title": "Message",
-                        "description": "error message",
-                        "type": "string"
-                      },
-                      "ctx": {
-                        "title": "Context",
-                        "description": "error context",
-                        "type": "string"
-                      },
-                      "in": {
-                        "title": "In",
-                        "type": "string",
-                        "enum": [
-                          "path",
-                          "query",
-                          "header",
-                          "cookie",
-                          "body"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "loc",
-                      "type",
-                      "msg"
-                    ]
-                  }
-                }
-              }
-            }
           }
         },
         "tags": [
@@ -3758,61 +3444,6 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "loc": {
-                        "title": "Location",
-                        "description": "error field",
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "type": {
-                        "title": "Type",
-                        "description": "error type",
-                        "type": "string"
-                      },
-                      "msg": {
-                        "title": "Message",
-                        "description": "error message",
-                        "type": "string"
-                      },
-                      "ctx": {
-                        "title": "Context",
-                        "description": "error context",
-                        "type": "string"
-                      },
-                      "in": {
-                        "title": "In",
-                        "type": "string",
-                        "enum": [
-                          "path",
-                          "query",
-                          "header",
-                          "cookie",
-                          "body"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "loc",
-                      "type",
-                      "msg"
-                    ]
-                  }
-                }
-              }
-            }
           }
         },
         "tags": [
@@ -3924,61 +3555,6 @@
                     "message"
                   ],
                   "type": "object"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "loc": {
-                        "title": "Location",
-                        "description": "error field",
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "type": {
-                        "title": "Type",
-                        "description": "error type",
-                        "type": "string"
-                      },
-                      "msg": {
-                        "title": "Message",
-                        "description": "error message",
-                        "type": "string"
-                      },
-                      "ctx": {
-                        "title": "Context",
-                        "description": "error context",
-                        "type": "string"
-                      },
-                      "in": {
-                        "title": "In",
-                        "type": "string",
-                        "enum": [
-                          "path",
-                          "query",
-                          "header",
-                          "cookie",
-                          "body"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "loc",
-                      "type",
-                      "msg"
-                    ]
-                  }
                 }
               }
             }
@@ -4191,6 +3767,73 @@
             ],
             "default": null,
             "title": "Source"
+          },
+          "pvc_release_state": {
+            "anyOf": [
+              {
+                "enum": [
+                  "released",
+                  "retiring"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pvc Release State"
+          },
+          "pvc_notice_period_months": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pvc Notice Period Months"
+          },
+          "pvc_released_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pvc Released At"
+          },
+          "pvc_retire_requested_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pvc Retire Requested At"
+          },
+          "pvc_retire_effective_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pvc Retire Effective At"
           },
           "quality": {
             "anyOf": [
