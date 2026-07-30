@@ -2472,10 +2472,10 @@
           {
             "in": "header",
             "name": "model",
-            "description": "Specify which TTS model to use. Use `s2.1-pro-free` for the free developer tier.",
-            "required": true,
+            "description": "Specify which TTS model to use. Use `s2.1-pro-free` for the free developer tier. If omitted or set to an unrecognized value, the request falls back to `s2.1-pro`.",
+            "required": false,
             "schema": {
-              "default": "s2.1-pro-free",
+              "default": "s2.1-pro",
               "enum": [
                 "s1",
                 "s2-pro",
@@ -2650,10 +2650,10 @@
           {
             "in": "header",
             "name": "model",
-            "description": "Specify which TTS model to use. Use `s2.1-pro-free` for the free developer tier.",
-            "required": true,
+            "description": "Specify which TTS model to use. Use `s2.1-pro-free` for the free developer tier. If omitted or set to an unrecognized value, the request falls back to `s2.1-pro`.",
+            "required": false,
             "schema": {
-              "default": "s2.1-pro-free",
+              "default": "s2.1-pro",
               "enum": [
                 "s1",
                 "s2-pro",
