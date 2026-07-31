@@ -91,13 +91,23 @@ asyncio.run(main())
 
 ### Text-to-Speech
 
+**Selecting a model:**
+
+```python
+# Recommended for production
+production_audio = client.tts.convert(
+    text="Production speech",
+    model="s2.1-pro",
+)
+```
+
 **With custom voice:**
 
 ```python
 # Use a specific voice by ID
 audio = client.tts.convert(
     text="Custom voice",
-    reference_id="9a9cf47702da476aa4629e2506d4a857"
+    reference_id="802e3bc2b27e49c2995d23ef70e6ac89"
 )
 ```
 
@@ -138,7 +148,7 @@ for chunk in client.tts.stream(text="Long content..."):
 audio = client.tts.stream(text="Hello!").collect()
 ```
 
-[Learn more](https://docs.fish.audio/features/text-to-speech)
+[Learn more](https://docs.fish.audio/developer-guide/sdk-guide/python/text-to-speech)
 
 ### Speech-to-Text
 
@@ -154,7 +164,7 @@ for segment in result.segments:
     print(f"[{segment.start:.2f}s - {segment.end:.2f}s] {segment.text}")
 ```
 
-[Learn more](https://docs.fish.audio/features/speech-to-text)
+[Learn more](https://docs.fish.audio/developer-guide/sdk-guide/python/speech-to-text)
 
 ### Real-time Streaming
 
@@ -175,26 +185,16 @@ play(audio_stream)
 **Asynchronous:**
 
 ```python
-import asyncio
-from fishaudio import AsyncFishAudio
-
 async def text_chunks():
     yield "Hello, "
     yield "this is "
     yield "streaming!"
 
-async def main():
-    async with AsyncFishAudio() as client:
-        # stream_websocket is an async generator — iterate it, don't await the call
-        audio_stream = client.tts.stream_websocket(text_chunks(), latency="balanced")
-        with open("out.mp3", "wb") as f:
-            async for chunk in audio_stream:
-                f.write(chunk)
-
-asyncio.run(main())
+audio_stream = await client.tts.stream_websocket(text_chunks(), latency="balanced")
+play(audio_stream)
 ```
 
-[Learn more](https://docs.fish.audio/features/realtime-streaming)
+[Learn more](https://docs.fish.audio/developer-guide/sdk-guide/python/websocket)
 
 ### Voice Cloning
 
@@ -232,7 +232,7 @@ audio = client.tts.convert(
 )
 ```
 
-[Learn more](https://docs.fish.audio/features/voice-cloning)
+[Learn more](https://docs.fish.audio/developer-guide/sdk-guide/python/voice-cloning)
 
 ## Resource Clients
 
@@ -249,9 +249,8 @@ audio = client.tts.convert(
 from fishaudio.exceptions import (
     AuthenticationError,
     RateLimitError,
-    NotFoundError,
-    APIError,
-    FishAudioError,
+    ValidationError,
+    FishAudioError
 )
 
 try:
@@ -260,12 +259,10 @@ except AuthenticationError:
     print("Invalid API key")
 except RateLimitError:
     print("Rate limit exceeded")
-except NotFoundError:
-    print("Voice model not found")
-except APIError as e:
-    print(f"API error {e.status}: {e.message}")  # any other HTTP error, including 422 validation
+except ValidationError as e:
+    print(f"Invalid request: {e}")
 except FishAudioError as e:
-    print(f"SDK error: {e}")
+    print(f"API error: {e}")
 ```
 
 ## Resources
