@@ -1,0 +1,297 @@
+---
+title: "Air-gapped deployments"
+description: "Mirror artifacts into a disconnected network, account for usage offline, and prove zero egress"
+icon: "network-wired"
+---
+
+The offline delivery forms run with no outbound network access at all: model
+assets are served from inside the deployment and usage is recorded to a local
+signed ledger rather than a billing service. Getting there takes one preparation
+step — moving the artifacts across the air gap — and one verification step.
+
+| Delivery form | What has to cross the air gap                                              |
+| ------------- | -------------------------------------------------------------------------- |
+| All-in-One    | One container image. Model weights are already inside it.                  |
+| Offline Helm  | The chart archive, every image the chart references, and your values file. |
+
+Everything below runs on a **connected staging machine** first, then on the
+disconnected side. Only the staging machine needs
+[registry access](/developer-guide/self-hosting/registry-access).
+
+## Mirror container images
+
+On the connected machine, derive the image list from the chart you are about to
+install, so the list always matches the release:
+
+```bash
+CHART_REF='<chart-ref>'
+CHART_VERSION='<chart-version>'
+
+helm pull "$CHART_REF" --version "$CHART_VERSION" --destination ./transfer
+
+helm template fish-audio ./transfer/*.tgz \
+  --namespace fish-audio \
+  --values values.yaml \
+  | grep -oE 'image:[[:space:]]*"?[^"[:space:]]+' \
+  | awk '{print $2}' | tr -d '"' | sort -u > images.txt
+```
+
+Review `images.txt`, then pull and pack the images. `zstd` keeps the transfer
+archive small; `gzip` works too if `zstd` is not available on both sides.
+
+```bash
+xargs -n1 docker pull < images.txt
+
+docker save $(tr '\n' ' ' < images.txt) | zstd -T0 -o fish-audio-images.tar.zst
+```
+
+For the All-in-One image the same pattern applies with a single reference:
+
+```bash
+docker save '<all-in-one-image>' | zstd -T0 -o all-in-one.tar.zst
+```
+
+Transfer `fish-audio-images.tar.zst`, `images.txt`, the chart archive from
+`./transfer/`, and your values file across the air gap by whatever means your
+policy allows.
+
+## Load on the disconnected side
+
+```bash
+zstd -dc fish-audio-images.tar.zst | docker load
+```
+
+For a Kubernetes install, push the loaded images into the registry your cluster
+can reach:
+
+```bash
+INTERNAL_REGISTRY='<your-internal-registry>'
+
+while read -r image; do
+  target="$INTERNAL_REGISTRY/${image#*/}"
+  docker tag "$image" "$target"
+  docker push "$target"
+done < images.txt
+```
+
+Then point the chart at your mirror by overriding each component's
+`image.repository` in your values file, and confirm nothing still refers to an
+external host before you install:
+
+```bash
+helm template fish-audio ./fish-audio-chart.tgz \
+  --namespace fish-audio \
+  --values values.yaml \
+  | grep -E 'image:' | sort -u
+```
+
+Install from the local chart archive exactly as described in
+[Kubernetes deployment](/developer-guide/self-hosting/kubernetes#install),
+substituting the archive path for the chart reference. The chart archive is
+self-contained, so no chart repositories are contacted during the install.
+
+For the All-in-One container, the loaded image is all you need — continue with
+[Run](/developer-guide/self-hosting/all-in-one#run).
+
+## Model assets offline
+
+The offline forms never download model weights at runtime.
+
+| Form         | How models are served                                                                                                                                                                                     |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Offline Helm | `global.offlineMode: true` starts an in-cluster model warehouse that serves the bundled weights over an S3-compatible endpoint inside the namespace. Object paths are unchanged; only the endpoint moves. |
+| All-in-One   | Weights are baked into the image.                                                                                                                                                                         |
+
+Two things still come from you rather than from the network:
+
+- **Reference voices.** Stage the archives yourself, as described in
+  [Kubernetes deployment](/developer-guide/self-hosting/kubernetes#stage-reference-voices)
+  or [All-in-One](/developer-guide/self-hosting/all-in-one#reference-voices).
+  This behavior is identical online and offline.
+- **Timestamp alignment.** The forced aligner is not part of the offline bundle.
+  Contact Fish Audio if your air-gapped deployment needs word or segment timings.
+
+## Offline usage accounting
+
+With no billing service to call, the deployment records every charge to a local,
+signed, append-only ledger on persistent storage. No request is ever rejected for
+billing reasons, and the record is tamper-evident and independently verifiable.
+
+### How tokens behave
+
+- Any non-empty `Authorization: Bearer` token is accepted. Empty or missing still
+  returns 401.
+- The token is recorded verbatim as the billing identity, so choose a stable,
+  distinct value per tenant. Tenants that share a token cannot be told apart in
+  the ledger.
+
+### Disk layout
+
+Files are grouped one directory per UTC day, so a day archives by copying a single
+directory:
+
+```text
+offline-billing-ledger/
+  2026-06-11/
+    2026-06-11_<instance>_<nonce>.event.jsonl     # append-only signed records
+    2026-06-11_<instance>_<nonce>.manifest.json   # signed per-file summary
+  2026-06-12/
+    ...
+```
+
+Each file is written by exactly one process, so replicas never interleave into the
+same file even though they share the directory. Every file is an independent hash
+chain: a new day, a restart, or a new replica starts a new file.
+
+### Record format
+
+Each line is one record: a shared envelope plus a payload chosen by `event_type`
+(`process_started`, `heartbeat`, `billing_event`, `process_stopping`).
+
+| Envelope field                           | Meaning                                                       |
+| ---------------------------------------- | ------------------------------------------------------------- |
+| `version`                                | Ledger format version.                                        |
+| `instance_id`, `run_id`                  | Which instance and which process run wrote the record.        |
+| `seq`                                    | 1-based and contiguous within the file.                       |
+| `wall_time_utc_ms`, `wall_time_utc_date` | UTC timestamp and date.                                       |
+| `monotonic_ms_since_start`               | Monotonic clock since process start, resistant to clock skew. |
+| `prev_hash`                              | Hash of the previous record, `"0"` for the first.             |
+| `event_type`                             | Record discriminator.                                         |
+| `record_hash`                            | SHA-256 over all fields above.                                |
+| `signature`                              | RSA-PSS-SHA256 over `record_hash`, base64.                    |
+
+| `billing_event` field         | Meaning                                                     |
+| ----------------------------- | ----------------------------------------------------------- |
+| `team_id`                     | The bearer token the request used.                          |
+| `product`                     | The product consumed, for example `tts`.                    |
+| `backend`                     | The model backend that served the request.                  |
+| `quantity`                    | Units billed in this aggregation bucket.                    |
+| `unit_price_usd_per_1m_chars` | Contract unit price, or `null` for unpriced products.       |
+| `amount_usd`                  | Exact decimal string computed from quantity and unit price. |
+
+Charges accumulate in Redis per token, product, and backend, and a background task
+flushes them roughly once a minute as one aggregated `billing_event` per bucket. A
+failed write is retried rather than dropped.
+
+When a file is finished it is sealed into a matching signed manifest carrying the
+last record's hash and signature, the record counts, and the file's totals.
+Sealing is automatic: yesterday's file is sealed shortly after the UTC day rolls
+over, and a graceful shutdown seals the current one. Today's in-progress file has
+no manifest yet.
+
+### Verify the ledger
+
+Verification needs only the public key that Fish Audio supplies, plus `jq` and
+`openssl`:
+
+```bash
+PUB=offline-ledger-signing-key.pub.pem
+LINE=$(head -n 1 '<ledger-file>.event.jsonl')
+
+printf '%s' "$LINE" | jq -r .record_hash > /tmp/msg
+printf '%s' "$LINE" | jq -r .signature | openssl base64 -d -A > /tmp/sig
+
+openssl dgst -sha256 -verify "$PUB" \
+  -sigopt rsa_padding_mode:pss -sigopt rsa_pss_saltlen:-3 \
+  -signature /tmp/sig /tmp/msg
+```
+
+`Verified OK` confirms the record is authentic. Recompute the hash itself from the
+record body and compare it to the `record_hash` field:
+
+```bash
+printf '%s' "$LINE" | jq -c 'del(.record_hash,.signature)' | openssl dgst -sha256
+printf '%s' "$LINE" | jq -r .record_hash
+```
+
+A full audit additionally checks that `seq` is contiguous, that each `prev_hash`
+links the previous record, that the manifest signature verifies, and that the
+manifest totals match the event file. Ask Fish Audio for the verification script
+that runs all of these over a ledger directory.
+
+<Note>
+  The ledger is tamper-evident: signature and hash-chain checks reliably detect
+  corruption and modification of the files. If your audit requirements call for
+  stronger guarantees, such as an independent write-once anchor or a separately
+  administered audit sink, raise it with Fish Audio so it can be designed into
+  the deployment.
+</Note>
+
+### Retention and reconciliation
+
+- The ledger lives on persistent shared storage and survives restarts and
+  rescheduling.
+- Nothing prunes it. Archive completed day directories to your own storage on your
+  retention schedule, and never delete the live directory out from under a running
+  instance.
+- Usage is reconciled afterwards from the signed day directories, on the cadence
+  set in your agreement. Copy whole directories, including the manifests, so the
+  totals can be verified independently.
+
+## Prove there is no egress
+
+Configuration review is not proof. Demonstrate it.
+
+### Kubernetes
+
+Deny external egress for the namespace, keeping in-cluster traffic and DNS, then
+confirm the deployment still generates audio.
+
+```yaml deny-external-egress.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-external-egress
+  namespace: fish-audio
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector: {}
+```
+
+```bash
+kubectl apply -f deny-external-egress.yaml
+```
+
+Re-run the [smoke test](/developer-guide/self-hosting/kubernetes#smoke-test). It
+must still return playable audio. This proves nothing unless your CNI actually
+enforces NetworkPolicy, so confirm enforcement with a deliberate control: exec
+into a pod in the namespace and check that an outbound request fails.
+
+### All-in-One
+
+The strongest proof is a container that never had a network interface, on a fresh
+volume, so nothing could have been fetched even during the first compile:
+
+```bash
+docker volume create fish-tts-airgap
+
+docker run -d --name fish-tts-airgap \
+  --gpus '"device=0,1"' \
+  --shm-size 16g --ulimit memlock=-1 --ulimit stack=67108864 \
+  -v fish-tts-airgap:/mnt/shared \
+  --network none \
+  '<all-in-one-image>'
+```
+
+With `--network none` no host port can be published, so drive the request from
+inside the container once the cold start finishes:
+
+```bash
+docker exec fish-tts-airgap curl -s -m 120 -X POST http://127.0.0.1:8088/v1/tts \
+  -H 'Authorization: Bearer airgap' \
+  -H 'Content-Type: application/json' \
+  -H 'model: <model-name>' \
+  -d '{"text":"offline","format":"mp3"}' \
+  -o /tmp/offline.mp3 -w '%{http_code}\n'
+```
+
+A `200` with a non-trivial audio file is the proof. A weaker but faster variant
+disconnects an already-warmed container from every Docker network and repeats the
+request; it demonstrates that the running service survives losing the network, but
+not that the cold start never needed it.
+
+Capture the output of whichever check you run as deployment evidence.

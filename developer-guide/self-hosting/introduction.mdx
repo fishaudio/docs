@@ -1,0 +1,163 @@
+---
+title: "Introduction"
+description: "Run the Fish Audio Enterprise speech stack inside your own infrastructure"
+icon: "server"
+---
+
+Fish Audio Enterprise can be deployed into infrastructure you control: your own
+cloud account, an on-premise data center, or a network with no internet access at
+all. Fish Audio delivers container images and a Helm chart through a private
+registry; you own the cluster, the network boundary, and the data.
+
+The self-hosted stack runs the same speech engine as the hosted API, so requests,
+audio formats, and voice behavior match what you already build against.
+
+## Why self-host
+
+| Reason                  | What it gives you                                                                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Colocation              | Run inference in the same region, VPC, or rack as your application and remove public-internet round trips from time-to-first-audio.     |
+| Single-tenant isolation | Dedicated GPUs and queues. Capacity is not shared with other tenants, and you decide when the deployment is upgraded.                   |
+| Security posture        | Voice traffic never leaves your network. The offline delivery forms make no outbound calls at runtime and run on disconnected networks. |
+| Data sovereignty        | Input text, generated audio, and reference voices stay inside your boundary and under your own retention policy.                        |
+
+## Delivery forms
+
+The same engine ships in three forms. Your enterprise agreement determines which
+ones your team is granted.
+
+|                  | Online Helm                                         | Offline Helm                                     | Offline All-in-One                                  |
+| ---------------- | --------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------- |
+| Platform         | Kubernetes                                          | Kubernetes                                       | A single container, `docker run`                    |
+| Model assets     | Pulled from an S3-compatible endpoint at startup    | Served in-cluster from a bundled model warehouse | Baked into the image                                |
+| Usage accounting | Validated and billed against the Fish Audio service | Local signed usage ledger                        | Local signed usage ledger                           |
+| Runtime egress   | Model endpoint and billing endpoint                 | None                                             | None                                                |
+| Air-gap capable  | No                                                  | Yes, after mirroring images and charts           | Yes                                                 |
+| Scaling          | Scales replicas across all GPUs and nodes           | Scales replicas across all GPUs and nodes        | Single node, single inference worker                |
+| Best for         | Managed clusters with outbound access               | Isolated or regulated production clusters        | Evaluation, single-node appliances, strict air gaps |
+
+Both Helm forms share one deployment procedure and differ only in a few values.
+See [Kubernetes deployment](/developer-guide/self-hosting/kubernetes) for the
+Helm forms and [All-in-One container](/developer-guide/self-hosting/all-in-one)
+for the single-container form.
+
+## What is included
+
+| Capability                                | Online Helm                  | Offline Helm             | All-in-One               |
+| ----------------------------------------- | ---------------------------- | ------------------------ | ------------------------ |
+| Text to speech over `POST /v1/tts`        | Included                     | Included                 | Included                 |
+| WebSocket streaming                       | Included                     | Included                 | Included                 |
+| Reference-voice requests (`reference_id`) | From pre-staged archives     | From pre-staged archives | From pre-staged archives |
+| Word and segment timestamps               | Optional, needs an extra GPU | Not included             | Not included             |
+| Horizontal scaling and autoscaling        | Included                     | Included                 | Not included             |
+| Prometheus metrics                        | Included                     | Included                 | Container logs only      |
+
+<Note>
+  Timestamp alignment is served by a separate forced-aligner component. It is
+  disabled by default, is not part of the offline model bundle, and is not built
+  into the All-in-One image, so `/v1/tts/stream/with-timestamp` returns audio
+  without alignment data on those forms. Contact Fish Audio if your deployment
+  needs timestamps.
+</Note>
+
+Reference voices are resolved from archives you stage yourself. A self-hosted
+deployment does not read from the hosted voice library, and voice models created
+on fish.audio are not automatically available to it. Products other than text to
+speech are hosted-only unless your agreement says otherwise.
+
+## Architecture at a glance
+
+| Component                    | Role                                                                                           |
+| ---------------------------- | ---------------------------------------------------------------------------------------------- |
+| `edge-api-production`        | Entry point. Validates requests, applies product logic, and routes work to the model services. |
+| `oxidengine`                 | Model API layer that coordinates normalization, inference, and audio decoding.                 |
+| `sglang-router` and `sglang` | Routing and GPU-backed inference workers.                                                      |
+| `vocoder`                    | GPU-backed audio decoding.                                                                     |
+| `text-normalizer`            | Text normalization ahead of inference.                                                         |
+| Redis                        | Runtime state and cache. Installed by the chart into the release namespace.                    |
+| Shared storage               | Model cache, reference archives, and the usage ledger. Mounted on every node.                  |
+
+```text
+client -> your ingress or load balancer -> edge-api -> oxidengine -> sglang-router -> sglang (GPU)
+                                                                  -> vocoder (GPU)
+                                                                  -> text-normalizer
+```
+
+Fish Audio delivers the deployment at the Kubernetes service level. Ingress, DNS,
+TLS, external load balancing, and network allowlists are yours to choose and
+configure.
+
+## Getting access
+
+<Steps>
+  <Step title="Agree the deployment scope">
+    Self-hosting is enabled per team under an enterprise agreement. Reach out
+    through [fish.audio/enterprise](https://fish.audio/enterprise) with your GPU
+    target, expected concurrency, and whether you need air-gapped operation.
+  </Step>
+  <Step title="Get your team enabled">
+    Once your agreement is in place, Fish Audio grants your team the artifacts
+    it is entitled to: the Helm chart, the component images, and the All-in-One
+    image where applicable.
+  </Step>
+  <Step title="Collect your connection values">
+    Sign in to fish.audio and open **Developer → Self Host**. That page shows
+    the registry host, your login username, the Helm chart base, your team ID,
+    and the exact artifacts your team can pull. Create a deploy token there to
+    authenticate. See [Registry
+    access](/developer-guide/self-hosting/registry-access).
+  </Step>
+</Steps>
+
+<Note>
+  Connection values are per-team and are only shown in the dashboard. This
+  documentation uses placeholders such as `<registry-host>` and `<deploy-token>`
+  wherever a value from that page belongs.
+</Note>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Requirements"
+    icon="microchip"
+    href="/developer-guide/self-hosting/requirements"
+  >
+    GPU, CPU, memory, storage, and platform baselines.
+  </Card>
+  <Card
+    title="Registry access"
+    icon="key"
+    href="/developer-guide/self-hosting/registry-access"
+  >
+    Create a deploy token and authenticate Docker and Helm.
+  </Card>
+  <Card
+    title="Kubernetes deployment"
+    icon="dharmachakra"
+    href="/developer-guide/self-hosting/kubernetes"
+  >
+    Install, upgrade, roll back, and validate the Helm release.
+  </Card>
+  <Card
+    title="All-in-One container"
+    icon="box"
+    href="/developer-guide/self-hosting/all-in-one"
+  >
+    Run the whole stack from a single `docker run`.
+  </Card>
+  <Card
+    title="Air-gapped deployments"
+    icon="network-wired"
+    href="/developer-guide/self-hosting/air-gapped"
+  >
+    Mirror artifacts, account for usage offline, and prove zero egress.
+  </Card>
+  <Card
+    title="Operations"
+    icon="chart-line"
+    href="/developer-guide/self-hosting/operations"
+  >
+    Monitoring signals, scaling, backups, and troubleshooting.
+  </Card>
+</CardGroup>

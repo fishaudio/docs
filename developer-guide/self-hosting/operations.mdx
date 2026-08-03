@@ -1,0 +1,120 @@
+---
+title: "Operations"
+description: "Monitoring, scaling, backups, and troubleshooting for a self-hosted deployment"
+icon: "chart-line"
+---
+
+Day-2 guidance for the Kubernetes delivery forms. For the single-container form,
+see [All-in-One operations](/developer-guide/self-hosting/all-in-one#operations).
+
+## Ownership
+
+| Area                                                 | Owner                                                         |
+| ---------------------------------------------------- | ------------------------------------------------------------- |
+| Kubernetes cluster, node lifecycle, platform add-ons | You                                                           |
+| Fish Audio chart and application configuration       | Fish Audio                                                    |
+| Secrets and credentials                              | You, with Fish Audio inputs where required                    |
+| Monitoring and alerting                              | You. Fish Audio can advise on expected signals and thresholds |
+| Incident response                                    | Joint during the deployment window, yours after handoff       |
+
+Agree an escalation path before production traffic starts.
+
+## Monitoring signals
+
+Prometheus is the metrics baseline. Watch:
+
+- Pod readiness and restart counts for every service in the release, including Redis.
+- Request success rate, error rate, latency, and time-to-first-audio.
+- Queue depth, where the application exposes it.
+- GPU utilization and GPU memory.
+- CPU and memory usage against the configured requests and limits.
+- Shared storage usage and latency.
+- Redis availability and latency.
+- Image pull failures and Kubernetes events in the release namespace.
+
+Centralize application logs and retain Kubernetes events long enough to
+investigate a bad rollout. Redact secrets before sharing any logs outside your
+environment.
+
+## Scaling
+
+Scaling is controlled through Helm values: API replicas, GPU worker replicas,
+CPU and memory requests, GPU resource requests, and per-worker concurrency. Add a
+GPU replica only when a GPU is actually free — a pod that requests a GPU on a
+full cluster stays `Pending` indefinitely.
+
+Validate every scale change with the smoke test and a benchmark run at your
+expected concurrency, and remember that the first start of a new GPU worker pays
+the compile cost before it becomes ready.
+
+## Backup and retention
+
+Back up:
+
+- Reference voice archives, if your traffic uses reference ids. In a self-hosted
+  deployment these are durable data, not cache — nothing can re-download them.
+- The offline usage ledger directories, before they are pruned by your own
+  archival process.
+- The values file used for the production release.
+- Secret manager entries.
+- Dashboards and alert rules.
+
+Compile and model caches on shared storage do not need backing up. Losing them
+costs a slow first start, nothing more.
+
+## Upgrades
+
+1. Review the chart and image changes with Fish Audio.
+2. Render the manifests with your production values file.
+3. Apply to a staging or dry-run cluster if you have one.
+4. Capture the current release history.
+5. Upgrade during an approved window.
+6. Watch rollout status, then run the smoke test.
+7. Keep the previous revision available until the deployment is accepted.
+
+## Troubleshooting
+
+Start here:
+
+```bash
+kubectl -n fish-audio get pods,svc
+kubectl -n fish-audio get events --sort-by=.lastTimestamp
+helm -n fish-audio status fish-audio
+helm -n fish-audio history fish-audio
+```
+
+| Symptom                                                                  | Likely causes                                                                                                                                                                                      |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ImagePullBackOff` or `ErrImagePull`                                     | Missing pull secret, a deploy token that was rotated or deleted, a tag that is not in your mirror, or blocked egress to the registry.                                                              |
+| Pods stay `Pending`                                                      | Not enough CPU, memory, or GPU capacity; GPU node taints without matching tolerations; a node selector that matches nothing.                                                                       |
+| GPU not available, or `nvidia-smi` fails in a pod                        | Driver missing or unhealthy, device plugin or GPU Operator not ready, container runtime not configured for NVIDIA, or an unsupported GPU for the driver stack.                                     |
+| hostPath volume errors, or missing model and cache paths                 | Shared storage is not mounted on that node, a newly added node never got the mount, the mount target is unreachable, or permissions prevent writes.                                                |
+| Requests fail after reaching the edge API, with Redis errors in its logs | The Redis master or replica is not ready, the service is missing, or a network policy blocks it.                                                                                                   |
+| `Reference not found`                                                    | The archive was never staged, the filename does not exactly match the reference id, the zip is malformed, or the reference root was changed without mounting the new path into every edge API pod. |
+| Metrics missing from Prometheus                                          | Scrape annotations disabled in values, Prometheus not configured for annotation-based discovery, a port mismatch, or a network policy blocking scrapes.                                            |
+| `CrashLoopBackOff`                                                       | A missing secret or environment variable, model assets unreachable, or a path the container cannot write.                                                                                          |
+| Time-to-first-audio high, GPU utilization low                            | Concurrency above what the current replicas can serve, cold caches after a restart, storage latency, or CPU saturation on the API nodes.                                                           |
+
+Collect detail for a single failing pod:
+
+```bash
+kubectl -n fish-audio describe pod '<pod-name>'
+kubectl -n fish-audio logs '<pod-name>' --all-containers --previous --tail=300
+```
+
+For GPU incidents, add:
+
+```bash
+kubectl describe node '<gpu-node-name>'
+kubectl -n fish-audio exec '<gpu-worker-pod>' -- nvidia-smi
+```
+
+## Escalating to Fish Audio
+
+Include:
+
+- Kubernetes version, cloud provider, region, node types, and GPU type.
+- Chart version and the values file with secrets removed.
+- Pod status, relevant events, and logs with secrets redacted.
+- The exact command that failed, with its output.
+- Timestamp and time zone.
