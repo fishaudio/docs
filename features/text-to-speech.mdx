@@ -109,10 +109,10 @@ curl --request POST https://api.fish.audio/v1/tts \
 
 - **`s2.1-pro`** — recommended for production, with improved quality, latency, and throughput over S2-Pro.
 - **`s2.1-pro-free`** — the same model at $0 for testing, prototyping, development, and smaller businesses, without TTFA or DPA guarantees.
-- **`s2-pro`** (default) — previous-generation S2 model with multi-speaker and natural-language expression control.
+- **`s2-pro`** — previous-generation S2 model with multi-speaker and natural-language expression control.
 - **`s1`** — previous generation, `(parenthesis)` emotion tags.
 
-In the API, select with the `model` request header. In Python, pass `model="s2-pro"`. See [Choosing a Model](/developer-guide/models-pricing/choosing-a-model).
+In the API, select with the `model` request header; requests without it use `s2.1-pro`. The Python SDK always sends a model and defaults to `model="s2-pro"`. See [Choosing a Model](/developer-guide/models-pricing/choosing-a-model).
 
 ### Output formats
 
@@ -265,7 +265,7 @@ with open("out.mp3", "wb") as f:
     f.write(resp.content)
 ```
 
-The `model` header is required on every request. JSON and MessagePack accept the same fields.
+The `model` header is optional — if omitted or set to an unrecognized value, the request falls back to `s2.1-pro`. JSON and MessagePack accept the same fields.
 
 ### Advanced generation tuning
 

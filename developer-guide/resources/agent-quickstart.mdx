@@ -107,7 +107,7 @@ Not a coding agent installing a skill — an autonomous agent, RAG pipeline, or 
   <Accordion title="Canonical API facts">
     - Base API URL: `https://api.fish.audio`
     - Authentication: `Authorization: Bearer <FISH_API_KEY>`
-    - TTS model selection: send a required `model` header. Recommended default: `s2-pro`
+    - TTS model selection: optional `model` header (`s1`, `s2-pro`, `s2.1-pro`, `s2.1-pro-free`). Recommended: `s2.1-pro` for production, `s2.1-pro-free` for the free developer tier. If omitted, the server uses `s2.1-pro`
     - Main REST endpoints:
       - `POST /v1/tts`
       - `POST /v1/asr`
