@@ -173,7 +173,7 @@ curl "https://api.fish.audio/v1/agent/sessions/$SESSION_ID" \
 }
 ```
 
-To push results into your CRM or data warehouse as soon as they're ready, configure a [post-call webhook](/agents/monitor/webhooks) — it fires once analysis completes.
+To push results into your CRM or data warehouse as soon as they're ready, configure a [post-call webhook](/agents/monitor/webhooks) — `call.analyzed` fires as soon as the run settles, whatever the outcome, with `analysis.status` telling you which of the terminal statuses above it reached.
 
 ## Going further
 
