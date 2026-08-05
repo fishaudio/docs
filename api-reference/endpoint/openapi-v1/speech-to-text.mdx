@@ -7,5 +7,5 @@ iconType: "solid"
 ---
 
 <Warning>
-This BETA endpoint only accepts `multipart/form-data` and `application/msgpack`. It does not accept `application/json` (the audio field cannot be carried as JSON/base64).
+This BETA endpoint only accepts `multipart/form-data` and `application/msgpack`. A JSON body will not work: the `audio` field is raw binary and cannot be sent as a base64 string inside JSON (such requests fail with `HTTP 400`).
 </Warning>
