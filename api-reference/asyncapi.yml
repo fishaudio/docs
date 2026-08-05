@@ -72,9 +72,6 @@ channels:
       - `Authorization: Bearer <api_key>` - Required for authentication (see security section)
       - `model: <model_name>` - Optional; specifies which TTS model to use (see bindings). Falls back to `s2.1-pro` when omitted or unrecognized
 
-      ## Handshake
-      The WebSocket handshake must be performed over **HTTP/1.1**. HTTP/2 clients are rejected with `400 invalid protocol`, so disable HTTP/2 for the upgrade request (e.g. `curl --http1.1`).
-
 operations:
   receiveText:
     action: receive
