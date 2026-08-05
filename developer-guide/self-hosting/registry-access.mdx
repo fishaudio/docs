@@ -1,0 +1,147 @@
+---
+title: "Registry access"
+description: "Create a deploy token and authenticate Docker and Helm against the Fish Audio registry"
+icon: "key"
+---
+
+Self-hosted images and charts are distributed from a private Fish Audio registry.
+Your team authenticates to it with a **deploy token** that you create in the
+fish.audio dashboard.
+
+## Prerequisites
+
+- Self-hosting enabled for your team under an enterprise agreement.
+- A fish.audio account that is a member of that team.
+- Docker, and Helm 3.8 or newer for the OCI chart commands.
+
+If **Developer → Self Host** reports that self-host deployment is not enabled for
+your team, contact your account manager.
+
+## Collect your connection values
+
+Sign in to fish.audio and open **Developer → Self Host**. The **Connection
+Values** card holds everything the commands below need, and every value has a
+copy button.
+
+| Dashboard field  | Placeholder used in this documentation |
+| ---------------- | -------------------------------------- |
+| Registry host    | `<registry-host>`                      |
+| Login username   | `<your-email>`                         |
+| Helm charts base | `<helm-charts-base>`                   |
+| Team ID          | `<team-id>`                            |
+
+The **Granted Artifacts** card lists exactly what your team may pull — the chart,
+the component images, and the All-in-One image where your agreement includes it —
+with the full reference for each one. Copy references and tags from that card
+rather than typing them by hand; it is the authoritative list for your team and it
+changes as your entitlement changes. If the card is empty, no artifacts have been
+granted yet.
+
+<Note>
+  Connection values are specific to your team and are only published in the
+  dashboard, never in this documentation. Substitute the values you copied
+  wherever a placeholder appears.
+</Note>
+
+## Create a deploy token
+
+<Steps>
+  <Step title="Open the Deploy Tokens card">
+    On **Developer → Self Host**, select **Create Deploy Token**.
+  </Step>
+  <Step title="Name it for where it will be used">
+    Use a name that identifies the consumer, such as `prod-cluster` or
+    `ci-mirror`. The name appears in the token list alongside the creation date
+    and last-used time.
+  </Step>
+  <Step title="Copy the token immediately">
+    The token value is shown once, at creation. Store it in your secret manager
+    before closing the dialog. If you lose it, rotate the token to issue a new
+    one.
+  </Step>
+</Steps>
+
+A team can hold up to five deploy tokens at a time. Tokens carry the grants of
+the team that owns them, not of the person who created them.
+
+## Authenticate Docker
+
+Set your values once, then reuse them in the commands below.
+
+```bash
+REGISTRY_HOST='<registry-host>'
+LOGIN_USER='<your-email>'
+DEPLOY_TOKEN='<deploy-token>'
+```
+
+Sign in with your account email as the username and the deploy token as the
+password:
+
+```bash
+printf '%s' "$DEPLOY_TOKEN" | docker login "$REGISTRY_HOST" -u "$LOGIN_USER" --password-stdin
+```
+
+Verify access by pulling one of your granted images:
+
+```bash
+docker pull '<image-reference>'
+```
+
+## Authenticate Helm
+
+Charts are served as OCI artifacts, so Helm authenticates against the same
+registry host:
+
+```bash
+helm registry login "$REGISTRY_HOST" -u "$LOGIN_USER" --password-stdin <<< "$DEPLOY_TOKEN"
+```
+
+Confirm the chart is reachable, using the chart reference and version from
+**Granted Artifacts**:
+
+```bash
+helm show chart '<chart-ref>' --version '<chart-version>'
+```
+
+## Create the Kubernetes pull secret
+
+The cluster pulls images with the same credentials. Create the pull secret the
+chart expects in the release namespace:
+
+```bash
+kubectl -n fish-audio create secret docker-registry fish-audio-registry \
+  --docker-server="$REGISTRY_HOST" \
+  --docker-username="$LOGIN_USER" \
+  --docker-password="$DEPLOY_TOKEN" \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+Reference it from the release so every workload uses it:
+
+```yaml
+global:
+  imagePullSecrets:
+    - name: fish-audio-registry
+```
+
+## Managing tokens
+
+| Action    | Effect                                                                                                                                   |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Rotate    | Issues a new token value and invalidates the old one immediately. Update every consumer before rotating, or new pods will fail to pull.  |
+| Delete    | Revokes the token immediately. Any deployment still using it stops pulling images. Running pods keep running until they are rescheduled. |
+| Last used | Shows when the token last authenticated, which identifies tokens that are safe to retire.                                                |
+
+Recommended practice:
+
+- Issue one token per consumer — production cluster, staging cluster, CI mirror —
+  so a single revocation never takes down more than one of them.
+- Store tokens in your secret manager, not in values files or version control.
+- Rotate on your normal credential schedule and whenever someone with access to a
+  token leaves the team.
+
+## Next step
+
+With the registry reachable, continue to
+[Kubernetes deployment](/developer-guide/self-hosting/kubernetes) or the
+[All-in-One container](/developer-guide/self-hosting/all-in-one).

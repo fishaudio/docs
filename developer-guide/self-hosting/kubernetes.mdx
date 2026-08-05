@@ -1,0 +1,321 @@
+---
+title: "Kubernetes deployment"
+description: "Install, validate, upgrade, and roll back the Fish Audio Enterprise Helm release"
+icon: "dharmachakra"
+---
+
+Both Helm delivery forms use the same chart and the same procedure. They differ
+only in where model assets come from and how usage is accounted, which is
+expressed in your values file.
+
+## Prerequisites
+
+- A cluster that meets the [requirements](/developer-guide/self-hosting/requirements), preferably a clean cluster dedicated to this deployment.
+- Shared storage mounted at the same path on every node.
+- [Registry access](/developer-guide/self-hosting/registry-access) configured, with the chart reference and version from **Granted Artifacts**.
+- Prometheus installed, or approved for installation.
+- Reference voice archives prepared, if your traffic uses `reference_id`.
+
+Set the values you will reuse:
+
+```bash
+CHART_REF='<chart-ref>'
+CHART_VERSION='<chart-version>'
+NAMESPACE=fish-audio
+RELEASE=fish-audio
+```
+
+<Note>
+  `fish-audio` is the supported default namespace. If you must use a different
+  one, change **both** the Helm `--namespace` argument **and**
+  `MODEL_DISCOVERY_NAMESPACE` in your values file. Otherwise the edge API looks
+  for the model services in the wrong namespace.
+</Note>
+
+## Choose a delivery form
+
+|                            | Offline                                          | Online                                                            |
+| -------------------------- | ------------------------------------------------ | ----------------------------------------------------------------- |
+| `global.offlineMode`       | `true`                                           | `false`                                                           |
+| Model assets               | Served in-cluster by the bundled model warehouse | Downloaded from your configured S3-compatible endpoint at startup |
+| Usage accounting           | Local signed ledger on shared storage            | Validated and billed against the Fish Audio service               |
+| Object storage credentials | Not validated, placeholder values are tolerated  | Must hold real credentials or model download fails                |
+| Runtime egress             | None                                             | Model endpoint and billing endpoint on 443                        |
+
+"Offline" here means runtime-offline. Installation still pulls images and the
+chart from a registry. For an install with no network at all, see
+[Air-gapped deployments](/developer-guide/self-hosting/air-gapped).
+
+## Preflight
+
+```bash
+kubectl version
+helm version
+kubectl get nodes -o wide
+kubectl get storageclass
+kubectl describe nodes | grep -E "nvidia.com/gpu|Taints|Labels" || true
+```
+
+Verify on **every** node that the shared storage path is a real network mount and
+not a local directory. With node access, `findmnt -T /mnt/share` should report an
+`nfs` or `nfs4` filesystem. Without node access:
+
+```bash
+for node in $(kubectl get nodes -o name); do
+  echo "== ${node}"
+  kubectl debug "${node}" -it --image=busybox:1.36 -- \
+    sh -c 'grep " /mnt/share " /proc/1/mounts || echo "MISSING: /mnt/share is not a mount"'
+done
+```
+
+## Create the namespace and secrets
+
+```bash
+kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+```
+
+The chart expects three existing secrets. The registry pull secret is created in
+[Registry access](/developer-guide/self-hosting/registry-access#create-the-kubernetes-pull-secret).
+Create the other two:
+
+```bash
+# Runtime secret for the edge API.
+kubectl -n "$NAMESPACE" create secret generic fish-audio-edge-api \
+  --from-literal=jwt-secret="$(openssl rand -hex 32)" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+# Object storage credentials for model assets.
+kubectl -n "$NAMESPACE" create secret generic fish-audio-model-assets \
+  --from-literal=aws-access-key-id='<access-key-id>' \
+  --from-literal=aws-secret-access-key='<secret-access-key>' \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+| Secret                    | Keys                                         | Used by                                                                                                      |
+| ------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `fish-audio-registry`     | Docker registry credentials                  | Every workload that pulls a private image.                                                                   |
+| `fish-audio-edge-api`     | `jwt-secret`                                 | The edge API. Generate once and keep it stable; changing it invalidates issued tokens.                       |
+| `fish-audio-model-assets` | `aws-access-key-id`, `aws-secret-access-key` | Inference worker and vocoder model asset loading. Required in both forms, validated only in the online form. |
+
+For production, prefer External Secrets, Sealed Secrets, or your cloud secret
+manager over plain Kubernetes Secrets.
+
+## Prepare a values file
+
+Start from the profile Fish Audio delivered with your chart and change only what
+your cluster needs. The chart ships pinned image references, so do not override
+tags unless Fish Audio asks you to.
+
+```yaml values.yaml
+global:
+  imagePullSecrets:
+    - name: fish-audio-registry
+  # Host directory where the shared filesystem is mounted on every node.
+  sharedStorageHostPath: /mnt/share
+  # true  = model assets served in-cluster, no runtime egress
+  # false = model assets downloaded from your S3-compatible endpoint
+  offlineMode: true
+
+edge-api-production:
+  replicaCount: 2
+  env:
+    - name: MODEL_DISCOVERY_NAMESPACE
+      value: fish-audio
+  ingress:
+    enabled: false
+
+sglang:
+  worker:
+    replicas: 1
+    tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+
+vocoder:
+  replicaCount: 1
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule
+```
+
+Ingress and TLS are disabled by default. Enable them only if you want Kubernetes
+to manage your access layer; otherwise put your own ingress controller or load
+balancer in front of the `edge-api-production` service.
+
+## Install Prometheus
+
+The chart exposes metrics through `prometheus.io/*` pod annotations and creates
+no ServiceMonitors. An annotation-scraping Prometheus works out of the box:
+
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm upgrade --install prometheus prometheus-community/prometheus \
+  --namespace monitoring --create-namespace \
+  --set alertmanager.enabled=false
+```
+
+If you already run kube-prometheus-stack, add an annotation-based scrape config
+instead.
+
+## Stage reference voices
+
+A self-hosted deployment never downloads reference audio from the network.
+Requests that pass a `reference_id` resolve from Redis, then from a local archive
+on shared storage. Stage one zip per voice before enabling that traffic:
+
+```text
+<sharedStorageHostPath>/<namespace>/<release>/reference-archives/<reference_id>.zip
+```
+
+Each archive holds one or more audio files at the zip root, each paired with a
+UTF-8 `.txt` transcript of the same basename:
+
+```text
+voice-alice-001.zip
+|-- sample-01.wav
+|-- sample-01.txt
+|-- sample-02.mp3
+`-- sample-02.txt
+```
+
+Supported audio extensions are `.wav`, `.mp3`, and `.opus`. Do not nest
+directories inside the archive, and do not add prefixes to the filename — the
+file name must match the reference id exactly.
+
+If you have no node shell, stage archives through a helper pod that mounts the
+share, then confirm the edge API can see the file:
+
+```bash
+kubectl -n "$NAMESPACE" exec deploy/edge-api-production -- \
+  ls -lh /mnt/share/reference-archives/voice-alice-001.zip
+```
+
+These archives are durable data, not cache. Back them up and preserve the path
+across upgrades.
+
+## Validate the release
+
+Render the manifests before touching the cluster:
+
+```bash
+helm show values "$CHART_REF" --version "$CHART_VERSION" > defaults.yaml
+
+helm template "$RELEASE" "$CHART_REF" \
+  --version "$CHART_VERSION" \
+  --namespace "$NAMESPACE" \
+  --values values.yaml
+```
+
+## Install
+
+```bash
+helm upgrade --install "$RELEASE" "$CHART_REF" \
+  --version "$CHART_VERSION" \
+  --namespace "$NAMESPACE" \
+  --create-namespace \
+  --values values.yaml \
+  --timeout 30m
+```
+
+## Wait for readiness
+
+On the first install the inference worker compiles its GPU graphs and the vocoder
+builds its inference engine, which takes far longer than later rollouts. Wait on
+every workload in the release, Deployments and StatefulSets alike:
+
+```bash
+(
+  set -e
+  resources="$(kubectl -n "$NAMESPACE" get deployment,statefulset \
+    -l app.kubernetes.io/instance="$RELEASE" -o name)"
+  test -n "$resources" || { echo "No Fish Audio workloads found" >&2; exit 1; }
+  for r in $resources; do
+    kubectl -n "$NAMESPACE" rollout status "$r" --timeout=90m
+  done
+)
+```
+
+The timeout applies per workload, not to the loop. Watch progress with:
+
+```bash
+kubectl -n "$NAMESPACE" get pods,svc
+kubectl -n "$NAMESPACE" get events --sort-by=.lastTimestamp
+```
+
+## Smoke test
+
+The acceptance signal is a successful generation, not a health probe. With no
+ingress configured, port-forward the edge API:
+
+```bash
+kubectl -n "$NAMESPACE" port-forward svc/edge-api-production 8080:80
+```
+
+```bash
+curl -fsS --noproxy '*' -X POST http://127.0.0.1:8080/v1/tts \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -H 'model: <model-name>' \
+  -d '{"text": "Hello from Fish Audio Enterprise.", "format": "mp3"}' \
+  -o smoke-test.mp3
+
+file smoke-test.mp3
+```
+
+The test passes when the request returns HTTP 200 and the file contains playable
+audio.
+
+| Detail                        | Notes                                                                                                                                                                       |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model` header                | Must match the model name registered by your values file.                                                                                                                   |
+| `Authorization`, online form  | Your Fish Audio API key. Every request is authorized and billed against the Fish Audio service.                                                                             |
+| `Authorization`, offline form | Any non-empty bearer token is accepted and recorded verbatim as the billing identity. An empty or missing token still returns 401. Use a stable, distinct token per tenant. |
+| Proxies                       | A local HTTP or SOCKS proxy can break a port-forwarded request with an empty reply. `--noproxy '*'` and `127.0.0.1` avoid it.                                               |
+| Latency                       | Latency measured through `kubectl port-forward` includes the round trip to the API server and your own network. Measure from inside the cluster for representative numbers. |
+
+Also confirm that the GPU workloads see the shared storage mount, that Redis is
+ready, that reference archives are visible if you use them, and that no pod is in
+a crash or image-pull loop.
+
+## Upgrade
+
+```bash
+helm diff upgrade "$RELEASE" "$CHART_REF" \
+  --version "$CHART_VERSION" \
+  --namespace "$NAMESPACE" \
+  --values values.yaml
+
+helm upgrade "$RELEASE" "$CHART_REF" \
+  --version "$CHART_VERSION" \
+  --namespace "$NAMESPACE" \
+  --values values.yaml \
+  --timeout 30m
+```
+
+If the `helm-diff` plugin is not installed, review `helm template` output before
+applying. Re-run the smoke test after every upgrade and keep the previous
+revision available until the deployment is accepted.
+
+## Roll back
+
+```bash
+helm -n "$NAMESPACE" history "$RELEASE"
+helm -n "$NAMESPACE" rollback "$RELEASE" '<revision>' --timeout 30m
+kubectl -n "$NAMESPACE" get pods
+```
+
+## Uninstall
+
+```bash
+helm -n "$NAMESPACE" uninstall "$RELEASE"
+```
+
+Uninstall does not remove data on shared storage. Reference archives, the usage
+ledger, and compile caches survive and should be deleted deliberately.
+
+## Next steps
+
+- [Air-gapped deployments](/developer-guide/self-hosting/air-gapped) to install with no network access.
+- [Operations](/developer-guide/self-hosting/operations) for monitoring signals, scaling, and troubleshooting.

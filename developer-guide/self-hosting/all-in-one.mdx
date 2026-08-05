@@ -1,0 +1,217 @@
+---
+title: "All-in-One container"
+description: "Run the entire Fish Audio Enterprise stack from a single docker run"
+icon: "box"
+---
+
+The All-in-One image packages the whole speech stack — edge API, model API layer,
+inference router and worker, vocoder, text normalizer, and Redis — into one
+container, with every model weight baked in. Once the image is on the host it runs
+with no Kubernetes and no internet access, which makes it the turnkey option for
+single-node appliances and strict air gaps.
+
+<Note>
+  The All-in-One image runs a single inference worker across two GPUs. It does
+  not autoscale or shard across more GPUs or nodes, and it does not ship the
+  forced aligner, so it serves no word or segment timings. For elastic,
+  multi-tenant, or higher aggregate throughput deployments, use the [Kubernetes
+  chart](/developer-guide/self-hosting/kubernetes), which scales replicas across
+  all GPUs and nodes. This image is also offline only; there is no
+  hosted-billing variant of it.
+</Note>
+
+## Prerequisites
+
+- A host that meets the [All-in-One host requirements](/developer-guide/self-hosting/requirements#all-in-one-container-host).
+- [Registry access](/developer-guide/self-hosting/registry-access), unless you are loading the image from a transfer archive.
+- The image reference from **Granted Artifacts** in the dashboard.
+
+```bash
+AIO_IMAGE='<all-in-one-image>'
+```
+
+## Load the image
+
+On a host with registry access:
+
+```bash
+docker pull "$AIO_IMAGE"
+```
+
+On a disconnected host, transfer the image instead — see
+[Air-gapped deployments](/developer-guide/self-hosting/air-gapped#mirror-container-images).
+
+## Run
+
+Generate a JWT secret once, store it, and reuse the same value on every run. A new
+value invalidates tokens and sessions issued under the old one.
+
+```bash
+export FISH_JWT_SECRET="$(openssl rand -hex 32)"
+```
+
+```bash
+docker run -d --name fish-tts \
+  --gpus all \
+  --shm-size 16g --ulimit memlock=-1 --ulimit stack=67108864 \
+  -p 8088:8088 \
+  -v fish-tts-shared:/mnt/shared \
+  -e JWT_SECRET="$FISH_JWT_SECRET" \
+  --restart unless-stopped \
+  "$AIO_IMAGE"
+```
+
+| Flag                                      | Why                                                                                                                                                                                               |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--gpus all`                              | The container pins the inference worker to the first GPU and the vocoder to the second. On a host with more than two GPUs it uses the first two; pin specific cards with `--gpus '"device=0,1"'`. |
+| `--shm-size 16g` and the `--ulimit` flags | Shared memory and locked-memory limits the inference stack needs.                                                                                                                                 |
+| `-p 8088:8088`                            | The API is the only exposed port.                                                                                                                                                                 |
+| `-v fish-tts-shared:/mnt/shared`          | One persistent volume for everything that must survive restarts.                                                                                                                                  |
+| `-e JWT_SECRET`                           | Required in production. Without it the container falls back to a fixed development default, which is not secret.                                                                                  |
+| `--restart unless-stopped`                | Restarts the container if it exits. Inside the container, the supervisor already restarts individual crashed services.                                                                            |
+
+Everything in the container runs as a non-root user (UID 1000). A fresh named
+volume inherits the right ownership; a reused volume or a host bind mount must be
+writable by UID 1000.
+
+## First start and readiness
+
+On the first cold start the worker compiles its inference graphs and the vocoder
+builds its engine. Expect roughly ten minutes once the image is on the host, and
+considerably longer on a fully cold host that also has to transfer the image.
+Subsequent starts on the same volume take minutes, because both artifacts are
+cached on the volume.
+
+`GET /health` verifies the speech backend end to end, so it stays unhealthy
+through the warmup rather than reporting immediate liveness. Full readiness is a
+generation that returns audio:
+
+```bash
+until curl -fsS -m 120 -X POST http://127.0.0.1:8088/v1/tts \
+  -H 'Authorization: Bearer my-tenant' \
+  -H 'Content-Type: application/json' \
+  -H 'model: <model-name>' \
+  -d '{"text":"ready","format":"mp3"}' -o /tmp/ready.mp3; do
+  echo "warming up..."; sleep 15
+done; echo "ready"
+```
+
+Follow the startup with `docker logs -f fish-tts`.
+
+## Make requests
+
+```bash
+curl -X POST http://127.0.0.1:8088/v1/tts \
+  -H 'Authorization: Bearer my-tenant' \
+  -H 'Content-Type: application/json' \
+  -H 'model: <model-name>' \
+  -d '{"text":"Hello from Fish Audio Enterprise.","format":"mp3"}' \
+  -o out.mp3
+```
+
+Supported `format` values are `mp3`, `wav`, `pcm`, and `opus`. Optional fields
+include `reference_id`, `mp3_bitrate`, `sample_rate`, `latency`, and
+`chunk_length`.
+
+For the lowest time-to-first-audio, stream over WebSocket at
+`ws://<host>:8088/v1/tts/live` with the same `Authorization` and `model` headers,
+then send msgpack events: `start`, one or more `text`, then `stop`, and read
+`audio` events until `finish`. The payloads match the
+[hosted WebSocket API](/api-reference/endpoint/websocket/tts-live).
+
+### Latency modes
+
+| Mode       | Time-to-first-audio                        | Use for                      |
+| ---------- | ------------------------------------------ | ---------------------------- |
+| `normal`   | Highest; emits near the end of generation  | File and batch generation    |
+| `balanced` | Low; the recommended default               | Interactive and real-time    |
+| `low`      | Lowest; chunks long text more aggressively | Latency-critical interactive |
+
+Set it in the request body as `"latency":"balanced"`, or in the WebSocket `start`
+event.
+
+## Reference voices
+
+Reference-id requests resolve only from a local archive. Place one zip per voice
+at `/mnt/shared/reference-archives/<reference_id>.zip`, containing audio files at
+the zip root each paired with a same-basename `.txt` transcript. A named Docker
+volume has no stable host path, so copy archives in:
+
+```bash
+docker cp my-voice.zip fish-tts:/mnt/shared/reference-archives/my-voice.zip
+```
+
+Alternatively, bind-mount a host directory at
+`/mnt/shared/reference-archives` and drop archives into it directly. Then request
+with `"reference_id":"my-voice"`.
+
+## Authentication and usage
+
+This build records usage to a local, signed, append-only ledger instead of calling
+a billing service:
+
+- Any non-empty `Authorization: Bearer` token is accepted. A missing or empty
+  token returns 401.
+- The token is recorded verbatim as the billing identity, so use a stable,
+  distinct token per tenant. Two tenants sharing a token are indistinguishable in
+  the ledger.
+- The ledger is written under `/mnt/shared/offline-billing-ledger/` as signed JSON
+  Lines, one directory per UTC day.
+
+See [Offline usage accounting](/developer-guide/self-hosting/air-gapped#offline-usage-accounting)
+for the record format, verification, and reconciliation.
+
+## Persistence
+
+| Path                                  | Contents                                             |
+| ------------------------------------- | ---------------------------------------------------- |
+| `/mnt/shared/cache/`                  | Compile and graph caches for the worker and vocoder. |
+| `/mnt/shared/checkpoints/`            | The vocoder's built inference engine.                |
+| `/mnt/shared/reference-archives/`     | Reference voice archives.                            |
+| `/mnt/shared/offline-billing-ledger/` | The signed usage ledger.                             |
+
+Model weights live in the image, not on the volume. Keep `/mnt/shared` on
+persistent storage: without it, every restart pays the full first-start compile
+again and the ledger is lost. The vocoder engine is specific to the GPU model, so
+moving to different cards rebuilds it once.
+
+If your platform pins persistent storage somewhere other than `/mnt/shared`, you
+can relocate the three compile caches with `COMPILE_CACHE_DIR`,
+`TORCHINDUCTOR_CACHE_DIR`, and `VQ_CACHE_DIR`. Point each at a **separate**
+subdirectory that is writable by UID 1000, and keep the `/mnt/shared` mount either
+way, because reference voices and the ledger always live there.
+
+## Capacity
+
+The single worker admits a bounded number of in-flight requests, set by
+`LIMIT_MODEL_CONCURRENCY` (default 32); beyond that, requests queue. The ceiling
+is bounded by the inference worker's key-value cache VRAM, so cards with more
+memory than the 32 GB baseline can run a higher cap. Raise it at launch without
+rebuilding:
+
+```bash
+docker run -e LIMIT_MODEL_CONCURRENCY=64 ...
+```
+
+Validate latency and error rate at the new value before committing to it.
+
+## Operations
+
+| Task            | Command                                                                       |
+| --------------- | ----------------------------------------------------------------------------- |
+| Logs            | `docker logs -f fish-tts` — all services interleaved.                         |
+| Health          | `curl -fsS http://127.0.0.1:8088/health`                                      |
+| GPU check       | `nvidia-smi` — expect the first GPU heavily used and the second lightly used. |
+| Stop and remove | `docker rm -f fish-tts`                                                       |
+
+## Troubleshooting
+
+| Symptom                                                                 | Cause and fix                                                                                                                                                       |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Errors or not-ready responses for the first several minutes after start | The worker and vocoder are still compiling on a cold start. Wait, and keep the cache volume so it does not repeat.                                                  |
+| Vocoder never becomes ready, or every request fails after warmup        | Check `docker logs fish-tts` for vocoder startup errors. The container manages its own GPU multi-process service internally; no host-side setup is required.        |
+| `401`                                                                   | Missing or empty `Authorization: Bearer` header.                                                                                                                    |
+| `Reference not found`                                                   | No matching `<reference_id>.zip` under `/mnt/shared/reference-archives`.                                                                                            |
+| Time-to-first-audio climbs under load                                   | Concurrency exceeds the single worker's capacity and requests queue. Reduce concurrency, raise the cap if the GPUs have headroom, or scale out with the Helm chart. |
+| `could not select device driver ... gpu`                                | NVIDIA Container Toolkit is not configured. Run `nvidia-ctk runtime configure --runtime=docker` and restart Docker.                                                 |
+| `Permission denied` writing the cache or ledger                         | The container runs as UID 1000. A reused volume or host bind mount must be writable by that UID: `chown -R 1000:1000 /path/to/dir`.                                 |
