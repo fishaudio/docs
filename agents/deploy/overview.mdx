@@ -1,0 +1,117 @@
+---
+title: "Deploy Your Agent"
+sidebarTitle: "Overview"
+description: "Pick a deployment channel — embeddable widget, public agents, authenticated sessions, or a phone number"
+icon: "plug"
+---
+
+Your agent is one artifact with many front doors. Deployment is a ladder: start with the zero-code widget and climb only as far as your needs require — browser access without a backend, backend-minted sessions, or a phone number. Every channel runs the same agent with the same configuration.
+
+<Note>
+  Publishing gates every channel: sessions always run the agent's **published**
+  configuration, and creating a session against an agent that has never been
+  published fails. [Publish](/agents/deploy/versions-publishing) before wiring
+  up any channel.
+</Note>
+
+## Choose a channel
+
+In increasing order of integration effort and control:
+
+<CardGroup cols={2}>
+  <Card
+    title="1. Embeddable widget"
+    icon="puzzle-piece"
+    href="/agents/deploy/widget"
+  >
+    Drop a prebuilt call widget into your site — zero code.
+  </Card>
+  <Card
+    title="2. Public agents"
+    icon="globe"
+    href="/agents/deploy/public-agents"
+  >
+    Browser-only: the SDK connects with just an `agentId`, gated by an origin
+    allowlist and rate limits.
+  </Card>
+  <Card
+    title="3. Authenticated sessions"
+    icon="server"
+    href="/agents/deploy/authentication"
+  >
+    Your backend mints a session token; the Web or React SDK takes it from
+    there.
+  </Card>
+  <Card title="4. Phone" icon="phone" href="/agents/telephony/phone-numbers">
+    Bind a number and callers dial straight in — no client code at all.
+  </Card>
+</CardGroup>
+
+Building a client on a stack the SDKs don't cover? The [wire protocol](/agents/deploy/protocol) documents the wire-level session contract.
+
+Still deciding?
+
+| You are building                                   | Start with                                                                                                       |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| A call button on an existing site, no build step   | [Widget](/agents/deploy/widget)                                                                                  |
+| A demo or marketing page without a backend         | [Public agents](/agents/deploy/public-agents)                                                                    |
+| Voice calls inside a web app                       | [Authentication](/agents/deploy/authentication) and the [Web SDK](/agents/deploy/web-sdk)                        |
+| A React or Next.js frontend                        | [React SDK](/agents/deploy/react-sdk)                                                                            |
+| A phone line callers dial in to                    | [Phone numbers](/agents/telephony/phone-numbers) and [transfers](/agents/telephony/transfers)                    |
+| Server-side session creation and history retrieval | [Authentication](/agents/deploy/authentication) and [conversation history](/agents/monitor/conversation-history) |
+| A client on a stack the SDKs don't cover           | [Wire protocol](/agents/deploy/protocol)                                                                         |
+
+## How a browser session starts
+
+For private agents, your backend creates the session — your API key never ships to the browser. The browser SDK takes the resulting session token and handles audio and transport from there.
+
+<CodeGroup>
+```bash Your backend
+curl --request POST https://api.fish.audio/v1/agent/sessions \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "agent_id": "YOUR_AGENT_ID" }'
+# → 201 session token — return it to your frontend as-is
+```
+
+```javascript Your frontend
+import { AgentSession } from "@fishaudio/agent-client";
+
+// sessionToken = the create-session response, passed through unchanged
+const session = await AgentSession.start({ sessionToken });
+```
+
+</CodeGroup>
+
+<Tip>
+  Agents marked [public](/agents/deploy/public-agents) skip the backend step
+  entirely — the SDK connects with just an `agentId`, gated by an origin
+  allowlist and rate limits.
+</Tip>
+
+For phone calls there is no client integration: assign a number, and inbound calls connect directly to your agent — which can [transfer callers](/agents/telephony/transfers) to another number mid-call. See [Phone numbers](/agents/telephony/phone-numbers).
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card
+    title="Versions & publishing"
+    icon="rocket"
+    href="/agents/deploy/versions-publishing"
+  >
+    The publish step every channel depends on.
+  </Card>
+  <Card title="Authentication" icon="key" href="/agents/deploy/authentication">
+    API keys, session tokens, and which one belongs where.
+  </Card>
+  <Card
+    title="Conversation history"
+    icon="clock-rotate-left"
+    href="/agents/monitor/conversation-history"
+  >
+    List sessions and read full transcripts over REST.
+  </Card>
+  <Card title="Wire protocol" icon="code" href="/agents/deploy/protocol">
+    The wire-level session contract, for building your own client.
+  </Card>
+</CardGroup>

@@ -2912,7 +2912,7 @@
           {
             "lang": "bash",
             "label": "Update Draft Config",
-            "source": "curl --request PATCH \\\n  --url https://api.fish.audio/v1/agent/agents/<agent-id>/config \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --data '{\n    \"prompt\": {\n      \"system_prompt\": \"You are the receptionist for Fish Dental.\"\n    },\n    \"webhooks\": {\n      \"post_call\": {\n        \"url\": \"https://example.com/hooks/fish\",\n        \"secret\": \"<signing-secret>\"\n      }\n    }\n  }'"
+            "source": "curl --request PATCH \\\n  --url https://api.fish.audio/v1/agent/agents/<agent-id>/config \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --data '{\n    \"prompt\": {\n      \"system_prompt\": \"You are the receptionist for Fish Dental.\"\n    },\n    \"webhooks\": {\n      \"post_call\": [\n        {\n          \"url\": \"https://example.com/hooks/fish\",\n          \"secret\": \"<signing-secret>\"\n        }\n      ]\n    }\n  }'"
           }
         ]
       }
@@ -6895,11 +6895,11 @@
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
                 "properties": {
                   "audio": {
-                    "description": "Audio to be converted to text",
+                    "description": "Audio file to be converted to text",
                     "format": "binary",
                     "title": "Audio",
                     "type": "string"
@@ -6914,7 +6914,7 @@
                       }
                     ],
                     "default": null,
-                    "description": "Language to be used for the speech",
+                    "description": "Optional hint. The language is auto-detected regardless; the detected language is returned as `language_code`.",
                     "title": "Language"
                   },
                   "ignore_timestamps": {
@@ -6934,7 +6934,7 @@
               "schema": {
                 "properties": {
                   "audio": {
-                    "description": "Audio to be converted to text",
+                    "description": "Audio file to be converted to text",
                     "format": "binary",
                     "title": "Audio",
                     "type": "string"
@@ -6949,7 +6949,7 @@
                       }
                     ],
                     "default": null,
-                    "description": "Language to be used for the speech",
+                    "description": "Optional hint. The language is auto-detected regardless; the detected language is returned as `language_code`.",
                     "title": "Language"
                   },
                   "ignore_timestamps": {
@@ -6990,6 +6990,32 @@
                       },
                       "title": "Segments",
                       "type": "array"
+                    },
+                    "language_code": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Detected language as an ISO 639-1 code (e.g. `en`, `ja`). Omitted if no language is detected.",
+                      "title": "Language Code"
+                    },
+                    "language": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Detected language name (e.g. `English`). For display only; use `language_code` in code.",
+                      "title": "Language"
                     }
                   },
                   "required": [
@@ -7175,7 +7201,7 @@
           },
           {
             "lang": "bash",
-            "label": "Multi Speaker (S2.1 Pro only)",
+            "label": "Multi Speaker (S2 family only)",
             "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/tts \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2.1-pro-free' \\\n  --data '{\n    \"text\": \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\",\n    \"reference_id\": [\"speaker-a-id\", \"speaker-b-id\"],\n    \"temperature\": 0.7,\n    \"top_p\": 0.7,\n    \"prosody\": {\n      \"speed\": 1,\n      \"volume\": 0,\n      \"normalize_loudness\": true\n    },\n    \"chunk_length\": 300,\n    \"normalize\": true,\n    \"format\": \"mp3\",\n    \"sample_rate\": 44100,\n    \"mp3_bitrate\": 128,\n    \"latency\": \"normal\",\n    \"max_new_tokens\": 1024,\n    \"repetition_penalty\": 1.2,\n    \"min_chunk_length\": 50,\n    \"condition_on_previous_chunks\": true,\n    \"early_stop_threshold\": 1\n  }'"
           }
         ]
@@ -11635,13 +11661,19 @@
           "post_call": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/PublicPostCallWebhookPayload"
+                "items": {
+                  "$ref": "#/components/schemas/PublicPostCallWebhookPayload"
+                },
+                "maxItems": 5,
+                "type": "array"
               },
               {
                 "type": "null"
               }
             ],
-            "default": null
+            "default": null,
+            "description": "Up to 5 endpoints, each receiving every post-call event. Replaces the configured list wholesale; a single object is still accepted and is stored as a one-element list, and null (or an empty list) clears every endpoint. URLs must be unique.",
+            "title": "Post Call"
           }
         },
         "title": "PublicAgentWebhooksPatch",
@@ -12024,7 +12056,7 @@
             "type": "string"
           },
           "first_message_prompt": {
-            "default": "Greet the caller warmly, mention you can help with orders and callbacks.",
+            "default": "Greet the caller and ask what you can help with.",
             "title": "First Message Prompt",
             "type": "string"
           }
@@ -12157,15 +12189,11 @@
       "PublicAgentWebhooksConfig": {
         "properties": {
           "post_call": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PublicPostCallWebhook"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
+            "items": {
+              "$ref": "#/components/schemas/PublicPostCallWebhook"
+            },
+            "title": "Post Call",
+            "type": "array"
           }
         },
         "title": "PublicAgentWebhooksConfig",
@@ -13045,7 +13073,7 @@
           },
           "normalize_loudness": {
             "default": true,
-            "description": "Normalize output loudness for more consistent perceived volume. **S2-Pro only.**",
+            "description": "Normalize output loudness for more consistent perceived volume. Applies to the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`); on `s1` it is accepted but has no effect.",
             "title": "Normalize Loudness",
             "type": "boolean"
           }
@@ -13076,7 +13104,7 @@
         "type": "object"
       },
       "TTSRequest": {
-        "description": "Request body for text-to-speech synthesis. Supports single-speaker synthesis on all compatible TTS models. Multi-speaker dialogue synthesis is only available with the S2-Pro model.\n\n## Single Speaker\nProvide either `reference_id` (string) pointing to a voice model, or `references` (array of ReferenceAudio) for zero-shot cloning.\n\n## Multiple Speakers (Dialogue, S2-Pro only)\nFor multi-speaker synthesis, provide:\n- `reference_id`: array of voice model IDs, e.g., [\"speaker-0-id\", \"speaker-1-id\"]\n- `text`: use speaker tags `<|speaker:0|>`, `<|speaker:1|>`, etc. to indicate speaker changes, e.g., \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\"\n\nAlternatively, for zero-shot multi-speaker:\n- `references`: 2D array where each inner array contains references for one speaker\n- `reference_id`: array of identifiers (can be arbitrary strings for zero-shot)\n\n## Example (Multi-Speaker with Model IDs)\n```json\n{\n  \"text\": \"<|speaker:0|>Good morning!<|speaker:1|>Good morning! How are you?<|speaker:0|>I'm great, thanks!\",\n  \"reference_id\": [\"model-id-alice\", \"model-id-bob\"]\n}\n```",
+        "description": "Request body for text-to-speech synthesis. Supports single-speaker synthesis on all compatible TTS models. Multi-speaker dialogue synthesis is only available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`), not `s1`.\n\n## Single Speaker\nProvide either `reference_id` (string) pointing to a voice model, or `references` (array of ReferenceAudio) for zero-shot cloning.\n\n## Multiple Speakers (Dialogue — S2 family only)\nFor multi-speaker synthesis, provide:\n- `reference_id`: array of voice model IDs, e.g., [\"speaker-0-id\", \"speaker-1-id\"]\n- `text`: use speaker tags `<|speaker:0|>`, `<|speaker:1|>`, etc. to indicate speaker changes, e.g., \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\"\n\nAlternatively, for zero-shot multi-speaker:\n- `references`: 2D array where each inner array contains references for one speaker\n- `reference_id`: array of identifiers (can be arbitrary strings for zero-shot)\n\n## Example (Multi-Speaker with Model IDs)\n```json\n{\n  \"text\": \"<|speaker:0|>Good morning!<|speaker:1|>Good morning! How are you?<|speaker:0|>I'm great, thanks!\",\n  \"reference_id\": [\"model-id-alice\", \"model-id-bob\"]\n}\n```",
         "properties": {
           "text": {
             "description": "Text to convert to speech.",
@@ -13122,7 +13150,7 @@
                 "type": "null"
               }
             ],
-            "description": "Inline voice references for zero-shot cloning. Requires MessagePack (not JSON). For single speaker, provide an array of ReferenceAudio objects. For multiple speakers, provide an array of arrays where each inner array contains references for one speaker. **Multi-speaker is only available with the S2-Pro model.** The speaker index corresponds to the index in reference_id array. Example for multi-speaker: [[{audio, text}], [{audio, text}, {audio, text}]] for 2 speakers where speaker 1 has 2 reference samples.",
+            "description": "Inline voice references for zero-shot cloning. Requires MessagePack (not JSON). For single speaker, provide an array of ReferenceAudio objects. For multiple speakers, provide an array of arrays where each inner array contains references for one speaker. **Multi-speaker is only available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`), not `s1`.** The speaker index corresponds to the index in reference_id array. Example for multi-speaker: [[{audio, text}], [{audio, text}, {audio, text}]] for 2 speakers where speaker 1 has 2 reference samples.",
             "title": "References"
           },
           "reference_id": {
@@ -13143,7 +13171,7 @@
               }
             ],
             "default": null,
-            "description": "Voice model ID(s) from Fish Audio library or your custom models. For single-speaker synthesis, provide a string. For multi-speaker synthesis (dialogue), provide an array of model IDs. **Multi-speaker is only available with the S2-Pro model.** When using multiple speakers, use speaker tags in your text like `<|speaker:0|>` and `<|speaker:1|>` to indicate speaker changes. Example: `<|speaker:0|>Hello!<|speaker:1|>Hi there!<|speaker:0|>How are you?` with `reference_id: [\"speaker-a-id\", \"speaker-b-id\"]`.",
+            "description": "Voice model ID(s) from Fish Audio library or your custom models. For single-speaker synthesis, provide a string. For multi-speaker synthesis (dialogue), provide an array of model IDs. **Multi-speaker is only available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`), not `s1`.** When using multiple speakers, use speaker tags in your text like `<|speaker:0|>` and `<|speaker:1|>` to indicate speaker changes. Example: `<|speaker:0|>Hello!<|speaker:1|>Hi there!<|speaker:0|>How are you?` with `reference_id: [\"speaker-a-id\", \"speaker-b-id\"]`.",
             "title": "Reference Id"
           },
           "prosody": {
@@ -13329,7 +13357,7 @@
                 "type": "null"
               }
             ],
-            "description": "Inline voice references for zero-shot cloning. Requires MessagePack (not JSON). For single speaker, provide an array of ReferenceAudio objects. For multiple speakers, provide an array of arrays where each inner array contains references for one speaker. **Multi-speaker is only available with the S2-Pro model.** The speaker index corresponds to the index in reference_id array. Example for multi-speaker: [[{audio, text}], [{audio, text}, {audio, text}]] for 2 speakers where speaker 1 has 2 reference samples.",
+            "description": "Inline voice references for zero-shot cloning. Requires MessagePack (not JSON). For single speaker, provide an array of ReferenceAudio objects. For multiple speakers, provide an array of arrays where each inner array contains references for one speaker. **Multi-speaker is only available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`), not `s1`.** The speaker index corresponds to the index in reference_id array. Example for multi-speaker: [[{audio, text}], [{audio, text}, {audio, text}]] for 2 speakers where speaker 1 has 2 reference samples.",
             "title": "References"
           },
           "reference_id": {
@@ -13350,7 +13378,7 @@
               }
             ],
             "default": null,
-            "description": "Voice model ID(s) from Fish Audio library or your custom models. For single-speaker synthesis, provide a string. For multi-speaker synthesis (dialogue), provide an array of model IDs. **Multi-speaker is only available with the S2-Pro model.** When using multiple speakers, use speaker tags in your text like `<|speaker:0|>` and `<|speaker:1|>` to indicate speaker changes. Example: `<|speaker:0|>Hello!<|speaker:1|>Hi there!<|speaker:0|>How are you?` with `reference_id: [\"speaker-a-id\", \"speaker-b-id\"]`.",
+            "description": "Voice model ID(s) from Fish Audio library or your custom models. For single-speaker synthesis, provide a string. For multi-speaker synthesis (dialogue), provide an array of model IDs. **Multi-speaker is only available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`), not `s1`.** When using multiple speakers, use speaker tags in your text like `<|speaker:0|>` and `<|speaker:1|>` to indicate speaker changes. Example: `<|speaker:0|>Hello!<|speaker:1|>Hi there!<|speaker:0|>How are you?` with `reference_id: [\"speaker-a-id\", \"speaker-b-id\"]`.",
             "title": "Reference Id"
           },
           "prosody": {

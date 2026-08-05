@@ -54,10 +54,7 @@
           },
           {
             "group": "Platform (Web App)",
-            "pages": [
-              "overview/platform",
-              "overview/mcp"
-            ]
+            "pages": ["overview/platform", "overview/mcp"]
           },
           {
             "group": "Models & Pricing",
@@ -66,6 +63,68 @@
               "developer-guide/models-pricing/choosing-a-model",
               "developer-guide/models-pricing/deprecations",
               "developer-guide/models-pricing/pricing-and-rate-limits"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Agents",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["agents/overview", "agents/quickstart", "agents/concepts"]
+          },
+          {
+            "group": "Build",
+            "pages": [
+              "agents/build/configuration",
+              "agents/build/voice-language",
+              "agents/build/time-timezone",
+              "agents/build/knowledge-base",
+              {
+                "group": "Tools",
+                "icon": "wrench",
+                "pages": [
+                  "agents/build/tools",
+                  "agents/build/webhook-tools",
+                  "agents/build/client-tools",
+                  "agents/build/system-tools"
+                ]
+              },
+              "agents/build/dynamic-variables"
+            ]
+          },
+          {
+            "group": "Test",
+            "pages": ["agents/test/preview-calls", "agents/test/agent-tests"]
+          },
+          {
+            "group": "Deploy",
+            "pages": [
+              "agents/deploy/overview",
+              "agents/deploy/versions-publishing",
+              "agents/deploy/authentication",
+              "agents/deploy/public-agents",
+              "agents/deploy/widget",
+              "agents/deploy/web-sdk",
+              "agents/deploy/react-sdk",
+              "agents/deploy/protocol"
+            ]
+          },
+          {
+            "group": "Telephony",
+            "pages": [
+              "agents/telephony/phone-numbers",
+              "agents/telephony/inbound-calls",
+              "agents/telephony/transfers"
+            ]
+          },
+          {
+            "group": "Monitor",
+            "pages": [
+              "agents/monitor/conversation-history",
+              "agents/monitor/post-call-analysis",
+              "agents/monitor/webhooks"
             ]
           }
         ]
@@ -203,8 +262,76 @@
               {
                 "group": "Voice Design",
                 "icon": "wand-magic-sparkles",
+                "pages": ["api-reference/endpoint/openapi-v1/voice-design"]
+              }
+            ]
+          },
+          {
+            "group": "Agents API",
+            "pages": [
+              "api-reference/agent-errors",
+              {
+                "group": "Agents",
+                "icon": "robot",
                 "pages": [
-                  "api-reference/endpoint/openapi-v1/voice-design"
+                  "api-reference/endpoint/agent/list-agents",
+                  "api-reference/endpoint/agent/create-agent",
+                  "api-reference/endpoint/agent/get-agent",
+                  "api-reference/endpoint/agent/update-agent",
+                  "api-reference/endpoint/agent/delete-agent",
+                  "api-reference/endpoint/agent/get-draft-config",
+                  "api-reference/endpoint/agent/update-draft-config",
+                  "api-reference/endpoint/agent/publish-agent",
+                  "api-reference/endpoint/agent/list-agent-versions",
+                  "api-reference/endpoint/agent/get-agent-version",
+                  "api-reference/endpoint/agent/get-widget-config"
+                ]
+              },
+              {
+                "group": "Sessions",
+                "icon": "headset",
+                "pages": [
+                  "api-reference/endpoint/agent/create-agent-session",
+                  "api-reference/endpoint/agent/list-agent-sessions",
+                  "api-reference/endpoint/agent/get-agent-session",
+                  "api-reference/endpoint/agent/get-agent-session-recording",
+                  "api-reference/endpoint/agent/end-agent-session"
+                ]
+              },
+              {
+                "group": "Tools",
+                "icon": "wrench",
+                "pages": [
+                  "api-reference/endpoint/agent/list-tools",
+                  "api-reference/endpoint/agent/create-tool",
+                  "api-reference/endpoint/agent/get-tool",
+                  "api-reference/endpoint/agent/update-tool",
+                  "api-reference/endpoint/agent/delete-tool",
+                  "api-reference/endpoint/agent/list-agents-using-tool"
+                ]
+              },
+              {
+                "group": "Knowledge Sources",
+                "icon": "book",
+                "pages": [
+                  "api-reference/endpoint/agent/list-knowledge-sources",
+                  "api-reference/endpoint/agent/create-knowledge-source",
+                  "api-reference/endpoint/agent/get-knowledge-source",
+                  "api-reference/endpoint/agent/update-knowledge-source",
+                  "api-reference/endpoint/agent/delete-knowledge-source",
+                  "api-reference/endpoint/agent/list-agents-using-knowledge-source"
+                ]
+              },
+              {
+                "group": "Phone Numbers",
+                "icon": "phone",
+                "pages": [
+                  "api-reference/endpoint/agent/search-available-phone-numbers",
+                  "api-reference/endpoint/agent/list-phone-numbers",
+                  "api-reference/endpoint/agent/purchase-phone-number",
+                  "api-reference/endpoint/agent/get-phone-number",
+                  "api-reference/endpoint/agent/update-phone-number",
+                  "api-reference/endpoint/agent/release-phone-number"
                 ]
               }
             ]
@@ -235,9 +362,7 @@
               {
                 "group": "JavaScript SDK",
                 "icon": "js",
-                "pages": [
-                  "api-reference/sdk/javascript/api-reference"
-                ]
+                "pages": ["api-reference/sdk/javascript/api-reference"]
               }
             ]
           }
@@ -270,13 +395,7 @@
     "drilldown": true
   },
   "contextual": {
-    "options": [
-      "copy",
-      "view",
-      "chatgpt",
-      "claude",
-      "perplexity"
-    ]
+    "options": ["copy", "view", "chatgpt", "claude", "perplexity"]
   },
   "fonts": {
     "family": "Onest"
@@ -356,7 +475,7 @@
     },
     {
       "source": "/agents",
-      "destination": "/developer-guide/resources/agent-quickstart"
+      "destination": "/agents/overview"
     },
     {
       "source": "/agent-quickstart",

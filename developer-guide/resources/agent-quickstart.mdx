@@ -1,7 +1,8 @@
 ---
-title: "Agent Quickstart"
-description: "Build with Fish Audio using your AI coding agent — install the skill and start prompting in a minute"
-icon: "robot"
+title: "Coding Assistant Quickstart"
+sidebarTitle: "Coding Assistants"
+description: "Build with Fish Audio using your AI coding assistant — install the skill and start prompting in a minute"
+icon: "laptop-code"
 ---
 
 Install the Fish Audio **agent skill** and your coding agent — Claude Code, Cursor, Codex, and others — writes correct, current Fish Audio code: right method names, units, and error types, instead of guessing. Here's the fastest path.
@@ -22,6 +23,7 @@ Install the Fish Audio **agent skill** and your coding agent — Claude Code, Cu
         Raw REST + WebSocket for any language — auth, endpoints, MessagePack/JSON/multipart rules, and the streaming protocol.
       </Card>
     </CardGroup>
+
   </Step>
 
   <Step title="Set your API key">
@@ -30,6 +32,7 @@ Install the Fish Audio **agent skill** and your coding agent — Claude Code, Cu
     ```bash
     export FISH_API_KEY="your_api_key_here"
     ```
+
   </Step>
 
   <Step title="Ask your agent">
@@ -49,6 +52,7 @@ Install the Fish Audio **agent skill** and your coding agent — Claude Code, Cu
         "Call the Fish Audio TTS REST API from Go, no SDK."
       </Card>
     </CardGroup>
+
   </Step>
 </Steps>
 
@@ -71,25 +75,48 @@ npx skills add https://docs.fish.audio -a claude-code
 ```bash List / inspect first
 npx skills add https://docs.fish.audio --list
 ```
+
 </CodeGroup>
 
-<Card title="AI Coding Agents — full guide" icon="robot" href="/developer-guide/resources/coding-agents" horizontal>
-  Targeting specific agents, the Fish Audio MCP server, and reading the skills before you install.
+<Card
+  title="AI Coding Assistants — full guide"
+  icon="laptop-code"
+  href="/developer-guide/resources/coding-agents"
+  horizontal
+>
+  Targeting specific agents, the Fish Audio MCP server, and reading the skills
+  before you install.
 </Card>
 
 ## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Get your API key" icon="key" href="/developer-guide/getting-started/api-key">
+  <Card
+    title="Get your API key"
+    icon="key"
+    href="/developer-guide/getting-started/api-key"
+  >
     Create a key and make your first request.
   </Card>
-  <Card title="Quick Start" icon="rocket" href="/developer-guide/getting-started/quickstart">
+  <Card
+    title="Quick Start"
+    icon="rocket"
+    href="/developer-guide/getting-started/quickstart"
+  >
     Generate your first audio by hand, in any language.
   </Card>
-  <Card title="Text to Speech" icon="microphone" href="/features/text-to-speech">
+  <Card
+    title="Text to Speech"
+    icon="microphone"
+    href="/features/text-to-speech"
+  >
     Voices, formats, streaming, and the direct API.
   </Card>
-  <Card title="API reference" icon="book-open" href="/api-reference/introduction">
+  <Card
+    title="API reference"
+    icon="book-open"
+    href="/api-reference/introduction"
+  >
     Endpoints, parameters, and the OpenAPI schema.
   </Card>
 </CardGroup>
@@ -119,13 +146,17 @@ Not a coding agent installing a skill — an autonomous agent, RAG pipeline, or 
     - Real-time streaming endpoint: `wss://api.fish.audio/v1/tts/live`
   </Accordion>
 
-  <Accordion title="Retrieval order">
-    1. Read [llms.txt](https://docs.fish.audio/llms.txt) for the curated documentation index.
-    2. Read [llms-full.txt](https://docs.fish.audio/llms-full.txt) when broad site context is needed.
-    3. Read [OpenAPI](https://docs.fish.audio/api-reference/openapi.json) for REST schemas, parameters, and examples.
-    4. Read [AsyncAPI](https://docs.fish.audio/api-reference/asyncapi.yml) for the WebSocket streaming protocol.
-    5. Fetch individual `.md` pages only after narrowing to a specific task.
-  </Accordion>
+<Accordion title="Retrieval order">
+  1. Read [llms.txt](https://docs.fish.audio/llms.txt) for the curated
+  documentation index. 2. Read
+  [llms-full.txt](https://docs.fish.audio/llms-full.txt) when broad site context
+  is needed. 3. Read
+  [OpenAPI](https://docs.fish.audio/api-reference/openapi.json) for REST
+  schemas, parameters, and examples. 4. Read
+  [AsyncAPI](https://docs.fish.audio/api-reference/asyncapi.yml) for the
+  WebSocket streaming protocol. 5. Fetch individual `.md` pages only after
+  narrowing to a specific task.
+</Accordion>
 
   <Accordion title="High-value URLs by task">
     **API specs**
@@ -158,15 +189,17 @@ Not a coding agent installing a skill — an autonomous agent, RAG pipeline, or 
     - [Choosing a Model](https://docs.fish.audio/developer-guide/models-pricing/choosing-a-model.md)
     - [Pricing & Rate Limits](https://docs.fish.audio/developer-guide/models-pricing/pricing-and-rate-limits.md)
     - [Model Deprecations](https://docs.fish.audio/developer-guide/models-pricing/deprecations.md)
+
   </Accordion>
 
-  <Accordion title="Task routing">
-    - **Generate speech** → Quick Start, the Text to Speech guide, and `POST /v1/tts`.
-    - **Transcribe audio** → the Speech to Text guide and `POST /v1/asr`.
-    - **Clone or manage voices** → Creating Voice Models and the `/model` endpoints.
-    - **Stream audio in real time** → AsyncAPI, WebSocket TTS Streaming, and the realtime guides.
-    - **Pick a model or estimate cost** → Models Overview and Pricing & Rate Limits.
-  </Accordion>
+<Accordion title="Task routing">
+  - **Generate speech** → Quick Start, the Text to Speech guide, and `POST
+  /v1/tts`. - **Transcribe audio** → the Speech to Text guide and `POST
+  /v1/asr`. - **Clone or manage voices** → Creating Voice Models and the
+  `/model` endpoints. - **Stream audio in real time** → AsyncAPI, WebSocket TTS
+  Streaming, and the realtime guides. - **Pick a model or estimate cost** →
+  Models Overview and Pricing & Rate Limits.
+</Accordion>
 
   <Accordion title="Notes for agents">
     - Prefer `openapi.json` and `asyncapi.yml` for machine-readable schemas.
