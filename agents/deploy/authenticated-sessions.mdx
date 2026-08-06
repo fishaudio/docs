@@ -141,7 +141,7 @@ Unknown fields — top-level or inside `overrides` — are rejected with `422`.
 | `first_message_prompt` | string, up to 10,000 characters          | Instructions the agent generates its opener from, replacing the configured first-message behavior. `{{placeholders}}` render inside it. Mutually exclusive with `first_message` — sending both is `422`.          |
 | `system_prompt`        | string, up to 8,000 characters           | Replaces the configured system prompt entirely. `{{placeholders}}` render inside it.                                                                                                                              |
 | `voice_id`             | string                                   | The voice the agent speaks with — any [voice model id](/agents/build/voice-language#use-any-voice-model) from the Voice Library. Voices bias pronunciation toward their own language, so pair it with `language`. |
-| `language`             | `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de` | Pins the conversation language, taking precedence over the configured [speaking language](/agents/build/voice-language#speaking-language) and automatic language detection.                                       |
+| `language`             | `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de` | Pins the conversation language, taking precedence over the configured [speaking language](/agents/build/voice-language#speaking-language).                                       |
 
 ```json
 {

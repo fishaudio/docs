@@ -65,16 +65,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 
 ## Speaking language
 
-**Speaking language** sets the default language for the agent's conversations — one of `en`, `ja`, `zh`, `ko`, `es`, `fr`, or `de` (`voice.speaking_language` on the wire). Whether it is pinned or just a fallback depends on the **Language detection** [system tool](/agents/build/system-tools):
-
-| Language detection | Session behavior |
-|---|---|
-| On | The session runs in automatic language mode — the agent follows the language the caller actually speaks. |
-| Off (default) | Every session uses the configured speaking language. |
-
-<Tip>
-  If your agent must always converse in one specific language, leave Language detection off — the session then sticks to `speaking_language` regardless of what it hears.
-</Tip>
+**Speaking language** sets the language for the agent's conversations — one of `en`, `ja`, `zh`, `ko`, `es`, `fr`, or `de` (`voice.speaking_language` on the wire). Every session converses in this language.
 
 <Note>
   The voice model and the speaking language are independent settings: picking a voice does not change the language, and vice versa. Choose a voice that sounds natural in the language you configure.
@@ -89,7 +80,7 @@ Both settings can also be replaced for a single session — send `overrides.voic
     System prompt, first message, and conversation settings.
   </Card>
   <Card title="System tools" icon="wrench" href="/agents/build/system-tools">
-    Language detection and other built-in capabilities.
+    Built-in capabilities like hanging up the call.
   </Card>
   <Card title="Preview calls" icon="phone" href="/agents/test/preview-calls">
     Talk to your draft agent and hear the voice live.
