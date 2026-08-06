@@ -85,14 +85,6 @@ const session = await AgentSession.start({
 ```
 </CodeGroup>
 
-### The `language` shorthand
-
-Overriding the session language is common enough that the SDKs accept a top-level `language` option — the widget takes it as an attribute — and fold it into `overrides.language` for you. On the wire there is only one spelling:
-
-```json
-{ "agent_id": "YOUR_AGENT_ID", "overrides": { "language": "ja" } }
-```
-
 ### Validation
 
 | Case | Result |
