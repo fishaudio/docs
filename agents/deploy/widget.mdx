@@ -96,7 +96,7 @@ React apps pass the same function as a prop:
 <FishAgentWidget sessionTokenProvider={getSessionToken} />
 ```
 
-Your backend holds the API key and creates the session with `POST /v1/agent/sessions`; origin checks, user auth, and rate limiting on that endpoint are yours. See [Authentication](/agents/deploy/authentication) for the token flow and a backend example.
+Your backend holds the API key and creates the session with `POST /v1/agent/sessions`; origin checks, user auth, and rate limiting on that endpoint are yours. See [Authenticated sessions](/agents/deploy/authenticated-sessions) for the token flow and a backend example.
 
 ## Theming
 
@@ -159,7 +159,11 @@ On load, the widget anonymously fetches the agent's console widget settings from
   <Card title="Public agents" icon="globe" href="/agents/deploy/public-agents">
     The public switch, origin allowlist, and rate limits behind the widget.
   </Card>
-  <Card title="Authentication" icon="key" href="/agents/deploy/authentication">
+  <Card
+    title="Authenticated sessions"
+    icon="server"
+    href="/agents/deploy/authenticated-sessions"
+  >
     The session-token flow your `sessionTokenProvider` implements.
   </Card>
   <Card title="Web SDK" icon="js" href="/agents/deploy/web-sdk">

@@ -6,7 +6,7 @@ icon: "globe"
 
 A public agent accepts sessions straight from the browser: the SDK calls the session endpoint with just an `agent_id` — no API key, no server of your own. The platform gates access with three controls: an agent-level public switch (off by default), a required origin allowlist, and rate limiting.
 
-Use this mode for demos, marketing pages, and support bubbles where standing up a backend isn't worth it. For production apps with their own users, [session tokens](/agents/deploy/authentication) are usually the better fit — see [when to use session tokens instead](#when-to-use-session-tokens-instead).
+Use this mode for demos, marketing pages, and support bubbles where standing up a backend isn't worth it. For production apps with their own users, [authenticated sessions](/agents/deploy/authenticated-sessions) are usually the better fit — see [when to use session tokens instead](#when-to-use-session-tokens-instead).
 
 ## Enable public access
 
@@ -86,7 +86,7 @@ Public session creation is rate limited on two dimensions at once: per **client 
 
 <Note>
   If legitimate traffic outgrows these limits, or you need per-user quotas, move
-  to [session token authentication](/agents/deploy/authentication) — your
+  to [authenticated sessions](/agents/deploy/authenticated-sessions) — your
   backend becomes the gate, and the platform-side public limits no longer apply.
 </Note>
 
@@ -118,13 +118,17 @@ Public mode trades control for zero setup. Prefer the `sessionToken` flow — yo
 - You want server-side control of `overrides`, `dynamic_variables`, or `tool_events` instead of accepting the browser's values.
 - You already authenticate users and want **your own quotas** per account, not IP-based platform limits.
 
-The SDK call changes by one field — pass `{ sessionToken }` instead of `{ agentId }`. See [Authentication](/agents/deploy/authentication) for the full flow.
+The SDK call changes by one field — pass `{ sessionToken }` instead of `{ agentId }`. See [Authenticated sessions](/agents/deploy/authenticated-sessions) for the full flow.
 
 ## Going further
 
 <CardGroup cols={2}>
-  <Card title="Authentication" icon="key" href="/agents/deploy/authentication">
-    Both auth modes side by side, and the session token flow in full.
+  <Card
+    title="Authenticated sessions"
+    icon="server"
+    href="/agents/deploy/authenticated-sessions"
+  >
+    The session token flow in full — request fields, lifetime, errors.
   </Card>
   <Card title="Web SDK" icon="js" href="/agents/deploy/web-sdk">
     Events, methods, and client tools — identical in both modes.

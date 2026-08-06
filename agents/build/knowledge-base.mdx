@@ -84,7 +84,6 @@ Knowledge sources are exposed at `/v1/agent/knowledge-sources`. Only workspace s
 | `DELETE /v1/agent/knowledge-sources/{source_id}` | Delete a source |
 | `GET /v1/agent/knowledge-sources/{source_id}/agents` | List agents that attach the source |
 
-<CodeGroup>
 ```bash Create a source
 curl --request POST https://api.fish.audio/v1/agent/knowledge-sources \
   --header "Authorization: Bearer $FISH_API_KEY" \
@@ -103,7 +102,6 @@ curl --request PATCH https://api.fish.audio/v1/agent/knowledge-sources/{source_i
 curl https://api.fish.audio/v1/agent/knowledge-sources/{source_id}/agents \
   --header "Authorization: Bearer $FISH_API_KEY"
 ```
-</CodeGroup>
 
 Only the `source` file part is required on create — `name` falls back to the uploaded file's name.
 

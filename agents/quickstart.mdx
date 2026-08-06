@@ -9,7 +9,7 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
 **Prerequisites**
 
 - A Fish Audio account
-- For the API path: a Fish Audio API key — see [Authentication](/agents/deploy/authentication)
+- For the API path: a Fish Audio API key — create one under [API keys](https://fish.audio/app/api-keys/) in the console
 
 <Tabs>
   <Tab title="Dashboard">
@@ -128,9 +128,8 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
         Start talking — you hear the agent reply and both sides of the conversation arrive as transcript events. See the [Web SDK](/agents/deploy/web-sdk) for the full event and method surface, or the [React SDK](/agents/deploy/react-sdk) for hooks.
       </Step>
       <Step title="Put it together">
-        The whole loop is two files: a backend route that mints the session with your API key, and frontend code that starts the call. Run the server with `FISH_API_KEY` and `AGENT_ID` set, serve the frontend from your app's dev server (Vite, Next — anything that bundles npm imports), and talk.
+        The whole loop is two files: a backend route that creates the session with your API key, and frontend code that starts the call. Run the server with `FISH_API_KEY` and `AGENT_ID` set, serve the frontend from your app's dev server (Vite, Next — anything that bundles npm imports), and talk.
 
-        <CodeGroup>
         ```javascript server.mjs
         import express from "express";
 
@@ -169,7 +168,6 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
           },
         });
         ```
-        </CodeGroup>
 
         Every request and response on this path is in the [Agents API reference](/api-reference/endpoint/agent/create-agent-session).
       </Step>

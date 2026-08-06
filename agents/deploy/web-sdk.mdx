@@ -30,7 +30,7 @@ yarn add @fishaudio/agent-client
 `AgentSession.start()` creates the session, connects, and opens the microphone in one call. Authenticate one of two ways:
 
 - **`agentId`** — for [public agents](/agents/deploy/public-agents). The SDK creates the session directly from the browser; no backend needed.
-- **`sessionToken`** — for private agents. Your backend calls `POST /v1/agent/sessions` with your API key and hands the JSON response to the browser; pass it through unchanged. See [Authentication](/agents/deploy/authentication).
+- **`sessionToken`** — for private agents. Your backend calls `POST /v1/agent/sessions` with your API key and hands the JSON response to the browser; pass it through unchanged. See [Authenticated sessions](/agents/deploy/authenticated-sessions).
 
 <CodeGroup>
 
@@ -258,8 +258,12 @@ await session.end(); // graceful hangup; disconnect fires with reason "user_hang
   <Card title="React SDK" icon="react" href="/agents/deploy/react-sdk">
     Hooks, provider, and visualizer components on top of this SDK.
   </Card>
-  <Card title="Authentication" icon="key" href="/agents/deploy/authentication">
-    Mint session tokens from your backend for private agents.
+  <Card
+    title="Authenticated sessions"
+    icon="server"
+    href="/agents/deploy/authenticated-sessions"
+  >
+    Create session tokens on your backend for private agents.
   </Card>
   <Card title="Public agents" icon="globe" href="/agents/deploy/public-agents">
     Backend-free sessions with origin allow-lists and rate limits.
