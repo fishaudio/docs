@@ -1,6 +1,6 @@
 ---
 title: "System Tools"
-description: "Built-in agent capabilities — language detection, hang up call, and call transfer — enabled per agent"
+description: "Built-in agent capabilities like hanging up the call, enabled per agent"
 icon: "toggle-on"
 ---
 
@@ -8,9 +8,7 @@ System tools are capabilities built into the platform. There is nothing to creat
 
 | Tool | Key | What it does |
 |---|---|---|
-| Language detection | `language_detection` | Lets the agent detect the language the user is speaking. |
 | Hang up call | `hang_up_call` | Lets the agent end the call itself. |
-| Transfer call | `transfer_call` | Lets the agent hand a live phone call to another number. |
 
 <Note>
 Unlike [webhook tools](/agents/build/webhook-tools), system tools are not workspace resources shared across agents. The on/off state is stored per agent — toggling a system tool on one agent never affects another.
@@ -18,7 +16,7 @@ Unlike [webhook tools](/agents/build/webhook-tools), system tools are not worksp
 
 ## Toggle in the Builder
 
-Open your agent's **Tools** page in the Builder. The **System tools** card holds the **Hang up call** switch. The **Language detection** switch lives on the agent's **Configuration** page, next to **Speaking language** — see [Voice & language](/agents/build/voice-language). Flip a switch to enable or disable that capability for this agent.
+Open your agent's **Tools** page in the Builder. The **System tools** card holds the **Hang up call** switch — flip it to enable or disable that capability for this agent.
 
 ## Toggle via the API
 
