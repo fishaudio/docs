@@ -1,0 +1,122 @@
+---
+title: "Enterprise Appliance"
+description: "Run the Fish Audio TTS stack on your own hardware from a single container"
+icon: "server"
+---
+
+The enterprise appliance is the whole Fish Audio TTS stack — model weights included — in one
+container. It needs no Kubernetes and no network access at runtime, which makes it suitable for
+on-prem, single-tenant, and air-gapped deployments.
+
+<Note>
+  The appliance is part of an enterprise agreement. Your team needs the **Self
+  Host** feature and a grant for the All-in-One artifact before the commands
+  below will work. If Developer → Self Host does not appear in your dashboard,
+  contact your account manager.
+</Note>
+
+## What you get
+
+|                    |                                                                                                                                                          |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Exposed port       | `8088` — the TTS API. Nothing else is published.                                                                                                         |
+| GPUs               | **2**, validated on 2× RTX 5090 (32 GB) and 2× H100 80 GB. GPU 0 runs the language model, GPU 1 runs the vocoder. No NVLink required.                    |
+| Scaling            | one inference worker on two GPUs. It does not shard across more GPUs or nodes — for elastic or multi-tenant throughput, use the Helm deployment instead. |
+| Network at runtime | none. Weights are baked into the image.                                                                                                                  |
+
+## 1. Prerequisites
+
+- Docker with the **NVIDIA Container Toolkit** installed and the `nvidia` runtime registered.
+  Verify with `docker run --rm --gpus all <cuda-image> nvidia-smi`.
+- Enough disk for the image: roughly **28 GB compressed, 60 GB unpacked**.
+- A **deploy token**, created in Developer → Self Host. That page also shows the version to run.
+
+## 2. Sign in and pull
+
+Your username is your Fish Audio account email; the password is a deploy token.
+
+```bash
+echo '<your-deploy-token>' | docker login registry.fish.audio -u '<your-email>' --password-stdin
+docker pull registry.fish.audio/self-hosted/enterprise/all-in-one:<version>
+```
+
+<Tip>
+  Developer → Self Host renders both of these commands with your email and the
+  current version already filled in. Copy them from there rather than typing the
+  version by hand.
+</Tip>
+
+For an air-gapped host, pull on a machine that can reach the registry, then move the image:
+
+```bash
+docker save registry.fish.audio/self-hosted/enterprise/all-in-one:<version> \
+  | zstd -T0 -3 -o all-in-one.tar.zst
+# on the target host:
+zstd -d -c all-in-one.tar.zst | docker load
+```
+
+## 3. Run
+
+Generate a JWT secret **once**, store it, and reuse the same value on every run.
+
+```bash
+export FISH_JWT_SECRET="$(openssl rand -hex 32)"
+
+docker run -d --name fish-tts \
+  --gpus all \
+  --shm-size 16g --ulimit memlock=-1 --ulimit stack=67108864 \
+  -p 8088:8088 \
+  -v fish-tts-shared:/mnt/shared \
+  -e JWT_SECRET="$FISH_JWT_SECRET" \
+  --restart unless-stopped \
+  registry.fish.audio/self-hosted/enterprise/all-in-one:<version>
+```
+
+<Warning>
+  `JWT_SECRET` is required for any production deployment. Without it the
+  container falls back to a fixed built-in development default, which is not
+  secret. Changing the value later invalidates every token and session issued
+  under the old one.
+</Warning>
+
+**`--gpus all`** pins the worker to GPU 0 and the vocoder to GPU 1. On a host with more than two
+GPUs it takes the first two; to choose specific cards use `--gpus '"device=0,1"'`.
+
+**`-v fish-tts-shared:/mnt/shared`** is one persistent volume for everything that must survive a
+restart: the compile and CUDA-graph caches, the vocoder engine, reference voices, and the usage
+ledger. It is what makes restarts fast.
+
+<Note>
+  The **first start compiles for around 10 minutes** once the image is on the
+  host. A completely cold host that also has to transfer the ~28 GB image can
+  take 45–75 minutes end to end, depending on the network. Later starts on the
+  same volume take minutes. Keep the volume.
+</Note>
+
+The container runs fully non-root — PID 1 and every service as UID 1000. A fresh named volume
+inherits that ownership and works as-is; an existing volume or a host bind-mount must be writable
+by UID 1000.
+
+## 4. Check it is serving
+
+```bash
+curl -fsS http://localhost:8088/health
+```
+
+## Upgrading
+
+Developer → Self Host shows the version your team recorded and tells you when a newer one is
+available, with a link to what changed. Upgrading is: pull the new tag, stop the old container,
+start a new one with the same volume and the same `JWT_SECRET`.
+
+```bash
+docker pull registry.fish.audio/self-hosted/enterprise/all-in-one:<new-version>
+docker stop fish-tts && docker rm fish-tts
+# re-run the command from step 3 with the new tag
+```
+
+The volume is reused deliberately: the caches in it are keyed by content, so a new image rebuilds
+only what actually changed. Keep the old image on the host until the new one has served traffic —
+rolling back is then just starting the previous tag again.
+
+See [Appliance Releases](/developer-guide/self-hosting/enterprise-releases) for the version list.

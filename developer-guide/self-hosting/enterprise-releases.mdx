@@ -1,0 +1,49 @@
+---
+title: "Appliance Releases"
+description: "Version history for the Fish Audio enterprise appliance"
+icon: "tag"
+---
+
+Every version of the [enterprise appliance](/developer-guide/self-hosting/enterprise-appliance)
+we have released, newest first. Developer → Self Host shows which one your team recorded as
+running and links here when a newer one is available.
+
+<Note>
+  Versions are immutable. A tag always refers to the same image — we never
+  re-point one at different content, so a deployment pinned to a tag keeps
+  getting the bytes it was tested with. Fixes ship as a new version.
+</Note>
+
+## How to read a version
+
+```
+s2.1-pro-20260803-offline
+└──┬───┘ └──┬───┘ └──┬──┘
+   │        │        └─ variant: `offline` records usage to a local signed ledger
+   │        └─ the date we published it
+   └─ the model generation it serves
+```
+
+---
+
+## s2.1-pro-20260803-offline
+
+<Update label="2026-08-03" tags={["current"]}>
+First generally available build of the appliance.
+
+- Serves the S2.1 Pro voice model, weights baked in — no network access at runtime.
+- Two GPUs: language model on GPU 0, vocoder on GPU 1.
+- Usage recorded to a local signed ledger; nothing is reported off the host.
+- Runs fully non-root (UID 1000).
+
+**Upgrading:** nothing to migrate — this is the first release.
+
+</Update>
+
+---
+
+## Getting an older version
+
+The dashboard lists the versions we currently recommend. If you need one that is no longer
+listed — to reproduce a node exactly as it was, for instance — contact your account manager
+rather than guessing a tag.
