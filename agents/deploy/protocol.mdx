@@ -23,7 +23,7 @@ npm install @fishaudio/agent-protocol
 
 ## Connect to a session
 
-Create a session server-side ([authentication](/agents/deploy/authentication)), then connect to the transport named in the response. [Public agents](/agents/deploy/public-agents) can create sessions without the `Authorization` header.
+Create a session server-side ([authenticated sessions](/agents/deploy/authenticated-sessions)), then connect to the transport named in the response. [Public agents](/agents/deploy/public-agents) can create sessions without the `Authorization` header.
 
 ```bash Create a session
 curl --request POST https://api.fish.audio/v1/agent/sessions \
@@ -166,7 +166,11 @@ These ride the transport's built-in mechanisms rather than custom messages.
   <Card title="Client tools" icon="wrench" href="/agents/build/client-tools">
     Declare the tools your `client_tool.call` handlers implement.
   </Card>
-  <Card title="Authentication" icon="key" href="/agents/deploy/authentication">
+  <Card
+    title="Authenticated sessions"
+    icon="server"
+    href="/agents/deploy/authenticated-sessions"
+  >
     Session creation, API keys, and token handling.
   </Card>
   <Card title="Public agents" icon="globe" href="/agents/deploy/public-agents">

@@ -107,7 +107,7 @@ The session record stores which overrides took effect.
 
 ## Who supplies the values
 
-Where variables and overrides come from depends on how the session is [authenticated](/agents/deploy/authentication):
+Where variables and overrides come from depends on the session's [access mode](/agents/deploy/overview#who-may-start-sessions):
 
 | Mode | Who creates the session | Who supplies variables and overrides |
 |---|---|---|
@@ -143,8 +143,12 @@ In `agentId` mode, values arrive from the end user's browser — treat them as u
   <Card title="Agent configuration" icon="sliders" href="/agents/build/configuration">
     The fields your placeholders and overrides act on.
   </Card>
-  <Card title="Authentication" icon="key" href="/agents/deploy/authentication">
-    API keys, session tokens, and the two session modes.
+  <Card
+    title="Authenticated sessions"
+    icon="server"
+    href="/agents/deploy/authenticated-sessions"
+  >
+    Set variables from your backend when creating the session.
   </Card>
   <Card title="Versions & publishing" icon="code-branch" href="/agents/deploy/versions-publishing">
     Sessions assemble the published configuration.

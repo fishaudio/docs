@@ -24,7 +24,7 @@ Every agent has one **draft** and a linear history of **published versions**. Ed
   <Card
     title="Automate via API"
     icon="brackets-curly"
-    href="/agents/deploy/overview"
+    href="/api-reference/endpoint/agent/publish-agent"
   >
     Manage drafts, publishing, and version history programmatically.
   </Card>
@@ -71,7 +71,6 @@ New sessions use the newly published version from that point on. To hear a chang
 
 Configuration edits (`PATCH`) go to the draft; a separate `publish` call rolls them out. A `version_title` and `version_description` are optional and make the version history easier to audit:
 
-<CodeGroup>
 ```bash Update the draft
 curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   --header "Authorization: Bearer $FISH_API_KEY" \
@@ -88,15 +87,12 @@ curl --request POST "https://api.fish.audio/v1/agent/agents/$AGENT_ID/publish" \
   --data '{ "version_title": "Tighten support tone" }'
 ```
 
-</CodeGroup>
-
 The publish response includes the new `version_number`.
 
 ## Version history
 
 List published versions, or fetch the complete configuration snapshot of any one of them — including the version currently serving production:
 
-<CodeGroup>
 ```bash List versions
 curl "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions" \
   --header "Authorization: Bearer $FISH_API_KEY"
@@ -106,8 +102,6 @@ curl "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions" \
 curl "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions/3" \
   --header "Authorization: Bearer $FISH_API_KEY"
 ```
-
-</CodeGroup>
 
 Each version record includes:
 
@@ -131,7 +125,6 @@ Fetching a single version returns the full configuration as it was published. Be
 
 Roll back by copying an old snapshot back into the draft: read the version you want, then `PATCH` its sections into the draft config.
 
-<CodeGroup>
 ```bash 1. Read the old snapshot
 curl "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions/2" \
   --header "Authorization: Bearer $FISH_API_KEY"
@@ -143,8 +136,6 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   --header "Content-Type: application/json" \
   --data '{ "prompt": { "system_prompt": "<system prompt from the snapshot>" } }'
 ```
-
-</CodeGroup>
 
 Patching updates the draft — it does **not** publish. Review or [preview](/agents/test/preview-calls) the restored draft, then publish it as a new version; the rollback becomes part of the linear history, so the audit trail stays intact. Because snapshots never echo secrets (see above), credential fields keep their current draft values unless you set them again explicitly.
 
