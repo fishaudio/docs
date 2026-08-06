@@ -671,7 +671,7 @@
       },
       "post": {
         "summary": "Create Agent Session",
-        "description": "Start a conversation session with an agent and receive a join token for the\nsession transport (currently LiveKit WebRTC). Authenticate with an API key to\nstart sessions with any agent in your team; without credentials only agents\npublished as public are reachable, and the request `Origin` must match the\nagent's allowed origins.\n\n`language` (and `overrides.language`) accepts `en`, `ja`, `zh`, `ko`, `es`,\n`fr`, `de`; anything else is 422. Omit it to use the agent's configured\nspeaking language.",
+        "description": "Start a conversation session with an agent and receive a join token for the\nsession transport (currently LiveKit WebRTC). Authenticate with an API key to\nstart sessions with any agent in your team; without credentials only agents\npublished as public are reachable, and the request `Origin` must match the\nagent's allowed origins.\n\n`language` (and `overrides.language`) accepts `en`, `ja`, `zh`, `ko`, `es`,\n`fr`, `de`; anything else is 422. Omit it to use the agent's configured\nbehavior (including automatic language detection when enabled).",
         "security": [
           {
             "BearerAuth": []
@@ -10391,7 +10391,7 @@
       },
       "AgentSessionOverridesPayload": {
         "additionalProperties": false,
-        "description": "Wire twin of @fishaudio/agent-protocol `SessionOverrides` (session.ts).\n\nEvery field must be allow-listed in Agent.overrides_allowed; unauthorized\nfields fail session creation loudly rather than being silently dropped.\nKeyless (public) sessions are additionally capped to PUBLIC_OVERRIDE_FIELDS\n(service.py) regardless of the allowlist.",
+        "description": "Wire twin of @fishaudio/agent-protocol `SessionOverrides` (session.ts).\n\nEvery field must be allow-listed in Agent.overrides_allowed; unauthorized\nfields fail session creation loudly rather than being silently dropped.",
         "properties": {
           "first_message": {
             "anyOf": [
@@ -11704,6 +11704,18 @@
       "PublicSystemToolsPatch": {
         "additionalProperties": false,
         "properties": {
+          "language_detection": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Language Detection"
+          },
           "hang_up_call": {
             "anyOf": [
               {
@@ -12046,6 +12058,11 @@
       },
       "AgentSystemToolsConfig": {
         "properties": {
+          "language_detection": {
+            "default": false,
+            "title": "Language Detection",
+            "type": "boolean"
+          },
           "hang_up_call": {
             "default": false,
             "title": "Hang Up Call",
