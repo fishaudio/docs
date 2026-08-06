@@ -6,10 +6,10 @@ icon: "brackets-curly"
 
 An agent's published configuration is shared by every caller — but each session can be personalized at creation time. Two mechanisms cover this, and both travel in the same `POST /v1/agent/sessions` request:
 
-| Mechanism | What it does | Gated by |
+| Mechanism | What it does | Scope |
 |---|---|---|
-| `dynamic_variables` | Fills `{{placeholder}}` templates in your configuration text | Nothing per-agent — no allowlist |
-| `overrides` | Replaces whole configuration fields for this session | Per-agent allowlist of overridable fields |
+| `dynamic_variables` | Fills `{{placeholder}}` templates in your configuration text | Any placeholder you define |
+| `overrides` | Replaces whole configuration fields for this session | Four overridable fields |
 
 ## Dynamic variables
 
@@ -62,7 +62,7 @@ You don't need a variable for the current date or time — the agent already kno
 
 ## Overrides
 
-Overrides replace configuration fields wholesale for one session — for example, forcing a different language for a caller. Because they change agent behavior, each agent declares which fields callers may override; everything else is rejected.
+Overrides replace configuration fields wholesale for one session — for example, forcing a different language for a caller. The overridable fields are `first_message` (or its generated twin `first_message_prompt`), `system_prompt`, `voice_id`, and `language` — the full table with types, limits, and exactly what each replaces is in [Authenticated sessions](/agents/deploy/authenticated-sessions#overrides).
 
 <CodeGroup>
 ```bash API (curl)
@@ -87,17 +87,17 @@ const session = await AgentSession.start({
 
 ### The `language` shorthand
 
-Overriding the session language is common enough that the request accepts a top-level `language` field as shorthand for `overrides.language`. Both forms pass through the same allowlist gate — if `language` is not overridable on the agent, both are rejected.
+Overriding the session language is common enough that the SDKs accept a top-level `language` option — the widget takes it as an attribute — and fold it into `overrides.language` for you. On the wire there is only one spelling:
 
 ```json
-{ "agent_id": "YOUR_AGENT_ID", "language": "ja" }
+{ "agent_id": "YOUR_AGENT_ID", "overrides": { "language": "ja" } }
 ```
 
 ### Validation
 
 | Case | Result |
 |---|---|
-| Override field not on the agent's allowlist | `400` |
+| Override field not enabled for the agent | `400` |
 | Unknown field inside `overrides` | `422` |
 | Unknown top-level field in the request | `422` |
 
@@ -134,7 +134,7 @@ const sessionToken = await response.json(); // pass to AgentSession.start({ sess
 ```
 
 <Tip>
-In `agentId` mode, values arrive from the end user's browser — treat them as untrusted input. Keep the override allowlist limited to fields you are comfortable letting anyone set, and use `sessionToken` mode when personalization must come from data only your backend knows.
+In `agentId` mode, values arrive from the end user's browser — treat them as untrusted input, and use `sessionToken` mode when personalization must come from data only your backend knows. Public sessions accept only the `language` and `voice_id` overrides; the prompt-shaping fields require a backend-created session.
 </Tip>
 
 ## Going further

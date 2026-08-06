@@ -1885,7 +1885,7 @@
                         "enum": [
                           "first_message",
                           "system_prompt",
-                          "voice_profile_id",
+                          "voice_id",
                           "language"
                         ],
                         "type": "string"
@@ -2026,7 +2026,7 @@
           {
             "lang": "bash",
             "label": "Create Agent",
-            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/agent/agents \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --data '{\n    \"name\": \"Receptionist\",\n    \"description\": \"Handles inbound calls.\",\n    \"config\": {\n      \"prompt\": {\n        \"system_prompt\": \"You are the receptionist for Fish Dental.\"\n      },\n      \"voice\": {\n        \"voice_profile_id\": \"<voice-model-id>\",\n        \"speaking_language\": \"en\"\n      }\n    }\n  }'"
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/agent/agents \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --data '{\n    \"name\": \"Receptionist\",\n    \"description\": \"Handles inbound calls.\",\n    \"config\": {\n      \"prompt\": {\n        \"system_prompt\": \"You are the receptionist for Fish Dental.\"\n      },\n      \"voice\": {\n        \"voice_id\": \"<voice-model-id>\",\n        \"speaking_language\": \"en\"\n      }\n    }\n  }'"
           }
         ]
       }
@@ -2112,7 +2112,7 @@
                         "enum": [
                           "first_message",
                           "system_prompt",
-                          "voice_profile_id",
+                          "voice_id",
                           "language"
                         ],
                         "type": "string"
@@ -2290,7 +2290,7 @@
                         "enum": [
                           "first_message",
                           "system_prompt",
-                          "voice_profile_id",
+                          "voice_id",
                           "language"
                         ],
                         "type": "string"
@@ -2739,7 +2739,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 4000 characters (422 beyond).\n`voice.voice_profile_id` accepts any public voice model id.\n`voice.speaking_language` accepts `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`;\nanything else is 422. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 4000 characters (422 beyond).\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`;\nanything else is 422. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422.",
         "security": [
           {
             "BearerAuth": []
@@ -10266,27 +10266,6 @@
             "default": null,
             "title": "Name"
           },
-          "language": {
-            "anyOf": [
-              {
-                "enum": [
-                  "en",
-                  "ja",
-                  "zh",
-                  "ko",
-                  "es",
-                  "fr",
-                  "de"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Language"
-          },
           "timezone": {
             "anyOf": [
               {
@@ -10412,7 +10391,7 @@
       },
       "AgentSessionOverridesPayload": {
         "additionalProperties": false,
-        "description": "Wire twin of @fishaudio/agent-protocol `SessionOverrides` (session.ts).\n\nEvery field must be allow-listed in Agent.overrides_allowed; unauthorized\nfields fail session creation loudly rather than being silently dropped.",
+        "description": "Wire twin of @fishaudio/agent-protocol `SessionOverrides` (session.ts).\n\nEvery field must be allow-listed in Agent.overrides_allowed; unauthorized\nfields fail session creation loudly rather than being silently dropped.\nKeyless (public) sessions are additionally capped to PUBLIC_OVERRIDE_FIELDS\n(service.py) regardless of the allowlist.",
         "properties": {
           "first_message": {
             "anyOf": [
@@ -10427,6 +10406,19 @@
             "default": null,
             "title": "First Message"
           },
+          "first_message_prompt": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "First Message Prompt"
+          },
           "system_prompt": {
             "anyOf": [
               {
@@ -10440,7 +10432,7 @@
             "default": null,
             "title": "System Prompt"
           },
-          "voice_profile_id": {
+          "voice_id": {
             "anyOf": [
               {
                 "maxLength": 256,
@@ -10451,7 +10443,7 @@
               }
             ],
             "default": null,
-            "title": "Voice Profile Id"
+            "title": "Voice Id"
           },
           "language": {
             "anyOf": [
@@ -10999,7 +10991,7 @@
               "enum": [
                 "first_message",
                 "system_prompt",
-                "voice_profile_id",
+                "voice_id",
                 "language"
               ],
               "type": "string"
@@ -11617,7 +11609,7 @@
       "PublicAgentVoicePatch": {
         "additionalProperties": false,
         "properties": {
-          "voice_profile_id": {
+          "voice_id": {
             "anyOf": [
               {
                 "maxLength": 256,
@@ -11628,7 +11620,7 @@
               }
             ],
             "default": null,
-            "title": "Voice Profile Id"
+            "title": "Voice Id"
           },
           "speaking_language": {
             "anyOf": [
@@ -11822,7 +11814,7 @@
                   "enum": [
                     "first_message",
                     "system_prompt",
-                    "voice_profile_id",
+                    "voice_id",
                     "language"
                   ],
                   "type": "string"
@@ -12124,9 +12116,9 @@
       },
       "AgentVoiceConfig": {
         "properties": {
-          "voice_profile_id": {
+          "voice_id": {
             "default": "4501d82f5de3467ebf4d7ef095a2deee",
-            "title": "Voice Profile Id",
+            "title": "Voice Id",
             "type": "string"
           },
           "speaking_language": {

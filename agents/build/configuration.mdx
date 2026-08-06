@@ -32,7 +32,7 @@ Choose how the agent opens each conversation:
 
 ## Voice
 
-The Voice panel selects the voice profile your agent speaks with (`voice_profile_id`) and its speaking language (`speaking_language`: `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`). See [Voice & language](/agents/build/voice-language) for picking a voice and how automatic language detection interacts with this setting.
+The Voice panel selects the voice your agent speaks with (`voice_id`) and its speaking language (`speaking_language`: `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`). See [Voice & language](/agents/build/voice-language) for picking a voice and how automatic language detection interacts with this setting.
 
 ## Conversation settings
 
@@ -94,7 +94,7 @@ curl --request GET "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
     "first_message": "Hi, thanks for calling Acme. How can I help?"
   },
   "voice": {
-    "voice_profile_id": "802e3bc2b27e49c2995d23ef70e6ac89",
+    "voice_id": "802e3bc2b27e49c2995d23ef70e6ac89",
     "speaking_language": "en"
   },
   "conversation": {

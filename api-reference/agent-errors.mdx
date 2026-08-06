@@ -46,7 +46,7 @@ The exceptions to that shape:
 
 ## 400 vs 422
 
-`422` is field-level validation: unknown fields (the public surface rejects them), length caps, enum values, invalid IANA timezones, dynamic-variable naming. `400` is semantic: an override not on the agent's allow-list, mutually exclusive pagination parameters (`page` + `cursor`), an undecodable cursor, a page offset past 100,000 rows, or a knowledge upload that isn't UTF-8 plain text.
+`422` is field-level validation: unknown fields (the public surface rejects them), length caps, enum values, invalid IANA timezones, dynamic-variable naming. `400` is semantic: an [override](/agents/deploy/authenticated-sessions#overrides) not enabled for the agent, mutually exclusive pagination parameters (`page` + `cursor`), an undecodable cursor, a page offset past 100,000 rows, or a knowledge upload that isn't UTF-8 plain text.
 
 Two quirks worth coding around:
 
