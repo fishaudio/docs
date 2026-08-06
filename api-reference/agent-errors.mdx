@@ -55,14 +55,14 @@ Two quirks worth coding around:
 
 ## 403: what was refused
 
-| Message                                          | Cause                                                                                                       |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `Agent is not public`                            | Anonymous session/widget request against an agent whose public switch is off.                               |
-| `Origin header is required for public agents`    | Anonymous request without an `Origin` header — browsers send it automatically, curl must set it.            |
-| `Origin not allowed`                             | The page's origin is not on the agent's [allowed origins](/agents/deploy/public-agents#origin-matching).    |
-| `Agent is unavailable`                           | The agent's owner can't serve public sessions right now; visitors deliberately can't tell why.              |
-| `Agent platform is not enabled for this account` | Creating agent resources requires Agents access on your account — contact support if you expect to have it. |
-| `Phone number limit reached for this team (N)`   | The team holds its maximum of live numbers; release one first.                                              |
+| Message                                                                                | Cause                                                                                                                 |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `Agent is not public`                                                                  | Anonymous session/widget request against an agent whose public switch is off.                                         |
+| `Origin header is required for public agents`                                          | Anonymous request without an `Origin` header — browsers send it automatically, curl must set it.                      |
+| `Origin not allowed`                                                                   | The page's origin is not on the agent's [allowed origins](/agents/deploy/public-agents#origin-matching).              |
+| `Agent is unavailable`                                                                 | The agent's owner can't serve public sessions right now; visitors deliberately can't tell why.                        |
+| `Agent platform is in private beta. Apply for access at https://fish.audio/app/agents` | Creating agent resources requires beta access on your account — sign in and submit the application form at that link. |
+| `Phone number limit reached for this team (N)`                                         | The team holds its maximum of live numbers; release one first.                                                        |
 
 ## 404: anti-enumeration
 
