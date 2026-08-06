@@ -1,0 +1,101 @@
+---
+title: "Agents API Errors"
+description: "Status codes, error shapes, and recovery guidance for every /v1/agent endpoint"
+icon: "triangle-exclamation"
+---
+
+Errors from `/v1/agent/*` come back as JSON with a `status` and a `message`:
+
+```json
+{ "status": 404, "message": "Agent not found" }
+```
+
+The exceptions to that shape:
+
+- **Validation failures** (`422`) return pydantic's error list, one entry per problem. Offending input values are stripped, so write-only credentials are never echoed back:
+
+  ```json
+  [
+    {
+      "type": "string_too_long",
+      "loc": ["body", "prompt", "system_prompt"],
+      "msg": "String should have at most 4000 characters",
+      "ctx": { "max_length": 4000 }
+    }
+  ]
+  ```
+
+- A request body that isn't valid JSON returns `400` with `"Malformed JSON"`; a missing body or wrong `Content-Type` returns a bare `415`.
+- A missing or malformed `Authorization` header returns a bare `401` with a `WWW-Authenticate: Bearer` header; a present-but-bad credential returns the JSON shape (`"Invalid token"`, `"Token expired"`).
+
+## Status codes
+
+| Status | Meaning                                                                  | What to do                                                                                                       |
+| ------ | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `400`  | The request is well-formed JSON but semantically wrong                   | Read the `message` — it names the field or rule.                                                                 |
+| `401`  | Missing, invalid, or expired API key                                     | Send `Authorization: Bearer <key>`; check it on [API Keys](https://fish.audio/app/api-keys).                     |
+| `402`  | Out of API credit                                                        | Top up. Only session creation and phone-number purchase charge up front — a `402` never leaves a partial charge. |
+| `403`  | The action is not allowed for this caller                                | See [403 causes](#403-what-was-refused) below.                                                                   |
+| `404`  | The resource doesn't exist — or isn't yours                              | Cross-team access returns the same `404` as a missing id, so treat both identically.                             |
+| `409`  | A state conflict blocks the action                                       | See [409 conflicts](#409-conflicts) below.                                                                       |
+| `415`  | Missing body or wrong `Content-Type`                                     | JSON endpoints need `application/json`; knowledge-source uploads need `multipart/form-data`.                     |
+| `422`  | Field-level validation failed                                            | Fix the fields listed in the error array.                                                                        |
+| `429`  | Public session creation is rate limited                                  | Back off and retry; per-agent and per-IP windows apply to [public agents](/agents/deploy/public-agents) only.    |
+| `502`  | An upstream dependency (conversation gateway, telephony provider) failed | Retry; for a failed phone-number purchase the row stays visible with status `error` and is safe to release.      |
+| `503`  | A platform dependency is temporarily unavailable                         | Retry with backoff.                                                                                              |
+
+## 400 vs 422
+
+`422` is field-level validation: unknown fields (the public surface rejects them), length caps, enum values, invalid IANA timezones, dynamic-variable naming. `400` is semantic: an override not on the agent's allow-list, mutually exclusive pagination parameters (`page` + `cursor`), an undecodable cursor, a page offset past 100,000 rows, or a knowledge upload that isn't UTF-8 plain text.
+
+Two quirks worth coding around:
+
+- **Explicit `null` is rejected** on `PATCH` endpoints with `422` — omit a field to keep its value, send `""` to clear a text field.
+- **Path-parameter validation renders `404`, not `422`** — a non-integer `{version_number}` looks like a missing version.
+
+## 403: what was refused
+
+| Message                                          | Cause                                                                                                       |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `Agent is not public`                            | Anonymous session/widget request against an agent whose public switch is off.                               |
+| `Origin header is required for public agents`    | Anonymous request without an `Origin` header — browsers send it automatically, curl must set it.            |
+| `Origin not allowed`                             | The page's origin is not on the agent's [allowed origins](/agents/deploy/public-agents#origin-matching).    |
+| `Agent is unavailable`                           | The agent's owner can't serve public sessions right now; visitors deliberately can't tell why.              |
+| `Agent platform is not enabled for this account` | Creating agent resources requires Agents access on your account — contact support if you expect to have it. |
+| `Phone number limit reached for this team (N)`   | The team holds its maximum of live numbers; release one first.                                              |
+
+## 404: anti-enumeration
+
+A resource that exists but belongs to another team returns the **identical** `404` body as one that never existed — for agents, sessions, tools, knowledge sources, phone numbers, and versions. Released phone numbers and deleted knowledge sources behave the same. Never use `404` vs `403` to probe for existence; there is no distinction to find.
+
+The recording endpoint adds one more meaning: `Recording not found` on a real session means it was [never recorded](/agents/monitor/conversation-history#what-gets-stored).
+
+## 409: conflicts
+
+| Message                                       | Cause and fix                                                                                                                                      |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Agent has no published version`              | Session creation against a never-published agent — [publish](/agents/deploy/versions-publishing) first.                                            |
+| `Knowledge source is attached to N agent(s)…` | Deletion is blocked while any agent references the source in its draft **or published** config — detach everywhere, republish, then delete.        |
+| `Tool is attached to N agent(s)…`             | Deletion is blocked while any agent's **draft** references the tool (published snapshots are frozen copies and don't block) — detach, then delete. |
+| `This number is already on the platform`      | The number is held by a team already — pick another from [search](/api-reference/endpoint/agent/search-available-phone-numbers).                   |
+
+## Billing and rate limits
+
+Exactly two endpoints charge before acting, and both can return `402 Out of API credit`: [`POST /v1/agent/sessions`](/api-reference/endpoint/agent/create-agent-session) (API-key callers) and [`POST /v1/agent/phone-numbers`](/api-reference/endpoint/agent/purchase-phone-number) (the first rental day). Anonymous public sessions never see `402` — an out-of-credit owner surfaces to visitors as `403 Agent is unavailable`. Usage is settled after each call and never fails a request.
+
+`429` applies only to anonymous session creation on [public agents](/agents/deploy/public-agents), in fixed per-minute windows per agent and per client IP. API-key traffic is not rate limited on this surface — your backend is the gate.
+
+## 5xx
+
+`502` names the failing upstream in the message: the conversation gateway (`Agent gateway is unreachable`) or the telephony provider (`Twilio refused the request: …`). Retrying is safe — a failed phone-number purchase leaves the row visible with status `error`, refunds the day charge, and can be released; a failed release keeps the number live so releasing again retries. `503` means a platform dependency was briefly unreachable; retry with backoff.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/agents/deploy/authentication">
+    Both auth modes and the session token flow.
+  </Card>
+  <Card title="Public agents" icon="globe" href="/agents/deploy/public-agents">
+    Origin allowlists and the errors unique to keyless access.
+  </Card>
+</CardGroup>
