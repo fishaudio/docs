@@ -60,7 +60,6 @@ A `409` means the number is already on the platform; a `502` means the provider 
 
 Returns your team's phone numbers across its workspaces, newest first — each carries its `workspace_id`.
 
-<CodeGroup>
 ```bash Request
 curl https://api.fish.audio/v1/agent/phone-numbers \
   --header "Authorization: Bearer $FISH_API_KEY"
@@ -81,8 +80,6 @@ curl https://api.fish.audio/v1/agent/phone-numbers \
   "has_more": false
 }
 ```
-
-</CodeGroup>
 
 | Field             | Description                                                      |
 | ----------------- | ---------------------------------------------------------------- |
@@ -168,7 +165,7 @@ curl --request DELETE https://api.fish.audio/v1/agent/phone-numbers/$PHONE_NUMBE
   >
     What happens when someone dials a bound number.
   </Card>
-  <Card title="Authentication" icon="key" href="/agents/deploy/authentication">
+  <Card title="API introduction" icon="key" href="/api-reference/introduction">
     API keys and workspace scoping for every request.
   </Card>
   <Card

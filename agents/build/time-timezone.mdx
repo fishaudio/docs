@@ -34,7 +34,7 @@ The timezone is resolved once, when the session is created, taking the first tha
 
 In the browser, this means zero configuration: the SDK detects the visitor's real timezone and the agent talks about "today" in the user's local terms, not yours.
 
-With [session token](/agents/deploy/authentication) auth, the SDK's automatic hint doesn't apply — your backend creates the session, so set `timezone` (or forward the browser's value as `client_timezone`) in the creation request:
+With [authenticated sessions](/agents/deploy/authenticated-sessions), the SDK's automatic hint doesn't apply — your backend creates the session, so set `timezone` (or forward the browser's value as `client_timezone`) in the creation request:
 
 ```bash API (curl)
 curl --request POST https://api.fish.audio/v1/agent/sessions \
@@ -82,9 +82,9 @@ const session = await AgentSession.start({
 
 <CardGroup cols={2}>
   <Card
-    title="Authentication"
-    icon="key"
-    href="/agents/deploy/authentication"
+    title="Authenticated sessions"
+    icon="server"
+    href="/agents/deploy/authenticated-sessions"
   >
     All session-creation parameters, including `timezone` and `world_context`.
   </Card>

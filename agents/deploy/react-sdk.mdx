@@ -10,7 +10,11 @@ icon: "react"
   <Card title="Web SDK reference" icon="js" href="/agents/deploy/web-sdk">
     Every event, method, and error code.
   </Card>
-  <Card title="Authentication" icon="key" href="/agents/deploy/authentication">
+  <Card
+    title="Authenticated sessions"
+    icon="server"
+    href="/agents/deploy/authenticated-sessions"
+  >
     Create session tokens on your backend.
   </Card>
   <Card title="Public agents" icon="globe" href="/agents/deploy/public-agents">
@@ -99,7 +103,7 @@ const sessionToken = await res.json();
 await startSession({ sessionToken });
 ```
 
-See [Authentication](/agents/deploy/authentication) for the backend side. `startSession` accepts the same options as `AgentSession.start` in the [Web SDK](/agents/deploy/web-sdk), including [`clientTools`](/agents/build/client-tools). Session settings such as `overrides` and `dynamicVariables` apply when you connect with an `agentId`; with a `sessionToken`, your backend sets them in its session-creation request instead.
+See [Authenticated sessions](/agents/deploy/authenticated-sessions) for the backend side. `startSession` accepts the same options as `AgentSession.start` in the [Web SDK](/agents/deploy/web-sdk), including [`clientTools`](/agents/build/client-tools). Session settings such as `overrides` and `dynamicVariables` apply when you connect with an `agentId`; with a `sessionToken`, your backend sets them in its session-creation request instead.
 
 ## What `useConversation` returns
 
@@ -184,7 +188,11 @@ For a custom visualization, build on `useAudioLevels` or the session's frequency
   <Card title="Client tools" icon="wrench" href="/agents/build/client-tools">
     Let the agent call functions in your app.
   </Card>
-  <Card title="Authentication" icon="key" href="/agents/deploy/authentication">
+  <Card
+    title="Authenticated sessions"
+    icon="server"
+    href="/agents/deploy/authenticated-sessions"
+  >
     Create session tokens server-side for private agents.
   </Card>
   <Card

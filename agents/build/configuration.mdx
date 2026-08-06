@@ -62,7 +62,7 @@ The Voice panel selects the voice profile your agent speaks with (`voice_profile
 
 ### Recording
 
-`conversation.record_audio` (default `true`) — store per-speaker audio for [playback and download](/agents/monitor/conversation-history#what-gets-stored), with a per-session override on the [session request](/agents/deploy/authentication). In the console this lives under your agent's **Settings**. Recording defaults to on — make sure callers are informed and consent where your jurisdiction requires it.
+`conversation.record_audio` (default `true`) — store per-speaker audio for [playback and download](/agents/monitor/conversation-history#what-gets-stored), with a per-session override on the [session request](/agents/deploy/authenticated-sessions). In the console this lives under your agent's **Settings**. Recording defaults to on — make sure callers are informed and consent where your jurisdiction requires it.
 
 ### Timezone
 
@@ -80,7 +80,6 @@ The same draft is readable and writable over REST — useful for provisioning ag
 
 ### Read the draft
 
-<CodeGroup>
 ```bash Request
 curl --request GET "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   --header "Authorization: Bearer $FISH_API_KEY"
@@ -107,7 +106,6 @@ curl --request GET "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   }
 }
 ```
-</CodeGroup>
 
 The response also includes the `tools`, `knowledge_base`, `analysis`, and `webhooks` sections, each covered on its own page. `config_hash` identifies this draft revision — it changes whenever an edit changes the draft's content, and a mismatch with the published version is what marks an agent as having unpublished changes.
 

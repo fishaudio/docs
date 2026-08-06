@@ -10,7 +10,7 @@ This is a server-side API — authenticate with your API key. The client SDKs de
 
 ## What gets stored
 
-The session record — status, timing, caller attribution, name, and `metadata` — and the conversation transcript are always kept for production sessions. Audio recording is a per-agent choice, on by default: set `conversation.record_audio` in the console under your agent's **Settings** or in the `conversation` section of the [config API](/agents/build/configuration#configure-through-the-api), with a per-session override on the [session request](/agents/deploy/authentication). Recording off means there is no audio to download.
+The session record — status, timing, caller attribution, name, and `metadata` — and the conversation transcript are always kept for production sessions. Audio recording is a per-agent choice, on by default: set `conversation.record_audio` in the console under your agent's **Settings** or in the `conversation` section of the [config API](/agents/build/configuration#configure-through-the-api), with a per-session override on the [session request](/agents/deploy/authenticated-sessions). Recording off means there is no audio to download.
 
 The setting doesn't affect the live call: transcript events still stream to connected clients in real time.
 
