@@ -156,6 +156,8 @@ Unknown fields — top-level or inside `overrides` — are rejected with `422`.
 
 On [public agents](/agents/deploy/public-agents), keyless (browser-created) sessions may override only `language` and `voice_id` — the prompt-shaping fields are rejected with `400` regardless of the agent. Create the session from your backend to use them.
 
+The session record stores which overrides took effect.
+
 Everything else on the request is not an override: `dynamic_variables`, `timezone`, `record_audio`, and `tool_events` are separate top-level fields. Session length is not settable per session — `max_duration_seconds` comes from the agent's [conversation configuration](/agents/build/configuration#call-duration).
 
 ## Response
