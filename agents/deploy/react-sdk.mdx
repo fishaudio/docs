@@ -103,7 +103,7 @@ const sessionToken = await res.json();
 await startSession({ sessionToken });
 ```
 
-See [Authenticated sessions](/agents/deploy/authenticated-sessions) for the backend side. `startSession` accepts the same options as `AgentSession.start` in the [Web SDK](/agents/deploy/web-sdk), including [`clientTools`](/agents/build/client-tools). Session settings such as `overrides` and `dynamicVariables` apply when you connect with an `agentId`; with a `sessionToken`, your backend sets them in its session-creation request instead.
+See [Authenticated sessions](/agents/deploy/authenticated-sessions) for the backend side. `startSession` accepts the same options as `AgentSession.start` in the [Web SDK](/agents/deploy/web-sdk), including [`clientTools`](/agents/build/client-tools). Session settings such as [`overrides`](/agents/deploy/authenticated-sessions#overrides) and `dynamicVariables` apply when you connect with an `agentId`; with a `sessionToken`, your backend sets them in its session-creation request instead.
 
 ## What `useConversation` returns
 

@@ -39,7 +39,7 @@ The voice picker on the **Configuration** page has two levels: a curated list fo
 
 ## Use any voice model
 
-The agent's voice is a **voice model id** (`voice_profile_id`) — the same ids used as `reference_id` in [Text to Speech](/features/text-to-speech). Any public voice model from the Voice Library works, including:
+The agent's voice is a **voice model id** (`voice_id`) — the same ids used as `reference_id` in [Text to Speech](/features/text-to-speech). Any public voice model from the Voice Library works, including:
 
 - **Library voices** — ready-made public voices. Find ids in the [Voice Library](/features/manage-voices).
 - **Your cloned voices** — [clone a voice](/features/voice-cloning) once, then use its model id as your agent's voice.
@@ -55,7 +55,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   --header "Content-Type: application/json" \
   --data '{
     "voice": {
-      "voice_profile_id": "802e3bc2b27e49c2995d23ef70e6ac89"
+      "voice_id": "802e3bc2b27e49c2995d23ef70e6ac89"
     }
   }'
 ```
@@ -79,6 +79,8 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 <Note>
   The voice model and the speaking language are independent settings: picking a voice does not change the language, and vice versa. Choose a voice that sounds natural in the language you configure.
 </Note>
+
+Both settings can also be replaced for a single session — send `overrides.voice_id` or `overrides.language` on the session request. See [Overrides](/agents/deploy/authenticated-sessions#overrides).
 
 ## Going further
 

@@ -92,7 +92,7 @@ Public session creation is rate limited on two dimensions at once: per **client 
 
 ## Treat public input as untrusted
 
-On the public path, the entire session request originates in the visitor's browser. The platform enforces its own guardrails — `overrides` are filtered against the agent's allowlist and unauthorized fields are rejected with `400` — but anything that passes through verbatim is attacker-controllable:
+On the public path, the entire session request originates in the visitor's browser. The platform enforces its own guardrails — public sessions accept only the `language` and `voice_id` [overrides](/agents/deploy/authenticated-sessions#overrides), rejecting everything else with `400` — but anything that passes through verbatim is attacker-controllable:
 
 - **`metadata`** is stored and returned exactly as sent, never interpreted by the platform. When you read it back in [conversation history](/agents/monitor/conversation-history) or [webhooks](/agents/monitor/webhooks), treat it as untrusted data — never as proof of who the visitor is.
 - **`dynamic_variables`** are chosen by the page that starts the session. Don't inject anything through them that the visitor shouldn't control. See [Dynamic variables](/agents/build/dynamic-variables).

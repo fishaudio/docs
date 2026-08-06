@@ -54,13 +54,13 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
                 "system_prompt": "You are a friendly support agent for Acme. Keep answers short and conversational."
               },
               "voice": {
-                "voice_profile_id": "802e3bc2b27e49c2995d23ef70e6ac89"
+                "voice_id": "802e3bc2b27e49c2995d23ef70e6ac89"
               }
             }
           }'
         ```
 
-        The response includes the agent's `agent_id` — use it as `$AGENT_ID` below. `voice_profile_id` accepts any voice model id from the [Voice Library](/features/manage-voices).
+        The response includes the agent's `agent_id` — use it as `$AGENT_ID` below. `voice_id` accepts any voice model id from the [Voice Library](/features/manage-voices).
 
         <Note>
         `system_prompt` is limited to 4,000 characters; longer prompts return `422`.

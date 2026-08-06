@@ -1,19 +1,10 @@
 ---
-title: "Dynamic Variables & Overrides"
-description: "Personalize each session with template variables and per-session configuration overrides"
+title: "Dynamic Variables"
+description: "Personalize each session with template variables supplied at creation time"
 icon: "brackets-curly"
 ---
 
-An agent's published configuration is shared by every caller — but each session can be personalized at creation time. Two mechanisms cover this, and both travel in the same `POST /v1/agent/sessions` request:
-
-| Mechanism | What it does | Gated by |
-|---|---|---|
-| `dynamic_variables` | Fills `{{placeholder}}` templates in your configuration text | Nothing per-agent — no allowlist |
-| `overrides` | Replaces whole configuration fields for this session | Per-agent allowlist of overridable fields |
-
-## Dynamic variables
-
-Write `{{variable_name}}` placeholders in your agent's system prompt or first message and supply values when you create the session. Substitution happens once, when the published configuration is assembled for the session.
+An agent's published configuration is shared by every caller — dynamic variables personalize it per session. Write `{{variable_name}}` placeholders in your agent's system prompt or first message and supply values when you create the session. Substitution happens once, when the published configuration is assembled for the session.
 
 ```text System prompt
 You are a support agent for {{company}}. The caller's name is {{customer_name}}
@@ -60,61 +51,18 @@ Session records never store dynamic variable values.
 You don't need a variable for the current date or time — the agent already knows both, in the session's timezone. See [Time & timezone](/agents/build/time-timezone).
 </Tip>
 
-## Overrides
-
-Overrides replace configuration fields wholesale for one session — for example, forcing a different language for a caller. Because they change agent behavior, each agent declares which fields callers may override; everything else is rejected.
-
-<CodeGroup>
-```bash API (curl)
-curl --request POST https://api.fish.audio/v1/agent/sessions \
-  --header "Authorization: Bearer $FISH_API_KEY" \
-  --header "Content-Type: application/json" \
-  --data '{
-    "agent_id": "YOUR_AGENT_ID",
-    "overrides": { "language": "ja" }
-  }'
-```
-
-```javascript JavaScript SDK
-import { AgentSession } from "@fishaudio/agent-client";
-
-const session = await AgentSession.start({
-  agentId: "YOUR_AGENT_ID",
-  overrides: { language: "ja" },
-});
-```
-</CodeGroup>
-
-### The `language` shorthand
-
-Overriding the session language is common enough that the request accepts a top-level `language` field as shorthand for `overrides.language`. Both forms pass through the same allowlist gate — if `language` is not overridable on the agent, both are rejected.
-
-```json
-{ "agent_id": "YOUR_AGENT_ID", "language": "ja" }
-```
-
-### Validation
-
-| Case | Result |
-|---|---|
-| Override field not on the agent's allowlist | `400` |
-| Unknown field inside `overrides` | `422` |
-| Unknown top-level field in the request | `422` |
-
-<Note>
-The session record stores which overrides took effect.
-</Note>
+Variables fill placeholders in the configured text. To replace whole configuration fields for a session — the prompt itself, the opener, voice, language — use [overrides](/agents/deploy/authenticated-sessions#overrides) on the same request; `{{placeholders}}` render inside overridden text too.
 
 ## Who supplies the values
 
-Where variables and overrides come from depends on the session's [access mode](/agents/deploy/overview#who-may-start-sessions):
+Where variable values come from depends on the session's [access mode](/agents/deploy/overview#who-may-start-sessions):
 
-| Mode | Who creates the session | Who supplies variables and overrides |
+| Mode | Who creates the session | Who supplies the values |
 |---|---|---|
 | `agentId` ([public agents](/agents/deploy/public-agents)) | The SDK, directly from the browser | The browser, via `AgentSession.start()` options |
 | `sessionToken` (private agents) | Your backend, with your API key | Your backend, in its `POST /v1/agent/sessions` call |
 
-In `sessionToken` mode the SDK's `overrides`, `dynamicVariables`, and `language` options have no effect — the session already exists by the time the token reaches the browser. Attach personalization server-side instead:
+In `sessionToken` mode the SDK's `dynamicVariables` option has no effect — the session already exists by the time the token reaches the browser. Attach personalization server-side instead:
 
 ```javascript Backend (sessionToken mode)
 // Your backend endpoint, called by your own frontend
@@ -127,28 +75,27 @@ const response = await fetch("https://api.fish.audio/v1/agent/sessions", {
   body: JSON.stringify({
     agent_id: "YOUR_AGENT_ID",
     dynamic_variables: { customer_name: user.name, plan: user.plan },
-    overrides: { language: user.locale },
   }),
 });
 const sessionToken = await response.json(); // pass to AgentSession.start({ sessionToken })
 ```
 
 <Tip>
-In `agentId` mode, values arrive from the end user's browser — treat them as untrusted input. Keep the override allowlist limited to fields you are comfortable letting anyone set, and use `sessionToken` mode when personalization must come from data only your backend knows.
+In `agentId` mode, values arrive from the end user's browser — treat them as untrusted input, and use `sessionToken` mode when personalization must come from data only your backend knows.
 </Tip>
 
 ## Going further
 
 <CardGroup cols={2}>
   <Card title="Agent configuration" icon="sliders" href="/agents/build/configuration">
-    The fields your placeholders and overrides act on.
+    The fields your placeholders act on.
   </Card>
   <Card
-    title="Authenticated sessions"
+    title="Overrides"
     icon="server"
-    href="/agents/deploy/authenticated-sessions"
+    href="/agents/deploy/authenticated-sessions#overrides"
   >
-    Set variables from your backend when creating the session.
+    Replace whole configuration fields for one session.
   </Card>
   <Card title="Versions & publishing" icon="code-branch" href="/agents/deploy/versions-publishing">
     Sessions assemble the published configuration.
