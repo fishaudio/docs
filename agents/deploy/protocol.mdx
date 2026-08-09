@@ -15,7 +15,7 @@ Everything the SDKs do rides a small, versioned wire protocol: two JSON message 
 
 ## The protocol package
 
-Every message shape on this page is published as TypeScript definitions in `@fishaudio/agent-protocol` — zero runtime dependencies. This page documents protocol revision **0.3.0**; the npm package is versioned independently. The package is the source of truth for shapes; this page fixes the semantics.
+Every message shape on this page is published as TypeScript definitions in `@fishaudio/agent-protocol` — zero runtime dependencies. This page documents the protocol as of package version **0.1.0**. The package is the source of truth for shapes; this page fixes the semantics.
 
 ```bash npm
 npm install @fishaudio/agent-protocol
@@ -130,7 +130,7 @@ Publish these on the `client-event` topic. The agent ignores malformed JSON and 
 }
 ```
 
-- `user.message` gets **no server echo** — you already hold the text, so render the bubble locally. Add `"audio": false` (protocol 0.3.0) to have the agent answer that turn in text only: no speech is synthesized and the reply arrives over transcription.
+- `user.message` gets **no server echo** — you already hold the text, so render the bubble locally. Add `"audio": false` to have the agent answer that turn in text only: no speech is synthesized and the reply arrives over transcription.
 - `client_tool.result` may carry `result` (any JSON value) or `"isError": true` to report the tool as failed to the model. Results for unknown or already-settled `callId`s are ignored.
 
 ## Transcription and agent state
@@ -150,12 +150,12 @@ These ride the transport's built-in mechanisms rather than custom messages.
 2. **Evolution is additive-only.** Published fields never change name or meaning and are never removed; new fields are always optional. A semantic change ships as a new `type`.
 3. **No replay.** Data-channel delivery is reliable and ordered within a connection, but after a reconnect or late join, missed messages are gone — never wait for history. Tool terminal messages repeat their identifying fields, and the state attribute is sticky, precisely to soften this.
 
-## Protocol revision history
+## Version history
 
-| Revision        | Changes                                                                                                              |
-| --------------- | -------------------------------------------------------------------------------------------------------------------- |
-| 0.2.0           | Added tool lifecycle events (`tool.started` / `tool.completed` / `tool.failed`) and the `tool_events` session option |
-| 0.3.0 (current) | Added the optional `audio` flag on `user.message` for per-turn text-only replies                                     |
+| Version         | Changes                                                                                                                                            |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.0.1           | Initial public release — the complete message set on this page, including tool lifecycle events and the optional `audio` flag on `user.message`    |
+| 0.1.0 (current) | Revised the session-creation `SessionOverrides` shape; realtime messages unchanged                                                                 |
 
 ## Going further
 
