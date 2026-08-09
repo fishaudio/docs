@@ -8,7 +8,7 @@ Configuration is the Builder's home tab: define how your agent behaves, how it o
 
 ## System prompt
 
-The system prompt sets the personality, goals, and guardrails that steer every reply. It is capped at **4,000 characters** — the Builder stops input at the limit, and the API rejects longer prompts with `422 Unprocessable Entity`.
+The system prompt sets the personality, goals, and guardrails that steer every reply. It is capped at **4,000 tokens** — the API rejects longer prompts with `422 Unprocessable Entity`. Keeping it under **2,000 tokens** is recommended: shorter prompts cut latency and cost, and hold the model's attention better.
 
 <Tip>
 Keep the prompt focused:
@@ -123,7 +123,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   }'
 ```
 
-The response includes the draft's new `config_hash`. Values outside the documented limits — a system prompt over 4,000 characters, `max_duration_seconds` outside 60–3600 — are rejected with `422 Unprocessable Entity` and the draft is left unchanged.
+The response includes the draft's new `config_hash`. Values outside the documented limits — a system prompt over 4,000 tokens, `max_duration_seconds` outside 60–3600 — are rejected with `422 Unprocessable Entity` and the draft is left unchanged.
 
 ### Config sections
 

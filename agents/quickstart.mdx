@@ -18,7 +18,7 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
         Go to [Agents](https://fish.audio/app/agents) and click **New agent**. Give it a name — you land in the Builder immediately.
       </Step>
       <Step title="Write the system prompt">
-        On the **Configuration** page, write the system prompt that defines who your agent is and how it should behave (up to 4,000 characters). Optionally set a **First message** so the agent opens the conversation.
+        On the **Configuration** page, write the system prompt that defines who your agent is and how it should behave (up to 4,000 tokens). Optionally set a **First message** so the agent opens the conversation.
 
         Edits save automatically as a draft — there is no Save button.
       </Step>
@@ -63,7 +63,7 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
         The response includes the agent's `agent_id` — use it as `$AGENT_ID` below. `voice_id` accepts any voice model id from the [Voice Library](/features/manage-voices).
 
         <Note>
-        `system_prompt` is limited to 4,000 characters; longer prompts return `422`.
+        `system_prompt` is limited to 4,000 tokens; longer prompts return `422`. Keeping it under 2,000 tokens is recommended for latency and cost.
         </Note>
       </Step>
       <Step title="Publish it">
