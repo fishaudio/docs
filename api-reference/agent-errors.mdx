@@ -17,10 +17,10 @@ The exceptions to that shape:
   ```json
   [
     {
-      "type": "string_too_long",
+      "type": "value_error",
       "loc": ["body", "prompt", "system_prompt"],
-      "msg": "String should have at most 4000 characters",
-      "ctx": { "max_length": 4000 }
+      "msg": "Value error, system_prompt exceeds 4000 tokens (got 5001)",
+      "ctx": { "error": "system_prompt exceeds 4000 tokens (got 5001)" }
     }
   ]
   ```
