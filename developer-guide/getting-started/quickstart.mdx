@@ -44,13 +44,20 @@ Choose your preferred method to generate speech:
         curl -X POST https://api.fish.audio/v1/tts \
           -H "Authorization: Bearer $FISH_API_KEY" \
           -H "Content-Type: application/json" \
-          -H "model: s2-pro" \
+          -H "model: s2.1-pro" \
           -d '{
             "text": "Hello! Welcome to Fish Audio. This is my first AI-generated voice.",
             "format": "mp3"
           }' \
           --output welcome.mp3
         ```
+
+        <Note>
+          `s2.1-pro` is the current recommended model. To generate at $0 while you
+          evaluate, send `model: s2.1-pro-free` instead — see [Choosing a
+          Model](/developer-guide/models-pricing/choosing-a-model). Both require a
+          funded API balance; see [If your first request fails](#if-your-first-request-fails).
+        </Note>
       </Step>
 
       <Step title="Play your audio">
@@ -80,6 +87,21 @@ Choose your preferred method to generate speech:
         pip install fish-audio-sdk
         ```
 
+        <Warning>
+          The package name and the import name differ: you install
+          `fish-audio-sdk` but you import `fishaudio`.
+
+          Do not run `pip install fishaudio`. That name belongs to an unrelated
+          third-party project on PyPI, and it installs successfully — the failure
+          only shows up on the next line:
+
+          ```
+          ImportError: cannot import name 'FishAudio' from 'fishaudio'
+          ```
+
+          If you hit that error, run `pip uninstall fishaudio` and then
+          `pip install fish-audio-sdk`.
+        </Warning>
       </Step>
 
       <Step title="Generate speech">
@@ -93,11 +115,20 @@ Choose your preferred method to generate speech:
         client = FishAudio()  # reads FISH_API_KEY
 
         # Generate speech
-        audio = client.tts.convert(text="Hello! Welcome to Fish Audio.")
+        audio = client.tts.convert(
+            text="Hello! Welcome to Fish Audio.",
+            model="s2.1-pro",
+        )
         save(audio, "welcome.mp3")
 
-        print("✓ Audio saved to welcome.mp3")
+        print("Audio saved to welcome.mp3")
         ```
+
+        <Note>
+          Pass `model` explicitly. The published SDK still defaults to `s2-pro`,
+          so requests that omit it run on the previous-generation model. Use
+          `model="s2.1-pro-free"` to generate at $0 while you evaluate.
+        </Note>
       </Step>
 
       <Step title="Run the script">
@@ -151,8 +182,16 @@ Choose your preferred method to generate speech:
         const buffer = Buffer.from(await new Response(audio).arrayBuffer());
         await writeFile("welcome.mp3", buffer);
 
-        console.log("✓ Audio saved to welcome.mp3");
+        console.log("Audio saved to welcome.mp3");
         ```
+
+        <Note>
+          The JavaScript SDK is in early release and currently targets `s2-pro`;
+          its `Backends` type does not yet include the S2.1 models. To use
+          `s2.1-pro` or `s2.1-pro-free` today, call the [HTTP
+          API](/api-reference/endpoint/openapi-v1/text-to-speech) with the `model`
+          header, or use the Python SDK.
+        </Note>
       </Step>
 
       <Step title="Run the script">
@@ -187,9 +226,18 @@ Choose your preferred method to generate speech:
 | Status | Likely cause | Fix |
 |---|---|---|
 | `401` | Invalid or missing API key | Check `FISH_API_KEY` and your key on [API Keys](https://fish.audio/app/api-keys). |
-| `402` | Out of credits | Top up on [Billing](https://fish.audio/app/billing). |
+| `402` | No API balance | Top up on [Billing](https://fish.audio/app/billing). Applies to `s2.1-pro-free` too — see below. |
 | `400` | Bad `reference_id` / parameters | Verify the voice id; read the error `message`. |
 | `429` | Rate limit | Wait and retry with backoff. |
+
+<Warning>
+  **`402` on `s2.1-pro-free`:** the free model is billed at $0.00, but the API
+  still requires a positive balance on your API wallet before it will serve any
+  request. A new account starts at zero, and the credits included with the free
+  plan apply to the web app rather than to the API. Add credits on
+  [Billing](https://fish.audio/app/billing) once and `s2.1-pro-free` requests
+  will go through without drawing that balance down.
+</Warning>
 
 See [Errors](/api-reference/errors) for the full table and retry handling.
 
@@ -225,7 +273,7 @@ Then generate speech with your chosen voice:
     curl -X POST https://api.fish.audio/v1/tts \
       -H "Authorization: Bearer $FISH_API_KEY" \
       -H "Content-Type: application/json" \
-      -H "model: s2-pro" \
+      -H "model: s2.1-pro" \
       -d '{
         "text": "This is a custom voice from Fish Audio! You can explore hundreds of different voices on the platform, or even create your own.",
         "reference_id": "'"$REFERENCE_ID"'",
@@ -246,7 +294,8 @@ Then generate speech with your chosen voice:
     # Generate speech with custom voice
     audio = client.tts.convert(
         text="This is a custom voice from Fish Audio! You can explore hundreds of different voices on the platform, or even create your own.",
-        reference_id=os.environ.get("REFERENCE_ID")
+        reference_id=os.environ.get("REFERENCE_ID"),
+        model="s2.1-pro",
     )
     save(audio, "custom_voice.mp3")
     ```
@@ -267,7 +316,7 @@ Then generate speech with your chosen voice:
     const buffer = Buffer.from(await new Response(audio).arrayBuffer());
     await writeFile("custom_voice.mp3", buffer);
 
-    console.log("✓ Audio saved to custom_voice.mp3");
+    console.log("Audio saved to custom_voice.mp3");
     ```
   </Tab>
 </Tabs>

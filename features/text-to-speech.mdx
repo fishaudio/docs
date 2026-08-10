@@ -65,7 +65,7 @@ import { writeFile } from "fs/promises";
 
 const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 
-// `s2-pro` is passed explicitly (the SDK default is `s1`).
+// `s2-pro` is passed explicitly; it is also the SDK default.
 const stream = await client.textToSpeech.convert(
   { text: "Hello from Fish Audio!" },
   "s2-pro",
@@ -112,7 +112,14 @@ curl --request POST https://api.fish.audio/v1/tts \
 - **`s2-pro`** — previous-generation S2 model with multi-speaker and natural-language expression control.
 - **`s1`** — previous generation, `(parenthesis)` emotion tags.
 
-In the API, select with the `model` request header; requests without it use `s2.1-pro`. The Python SDK always sends a model and defaults to `model="s2-pro"`. See [Choosing a Model](/developer-guide/models-pricing/choosing-a-model).
+In the API, select with the `model` request header; requests without it use `s2.1-pro`.
+
+The SDKs behave differently from the raw API here, so set the model explicitly:
+
+- **Python** always sends a model header and defaults to `model="s2-pro"`. Pass `model="s2.1-pro"` (or `"s2.1-pro-free"`) to get the current generation. Any model string is accepted at runtime; the released type hints still list only the S1/S2 names, so a type checker may flag the S2.1 values.
+- **JavaScript** defaults to `s2-pro`, and its `Backends` type does not yet include the S2.1 models.
+
+See [Choosing a Model](/developer-guide/models-pricing/choosing-a-model).
 
 ### Output formats
 

@@ -9,6 +9,9 @@ pip install "fish-audio-sdk[utils]" # adds local audio playback helpers (play)
 
 - Requires Python 3.9+.
 - Import name is **`fishaudio`** even though the PyPI/dist name is `fish-audio-sdk`.
+- Never `pip install fishaudio` — that PyPI name is an unrelated third-party
+  project. It installs cleanly, then fails with `ImportError: cannot import name
+  'FishAudio' from 'fishaudio'`.
 
 ## JavaScript / TypeScript (`fish-audio`)
 

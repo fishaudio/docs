@@ -30,6 +30,20 @@ npm install fish-audio
 ```
 </CodeGroup>
 
+<Warning>
+  In Python you install `fish-audio-sdk` but import `fishaudio`. `pip install
+  fishaudio` pulls an unrelated third-party project from PyPI that installs
+  cleanly and then fails with `ImportError: cannot import name 'FishAudio' from
+  'fishaudio'`.
+</Warning>
+
+<Note>
+  Existing integrations may still import `fish_audio_sdk`. That legacy namespace
+  ships in the same distribution and continues to work, but new code should use
+  `fishaudio` — see the [migration
+  guide](/archive/python-sdk-legacy/migration-guide).
+</Note>
+
 ## 2. Authenticate
 
 <Prerequisites />
@@ -49,7 +63,7 @@ from fishaudio.utils import save
 
 client = FishAudio()  # reads FISH_API_KEY
 
-audio = client.tts.convert(text="Hello from Fish Audio!")
+audio = client.tts.convert(text="Hello from Fish Audio!", model="s2.1-pro")
 save(audio, "output.mp3")
 ```
 
@@ -63,6 +77,13 @@ await play(audio);
 </CodeGroup>
 
 Run it, and you'll have `output.mp3` (Python) or local playback (JavaScript). That's it — you're generating speech.
+
+<Note>
+  Always pass `model` explicitly in Python. The published SDK defaults to
+  `s2-pro`, so calls that omit it run on the previous-generation model. The
+  JavaScript SDK targets `s2-pro` and cannot yet select the S2.1 models. See
+  [Choosing a Model](/developer-guide/models-pricing/choosing-a-model).
+</Note>
 
 <Tip>
   Want async in Python? Every method mirrors onto `AsyncFishAudio`: `async with
