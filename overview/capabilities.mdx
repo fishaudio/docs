@@ -5,11 +5,7 @@ description: "Everything Fish Audio can do — and how to build with it"
 icon: "house"
 ---
 
-import CompatCallout from '/snippets/compat-callout.mdx';
-
 Fish Audio is a voice AI platform. Every core feature is available three ways: in the [web app](/overview/platform) (no code), through the [REST API](/api-reference/introduction), and via the official [SDK](/developer-guide/sdk-guide/quickstart).
-
-<CompatCallout />
 
 ## Core features
 
@@ -85,19 +81,5 @@ See [Models Overview](/developer-guide/models-pricing/models-overview) and [Choo
 
   <Card title="Use your AI coding agent" icon="robot" href="/developer-guide/resources/coding-agents">
     Install the Fish Audio skill so your agent writes correct code.
-  </Card>
-</CardGroup>
-
-## Already built on another platform?
-
-If your application talks to OpenAI, OpenRouter, ElevenLabs, or Groq today, the **Compatible APIs** serve those protocols directly — point your existing SDK at `/compat/v1` (OpenAI), `/compat/api/v1` (OpenRouter), `/compat/elevenlabs` (ElevenLabs), or `/compat` (Groq), and swap in your Fish Audio key. Model names carry over as aliases; synthesis takes Fish voice IDs in place of vendor preset names. [Migrate to Fish Audio](/developer-guide/getting-started/migration) has the details.
-
-<CardGroup cols={2}>
-  <Card title="Migrate to Fish Audio" icon="signs-post" href="/developer-guide/getting-started/migration">
-    Point your SDK at a new base URL, pick a Fish voice ID, and keep the rest of your code.
-  </Card>
-
-  <Card title="Compatibility" icon="list-check" href="/developer-guide/compat/capabilities">
-    The compatibility contract: mappings, limits, and refusals.
   </Card>
 </CardGroup>

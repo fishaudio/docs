@@ -6,18 +6,6 @@ icon: "bolt"
 
 Start playing audio before the whole clip is ready. Fish Audio streams speech in chunks, so your users hear the first words in a fraction of a second — essential for voice agents and live narration. Two modes: **HTTP streaming** for text you already have, and **WebSocket** for text that arrives incrementally (like LLM tokens).
 
-<Info>
-  **Streaming from another vendor's SDK?** Fish Audio serves the OpenAI
-  Realtime WebSocket at `https://api.fish.audio/compat/v1/realtime` and the
-  ElevenLabs `stream-input` WebSocket at
-  `https://api.fish.audio/compat/elevenlabs/v1/text-to-speech/{voice_id}/stream-input`
-  — swap in your Fish Audio key and
-  a Fish voice ID. The OpenRouter and Groq SDKs have no realtime API of their
-  own; reach the same socket with the OpenAI SDK. See
-  [Migrate to Fish Audio](/developer-guide/getting-started/migration) and the
-  [Realtime protocol reference](/developer-guide/compat/realtime-protocol).
-</Info>
-
 <CardGroup cols={3}>
   <Card title="API reference" icon="brackets-curly" href="/api-reference/endpoint/websocket/tts-live">
     The live TTS WebSocket protocol.
