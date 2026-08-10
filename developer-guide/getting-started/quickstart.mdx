@@ -53,10 +53,9 @@ Choose your preferred method to generate speech:
         ```
 
         <Note>
-          `s2.1-pro` is the current recommended model. To generate at $0 while you
-          evaluate, send `model: s2.1-pro-free` instead — see [Choosing a
-          Model](/developer-guide/models-pricing/choosing-a-model). Both require a
-          funded API balance; see [If your first request fails](#if-your-first-request-fails).
+          `s2.1-pro` is the current recommended model and is billed per byte. To
+          generate at $0 while you evaluate, send `model: s2.1-pro-free` instead —
+          see [Choosing a Model](/developer-guide/models-pricing/choosing-a-model).
         </Note>
       </Step>
 
@@ -226,18 +225,15 @@ Choose your preferred method to generate speech:
 | Status | Likely cause | Fix |
 |---|---|---|
 | `401` | Invalid or missing API key | Check `FISH_API_KEY` and your key on [API Keys](https://fish.audio/app/api-keys). |
-| `402` | No API balance | Top up on [Billing](https://fish.audio/app/billing). Applies to `s2.1-pro-free` too — see below. |
+| `402` | Out of credits | Top up on [Billing](https://fish.audio/app/billing), or switch to `s2.1-pro-free`. |
 | `400` | Bad `reference_id` / parameters | Verify the voice id; read the error `message`. |
 | `429` | Rate limit | Wait and retry with backoff. |
 
-<Warning>
-  **`402` on `s2.1-pro-free`:** the free model is billed at $0.00, but the API
-  still requires a positive balance on your API wallet before it will serve any
-  request. A new account starts at zero, and the credits included with the free
-  plan apply to the web app rather than to the API. Add credits on
-  [Billing](https://fish.audio/app/billing) once and `s2.1-pro-free` requests
-  will go through without drawing that balance down.
-</Warning>
+<Tip>
+  A `402` on your very first request usually means you sent a paid model
+  (`s2.1-pro`, `s2-pro`, or `s1`) from an account with no API balance. Send
+  `model: s2.1-pro-free` to generate at $0 while you evaluate.
+</Tip>
 
 See [Errors](/api-reference/errors) for the full table and retry handling.
 
