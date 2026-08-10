@@ -37,7 +37,7 @@ All keyword-only:
 | `latency`         | `"normal" \| "balanced"`            | `"balanced"`  | `normal` = higher quality, `balanced` = faster. (No `"low"`.)    |
 | `speed`           | `float`                             | —             | Shortcut for prosody speed (0.5–2.0).                            |
 | `config`          | `TTSConfig`                         | `TTSConfig()` | Reusable bundle of the settings below.                           |
-| `model`           | `"s2-pro" \| "s1"`                  | `"s2-pro"`    | Synthesis model. `speech-1.5` / `speech-1.6` are deprecated.     |
+| `model`           | `"s2-pro" \| "s1"`                  | `"s2-pro"`    | Synthesis model per current SDK typing. The API also accepts `"s2.1-pro"` / `"s2.1-pro-free"` — forwarded fine at runtime, but add `# type: ignore` for static checkers. `speech-1.5` / `speech-1.6` are deprecated. |
 | `request_options` | `RequestOptions \| None`            | `None`        | Per-request timeout / headers — see [errors.md](errors.md).      |
 
 Direct params (`reference_id`, `format`, `latency`, `speed`) override the matching field on `config` when set.

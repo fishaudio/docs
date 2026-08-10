@@ -56,21 +56,21 @@ channels:
       ws:
         headers:
           type: object
-          required:
-            - model
           properties:
             model:
               type: string
               enum:
                 - s1
                 - s2-pro
-              description: TTS model to use for this session. Use `s2-pro` for multi-speaker dialogue synthesis.
+                - s2.1-pro
+                - s2.1-pro-free
+              description: TTS model to use for this session. If omitted or set to an unrecognized value, the session falls back to `s2.1-pro`. Use `s2-pro` or an S2.1-Pro model for multi-speaker dialogue synthesis.
     description: |
       Real-time TTS streaming channel. Clients send text chunks and receive audio chunks concurrently.
 
       ## Connection Headers
       - `Authorization: Bearer <api_key>` - Required for authentication (see security section)
-      - `model: <model_name>` - Required to specify which TTS model to use (see bindings)
+      - `model: <model_name>` - Optional; specifies which TTS model to use (see bindings). Falls back to `s2.1-pro` when omitted or unrecognized
 
 operations:
   receiveText:
@@ -334,7 +334,7 @@ components:
         Request payload for text-to-speech synthesis in WebSocket StartEvent.
         It uses the same parameters as the HTTP [Text to Speech API](/api-reference/endpoint/openapi-v1/text-to-speech).
         Supports single-speaker synthesis on all compatible TTS models.
-        Multi-speaker dialogue synthesis is only available with `s2-pro`.
+        Multi-speaker dialogue synthesis is available with `s2-pro` and the S2.1-Pro family.
         In WebSocket mode, `text` is usually empty in StartEvent and the actual
         content is sent through subsequent TextEvent messages.
       required:
@@ -401,7 +401,7 @@ components:
           description: |
             Inline voice references for zero-shot cloning. Single-speaker uses
             an array of ReferenceAudio. Multi-speaker uses an array of speaker
-            arrays. Multi-speaker dialogue is only available with `s2-pro`.
+            arrays. Multi-speaker dialogue is available with `s2-pro` and the S2.1-Pro family.
             See the HTTP Text to Speech API page for detailed examples.
 
         reference_id:
@@ -417,7 +417,7 @@ components:
           description: |
             Voice model ID from Fish Audio or your custom models. Use a string
             for single-speaker synthesis, or an array of model IDs for
-            multi-speaker dialogue on `s2-pro`. When using multiple speakers,
+            multi-speaker dialogue on `s2-pro` or an S2.1-Pro model. When using multiple speakers,
             add speaker tags in `text`. See the HTTP Text to Speech API page
             for full examples.
 
@@ -549,7 +549,7 @@ components:
           default: true
           description: |
             Normalize output loudness for more consistent perceived volume.
-            S2-Pro only.
+            Supported on `s2-pro` and the S2.1-Pro family.
 
   securitySchemes:
     bearerAuth:

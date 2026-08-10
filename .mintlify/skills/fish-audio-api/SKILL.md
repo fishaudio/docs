@@ -44,7 +44,10 @@ Required headers:
 
 - `Authorization: Bearer <FISH_API_KEY>`
 - `Content-Type: application/json` **or** `application/msgpack`
-- `model: s2-pro` (required). Values: `s1`, `s2-pro`. Default to `s2-pro` unless the user explicitly asks otherwise.
+
+Optional headers:
+
+- `model` — values: `s1`, `s2-pro`, `s2.1-pro`, `s2.1-pro-free`. If omitted or unrecognized, the server falls back to `s2.1-pro` (paid). Default to `s2.1-pro` for production; use `s2.1-pro-free` for free-tier evaluation and prototyping (same model, no TTFA/DPA guarantees).
 
 Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set by `format`. Write to a file or pipe to a player. There is **no JSON wrapper** on success.
 
@@ -53,13 +56,13 @@ Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set
 | Field | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `text` | string | — (required) | The text to synthesize. Use speaker tags `<\|speaker:0\|>`, `<\|speaker:1\|>` for multi-speaker. |
-| `reference_id` | string \| string[] \| null | null | Voice model ID. Array = multi-speaker (S2-Pro only). |
+| `reference_id` | string \| string[] \| null | null | Voice model ID. Array = multi-speaker (`s2-pro` and the S2.1-Pro family). |
 | `references` | ReferenceAudio[] \| ReferenceAudio[][] \| null | null | Inline zero-shot cloning samples. **Requires `application/msgpack`** because `audio` is raw bytes. 2D array for multi-speaker. |
 | `temperature` | number 0–1 | 0.7 | Expressiveness. |
 | `top_p` | number 0–1 | 0.7 | Nucleus sampling. |
 | `prosody.speed` | number 0.5–2 | 1 | Playback speed. |
 | `prosody.volume` | number (dB) | 0 | Loudness offset. |
-| `prosody.normalize_loudness` | bool | true | **S2-Pro only.** |
+| `prosody.normalize_loudness` | bool | true | **`s2-pro` and the S2.1-Pro family.** |
 | `chunk_length` | int 100–300 | 300 | Text segment size. |
 | `min_chunk_length` | int 0–100 | 50 | Min chars before a new chunk. |
 | `normalize` | bool | true | Normalize numbers/etc. for EN/ZH. |
@@ -79,7 +82,7 @@ Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set
 
 1. **Library / custom voice model** → set `reference_id` to the model `_id`. Simplest path.
 2. **Zero-shot from audio** → set `references` (array of `{audio, text}`) and use **MessagePack** body. JSON cannot carry raw audio bytes.
-3. **Multi-speaker dialogue (S2-Pro only)** → `reference_id: [id0, id1, ...]` and embed `<|speaker:0|>` / `<|speaker:1|>` markers inside `text`. For zero-shot multi-speaker, `references` is an array-of-arrays, one inner array per speaker.
+3. **Multi-speaker dialogue (`s2-pro` and the S2.1-Pro family)** → `reference_id: [id0, id1, ...]` and embed `<|speaker:0|>` / `<|speaker:1|>` markers inside `text`. For zero-shot multi-speaker, `references` is an array-of-arrays, one inner array per speaker.
 
 ### Single-speaker curl
 
@@ -87,7 +90,7 @@ Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set
 curl --request POST https://api.fish.audio/v1/tts \
   --header "Authorization: Bearer $FISH_API_KEY" \
   --header "Content-Type: application/json" \
-  --header "model: s2-pro" \
+  --header "model: s2.1-pro" \
   --data '{
     "text": "Hello! Welcome to Fish Audio.",
     "reference_id": "<voice-model-id>",
@@ -98,13 +101,13 @@ curl --request POST https://api.fish.audio/v1/tts \
   --output out.mp3
 ```
 
-### Multi-speaker curl (S2-Pro)
+### Multi-speaker curl
 
 ```bash
 curl --request POST https://api.fish.audio/v1/tts \
   --header "Authorization: Bearer $FISH_API_KEY" \
   --header "Content-Type: application/json" \
-  --header "model: s2-pro" \
+  --header "model: s2.1-pro" \
   --data '{
     "text": "<|speaker:0|>Good morning!<|speaker:1|>Good morning! How are you?",
     "reference_id": ["<speaker-0-id>", "<speaker-1-id>"],
@@ -128,7 +131,7 @@ payload = {
 headers = {
     "Authorization": f"Bearer {os.environ['FISH_API_KEY']}",
     "Content-Type": "application/json",
-    "model": "s2-pro",
+    "model": "s2.1-pro",
 }
 
 with httpx.stream("POST", "https://api.fish.audio/v1/tts",
@@ -156,7 +159,7 @@ payload = {
 headers = {
     "Authorization": f"Bearer {os.environ['FISH_API_KEY']}",
     "Content-Type": "application/msgpack",
-    "model": "s2-pro",
+    "model": "s2.1-pro",
 }
 
 body = msgpack.packb(payload, use_bin_type=True)
@@ -180,7 +183,7 @@ const res = await fetch("https://api.fish.audio/v1/tts", {
   headers: {
     Authorization: `Bearer ${process.env.FISH_API_KEY}`,
     "Content-Type": "application/json",
-    model: "s2-pro",
+    model: "s2.1-pro",
   },
   body: JSON.stringify({
     text: "Hello from Fish Audio.",
@@ -370,7 +373,7 @@ For low-latency / streaming TTS (e.g. LLM token stream → speech). All frames a
 ### Connection headers
 
 - `Authorization: Bearer <FISH_API_KEY>`
-- `model: s2-pro` (or `s1`) — **required**
+- `model` — optional; same values and fallback behavior as `POST /v1/tts` (falls back to `s2.1-pro` when omitted or unrecognized)
 
 ### Event sequence
 
@@ -409,7 +412,7 @@ start = {
 }
 
 async def run(text_stream):
-    headers = {"Authorization": f"Bearer {API_KEY}", "model": "s2-pro"}
+    headers = {"Authorization": f"Bearer {API_KEY}", "model": "s2.1-pro"}
     async with websockets.connect(URL, additional_headers=headers,
                                   max_size=None) as ws:
         await ws.send(msgpack.packb(start, use_bin_type=True))
@@ -458,7 +461,7 @@ import { createWriteStream } from "node:fs";
 const ws = new WebSocket("wss://api.fish.audio/v1/tts/live", {
   headers: {
     Authorization: `Bearer ${process.env.FISH_API_KEY}`,
-    model: "s2-pro",
+    model: "s2.1-pro",
   },
 });
 
@@ -501,8 +504,7 @@ The S1 model uses `(parenthesis)` tags inside `text`, e.g. `(happy) What a day!`
 - 402 → out of credit. Check `/wallet/self/api-credit`.
 - 404 → bad `model/{id}` (voice model doesn't exist or isn't visible to you).
 - 422 → validation. The response is an array; each item's `loc` points at the offending field. Most common causes:
-  - `model` header missing on `/v1/tts` or WebSocket.
-  - `reference_id` is an array but model is `s1` (multi-speaker requires `s2-pro`).
+  - `reference_id` is an array but model is `s1` (multi-speaker requires `s2-pro` or an S2.1-Pro model).
   - `references` sent with `Content-Type: application/json` (must be msgpack).
   - Numeric param out of range (`temperature`, `top_p`, `chunk_length`, `min_chunk_length`, `prosody.speed`, `early_stop_threshold`).
   - `mp3_bitrate` / `opus_bitrate` set without matching `format`.
@@ -512,7 +514,7 @@ The S1 model uses `(parenthesis)` tags inside `text`, e.g. `(happy) What a day!`
 
 - User just wants audio from text → `POST /v1/tts` with JSON + `reference_id`.
 - User has a raw voice clip and wants instant cloning → `POST /v1/tts` with MessagePack + `references`.
-- User wants dialogue between multiple speakers → `POST /v1/tts` on `s2-pro` with `reference_id` array and `<|speaker:N|>` tags.
+- User wants dialogue between multiple speakers → `POST /v1/tts` on `s2.1-pro` with `reference_id` array and `<|speaker:N|>` tags.
 - User is streaming tokens from an LLM and wants speech to play as it arrives → WebSocket `/v1/tts/live`.
 - User wants a persistent custom voice they can reuse → `POST /model` first, then reuse the returned `_id` as `reference_id`.
 - User wants a transcript → `POST /v1/asr`.
