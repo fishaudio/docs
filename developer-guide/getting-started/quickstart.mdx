@@ -6,6 +6,7 @@ icon: "rocket"
 
 import Support from '/snippets/support.mdx';
 import Prerequisites from '/snippets/prerequisites.mdx';
+import CompatCallout from '/snippets/compat-callout.mdx';
 import { AudioTranscript } from '/snippets/audio-transcript.jsx';
 
 {/* speak-mintlify-hash: 38d7da4971b5246339f9a56ad260706a63218a91edff54b740ef249f36f9e7a2 */}
@@ -17,6 +18,8 @@ import { AudioTranscript } from '/snippets/audio-transcript.jsx';
 ## Overview
 
 This guide will walk you through generating your first text-to-speech audio with Fish Audio. By the end, you'll have converted text into natural-sounding speech using our API.
+
+<CompatCallout />
 
 ## Prerequisites
 
@@ -50,24 +53,6 @@ Choose your preferred method to generate speech:
             "format": "mp3"
           }' \
           --output welcome.mp3
-        ```
-      </Step>
-
-      <Step title="Play your audio">
-        The audio has been saved as `welcome.mp3`. You can play it by:
-
-        - Double-clicking the file or opening it in any media player
-        - Or using the command line:
-
-        ```bash
-        # On macOS
-        afplay welcome.mp3
-
-        # On Linux
-        mpg123 welcome.mp3
-
-        # On Windows
-        start welcome.mp3
         ```
       </Step>
     </Steps>
@@ -105,24 +90,6 @@ Choose your preferred method to generate speech:
         python generate_speech.py
         ```
       </Step>
-
-      <Step title="Play your audio">
-        The audio has been saved as `welcome.mp3`. You can play it by:
-
-        - Double-clicking the file or opening it in any media player
-        - Or using the command line:
-
-        ```bash
-        # On macOS
-        afplay welcome.mp3
-
-        # On Linux
-        mpg123 welcome.mp3
-
-        # On Windows
-        start welcome.mp3
-        ```
-      </Step>
     </Steps>
   </Tab>
 
@@ -158,24 +125,6 @@ Choose your preferred method to generate speech:
       <Step title="Run the script">
         ```bash
         node generate_speech.mjs
-        ```
-      </Step>
-
-      <Step title="Play your audio">
-        The audio has been saved as `welcome.mp3`. You can play it by:
-
-        - Double-clicking the file or opening it in any media player
-        - Or using the command line:
-
-        ```bash
-        # On macOS
-        afplay welcome.mp3
-
-        # On Linux
-        mpg123 welcome.mp3
-
-        # On Windows
-        start welcome.mp3
         ```
       </Step>
     </Steps>
