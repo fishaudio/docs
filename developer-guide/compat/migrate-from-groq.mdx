@@ -1,0 +1,227 @@
+---
+title: "Migrate from Groq"
+sidebarTitle: "From Groq"
+description: "Point the official Groq SDKs at Fish Audio: TTS, transcription, and the model catalog."
+icon: "bolt"
+---
+
+Configure the client once. The Groq SDK speaks the OpenAI protocol and appends
+`/openai/v1` to its base URL itself — give it the bare `/compat` base:
+
+<CodeGroup>
+
+```python Python
+import os
+
+from groq import Groq
+
+client = Groq(
+    base_url="https://api.fish.audio/compat",
+    api_key=os.environ["FISH_AUDIO_API_KEY"],
+)
+```
+
+```javascript Node
+import Groq from "groq-sdk";
+
+const client = new Groq({
+  apiKey: process.env.FISH_AUDIO_API_KEY,
+  baseURL: "https://api.fish.audio/compat",
+});
+```
+
+</CodeGroup>
+
+`/openai/v1` speaks the same protocol the OpenAI SDK uses, so everything
+in [Migrate from OpenAI](/developer-guide/compat/migrate-from-openai) applies
+here too.
+
+Model names your Groq code already sends keep working: `playai-tts` maps to
+`fish-audio/s2.1-pro`, and `whisper-large-v3`, `whisper-large-v3-turbo`, and
+`distil-whisper-large-v3-en` map to `fish-audio/transcribe-1`. Anything
+outside the catalog returns a 400.
+
+| Feature                          | Supported          |
+| -------------------------------- | ------------------ |
+| Text to speech (streamed)        | ✓                  |
+| Speech to text + word timestamps | ✓                  |
+| Model catalog (list)             | ✓                  |
+| Realtime WebSocket               | via the OpenAI SDK |
+| TTS character timestamps         | –                  |
+| Speech translation               | –                  |
+| Voice library listing            | –                  |
+
+## Text to speech
+
+<CodeGroup>
+
+```python Python
+resp = client.audio.speech.create(
+    model="fish-audio/s2.1-pro",
+    input="Hello from Fish Audio!",
+    voice="",  # a voice ID from your Fish voice library; "" = model default
+    response_format="mp3",
+)
+open("hello.mp3", "wb").write(resp.read())
+```
+
+```javascript Node
+import fs from "node:fs";
+
+const resp = await client.audio.speech.create({
+  model: "fish-audio/s2.1-pro",
+  input: "Hello from Fish Audio!",
+  voice: "", // a voice ID from your Fish voice library; "" = model default
+  response_format: "mp3",
+});
+fs.writeFileSync("hello.mp3", Buffer.from(await resp.arrayBuffer()));
+```
+
+```bash curl
+curl https://api.fish.audio/compat/openai/v1/audio/speech \
+  -H "Authorization: Bearer $FISH_AUDIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "fish-audio/s2.1-pro",
+       "input": "Hello from Fish Audio!",
+       "response_format": "mp3"}' \
+  --output hello.mp3
+```
+
+</CodeGroup>
+
+Audio streams as it is synthesized. Set `response_format` explicitly — it
+defaults to `pcm` on this endpoint, not `mp3`. `voice` is a Fish voice ID, not
+a vendor preset — see
+[Voices](/developer-guide/getting-started/migration#voices).
+
+The accepted formats are `mp3`, `pcm`, `pcm16`, `wav`, and `opus` — the same
+set as the rest of `/openai/v1`; the `flac`, `mulaw`, and `ogg`
+the SDK types also offer are formats Fish cannot produce and return a 400.
+`sample_rate` (Hz) is accepted as an extension field on the request body
+(untyped — `extra_body` in Python, an extra property in Node; defaults to
+44100); asking for a rate the codec doesn't take is a 400, and the per-codec
+rate table is in
+[Audio formats](/developer-guide/compat/capabilities#audio-formats).
+
+<Accordion title="Groq SDK type quirks: casting pcm, pcm16, opus — and srt, vtt">
+  The SDK's `response_format` types omit `pcm`, `pcm16`, and `opus`, and the
+  same `Literal` narrows the Python SDK, so type checkers flag them there
+  too. Cast at the call site:
+
+  <CodeGroup>
+
+  ```python Python
+  response_format="opus",  # type: ignore[arg-type]
+  ```
+
+  ```typescript TypeScript
+  response_format: "opus" as SpeechCreateParams["response_format"],
+  ```
+
+  </CodeGroup>
+
+  The transcription side types `response_format` as
+  `json | text | verbose_json`, so `srt`/`vtt` need the same cast — and the
+  SDK hands the subtitle document back as a plain string even though the
+  method is typed to return `Transcription`.
+</Accordion>
+
+## Transcription
+
+<CodeGroup>
+
+```python Python
+tr = client.audio.transcriptions.create(
+    model="fish-audio/transcribe-1",
+    file=open("hello.mp3", "rb"),
+)
+print(tr.text)
+```
+
+```javascript Node
+import fs from "node:fs";
+
+const buf = fs.readFileSync("hello.mp3");
+const tr = await client.audio.transcriptions.create({
+  model: "fish-audio/transcribe-1",
+  file: new File([buf], "hello.mp3"),
+});
+console.log(tr.text);
+```
+
+```bash curl
+curl https://api.fish.audio/compat/openai/v1/audio/transcriptions \
+  -H "Authorization: Bearer $FISH_AUDIO_API_KEY" \
+  -F model=fish-audio/transcribe-1 \
+  -F file=@hello.mp3
+```
+
+</CodeGroup>
+
+`verbose_json`, word-level timestamp granularity, and the subtitle formats
+(`srt`, `vtt`) work as they do on the OpenAI protocol — details and placeholder-field
+caveats in [Migrate from OpenAI](/developer-guide/compat/migrate-from-openai#transcription);
+`srt`/`vtt` need the SDK type cast shown above.
+
+Translation has no counterpart: Fish has no translation model, so
+`client.audio.translations` returns a 404. Transcribe in the source language and
+translate the text downstream.
+
+## Model catalog
+
+<CodeGroup>
+
+```python Python
+ids = [m.id for m in client.models.list().data]
+# ["fish-audio/s2.1-pro", "fish-audio/s2.1-pro-free", ...]
+```
+
+```javascript Node
+const models = await client.models.list();
+const ids = models.data.map(m => m.id);
+// ["fish-audio/s2.1-pro", "fish-audio/s2.1-pro-free", ...]
+```
+
+```bash curl
+# No auth required
+curl https://api.fish.audio/compat/openai/v1/models
+```
+
+</CodeGroup>
+
+Entries follow the OpenRouter model schema: `id` and `created` are populated,
+but the Groq SDK's other declared `Model` fields (`object`, `owned_by`,
+`active`, `context_window`) come back `undefined`, and the richer Fish fields
+(`pricing`, `architecture`, `supported_parameters`) are present but untyped.
+
+Listing only: there is no per-model route, so `models.retrieve(...)` returns a
+404.
+
+## Error handling
+
+Errors map to the Groq SDK's typed exceptions (`AuthenticationError`,
+`RateLimitError`, …) with the same envelope as the OpenAI protocol: the HTTP
+status as an integer `error.code` on every error. Failures from the Fish Audio
+API keep their original status with `type: "provider_error"` and add
+`metadata.provider_name: "fish-audio"`; errors from the compatibility layer
+itself carry no `metadata`.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card
+    title="Migrate from OpenAI"
+    icon="message-code"
+    href="/developer-guide/compat/migrate-from-openai"
+  >
+    Everything behind `/openai/v1`: chat-modality audio, Realtime
+    WebSocket, error mapping.
+  </Card>
+  <Card
+    title="Compatibility"
+    icon="list-check"
+    href="/developer-guide/compat/capabilities"
+  >
+    The full contract: mappings, limits, and explicit refusals.
+  </Card>
+</CardGroup>

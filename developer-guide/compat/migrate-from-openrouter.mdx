@@ -1,0 +1,259 @@
+---
+title: "Migrate from OpenRouter"
+sidebarTitle: "From OpenRouter"
+description: "Point the official OpenRouter TypeScript SDK at Fish Audio: TTS, STT, and the model catalog."
+icon: "route"
+---
+
+Configure the client once — `serverURL` takes the `/api/v1` prefix:
+
+```typescript
+import { OpenRouter } from "@openrouter/sdk";
+
+const client = new OpenRouter({
+  apiKey: process.env.FISH_AUDIO_API_KEY,
+  serverURL: "https://api.fish.audio/compat/api/v1",
+});
+```
+
+From Python, OpenRouter's own SDK works the same way — `pip install openrouter`,
+then pass `server_url`:
+
+```python
+import os
+
+from openrouter import OpenRouter
+
+client = OpenRouter(
+    api_key=os.environ["FISH_AUDIO_API_KEY"],
+    server_url="https://api.fish.audio/compat/api/v1",
+)
+
+res = client.tts.create_speech(
+    model="fish-audio/s2.1-pro",
+    input="Hello from Fish Audio!",
+    response_format="mp3",
+)
+open("hello.mp3", "wb").write(res.read())
+```
+
+The OpenAI SDK works against the same base URL too — the Python tabs below
+use it.
+
+| Feature                                            | Supported          |
+| -------------------------------------------------- | ------------------ |
+| Text to speech (streamed)                          | ✓                  |
+| Speech to text + word timestamps                   | ✓                  |
+| Model catalog (full schema)                        | ✓                  |
+| `temperature` / `top_p` / `repetition_penalty`     | ✓ (top level)      |
+| `input_references` (stateless cloning)             | ✓                  |
+| Chat-modality audio & Realtime                     | via the OpenAI SDK |
+| TTS character timestamps                           | –                  |
+| Voice library listing                              | –                  |
+
+## Text to speech
+
+<CodeGroup>
+
+```typescript Node
+import fs from "node:fs";
+
+const stream = await client.tts.createSpeech({
+  speechRequest: {
+    model: "fish-audio/s2.1-pro",
+    input: "Hello from Fish Audio!",
+    responseFormat: "mp3", // defaults to pcm when omitted
+  },
+});
+
+const chunks = [];
+for await (const chunk of stream) chunks.push(chunk);
+fs.writeFileSync("hello.mp3", Buffer.concat(chunks));
+```
+
+```python Python
+import os
+
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://api.fish.audio/compat/api/v1",
+    api_key=os.environ["FISH_AUDIO_API_KEY"],
+)
+
+with client.audio.speech.with_streaming_response.create(
+    model="fish-audio/s2.1-pro",
+    input="Hello from Fish Audio!",
+    voice="",  # a voice ID from your Fish voice library; "" = model default
+    response_format="mp3",
+) as r:
+    r.stream_to_file("hello.mp3")
+```
+
+```bash curl
+curl https://api.fish.audio/compat/api/v1/audio/speech \
+  -H "Authorization: Bearer $FISH_AUDIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "fish-audio/s2.1-pro",
+       "input": "Hello from Fish Audio!",
+       "response_format": "mp3"}' \
+  --output hello.mp3
+```
+
+</CodeGroup>
+
+The response is a `ReadableStream`: audio bytes arrive as they are synthesized.
+The optional `voice` field takes a voice ID from your Fish voice library
+(omitted or empty = model default — see
+[Voices](/developer-guide/getting-started/migration#voices)).
+
+`input_references` — OpenRouter's first-class field for stateless voice
+cloning, reference audio plus its transcript — is supported: no saved voice
+model required. Both SDKs carry the field on their `SpeechRequest` type
+(`inputReferences` in TypeScript, `input_references` in Python).
+
+### `temperature`, `top_p`, `repetition_penalty`
+
+These three sit **at the top level of the speech request body**, next to
+`model` and `input` — no `provider.options` wrapper required — matching what
+the catalog advertises in each model's `supported_parameters`.
+
+```json
+{
+  "model": "fish-audio/s2.1-pro",
+  "input": "Hello from Fish Audio!",
+  "response_format": "mp3",
+  "temperature": 0.4,
+  "top_p": 0.7,
+  "repetition_penalty": 1.1
+}
+```
+
+Neither SDK's speech type declares them, so they still have to go around the
+typed request — as raw JSON via `fetch`, or through the OpenAI SDK's
+`extra_body`.
+
+The same three are also reachable through `provider.options.fish-audio` and the
+`X-Fish-*` headers, and if you set a value two ways the more specific one wins:
+**`X-Fish-*` header beats `provider.options`, and `provider.options` beats the
+top level.** Everything else in the Fish parameter set — `latency`,
+`chunk_length`, `normalize`, `prosody`, references — is available only through
+those two channels, not at the top level. See
+[Fish-native parameters](/developer-guide/compat/capabilities#reaching-fish-native-parameters).
+
+## Transcription
+
+<CodeGroup>
+
+```typescript Node
+const audio = fs.readFileSync("hello.mp3");
+
+const result = await client.stt.createTranscriptionMultipart({
+  requestBody: {
+    model: "fish-audio/transcribe-1",
+    file: { fileName: "hello.mp3", content: audio },
+  },
+});
+console.log(result.text);
+```
+
+```python Python
+import os
+
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://api.fish.audio/compat/api/v1",
+    api_key=os.environ["FISH_AUDIO_API_KEY"],
+)
+
+tr = client.audio.transcriptions.create(
+    model="fish-audio/transcribe-1",
+    file=open("hello.mp3", "rb"),
+)
+print(tr.text)
+```
+
+```bash curl
+curl https://api.fish.audio/compat/api/v1/audio/transcriptions \
+  -H "Authorization: Bearer $FISH_AUDIO_API_KEY" \
+  -F model=fish-audio/transcribe-1 \
+  -F file=@hello.mp3
+```
+
+</CodeGroup>
+
+JSON bodies with base64 `input_audio` also work, matching OpenRouter's schema.
+For word-level timing, ask for `response_format="verbose_json"` together with
+`timestamp_granularities=["word"]`.
+
+## Model catalog
+
+<CodeGroup>
+
+```typescript Node
+const page = await client.models.list({});
+const ids = page.result.data.map(m => m.id);
+// ["fish-audio/s2.1-pro", "fish-audio/s2.1-pro-free", ...]
+```
+
+```python Python
+import os
+
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://api.fish.audio/compat/api/v1",
+    api_key=os.environ["FISH_AUDIO_API_KEY"],
+)
+
+ids = [m.id for m in client.models.list()]
+# ["fish-audio/s2.1-pro", "fish-audio/s2.1-pro-free", ...]
+```
+
+```bash curl
+# No auth required
+curl https://api.fish.audio/compat/api/v1/models
+```
+
+</CodeGroup>
+
+Entries validate against the OpenRouter `Model` schema: **every required field
+is present, and the ones with no Fish counterpart are explicitly `null` rather
+than missing** — SDK model validation passes and `model.context_length` reads
+as `None`/`null` instead of raising.
+
+Four fields are always `null`: `context_length`, `default_parameters`,
+`per_request_limits`, and `supported_voices`. Six optional ones —
+`alias_target`, `benchmarks`, `expiration_date`, `hugging_face_id`,
+`knowledge_cutoff`, and `reasoning` — are simply absent; don't write code that
+expects the key to exist. Filter with `output_modalities=speech` or `text` to
+list one direction only.
+
+## Error handling
+
+Errors use the OpenRouter envelope, with the HTTP status as an integer in
+`error.code`. Failures from the Fish Audio API surface as
+`type: "provider_error"` with their original status and
+`metadata.provider_name: "fish-audio"`; errors from the compatibility layer
+itself carry no `metadata` — just `code`, `message`, and `type`.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card
+    title="Compatibility"
+    icon="list-check"
+    href="/developer-guide/compat/capabilities"
+  >
+    The full contract: mappings, limits, and explicit refusals.
+  </Card>
+  <Card
+    title="Fish-native parameters"
+    icon="sliders"
+    href="/developer-guide/compat/capabilities#reaching-fish-native-parameters"
+  >
+    Reach `latency`, `chunk_length`, `normalize`, and more via
+    `provider.options` or `X-Fish-*` headers.
+  </Card>
+</CardGroup>

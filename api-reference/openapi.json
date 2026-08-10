@@ -2739,7 +2739,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 4000 characters (422 beyond).\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`;\nanything else is 422. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 4000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`;\nanything else is 422. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422.",
         "security": [
           {
             "BearerAuth": []
@@ -10422,7 +10422,7 @@
           "system_prompt": {
             "anyOf": [
               {
-                "maxLength": 8000,
+                "maxLength": 100000,
                 "type": "string"
               },
               {
@@ -10430,6 +10430,7 @@
               }
             ],
             "default": null,
+            "description": "Limited to 4000 tokens (o200k_base), same budget as the configured prompt it replaces.",
             "title": "System Prompt"
           },
           "voice_id": {
@@ -11503,7 +11504,7 @@
           "system_prompt": {
             "anyOf": [
               {
-                "maxLength": 4000,
+                "maxLength": 100000,
                 "type": "string"
               },
               {
@@ -11511,6 +11512,7 @@
               }
             ],
             "default": null,
+            "description": "Limited to 4000 tokens (o200k_base); keeping it under 2000 tokens is recommended for latency and cost.",
             "title": "System Prompt"
           },
           "first_message_mode": {

@@ -1,0 +1,393 @@
+---
+title: "Migrate to Fish Audio"
+sidebarTitle: "Migrate to Fish Audio"
+description: "Run your existing OpenAI, OpenRouter, ElevenLabs, or Groq code on Fish Audio."
+icon: "signs-post"
+tag: "Beta"
+---
+
+| Your SDK   | Base URL                                   |
+| ---------- | ------------------------------------------ |
+| OpenAI     | `https://api.fish.audio/compat/v1`         |
+| OpenRouter | `https://api.fish.audio/compat/api/v1`     |
+| ElevenLabs | `https://api.fish.audio/compat/elevenlabs` |
+| Groq       | `https://api.fish.audio/compat`            |
+
+<Tabs>
+  <Tab title="OpenAI">
+    <Steps>
+      <Step title="Set your API key">
+        Store your [Fish Audio API key](/developer-guide/getting-started/api-key)
+        as an environment variable:
+
+        ```bash
+        export FISH_AUDIO_API_KEY="your_api_key"
+        ```
+      </Step>
+
+      <Step title="Swap the base URL and generate">
+        <CodeGroup>
+
+        ```python Python
+        import os
+        from openai import OpenAI
+
+        client = OpenAI(
+            base_url="https://api.fish.audio/compat/v1",
+            api_key=os.environ["FISH_AUDIO_API_KEY"],
+        )
+
+        with client.audio.speech.with_streaming_response.create(
+            model="fish-audio/s2.1-pro",
+            input="Hello from Fish Audio!",
+            voice="",  # "" = default voice — see Voices below to pick one
+            response_format="mp3",
+        ) as response:
+            response.stream_to_file("hello.mp3")
+        ```
+
+        ```javascript Node
+        import OpenAI from "openai";
+        import fs from "node:fs";
+
+        const client = new OpenAI({
+          baseURL: "https://api.fish.audio/compat/v1",
+          apiKey: process.env.FISH_AUDIO_API_KEY,
+        });
+
+        const response = await client.audio.speech.create({
+          model: "fish-audio/s2.1-pro",
+          input: "Hello from Fish Audio!",
+          voice: "", // "" = default voice — see Voices below to pick one
+          response_format: "mp3",
+        });
+        fs.writeFileSync("hello.mp3", Buffer.from(await response.arrayBuffer()));
+        ```
+
+        ```bash curl
+        curl https://api.fish.audio/compat/v1/audio/speech \
+          -H "Authorization: Bearer $FISH_AUDIO_API_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"model": "fish-audio/s2.1-pro",
+               "input": "Hello from Fish Audio!",
+               "response_format": "mp3"}' \
+          --output hello.mp3
+        ```
+
+        </CodeGroup>
+      </Step>
+    </Steps>
+
+    Full guide: [Migrate from OpenAI](/developer-guide/compat/migrate-from-openai) —
+    transcription, chat audio, the Realtime WebSocket, and what each feature
+    supports.
+
+  </Tab>
+
+  <Tab title="OpenRouter">
+    <Steps>
+      <Step title="Set your API key">
+        Store your [Fish Audio API key](/developer-guide/getting-started/api-key)
+        as an environment variable:
+
+        ```bash
+        export FISH_AUDIO_API_KEY="your_api_key"
+        ```
+      </Step>
+
+      <Step title="Swap the base URL and generate">
+        From Python, use the OpenAI SDK against the same `/api/v1` base — that
+        is how OpenRouter itself is used from Python.
+
+        <CodeGroup>
+
+        ```typescript Node
+        import { OpenRouter } from "@openrouter/sdk";
+        import fs from "node:fs";
+
+        const client = new OpenRouter({
+          apiKey: process.env.FISH_AUDIO_API_KEY,
+          serverURL: "https://api.fish.audio/compat/api/v1",
+        });
+
+        const stream = await client.tts.createSpeech({
+          speechRequest: {
+            model: "fish-audio/s2.1-pro",
+            input: "Hello from Fish Audio!",
+            responseFormat: "mp3",
+          },
+        });
+        const chunks = [];
+        for await (const chunk of stream) chunks.push(chunk);
+        fs.writeFileSync("hello.mp3", Buffer.concat(chunks));
+        ```
+
+        ```python Python
+        import os
+        from openai import OpenAI
+
+        client = OpenAI(
+            base_url="https://api.fish.audio/compat/api/v1",
+            api_key=os.environ["FISH_AUDIO_API_KEY"],
+        )
+
+        with client.audio.speech.with_streaming_response.create(
+            model="fish-audio/s2.1-pro",
+            input="Hello from Fish Audio!",
+            voice="",  # "" = default voice — see Voices below to pick one
+            response_format="mp3",
+        ) as response:
+            response.stream_to_file("hello.mp3")
+        ```
+
+        ```bash curl
+        curl https://api.fish.audio/compat/api/v1/audio/speech \
+          -H "Authorization: Bearer $FISH_AUDIO_API_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"model": "fish-audio/s2.1-pro",
+               "input": "Hello from Fish Audio!",
+               "response_format": "mp3"}' \
+          --output hello.mp3
+        ```
+
+        </CodeGroup>
+      </Step>
+    </Steps>
+
+    Full guide: [Migrate from OpenRouter](/developer-guide/compat/migrate-from-openrouter) —
+    transcription, the model catalog, and what each feature supports.
+
+  </Tab>
+
+  <Tab title="ElevenLabs">
+    <Steps>
+      <Step title="Set your API key">
+        Store your [Fish Audio API key](/developer-guide/getting-started/api-key)
+        as an environment variable:
+
+        ```bash
+        export FISH_AUDIO_API_KEY="your_api_key"
+        ```
+      </Step>
+
+      <Step title="Swap the base URL and generate">
+        The key is sent as the standard `xi-api-key` header:
+
+        <CodeGroup>
+
+        ```python Python
+        import os
+        from elevenlabs import ElevenLabs
+
+        client = ElevenLabs(
+            base_url="https://api.fish.audio/compat/elevenlabs",
+            api_key=os.environ["FISH_AUDIO_API_KEY"],
+        )
+
+        audio = b"".join(client.text_to_speech.convert(
+            voice_id="default",  # "default" = default voice — see Voices below
+            text="Hello from Fish Audio!",
+            model_id="fish-audio/s2.1-pro",
+            output_format="mp3_44100_128",
+        ))
+        open("hello.mp3", "wb").write(audio)
+        ```
+
+        ```javascript Node
+        import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
+        import fs from "node:fs";
+
+        const client = new ElevenLabsClient({
+          baseUrl: "https://api.fish.audio/compat/elevenlabs",
+          apiKey: process.env.FISH_AUDIO_API_KEY,
+        });
+
+        // "default" = default voice — see Voices below to pick one
+        const stream = await client.textToSpeech.convert("default", {
+          text: "Hello from Fish Audio!",
+          modelId: "fish-audio/s2.1-pro",
+          outputFormat: "mp3_44100_128",
+        });
+        const chunks = [];
+        for await (const chunk of stream) chunks.push(chunk);
+        fs.writeFileSync("hello.mp3", Buffer.concat(chunks));
+        ```
+
+        ```bash curl
+        curl "https://api.fish.audio/compat/elevenlabs/v1/text-to-speech/default?output_format=mp3_44100_128" \
+          -H "xi-api-key: $FISH_AUDIO_API_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"text": "Hello from Fish Audio!",
+               "model_id": "fish-audio/s2.1-pro"}' \
+          --output hello.mp3
+        ```
+
+        </CodeGroup>
+      </Step>
+    </Steps>
+
+    Full guide: [Migrate from ElevenLabs](/developer-guide/compat/migrate-from-elevenlabs) —
+    speech-to-text, timestamps, realtime streaming, your voice library, and
+    what each feature supports.
+
+  </Tab>
+
+  <Tab title="Groq">
+    <Steps>
+      <Step title="Set your API key">
+        Store your [Fish Audio API key](/developer-guide/getting-started/api-key)
+        as an environment variable:
+
+        ```bash
+        export FISH_AUDIO_API_KEY="your_api_key"
+        ```
+      </Step>
+
+      <Step title="Swap the base URL and generate">
+        The Groq SDK appends `/openai/v1` itself — give it the bare `/compat`
+        base:
+
+        <CodeGroup>
+
+        ```python Python
+        import os
+        from groq import Groq
+
+        client = Groq(
+            base_url="https://api.fish.audio/compat",
+            api_key=os.environ["FISH_AUDIO_API_KEY"],
+        )
+
+        resp = client.audio.speech.create(
+            model="fish-audio/s2.1-pro",
+            input="Hello from Fish Audio!",
+            voice="",  # "" = default voice — see Voices below to pick one
+            response_format="mp3",
+        )
+        open("hello.mp3", "wb").write(resp.read())
+        ```
+
+        ```javascript Node
+        import Groq from "groq-sdk";
+        import fs from "node:fs";
+
+        const client = new Groq({
+          apiKey: process.env.FISH_AUDIO_API_KEY,
+          baseURL: "https://api.fish.audio/compat",
+        });
+
+        const resp = await client.audio.speech.create({
+          model: "fish-audio/s2.1-pro",
+          input: "Hello from Fish Audio!",
+          voice: "", // "" = default voice — see Voices below to pick one
+          response_format: "mp3",
+        });
+        fs.writeFileSync("hello.mp3", Buffer.from(await resp.arrayBuffer()));
+        ```
+
+        ```bash curl
+        curl https://api.fish.audio/compat/openai/v1/audio/speech \
+          -H "Authorization: Bearer $FISH_AUDIO_API_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"model": "fish-audio/s2.1-pro",
+               "input": "Hello from Fish Audio!",
+               "response_format": "mp3"}' \
+          --output hello.mp3
+        ```
+
+        </CodeGroup>
+      </Step>
+    </Steps>
+
+    Full guide: [Migrate from Groq](/developer-guide/compat/migrate-from-groq) —
+    transcription, the model catalog, and what each feature supports.
+
+  </Tab>
+</Tabs>
+
+## From a framework
+
+Frameworks that speak the OpenAI protocol work the same way — point them at
+`/compat/v1`:
+
+<CodeGroup>
+
+```python LangChain
+import base64
+import os
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(
+    base_url="https://api.fish.audio/compat/v1",
+    api_key=os.environ["FISH_AUDIO_API_KEY"],
+    model="fish-audio/s2.1-pro",
+    model_kwargs={"modalities": ["text", "audio"],
+                  "audio": {"voice": "", "format": "mp3"}},
+)
+
+resp = llm.invoke("Hello from Fish Audio!")
+audio = base64.b64decode(resp.additional_kwargs["audio"]["data"])
+open("hello.mp3", "wb").write(audio)
+```
+
+```javascript Vercel AI SDK
+import { experimental_generateSpeech as generateSpeech } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
+import fs from "node:fs";
+
+const openai = createOpenAI({
+  baseURL: "https://api.fish.audio/compat/v1",
+  apiKey: process.env.FISH_AUDIO_API_KEY,
+});
+
+const { audio } = await generateSpeech({
+  model: openai.speech("fish-audio/s2.1-pro"),
+  text: "Hello from Fish Audio!",
+  voice: "",
+  outputFormat: "mp3",
+});
+fs.writeFileSync("hello.mp3", audio.uint8Array);
+```
+
+</CodeGroup>
+
+Building a voice agent with Pipecat or LiveKit? Fish Audio has
+[native integrations](/developer-guide/integrations/pipecat) for those.
+
+## Models
+
+| Model                      | What it is                                                      |
+| -------------------------- | --------------------------------------------------------------- |
+| `fish-audio/s2.1-pro`      | Production multilingual TTS with voice cloning — recommended    |
+| `fish-audio/s2.1-pro-free` | Free tier of S2.1 Pro, for prototyping (no latency guarantee)   |
+| `fish-audio/s2-pro`        | Expressive TTS for narration and multi-speaker content          |
+| `fish-audio/s1`            | Multilingual TTS with emotion control                           |
+| `fish-audio/transcribe-1`  | Multilingual speech-to-text with word-level timestamps          |
+
+`transcribe-1` needs no language hint. The `language` field in a transcription
+response echoes what you sent — empty when you sent none, never a detection
+result (the [ElevenLabs protocol](/developer-guide/compat/migrate-from-elevenlabs#speech-to-text)
+echoes `language_code` the same way).
+
+## Voices
+
+The examples above use the model's default voice. To pick a specific one, pass
+a **voice ID** — browse the [Voice Library](/overview/platform) and copy the id
+of any voice, or make your own with
+[Voice Cloning](/features/voice-cloning) or
+[Voice Design](/features/voice-design). Vendor preset names (`nova`, `echo`,
+`Rachel`, …) don't exist here — replace them with a voice ID.
+
+```python
+voice="9a9cf47702da476aa4629e2506d4a857"      # OpenAI / OpenRouter / Groq
+voice_id="9a9cf47702da476aa4629e2506d4a857"   # ElevenLabs
+```
+
+## Going further
+
+Wondering whether an option you rely on is supported? See
+[Compatibility](/developer-guide/compat/capabilities).
+
+Starting fresh instead? The [native API](/api-reference/introduction) and
+[official SDK](/developer-guide/sdk-guide/quickstart) expose every Fish Audio
+capability directly.
