@@ -27,8 +27,11 @@ In the Builder, open **Tools** and choose **Add tool → Webhook**. A tool creat
   <Step title="Add headers">
     Attach authentication or any custom headers — they are sent with every webhook request.
   </Step>
+  <Step title="Choose an execution mode">
+    Decide whether the agent waits for the response, fires the request and moves on, or keeps talking while the request runs in the background. See [Execution modes](#execution-modes).
+  </Step>
   <Step title="Set response handling">
-    Choose a timeout (1–120 seconds, default 30) and how errors are surfaced to the agent.
+    Choose a timeout (1–120 seconds, or up to 300 for background tools; default 30) and how errors are surfaced to the agent.
   </Step>
 </Steps>
 
@@ -64,9 +67,37 @@ Header values are sent exactly as you store them. The Builder's Bearer and Basic
 Bearer and Basic authorization values are write-only. The API accepts them on create and update but never echoes them when you read the tool back: credential headers return `value: null`, with `has_secret: true` confirming a secret is stored. To rotate a secret, submit a new value.
 </Warning>
 
+## Execution modes
+
+`execution_mode` decides whether the agent waits for your endpoint (default `blocking`):
+
+| Mode | The agent | Your endpoint's response |
+|---|---|---|
+| `blocking` | Waits for the response before replying | Used in the agent's next reply |
+| `fire_and_forget` | Continues immediately | Discarded — recorded in the tool-call history, never spoken |
+| `background` | Keeps talking while the request runs | Announced at the next natural pause once it arrives |
+
+**Blocking** is right when the answer drives the conversation — an order lookup the caller is waiting on. Keep those endpoints fast: the caller hears silence while your backend works.
+
+**Fire and forget** fits actions that need no spoken confirmation from your backend: recording a consent, logging an outcome to your CRM. The agent tells the model the request was dispatched and moves on. Failures appear only in the conversation's tool-call history — the agent is never told, so `error_handling` has no spoken effect in this mode.
+
+**Background** fits slow work that would otherwise stall the call: aggregating a shipment status across carriers, generating a report, confirming a payment. The agent acknowledges that the request is running and continues the conversation; when the response arrives, it works the result into the conversation at the next natural pause. The model is explicitly told not to guess the result before it arrives. Failures are delivered the same way, shaped by `error_handling`.
+
+```json Mark a tool as background
+{ "execution_mode": "background", "timeout_seconds": 180 }
+```
+
+A few things to know about background calls:
+
+- Up to **10 background calls** can be in flight per conversation. Further calls fail immediately with an error the agent can react to ("let me finish checking the first thing you asked about").
+- When the conversation ends, in-flight background calls are cancelled; the attempt stays visible in the conversation's tool-call history.
+- In text-only runs — [agent tests](/agents/test/agent-tests), for example — every webhook tool executes as `blocking`, so results always appear in the transcript in order.
+
+Client tools have their own lighter-weight equivalent: the [`expects_response` switch](/agents/build/client-tools), which makes a client tool fire-and-forget.
+
 ## Timeouts and error handling
 
-`timeout_seconds` caps how long the platform waits for your endpoint: 1–120 seconds, default 30. Voice conversations happen live — keep endpoints fast, and lower the timeout so a slow backend can't stall the call.
+`timeout_seconds` caps how long the platform waits for your endpoint: 1–120 seconds, default 30. Background tools may go up to 300 seconds — they don't hold up the conversation while they run. Voice conversations happen live — for blocking tools especially, keep endpoints fast and lower the timeout so a slow backend can't stall the call.
 
 `error_handling` controls what the agent learns when a call fails (default `passthrough`):
 
@@ -75,7 +106,7 @@ Bearer and Basic authorization values are write-only. The API accepts them on cr
 | `passthrough` | The error response, so the agent can react to it in conversation ("I couldn't find that order number"). |
 | `hide` | Only that the call failed — no error details reach the agent. |
 
-Use `hide` when error responses might leak internal details you don't want spoken aloud.
+Use `hide` when error responses might leak internal details you don't want spoken aloud. Under `fire_and_forget` the agent never learns about failures at all, whichever option is set.
 
 ## Mock responses
 
@@ -156,7 +187,9 @@ Ticket numbers get spoken aloud: short, pronounceable IDs survive text-to-speech
 | `body_template` | up to 100,000 characters |
 | Mock response `body` | up to 100,000 characters |
 | Mock response `status_code` | 100–599 |
-| `timeout_seconds` | 1–120 seconds, default 30 |
+| `timeout_seconds` | 1–120 seconds (background tools: 1–300), default 30 |
+| `execution_mode` | `blocking` (default), `fire_and_forget`, or `background`; webhook tools only |
+| Background calls in flight | 10 per conversation |
 | Test response capture | first 64 KB (`response_truncated` set beyond that) |
 
 ### URL restrictions
