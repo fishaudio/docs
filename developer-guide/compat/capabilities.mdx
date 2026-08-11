@@ -1,0 +1,283 @@
+---
+title: "Compatibility"
+sidebarTitle: "Compatibility"
+description: "The compatibility contract: supported endpoints, how parameters behave, and exactly what is refused."
+icon: "list-check"
+---
+
+Everything under `https://api.fish.audio/compat` follows the contract on this
+page.
+
+## How parameters are handled
+
+**Unsupported options return an explicit error — never a silent no-op.** Every
+parameter is either **mapped** to the native equivalent (`stability` →
+temperature, `speed` → speech rate, bitrates snap to a tier), **ignored** when
+it doesn't affect synthesis (`similarity_boost`, `style`, `seed`), or
+**refused** with a 4xx in the protocol's own error format when honoring it would
+change the response content or structure —
+[full list](#what-is-explicitly-refused). Unknown JSON fields are ignored,
+matching OpenAI behavior.
+
+## What each protocol supports
+
+Two protocols: OpenAI at `/v1` (equivalently `/api/v1` and `/openai/v1` — the
+OpenAI, OpenRouter, and Groq SDKs all speak it), and ElevenLabs at
+`/elevenlabs`.
+
+| Capability                    | OpenAI / OpenRouter / Groq      | ElevenLabs                       |
+| ----------------------------- | ------------------------------- | -------------------------------- |
+| TTS, streamed as synthesized  | Yes                             | Yes                              |
+| TTS with character timestamps | –                               | Yes (REST and NDJSON stream)     |
+| Realtime TTS over WebSocket   | Yes (Realtime API, GA protocol) | Yes (`stream-input`)             |
+| STT from file                 | Yes (multipart and JSON)        | Yes                              |
+| STT word timing               | Yes (`verbose_json`)            | Yes                              |
+| Realtime STT over WebSocket   | Yes                             | Yes (manual commit)              |
+| Subtitles (`srt` / `vtt`)     | Yes                             | –                                |
+| Chat-modality audio over SSE  | Yes                             | –                                |
+| Voice library listing         | – (not part of the protocol)    | Yes (`/v1/voices`, `/v2/voices`) |
+| Model catalog                 | Yes (list; no retrieve-by-id)   | Yes                              |
+
+Voices are always Fish voice IDs — empty or `default` selects the model's
+default voice, and anything that isn't a real voice ID, preset names (`nova`,
+`echo`, `Rachel`, …) included, is a 400. One exception: lowercase `alloy`
+matches a real Fish voice and synthesizes — an unrelated voice, not OpenAI's
+Alloy (`Alloy` is refused). Where to find voice IDs:
+[Voices](/developer-guide/getting-started/migration#voices).
+
+## Audio formats
+
+| Codec     | Sample rates (kHz)  |
+| --------- | ------------------- |
+| MP3       | 32, 44.1            |
+| WAV / PCM | 8, 16, 24, 32, 44.1 |
+| Opus      | 48                  |
+
+Requesting a sample rate resamples the audio; a rate the codec doesn't take is
+a 400, including all of 22.05 kHz (`mp3_22050_32`, `pcm_22050`, …). On REST,
+OpenAI `pcm16` defaults to 24 kHz and `pcm` to 44.1 kHz; an explicit
+`sample_rate` overrides that.
+
+μ-law and A-law (`ulaw_*`, `alaw_*`, `audio/pcmu`, `audio/pcma`) are refused
+everywhere. How formats are written on the Realtime socket, and when rates
+reset, is in the
+[Realtime protocol reference](/developer-guide/compat/realtime-protocol#audio-formats).
+
+<Warning>
+  **WAV responses carry a placeholder header — trust the byte count, not the
+  header.** The RIFF size field reads `4294967076` and the `data` chunk size
+  `4294967040` however short the clip is, on buffered responses and streams
+  alike. Anything that reads the header gets the duration wrong — Python's
+  `wave` module reports a one-second clip as 13.5 hours; players that decode
+  to end-of-stream are unaffected. For a correct duration use the response
+  length, re-mux (`ffmpeg -i in.wav -c copy out.wav`), or request MP3 or Opus.
+</Warning>
+
+### Bitrate snapping
+
+MP3 is encoded at 64, 128, or 192 kbps. An out-of-tier request snaps **up**
+to the nearest tier (`mp3_32000_32` → 64 kbps at 32 kHz); anything above 192
+kbps is a 400. To pick the tier exactly, set it as a
+[Fish-native parameter](#reaching-fish-native-parameters) — a non-tier value
+there is refused too. Opus bitrate is automatic: requested values are accepted
+and ignored.
+
+## What is explicitly refused
+
+Each returns a 4xx in the protocol's own error format — or, on WebSockets, an
+in-band error event:
+
+| Endpoint                | Refused options                                                                                                                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ElevenLabs STT          | `diarize`, `entity_redaction`, `entity_detection`, `entity_redaction_mode`, `use_multi_channel`, `additional_formats`, `tag_audio_events`, `no_verbatim`, `webhook`, `webhook_id`, `source_url`, `cloud_storage_url`, `enable_logging=false`, `timestamps_granularity=character` |
+| ElevenLabs realtime STT | any `commit_strategy` other than `manual`                                                                                                                                                        |
+| ElevenLabs TTS          | `ulaw_*` / `alaw_*` output formats                                                                                                                                                               |
+| OpenAI TTS              | `response_format` of `aac` or `flac`; `instructions`; any `stream_format` other than `audio`                                                                                                      |
+| OpenAI STT              | `include`, `known_speaker_names`, `known_speaker_references`                                                                                                                                     |
+| OpenAI chat             | `n ≠ 1`; audio input combined with audio output in one call                                                                                                                                      |
+| OpenAI Realtime         | `audio/pcmu`, `audio/pcma`; any `turn_detection` with a type (`server_vad`, `semantic_vad`, anything else — only `null` and `"none"` pass); `output_modalities` that omits `"audio"`; a second concurrent response (`response_already_active`) |
+
+On OpenAI transcription, `languages`, `keywords`, `prompt`, and `temperature`
+are in the [ignored tier](#how-parameters-are-handled).
+
+Booleans count as requested only when true: `false`, `"False"`, `0`, `none`,
+and `off` are treated as unset, so SDK defaults never trigger a refusal.
+
+## Placeholder values
+
+Protocol fields with no Fish counterpart are filled with neutral constants —
+don't build logic on them:
+
+- OpenAI `verbose_json`: the Whisper-engine internals (`avg_logprob`,
+  `no_speech_prob`, `compression_ratio`, `temperature`, `seek`, `tokens`) are
+  neutral constants.
+- ElevenLabs STT `language_probability` is always `1.0`, and `words[].logprob`
+  is always `0`. Neither is a confidence score.
+- `speaker_id` is always `null`; requesting diarization returns an explicit
+  error instead.
+- `language` in responses echoes your request — it is never a detection result.
+  Send none and you get `language: ""` alongside `language_probability: 1.0`.
+
+## Reaching Fish-native parameters
+
+The full native TTS parameter set — `temperature`, `top_p`, `chunk_length`,
+`latency`, `normalize`, `prosody`, reference audio — is reachable on
+**synthesis endpoints**, in two ways. One exception: **reference audio is not
+available on the timestamped ElevenLabs endpoints** (`…/with-timestamps`,
+`…/stream/with-timestamps`, the `stream-input` WebSocket) — a 400 on the REST
+variants, an in-band error frame at flush time on the WebSocket.
+
+### `provider.options` in the request body
+
+On OpenAI-protocol speech and chat-synthesis requests, a
+`provider.options.fish-audio` block sets the corresponding native TTS fields:
+
+<Accordion title="Code examples (Python · Node · curl)">
+
+<CodeGroup>
+
+```python Python
+resp = client.audio.speech.create(
+    model="fish-audio/s2.1-pro",
+    input="Hello from Fish Audio!",
+    voice="",
+    response_format="mp3",
+    extra_body={"provider": {"options": {"fish-audio": {
+        "latency": "normal", "temperature": 0.4,
+    }}}},
+)
+```
+
+```javascript Node
+const resp = await client.audio.speech.create({
+  model: "fish-audio/s2.1-pro",
+  input: "Hello from Fish Audio!",
+  voice: "",
+  response_format: "mp3",
+  provider: { options: { "fish-audio": { latency: "normal", temperature: 0.4 } } },
+});
+```
+
+```bash curl
+curl https://api.fish.audio/compat/v1/audio/speech \
+  -H "Authorization: Bearer $FISH_AUDIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "fish-audio/s2.1-pro",
+       "input": "Hello from Fish Audio!",
+       "response_format": "mp3",
+       "provider": {"options": {"fish-audio": {"latency": "normal", "temperature": 0.4}}}}' \
+  --output hello.mp3
+```
+
+</CodeGroup>
+
+</Accordion>
+
+Inline `references` — base64 audio plus its transcript — enable zero-shot
+voice cloning through any OpenAI SDK.
+
+### `X-Fish-*` request headers
+
+On every synthesis endpoint — OpenAI `POST /v1/audio/speech` and chat
+synthesis, the ElevenLabs endpoints, and OpenAI Realtime synthesis sessions,
+including their WebSocket handshakes — an `X-Fish-<Param>` header sets the
+corresponding native TTS field:
+
+<Accordion title="Code examples (Python · Node · curl)">
+
+<CodeGroup>
+
+```python Python
+resp = client.audio.speech.create(
+    model="fish-audio/s2.1-pro",
+    input="Hello from Fish Audio!",
+    voice="",
+    response_format="mp3",
+    extra_headers={"X-Fish-Latency": "normal", "X-Fish-Mp3-Bitrate": "64"},
+)
+```
+
+```javascript Node
+const resp = await client.audio.speech.create(
+  {
+    model: "fish-audio/s2.1-pro",
+    input: "Hello from Fish Audio!",
+    voice: "",
+    response_format: "mp3",
+  },
+  { headers: { "X-Fish-Latency": "normal", "X-Fish-Mp3-Bitrate": "64" } },
+);
+```
+
+```bash curl
+curl https://api.fish.audio/compat/v1/audio/speech \
+  -H "Authorization: Bearer $FISH_AUDIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-Fish-Latency: normal" \
+  -H "X-Fish-Mp3-Bitrate: 64" \
+  -d '{"model": "fish-audio/s2.1-pro", "input": "Hello!", "response_format": "mp3"}' \
+  --output hello.mp3
+```
+
+</CodeGroup>
+
+</Accordion>
+
+Values parse as JSON when possible, and headers win over mapped values.
+
+Neither channel applies to transcription: every STT endpoint returns a 400
+when sent `provider.options.fish-audio` or `X-Fish-*`. That includes a
+Realtime socket whose handshake carried `X-Fish-*` headers — the
+`input_audio_buffer.commit` there is refused with
+`unsupported_native_options`, so open a second socket without the headers to
+transcribe. On the native `/v1/tts/live` WebSocket, put native fields in
+each `start.request` payload rather than in handshake headers.
+
+<Note>
+  Synthesis on the Compatible APIs defaults to `latency: "low"`
+  (streaming-optimized). For maximum quality on non-interactive workloads, set
+  `X-Fish-Latency: normal` — your explicit value always wins.
+</Note>
+
+## Limits and operational contract
+
+| Limit                                     | Value   | On excess                                       |
+| ----------------------------------------- | ------- | ----------------------------------------------- |
+| TTS / chat request body (OpenAI)          | 32 MiB  | 413                                             |
+| JSON body (ElevenLabs)                    | 140 MiB | 413                                             |
+| Transcription request body                | 140 MiB | 413                                             |
+| Transcription audio (REST)                | 100 MiB | 413                                             |
+| WebSocket frame                           | 32 MiB  | connection closed                               |
+| Realtime: text per conversation item      | 1 MiB   | `conversation_too_large` error event            |
+| Realtime: pending items per session       | 1024    | `conversation_too_large` error event            |
+| Realtime: buffered audio awaiting commit  | 100 MiB | error event, audio not buffered                 |
+| ElevenLabs `stream-input`: buffered text  | 1 MiB   | error frame `code: 1009`, then close            |
+| ElevenLabs realtime STT: buffered audio   | 100 MiB | `input_error`; append dropped, socket stays open |
+| Single connection (SSE / WebSocket)       | 3600 s  | closed — reconnect before expiry                |
+| Time to first response byte               | 5 min   | 502 (streaming bodies are not time-capped)      |
+
+The 32 MiB frame limit bounds one WebSocket message, not a session. On a
+Realtime socket, item-borne audio and `input_audio_buffer` bytes share the
+same 100 MiB budget.
+
+- **Billing** — like native usage, against your key. Billable requests are
+  never retried automatically; retrying is your call.
+- **Rate limits** — the Compatible APIs add none of their own today; a 429
+  means you reached your account's concurrency limit, the same one native
+  calls count against. Every 429 carries a `Retry-After` header.
+- **Truncation is an error** — a stream that fails mid-response returns an
+  error frame or 502, never a truncated 200.
+- Every synthesis or transcription response carries an `X-Generation-Id`
+  header — include it in support requests.
+- During service incidents, requests may return 503; back off exponentially.
+
+## Known client-side limitations
+
+- **OpenAI Realtime**: the endpoint speaks the GA event names
+  (`response.output_audio.*`). Current `openai` packages emit these; very old
+  beta-era clients expecting `response.audio.*` will not match.
+- **ElevenLabs Python `convert_realtime`**: pass `model_id` and
+  `voice_settings` explicitly — left to the SDK's `OMIT` sentinel, `model_id`
+  reaches the handshake URL as the literal `model_id=Ellipsis` (a 400) and
+  `voice_settings` raises `AttributeError` on the first frame. The SDK also
+  force-upgrades `http://` base URLs to `wss://`.
