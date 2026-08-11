@@ -2659,6 +2659,9 @@
                     "analysis": {
                       "$ref": "#/components/schemas/AgentAnalysisConfig"
                     },
+                    "guardrails": {
+                      "$ref": "#/components/schemas/AgentGuardrailsConfig"
+                    },
                     "updated_at": {
                       "format": "date-time",
                       "title": "Updated At",
@@ -2675,6 +2678,7 @@
                     "webhooks",
                     "knowledge_base",
                     "analysis",
+                    "guardrails",
                     "updated_at"
                   ],
                   "type": "object"
@@ -2806,6 +2810,9 @@
                     "analysis": {
                       "$ref": "#/components/schemas/AgentAnalysisConfig"
                     },
+                    "guardrails": {
+                      "$ref": "#/components/schemas/AgentGuardrailsConfig"
+                    },
                     "updated_at": {
                       "format": "date-time",
                       "title": "Updated At",
@@ -2822,6 +2829,7 @@
                     "webhooks",
                     "knowledge_base",
                     "analysis",
+                    "guardrails",
                     "updated_at"
                   ],
                   "type": "object"
@@ -11305,6 +11313,17 @@
               }
             ],
             "default": null
+          },
+          "guardrails": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentGuardrailsPatch"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "title": "PublicAgentConfigPatchPayload",
@@ -11461,6 +11480,37 @@
           "name"
         ],
         "title": "PublicAgentCreatePayload",
+        "type": "object"
+      },
+      "PublicAgentGuardrailsPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "focus": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Focus"
+          },
+          "manipulation": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Manipulation"
+          }
+        },
+        "title": "PublicAgentGuardrailsPatch",
         "type": "object"
       },
       "PublicAgentKnowledgeBasePatch": {
@@ -12015,6 +12065,22 @@
         "title": "AgentConversationConfig",
         "type": "object"
       },
+      "AgentGuardrailsConfig": {
+        "properties": {
+          "focus": {
+            "default": false,
+            "title": "Focus",
+            "type": "boolean"
+          },
+          "manipulation": {
+            "default": false,
+            "title": "Manipulation",
+            "type": "boolean"
+          }
+        },
+        "title": "AgentGuardrailsConfig",
+        "type": "object"
+      },
       "AgentPromptConfig": {
         "properties": {
           "system_prompt": {
@@ -12275,6 +12341,9 @@
           "analysis": {
             "$ref": "#/components/schemas/AgentAnalysisConfig"
           },
+          "guardrails": {
+            "$ref": "#/components/schemas/AgentGuardrailsConfig"
+          },
           "updated_at": {
             "format": "date-time",
             "title": "Updated At",
@@ -12291,6 +12360,7 @@
           "webhooks",
           "knowledge_base",
           "analysis",
+          "guardrails",
           "updated_at"
         ],
         "title": "PublicAgentConfigEntity",
