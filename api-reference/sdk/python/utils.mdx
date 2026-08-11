@@ -1,3 +1,53 @@
+<a id="fishaudio.utils.stream"></a>
+
+# fishaudio.utils.stream
+
+Audio streaming utility.
+
+<a id="fishaudio.utils.stream.stream"></a>
+
+#### stream
+
+```python
+def stream(audio_stream: Iterator[bytes]) -> bytes
+```
+
+Stream audio in real-time while playing it with mpv.
+
+This function plays the audio as it's being generated and
+simultaneously captures it to return the complete audio buffer.
+
+**Arguments**:
+
+- `audio_stream` - Iterator of audio byte chunks
+  
+
+**Returns**:
+
+  Complete audio bytes after streaming finishes
+  
+
+**Raises**:
+
+- `DependencyError` - If mpv is not installed
+  
+
+**Examples**:
+
+    ```python
+    from fishaudio import FishAudio, stream
+
+    client = FishAudio(api_key="...")
+    audio_stream = client.tts.convert(text="Hello world")
+
+    # Stream and play in real-time, get complete audio
+    complete_audio = stream(audio_stream)
+
+    # Save the captured audio
+    with open("output.mp3", "wb") as f:
+        f.write(complete_audio)
+    ```
+
 <a id="fishaudio.utils.play"></a>
 
 # fishaudio.utils.play
@@ -83,55 +133,5 @@ Save audio to a file.
     # Works with iterators too
     audio_stream = client.tts.convert(text="Another example")
     save(audio_stream, "another.mp3")
-    ```
-
-<a id="fishaudio.utils.stream"></a>
-
-# fishaudio.utils.stream
-
-Audio streaming utility.
-
-<a id="fishaudio.utils.stream.stream"></a>
-
-#### stream
-
-```python
-def stream(audio_stream: Iterator[bytes]) -> bytes
-```
-
-Stream audio in real-time while playing it with mpv.
-
-This function plays the audio as it's being generated and
-simultaneously captures it to return the complete audio buffer.
-
-**Arguments**:
-
-- `audio_stream` - Iterator of audio byte chunks
-  
-
-**Returns**:
-
-  Complete audio bytes after streaming finishes
-  
-
-**Raises**:
-
-- `DependencyError` - If mpv is not installed
-  
-
-**Examples**:
-
-    ```python
-    from fishaudio import FishAudio, stream
-
-    client = FishAudio(api_key="...")
-    audio_stream = client.tts.convert(text="Hello world")
-
-    # Stream and play in real-time, get complete audio
-    complete_audio = stream(audio_stream)
-
-    # Save the captured audio
-    with open("output.mp3", "wb") as f:
-        f.write(complete_audio)
     ```
 

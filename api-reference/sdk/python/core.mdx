@@ -1,3 +1,9 @@
+<a id="fishaudio.core.omit"></a>
+
+# fishaudio.core.omit
+
+OMIT sentinel for distinguishing None from not-provided parameters.
+
 <a id="fishaudio.core.client_wrapper"></a>
 
 # fishaudio.core.client\_wrapper
@@ -182,6 +188,54 @@ def get_timeout() -> Optional[httpx.Timeout]
 
 Convert timeout to httpx.Timeout if set.
 
+<a id="fishaudio.core.websocket_options"></a>
+
+# fishaudio.core.websocket\_options
+
+WebSocket-level options for WebSocket connections.
+
+<a id="fishaudio.core.websocket_options.WebSocketOptions"></a>
+
+## WebSocketOptions Objects
+
+```python
+class WebSocketOptions()
+```
+
+Options for configuring WebSocket connections.
+
+These options are passed directly to httpx_ws's connect_ws/aconnect_ws functions.
+For complete documentation, see https://frankie567.github.io/httpx-ws/reference/httpx_ws/
+
+**Attributes**:
+
+- `keepalive_ping_timeout_seconds` - Maximum delay the client will wait for an answer
+  to its Ping event. If the delay is exceeded, WebSocketNetworkError will be
+  raised and the connection closed. Default: 20 seconds.
+- `keepalive_ping_interval_seconds` - Interval at which the client will automatically
+  send a Ping event to keep the connection alive. Set to None to disable this
+  mechanism. Default: 20 seconds.
+- `max_message_size_bytes` - Message size in bytes to receive from the server.
+- `Default` - 65536 bytes (64 KiB).
+- `queue_size` - Size of the queue where received messages will be held until they
+  are consumed. If the queue is full, the client will stop receiving messages
+  from the server until the queue has room available. Default: 512.
+  
+
+**Notes**:
+
+  Parameter descriptions adapted from httpx_ws documentation.
+
+<a id="fishaudio.core.websocket_options.WebSocketOptions.to_httpx_ws_kwargs"></a>
+
+#### to\_httpx\_ws\_kwargs
+
+```python
+def to_httpx_ws_kwargs() -> dict[str, Any]
+```
+
+Convert to kwargs dict for httpx_ws aconnect_ws/connect_ws.
+
 <a id="fishaudio.core.iterators"></a>
 
 # fishaudio.core.iterators
@@ -345,58 +399,4 @@ After calling this method, the iterator cannot be used again.
     with open("output.mp3", "wb") as f:
         f.write(audio)
     ```
-
-<a id="fishaudio.core.websocket_options"></a>
-
-# fishaudio.core.websocket\_options
-
-WebSocket-level options for WebSocket connections.
-
-<a id="fishaudio.core.websocket_options.WebSocketOptions"></a>
-
-## WebSocketOptions Objects
-
-```python
-class WebSocketOptions()
-```
-
-Options for configuring WebSocket connections.
-
-These options are passed directly to httpx_ws's connect_ws/aconnect_ws functions.
-For complete documentation, see https://frankie567.github.io/httpx-ws/reference/httpx_ws/
-
-**Attributes**:
-
-- `keepalive_ping_timeout_seconds` - Maximum delay the client will wait for an answer
-  to its Ping event. If the delay is exceeded, WebSocketNetworkError will be
-  raised and the connection closed. Default: 20 seconds.
-- `keepalive_ping_interval_seconds` - Interval at which the client will automatically
-  send a Ping event to keep the connection alive. Set to None to disable this
-  mechanism. Default: 20 seconds.
-- `max_message_size_bytes` - Message size in bytes to receive from the server.
-- `Default` - 65536 bytes (64 KiB).
-- `queue_size` - Size of the queue where received messages will be held until they
-  are consumed. If the queue is full, the client will stop receiving messages
-  from the server until the queue has room available. Default: 512.
-  
-
-**Notes**:
-
-  Parameter descriptions adapted from httpx_ws documentation.
-
-<a id="fishaudio.core.websocket_options.WebSocketOptions.to_httpx_ws_kwargs"></a>
-
-#### to\_httpx\_ws\_kwargs
-
-```python
-def to_httpx_ws_kwargs() -> dict[str, Any]
-```
-
-Convert to kwargs dict for httpx_ws aconnect_ws/connect_ws.
-
-<a id="fishaudio.core.omit"></a>
-
-# fishaudio.core.omit
-
-OMIT sentinel for distinguishing None from not-provided parameters.
 
