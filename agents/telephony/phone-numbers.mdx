@@ -19,9 +19,9 @@ The response is an `available_phone_numbers` array of inventory entries forwarde
 
 | Parameter      | Description                                                                                                                                |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `country_code` | ISO 3166-1 alpha-2 country code. Default `US`.                                                                                             |
+| `country_code` | ISO 3166-1 alpha-2 country code, `US` (default) or `CA`.                                                                                   |
 | `area_code`    | Restrict results to one area code, like `415`.                                                                                             |
-| `number_type`  | `local` (default). The managed inventory is US local numbers only; `toll_free` returns `400`.                                              |
+| `number_type`  | `local` (default). The managed inventory is US and Canada local numbers only; `toll_free` returns `400`.                                   |
 | `provider`     | Inventory to search. Only `twilio` (the default) is available — managed numbers with [call transfer](/agents/telephony/transfers) support. |
 
 <Note>
