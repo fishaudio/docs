@@ -156,11 +156,12 @@ Users can type instead of talking, in the same session:
 ```javascript Text input
 // Send a typed user turn. There is no server echo — the SDK emits
 // the finalized `message` event locally from the text you passed.
+// By default the agent answers a typed turn in text only
+// (agentResponseDelta / agentResponse) without speaking out loud.
 session.sendUserMessage("Do you ship to Norway?");
 
-// Text-only reply for this turn: the agent answers in text
-// (agentResponseDelta / agentResponse) without speaking out loud.
-session.sendUserMessage("What's my order status?", { audio: false });
+// Pass `audio: true` to have the agent speak its reply for this turn.
+session.sendUserMessage("What's my order status?", { audio: true });
 
 // Signal typing so the agent doesn't talk over the user.
 input.addEventListener("input", () => session.sendUserActivity());
@@ -168,6 +169,8 @@ input.addEventListener("input", () => session.sendUserActivity());
 // Stop the agent's current speech immediately (explicit barge-in).
 session.interrupt();
 ```
+
+Text-only replies are not paced to audio playback — the transcript streams as fast as it generates.
 
 ## Audio controls
 

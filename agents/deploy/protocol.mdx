@@ -130,7 +130,7 @@ Publish these on the `client-event` topic. The agent ignores malformed JSON and 
 }
 ```
 
-- `user.message` gets **no server echo** — you already hold the text, so render the bubble locally. Add `"audio": false` to have the agent answer that turn in text only: no speech is synthesized and the reply arrives over transcription.
+- `user.message` gets **no server echo** — you already hold the text, so render the bubble locally. Add `"audio": false` to have the agent answer that turn in text only: no speech is synthesized and the reply arrives over transcription. When the field is absent the agent speaks as usual; note the web SDK's `sendUserMessage` sends `"audio": false` unless called with `audio: true`.
 - `client_tool.result` may carry `result` (any JSON value) or `"isError": true` to report the tool as failed to the model. Results for unknown or already-settled `callId`s are ignored.
 
 ## Transcription and agent state
