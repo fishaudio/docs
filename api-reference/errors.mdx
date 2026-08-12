@@ -18,7 +18,7 @@ Every Fish Audio error comes back as JSON with a `message` and a `status`:
 |---|---|---|
 | `400` | Bad request — invalid parameters, or a `reference_id` / voice that doesn't exist | Fix the request; read the `message`. |
 | `401` | Invalid or missing API key | Send `Authorization: Bearer <key>`; check it on [API Keys](https://fish.audio/app/api-keys). |
-| `402` | Insufficient credits | Top up on [Billing](https://fish.audio/app/billing). |
+| `402` | Insufficient credits | Top up on [API Billing](https://fish.audio/app/developers/billing/). |
 | `403` | Not permitted for this key/resource | Check the key's scope and the resource owner. |
 | `404` | Model or voice not found | Verify the `model_id` / `reference_id`. |
 | `429` | Rate limit exceeded | Back off and retry (see below). |
