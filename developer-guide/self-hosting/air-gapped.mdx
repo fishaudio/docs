@@ -1,0 +1,63 @@
+---
+title: "Air-gapped deployments"
+description: "Running Fish Audio Enterprise on a network that cannot reach Fish Audio at all"
+icon: "shield-halved"
+---
+
+Both offline delivery forms make no outbound calls at runtime. Neither one, however,
+installs itself out of thin air: a Helm install pulls container images and the chart
+from a registry, and the appliance needs its image on the host. An air-gapped
+deployment is about getting those artifacts across the boundary.
+
+<Note>
+  Fish Audio does this with you as part of an air-gapped delivery, and the step-by-step
+  procedure is in the deployment runbook for the version you install — see
+  [Releases](/developer-guide/self-hosting/enterprise-releases). This page is what to
+  expect and what to plan for.
+</Note>
+
+## Which form to choose
+
+**The All-in-One appliance** is the straightforward answer to a strict air gap: one
+image with every weight baked in, moved to the disconnected host as a file and loaded
+there. There is nothing else to mirror.
+
+**The Helm chart** is more work, because the release is many images rather than one.
+Every image has to be mirrored into a registry the cluster can reach and the release
+pointed at it, component by component — there is no single switch. Plan for the whole
+set, and expect to do it with your account team rather than alone.
+
+**What you give up either way:** images are pinned to the exact content Fish Audio
+published, so a deployment cannot quietly run anything else. Copying an image into
+another registry drops that pin, so check what you mirrored while both sides are still
+there to compare.
+
+## Offline usage accounting
+
+An offline deployment cannot call a billing service, so it records usage locally
+instead, in a signed ledger on persistent storage. It is durable data rather than
+cache: include it in your backups, and agree a reconciliation cadence with your account
+team. Usage is settled from the ledger files themselves, not from totals compiled off
+them.
+
+Because there is no service to validate a token against, any non-empty bearer token is
+accepted and recorded as the billing identity. Use a stable, distinct token per tenant.
+
+## Proving there is no egress
+
+Regulated deployments usually need evidence rather than a configuration review, and the
+runbook carries the exercise. Two things are worth knowing before you plan it.
+
+It answers two questions, and they need different methods: whether the deployment
+*needs* the internet, and whether it *calls out* when allowed to — the second is what a
+telemetry or data-residency review actually asks.
+
+It is also a cluster-level exercise rather than a namespace one. Confirm early that
+whoever runs your cluster can take part, because a namespace-scoped account cannot
+complete it.
+
+## Next steps
+
+- [Requirements](/developer-guide/self-hosting/requirements) — hardware, platform, and network baselines
+- [All-in-One container](/developer-guide/self-hosting/all-in-one) — the single-container form
+- [Kubernetes deployment](/developer-guide/self-hosting/kubernetes) — the Helm forms

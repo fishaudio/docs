@@ -1,0 +1,77 @@
+---
+title: "All-in-One container"
+description: "The single-container appliance: what it is, what it cannot do, and what running it involves"
+icon: "box"
+---
+
+The All-in-One image packages the whole speech stack — edge API, model API layer,
+inference router and worker, vocoder, text normalizer, and Redis — into one container,
+with every model weight baked in. Once the image is on the host it runs with no
+Kubernetes and no internet access, which makes it the turnkey option for single-node
+appliances and strict air gaps.
+
+<Note>
+  This page covers what the appliance is and what to plan for. The commands, tuning
+  options, and troubleshooting are in the **All-in-One guide**, which ships in the
+  documentation bundle for the image version you run — see
+  [Releases](/developer-guide/self-hosting/enterprise-releases).
+</Note>
+
+## What it cannot do
+
+The appliance runs one inference worker and one vocoder, a GPU each. It does not
+autoscale, does not shard across more GPUs or nodes, and does not ship the forced
+aligner, so it returns no word or segment timings. It is offline-only — there is no
+hosted-billing variant. For elastic or higher-throughput deployments, use the
+[Kubernetes chart](/developer-guide/self-hosting/kubernetes), which scales replicas
+across all GPUs and nodes.
+
+## What running it involves
+
+One `docker run` on a host that meets the
+[All-in-One host requirements](/developer-guide/self-hosting/requirements#all-in-one-container-host).
+It needs:
+
+- **Two GPUs.** The first runs the inference worker, the second the vocoder.
+- **One exposed port** for the API.
+- **One persistent volume.** Compile caches, the vocoder's built engine, reference
+  voice archives, and the usage ledger all live there. Model weights are in the image,
+  not on the volume.
+
+Everything inside the container runs as a non-root user, so a reused volume or a host
+bind mount has to be writable by it.
+
+**Plan for a slow first start.** The worker compiles its inference graphs and the
+vocoder builds its engine before either serves, and the health endpoint verifies the
+speech backend end to end rather than reporting immediate liveness. Both artifacts are
+cached on the volume, so later starts take minutes. The vocoder engine is specific to
+the GPU model, so moving to different cards rebuilds it once.
+
+## Usage accounting and tenancy
+
+This build records usage to a local, signed, append-only ledger on the volume instead
+of calling a billing service. Two consequences worth designing around:
+
+- **Any non-empty bearer token is accepted**; a missing or empty one is rejected. The
+  appliance has nothing to validate a token against.
+- **The token is recorded verbatim as the billing identity.** Use a stable, distinct
+  token per tenant — two tenants sharing a token are indistinguishable in the ledger.
+
+See [Offline usage accounting](/developer-guide/self-hosting/air-gapped#offline-usage-accounting).
+
+## Capacity
+
+The single worker admits a bounded number of in-flight requests; beyond that, requests
+queue and time-to-first-audio climbs. The ceiling is set by the worker's key-value
+cache VRAM, so larger cards support a higher cap. It is adjustable at launch without
+rebuilding the image. Validate latency and error rate at any new value before
+committing to it.
+
+Reference-id requests resolve only from local archives placed on the volume, one zip
+per voice.
+
+## Next steps
+
+- [Requirements](/developer-guide/self-hosting/requirements#all-in-one-container-host) — host baseline
+- [Registry access](/developer-guide/self-hosting/registry-access) — how your team gets the image
+- [Air-gapped deployments](/developer-guide/self-hosting/air-gapped) — moving the image to a disconnected host

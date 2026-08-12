@@ -1,0 +1,41 @@
+---
+title: "Releases"
+description: "How Fish Audio Enterprise versions are identified and how to move between them"
+icon: "code-branch"
+---
+
+Fish Audio publishes a version of each delivery form once it has been tested.
+**Developer → Self Host** lists the versions available to your team and fills the
+one you pick into the install commands on that page.
+
+## Version identifiers
+
+| Delivery form                | Identified by   | Applied with                         |
+| ---------------------------- | --------------- | ------------------------------------ |
+| Online Helm and Offline Helm | A chart version | `--version` on `helm pull`/`install` |
+| All-in-One                   | An image tag    | The tag in the image reference       |
+
+Both Helm forms are one chart, so they share a version. Which form you deploy is
+decided by the values file, not by the version.
+
+## Upgrading
+
+A deployment stays on its version until you change it. Take the new version from
+**Developer → Self Host**, then follow the upgrade
+procedure in the deployment runbook for the Helm forms, or pull the new tag and
+recreate the container against the same volume for
+[All-in-One](/developer-guide/self-hosting/all-in-one). Air-gapped deployments
+mirror the new version first — see
+[Air-gapped deployments](/developer-guide/self-hosting/air-gapped).
+
+<Note>
+  Talk to your account team before skipping versions, and before upgrading a
+  production deployment, so the change can be checked against how yours is
+  configured.
+</Note>
+
+## Next step
+
+Return to [Kubernetes deployment](/developer-guide/self-hosting/kubernetes) or
+[All-in-One container](/developer-guide/self-hosting/all-in-one) to apply the
+version you picked.

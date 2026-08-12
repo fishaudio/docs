@@ -1,0 +1,78 @@
+---
+title: "Kubernetes deployment"
+description: "What the Helm delivery installs, what you decide before installing, and what to expect"
+icon: "dharmachakra"
+---
+
+Fish Audio Enterprise ships as a Helm chart that installs the whole speech stack into
+a cluster you run. Both Helm delivery forms use the same chart and the same procedure;
+they differ only in how usage is accounted.
+
+<Note>
+  This page covers what the deployment involves and what you need to decide. The
+  commands, values, and troubleshooting are in the **deployment runbook**, which ships
+  in the documentation bundle alongside the chart version you install — see
+  [Releases](/developer-guide/self-hosting/enterprise-releases). The runbook is
+  versioned with the chart; this page is not, so follow the runbook when they differ.
+</Note>
+
+## Choose a delivery form
+
+|                  | Offline                                          | Online                                              |
+| ---------------- | ------------------------------------------------ | --------------------------------------------------- |
+| Usage accounting | Local signed ledger on shared storage            | Validated and billed against the Fish Audio service |
+| Runtime egress   | None                                             | The billing endpoint on 443                         |
+| Model assets     | Served in-cluster by the bundled model warehouse | The same                                            |
+
+Both forms serve model weights from inside the cluster, so neither reaches an external
+object store at runtime. "Offline" means runtime-offline: installation still pulls
+images and the chart from a registry. For a cluster with no network access at all, see
+[Air-gapped deployments](/developer-guide/self-hosting/air-gapped).
+
+## What gets installed
+
+The chart deploys the edge API, the model API layer, an inference router and worker,
+a vocoder, a text normalizer, the model warehouse that serves the weights, and Redis.
+Everything lands in one namespace, in the single-worker shape the delivery was sized
+against.
+
+Ingress and TLS are off by default. Put your own ingress controller or load balancer
+in front of the edge API service, or enable the chart's if you want Kubernetes to
+manage that layer.
+
+## What you decide before installing
+
+| Decision                    | Notes                                                                                                                     |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Namespace                   | `fish-audio` is the supported default. A different one has to be set in two places; the runbook says where. |
+| Shared storage path         | Mounted at the same path on **every** node. See [Requirements](/developer-guide/self-hosting/requirements#shared-storage). |
+| GPU scheduling              | Tolerations and node selectors, if your GPU nodes are tainted or you run more than one GPU model.                          |
+| Metrics                     | The chart exposes Prometheus annotations and creates no ServiceMonitors, so an annotation-scraping Prometheus works as-is and kube-prometheus-stack needs a scrape config. |
+| Reference voices            | Requests carrying a `reference_id` resolve from a local archive, never from the network. One zip per voice, staged on shared storage before that traffic starts. |
+| Replica counts              | Talk to your account team first. The shipped shape is what the delivery was sized and validated against.                  |
+
+Three Kubernetes Secrets have to exist before the install: registry credentials, a JWT
+secret for the edge API, and one shared between the in-cluster model store and the
+workers that read from it — that one authenticates nothing outside the cluster, and the
+value is yours to choose. Generate the JWT secret once
+and keep it stable — changing it invalidates issued tokens. For production, prefer
+External Secrets, Sealed Secrets, or your cloud secret manager over plain Secrets.
+
+## What to expect
+
+Image references are pinned in the chart, so you select a version with a Helm argument
+rather than by editing tags.
+
+The first install is slow: the inference worker compiles its GPU graphs and the
+vocoder builds its inference engine before either becomes ready, which takes far longer
+than any later rollout. Both artifacts are cached on shared storage, so subsequent
+starts are quick — as long as that storage persists.
+
+Upgrades, rollback, and uninstall are all standard Helm operations. The runbook covers
+the order to do them in and what to check at each step.
+
+## Next steps
+
+- [Requirements](/developer-guide/self-hosting/requirements) — hardware, platform, and network baselines
+- [Registry access](/developer-guide/self-hosting/registry-access) — how your team gets the chart
+- [Operations](/developer-guide/self-hosting/operations) — running it once it is live
