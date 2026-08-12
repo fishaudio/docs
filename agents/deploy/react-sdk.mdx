@@ -121,7 +121,7 @@ See [Authenticated sessions](/agents/deploy/authenticated-sessions) for the back
 | `session`                         | The live `AgentSession` object (`null` before the first start) for direct event access    |
 
 <Tip>
-`sendUserMessage(text)` injects a typed turn; the agent's reply streams back as transcript and audio. Pass `{ audio: false }` to get a text-only reply for that turn — useful for a do-not-disturb typing mode.
+`sendUserMessage(text)` injects a typed turn; the agent replies in text only by default — the reply streams back as transcript with no speech. Pass `{ audio: true }` to have the agent speak its reply for that turn.
 </Tip>
 
 For transcripts, tool-call events, and error handling, subscribe to events on `session` — see the [Web SDK event reference](/agents/deploy/web-sdk).
