@@ -4716,7 +4716,7 @@
           {
             "in": "query",
             "name": "country_code",
-            "description": "ISO 3166-1 alpha-2 country code.",
+            "description": "ISO 3166-1 alpha-2 country code; `US` or `CA`.",
             "required": false,
             "schema": {
               "default": "US",
@@ -4747,7 +4747,7 @@
           {
             "in": "query",
             "name": "number_type",
-            "description": "The managed inventory is US local numbers only; `toll_free` currently returns 400.",
+            "description": "The managed inventory is US/CA local numbers only; `toll_free` currently returns 400.",
             "required": false,
             "schema": {
               "default": "local",
@@ -14379,6 +14379,32 @@
             "default": null,
             "title": "Reengage Enabled"
           },
+          "hangup_after_seconds": {
+            "anyOf": [
+              {
+                "maximum": 3600,
+                "minimum": 10,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Hangup After Seconds"
+          },
+          "hangup_farewell_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Hangup Farewell Enabled"
+          },
           "record_audio": {
             "anyOf": [
               {
@@ -15027,6 +15053,16 @@
           "reengage_enabled": {
             "default": false,
             "title": "Reengage Enabled",
+            "type": "boolean"
+          },
+          "hangup_after_seconds": {
+            "default": 60,
+            "title": "Hangup After Seconds",
+            "type": "integer"
+          },
+          "hangup_farewell_enabled": {
+            "default": false,
+            "title": "Hangup Farewell Enabled",
             "type": "boolean"
           },
           "record_audio": {
