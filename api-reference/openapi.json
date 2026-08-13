@@ -6881,6 +6881,16 @@
                       "default": true,
                       "title": "Expects Response",
                       "type": "boolean"
+                    },
+                    "execution_mode": {
+                      "default": "blocking",
+                      "enum": [
+                        "blocking",
+                        "fire_and_forget",
+                        "background"
+                      ],
+                      "title": "Execution Mode",
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -7157,6 +7167,16 @@
                       "default": true,
                       "title": "Expects Response",
                       "type": "boolean"
+                    },
+                    "execution_mode": {
+                      "default": "blocking",
+                      "enum": [
+                        "blocking",
+                        "fire_and_forget",
+                        "background"
+                      ],
+                      "title": "Execution Mode",
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -7434,6 +7454,16 @@
                       "default": true,
                       "title": "Expects Response",
                       "type": "boolean"
+                    },
+                    "execution_mode": {
+                      "default": "blocking",
+                      "enum": [
+                        "blocking",
+                        "fire_and_forget",
+                        "background"
+                      ],
+                      "title": "Execution Mode",
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -15749,7 +15779,7 @@
           },
           "timeout_seconds": {
             "default": 30,
-            "maximum": 120,
+            "maximum": 300,
             "minimum": 1,
             "title": "Timeout Seconds",
             "type": "integer"
@@ -15774,6 +15804,16 @@
             "default": true,
             "title": "Expects Response",
             "type": "boolean"
+          },
+          "execution_mode": {
+            "default": "blocking",
+            "enum": [
+              "blocking",
+              "fire_and_forget",
+              "background"
+            ],
+            "title": "Execution Mode",
+            "type": "string"
           }
         },
         "required": [
@@ -15946,7 +15986,7 @@
           "timeout_seconds": {
             "anyOf": [
               {
-                "maximum": 120,
+                "maximum": 300,
                 "minimum": 1,
                 "type": "integer"
               },
@@ -15999,6 +16039,23 @@
             ],
             "default": null,
             "title": "Expects Response"
+          },
+          "execution_mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "blocking",
+                  "fire_and_forget",
+                  "background"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Execution Mode"
           }
         },
         "title": "PublicAgentToolUpdatePayload",
