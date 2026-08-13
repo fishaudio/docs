@@ -73,6 +73,31 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 
 Both settings can also be replaced for a single session — send `overrides.voice_id` or `overrides.language` on the session request. See [Overrides](/agents/deploy/authenticated-sessions#overrides).
 
+## Expressive mode
+
+**Expressive mode** makes the agent steer its own delivery: it opens sentences with emotion cues, adds natural pauses and emphasis, laughs where it genuinely fits, and speaks the way people talk — contractions and the occasional "um". You get lively, emotionally aware speech without writing any delivery rules into your prompt.
+
+Turn it on with the **Expressive mode** switch in the Builder's voice section, or via the API (`voice.expressive`, default `false`):
+
+<CodeGroup>
+```bash API (curl)
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "voice": {
+      "expressive": true
+    }
+  }'
+```
+</CodeGroup>
+
+The delivery cues are rendered by the voice model — they are never spoken and never appear in transcripts or message history. Expressive mode applies to spoken sessions (voice calls and phone); text chat is unaffected.
+
+<Tip>
+  Keep your system prompt about **what** the agent says — who it is, what it knows, what it should do. With expressive mode on, **how** it sounds is handled for you.
+</Tip>
+
 ## Going further
 
 <CardGroup cols={2}>
