@@ -1,0 +1,79 @@
+---
+title: "Registry access"
+description: "The Self Host dashboard, deploy tokens, and how your team reaches the Fish Audio registry"
+icon: "key"
+---
+
+Self-hosted images, charts, and documentation are distributed from a private Fish Audio
+registry. Your team authenticates to it with a **deploy token** created in the fish.audio
+dashboard.
+
+## The Self Host page
+
+Sign in to fish.audio and open **Developer → Self Host**. Everything your team needs to
+start is there:
+
+- **Your deployment** — the delivery forms your team is granted. If it is empty, or the
+  page reports that self-host deployment is not enabled, contact your account manager.
+- **The versions available to you**, and the documentation bundle for each — see
+  [Releases](/developer-guide/self-hosting/enterprise-releases).
+- **Install commands built for your team**, with the registry host, artifact references,
+  and the version you pick already filled in.
+
+<Note>
+  The registry host, the artifact references, and the versions available to you are
+  specific to your team and are shown only in the dashboard — copy them from the Self
+  Host page.
+</Note>
+
+## Prerequisites
+
+- Self-hosting enabled for your team under an enterprise agreement.
+- A fish.audio account that is a member of that team.
+- Docker, and Helm 3.8 or newer for the OCI chart commands.
+
+## Create a deploy token
+
+<Steps>
+  <Step title="Open the Deploy Tokens card">
+    On **Developer → Self Host**, select **Create Deploy Token**.
+  </Step>
+  <Step title="Name it for where it will be used">
+    Use a name that identifies the consumer, such as `prod-cluster` or `ci-mirror`. The
+    name appears in the token list alongside the creation date and last-used time.
+  </Step>
+  <Step title="Copy the token immediately">
+    The token value is shown once, at creation. Store it in your secret manager before
+    closing the dialog. If you lose it, rotate the token to issue a new one.
+  </Step>
+</Steps>
+
+A team can hold up to five deploy tokens at a time. Tokens carry the grants of the team
+that owns them, not of the person who created them, and follow those grants as they
+change — there is no token to recreate when your entitlement is updated.
+
+Authenticate with your account email as the username and the deploy token as the
+password. Docker, Helm, and the cluster's image pull secret all use the same pair; the
+exact commands are on the Self Host page and in the deployment runbook.
+
+## Managing tokens
+
+| Action    | Effect                                                                                                                                   |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Rotate    | Issues a new token value and invalidates the old one immediately. Update every consumer before rotating, or new pods will fail to pull.  |
+| Delete    | Revokes the token immediately. Any deployment still using it stops pulling images. Running pods keep running until they are rescheduled. |
+| Last used | Shows when the token last authenticated, which identifies tokens that are safe to retire.                                                |
+
+Recommended practice:
+
+- Issue one token per consumer — production cluster, staging cluster, CI mirror — so a
+  single revocation never takes down more than one of them.
+- Store tokens in your secret manager, not in values files or version control.
+- Rotate on your normal credential schedule and whenever someone with access to a token
+  leaves the team.
+
+## Next step
+
+With access in place, continue to
+[Kubernetes deployment](/developer-guide/self-hosting/kubernetes) or the
+[All-in-One container](/developer-guide/self-hosting/all-in-one).

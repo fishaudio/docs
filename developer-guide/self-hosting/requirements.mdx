@@ -1,0 +1,109 @@
+---
+title: "Requirements"
+description: "Hardware, platform, and network baselines for a self-hosted deployment"
+icon: "microchip"
+---
+
+These are the baselines Fish Audio deploys against. Confirm final sizing with your
+account team once your traffic profile and target GPU are known: time-to-first-audio
+and throughput depend on the model, GPU, text length, and concurrency, and should be
+measured on your own hardware before you commit to a capacity plan.
+
+## Kubernetes deployments
+
+### Cluster topology
+
+| Node type                              | Minimum                                        | Purpose                                                                                                                                                                                                                   |
+| -------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CPU-only control-plane or system nodes | 3 nodes, roughly 4 vCPU and 16 GB RAM each     | Control-plane high availability on self-managed Kubernetes, or a system node group for platform add-ons on managed Kubernetes.                                                                                            |
+| CPU workload capacity                  | Roughly 28 vCPU and 125 GiB of memory requests | Non-GPU workloads: Redis, the edge API, the text normalizer, the model API layer, and the inference router. Provide a CPU node group, or leave GPU nodes schedulable so these can land there. |
+| GPU capacity                           | 2 GPUs                                         | One for the inference worker, one for the vocoder. Spread them across two nodes if the deployment also has to survive a node drain or failure.                                                                            |
+| Shared storage                         | 1 TB usable, mounted on every node             | Model cache, reference archives, compile caches, and the offline usage ledger.                                                                                                                                            |
+| Network                                | Low-latency east-west networking               | GPU workload stability, service-to-service calls, and shared storage access.                                                                                                                                              |
+
+Verify these against your own chart version by rendering the release with a deployment
+profile applied — the chart defaults alone stop on a required value — and summing the
+requests.
+
+### GPUs
+
+| Requirement         | Detail                                                                                                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Count               | 2 GPUs minimum: one inference worker, one vocoder. Enabling timestamp alignment adds a third.                                                                         |
+| Type                | NVIDIA H100 or H200. H200 is the preferred target for its larger memory and bandwidth.                                                                                                                |
+| Memory              | The worker pre-allocates most of its card for the KV cache, so a near-full card is expected, not a fault. A larger card raises the concurrency ceiling rather than leaving headroom. |
+| Newer architectures | Contact Fish Audio before standardizing on a GPU generation that is not H100 or H200, so the image, CUDA stack, and driver combination can be confirmed.              |
+| MIG                 | Disable MIG unless the configuration has been validated with Fish Audio.                                                                                              |
+
+On AWS, `p5.48xlarge` (H100) is an acceptable baseline and `p5en.48xlarge` (H200)
+is the preferred target. Validate GPU instance quota in the target region before
+scheduling a deployment window.
+
+### Shared storage
+
+Provide at least 1 TB of usable shared storage backed by EFS, NFS, or an
+equivalent service, mounted at the same path on every node that runs Fish Audio
+workloads (`/mnt/share` by default, and configurable). The chart mounts it into containers with
+hostPath volumes and creates no PersistentVolumeClaims.
+
+<Warning>
+  The hostPath mount is created with `DirectoryOrCreate`. A node that is missing
+  the shared mount silently gets a local directory instead, and the deployment
+  looks healthy while data splits across nodes. Verify the mount, and that it is
+  writable, on **every** node before installing. The deployment runbook gives a check
+  that does this without node access.
+</Warning>
+
+Confirm the following with your storage team: how the mount is applied to newly
+added nodes, the throughput mode, the backup policy, mount target reachability,
+and expected growth of the model and cache data.
+
+Redis is installed by the chart and does not use shared storage. Its append-only
+file is backed by node-local ephemeral storage, so provision ephemeral capacity
+on the nodes that host it, plus headroom for rewrites.
+
+### Platform baseline
+
+| Layer             | Recommendation                                                                                                                                                           |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Kubernetes        | A currently supported minor version. Stay one minor behind the newest release if your GPU add-ons have not been validated on it yet.                                     |
+| Helm              | A current maintained release supported by your platform.                                                                                                                 |
+| Container runtime | The provider-managed containerd runtime where available.                                                                                                                 |
+| GPU runtime       | NVIDIA GPU Operator, or the provider-managed driver and device plugin stack. GPU nodes must expose `nvidia.com/gpu`.                                                     |
+| GPU telemetry     | DCGM exporter or the provider equivalent.                                                                                                                                |
+| Storage           | EFS, NFS, or an equivalent shared filesystem mounted on every node.                                                                                                      |
+| Object storage    | Not required. Models are served from inside the cluster in every delivery form. Hosting the weights in your own bucket instead is possible; ask your account team.                        |
+| Redis             | Installed by the chart into the release namespace. Do not point the release at a shared Redis without discussing it first.                                               |
+| Metrics           | Prometheus, scraping `prometheus.io/*` pod annotations. The chart creates no ServiceMonitors, so kube-prometheus-stack users must add an annotation-based scrape config. |
+| Access layer      | Yours to choose. Ingress controller, DNS, TLS, and load balancing are not part of the delivery.                                                                          |
+
+The cluster also needs working in-cluster DNS, a dedicated namespace, node labels
+and taints for GPU scheduling, and a Pod Security level in that namespace that
+permits `hostPID` and `hostIPC`, which the inference workers require.
+
+### Network
+
+| Direction                    | Requirement                                                                                                                                                                                                              |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Install-time egress          | Access to the Fish Audio registry to pull images and the chart. Mirror both into your own registry for air-gapped installs.                                                                                              |
+| Runtime egress, offline form | None. No model download and no billing call.                                                                                                                                                                             |
+| Runtime egress, online form  | HTTPS to the Fish Audio authorization and billing endpoint. Models are served from inside the cluster, so no object-store endpoint has to be reachable. Ask your account team for the billing hostname to allowlist. Enabling the timestamp aligner adds one more host. |
+| Ingress                      | Customer-approved ingress or a private endpoint, with DNS and TLS in place before production traffic.                                                                                                                    |
+
+## All-in-One container host
+
+| Requirement       | Detail                                                                                                                           |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| OS                | Linux x86-64.                                                                                                                    |
+| GPUs              | 2 GPUs, 32 GB of memory or larger. The first runs the inference worker, the second runs the vocoder. No NVLink required.                                    |
+| NVIDIA driver     | Must support CUDA 13.x and your card's compute capability. This applies to the Kubernetes forms too: a driver capped at CUDA 12 reports a healthy GPU and then fails the workloads. |
+| Docker            | Docker Engine 24 or newer.                                                                                                       |
+| Container toolkit | NVIDIA Container Toolkit installed and the `nvidia` runtime registered, so `--gpus all` exposes GPUs.                            |
+| RAM               | 128 GiB minimum, 192 GiB recommended. The container runs the whole stack in one process tree.                                    |
+| CPU               | 32 vCPU minimum, 48 to 64 recommended.                                                                                           |
+| Disk              | 100 GB free if the host pulls the image itself; 120 GB if you move it as a file, since `docker load` needs the ~30 GB archive and the ~80 GB unpacked image at once. Plus the compile and engine caches. |
+
+## Next step
+
+Once the platform checks pass, authenticate to the Fish Audio registry in
+[Registry access](/developer-guide/self-hosting/registry-access).
