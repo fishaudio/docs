@@ -108,9 +108,10 @@ const session = await AgentSession.start({ sessionToken });
 More on what the SDK can do once connected is in the [Web SDK](/agents/deploy/web-sdk) reference.
 
 <Note>
-  `overrides`, `dynamic_variables`, `language`, `tool_events`, `timezone`, and
+  `overrides`, `dynamic_variables`, `tool_events`, `timezone`, and
   `world_context` belong in your backend's creation request — the SDK forwards
-  these options only in [public agent](/agents/deploy/public-agents) mode.
+  these options (and its `language` shorthand for `overrides.language`) only in
+  [public agent](/agents/deploy/public-agents) mode.
 </Note>
 
 ## Request fields
@@ -122,7 +123,7 @@ More on what the SDK can do once connected is in the [Web SDK](/agents/deploy/we
 | `overrides`         | object, optional  | Replace parts of the published configuration for this session — see [Overrides](#overrides).                                                                                                                                                                                              |
 | `dynamic_variables` | object, optional  | Up to 50 entries of string, number, or boolean values, substituted into `{{placeholders}}`. See [Dynamic variables](/agents/build/dynamic-variables).                                                                                                                                     |
 | `tool_events`       | boolean, optional | Stream tool lifecycle events (`toolCallStarted` / `toolCallCompleted` / `toolCallFailed`) to the client. Default `true`; set `false` to keep tool inputs and outputs off the client.                                                                                                      |
-| `end_user_id`       | string, optional  | Your identifier for the end user, for attribution in [conversation history](/agents/monitor/conversation-history).                                                                                                                                                                        |
+| `end_user_id`       | string, optional  | Your identifier for the end user, up to 256 characters. Stored on the session and echoed in [webhook](/agents/monitor/webhooks) payloads for attribution.                                                                                                                                 |
 | `metadata`          | object, optional  | Your own key-value namespace. Stored and returned verbatim on session queries and webhooks — never read or interpreted by the platform.                                                                                                                                                   |
 | `record_audio`      | boolean, optional | Whether to record this session's audio. Overrides the agent's [recording setting](/agents/monitor/conversation-history#what-gets-stored) for this session only — it never changes the agent; omit it to use the agent's configuration.                                                    |
 | `timezone`          | string, optional  | IANA timezone (like `Asia/Shanghai`) for the agent's sense of local time. Invalid names are rejected with `422`. See [Time & timezone](/agents/build/time-timezone).                                                                                                                      |
@@ -141,7 +142,7 @@ Unknown fields — top-level or inside `overrides` — are rejected with `422`.
 | `first_message_prompt` | string, up to 10,000 characters          | Instructions the agent generates its opener from, replacing the configured first-message behavior. `{{placeholders}}` render inside it. Mutually exclusive with `first_message` — sending both is `422`.          |
 | `system_prompt`        | string, up to 4,000 tokens               | Replaces the configured system prompt entirely, under the same token budget. `{{placeholders}}` render inside it.                                                                                                 |
 | `voice_id`             | string                                   | The voice the agent speaks with — any [voice model id](/agents/build/voice-language#use-any-voice-model) from the Voice Library. Voices bias pronunciation toward their own language, so pair it with `language`. |
-| `language`             | `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de` | Pins the conversation language, taking precedence over the configured [speaking language](/agents/build/voice-language#speaking-language).                                       |
+| `language`             | `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de` | Pins the conversation language, taking precedence over the configured [speaking language](/agents/build/voice-language#speaking-language).                                                                        |
 
 ```json
 {
@@ -155,8 +156,6 @@ Unknown fields — top-level or inside `overrides` — are rejected with `422`.
 ```
 
 On [public agents](/agents/deploy/public-agents), keyless (browser-created) sessions may override only `language` and `voice_id` — the prompt-shaping fields are rejected with `400` regardless of the agent. Create the session from your backend to use them.
-
-The session record stores which overrides took effect.
 
 Everything else on the request is not an override: `dynamic_variables`, `timezone`, `record_audio`, and `tool_events` are separate top-level fields. Session length is not settable per session — `max_duration_seconds` comes from the agent's [conversation configuration](/agents/build/configuration#call-duration).
 
@@ -215,7 +214,7 @@ Session creation fails with standard HTTP statuses; the SDK surfaces them as a `
 
 | Status | Meaning                                                                                                                                       |
 | ------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `400`  | An `overrides` field is not enabled for this agent, or a keyless request sent an override [public sessions don't accept](#overrides).         |
+| `400`  | A keyless (public-agent) request sent an override [public sessions don't accept](#overrides), or a `name`.                                    |
 | `401`  | Invalid API key. A request with no `Authorization` header at all is treated as a public-agent request instead.                                |
 | `402`  | Quota exceeded.                                                                                                                               |
 | `403`  | Public-agent request rejected: the agent is not public, or the page's `Origin` is not on the allow-list.                                      |

@@ -8,7 +8,7 @@ Configuration is the Builder's home tab: define how your agent behaves, how it o
 
 ## System prompt
 
-The system prompt sets the personality, goals, and guardrails that steer every reply. It is capped at **4,000 tokens** — the API rejects longer prompts with `422 Unprocessable Entity`. Keeping it under **2,000 tokens** is recommended: shorter prompts cut latency and cost, and hold the model's attention better.
+The system prompt sets the personality, goals, and guardrails that steer every reply. It is capped at **4,000 tokens** — the API rejects longer prompts with `422 Unprocessable Entity`. Keeping it under **2,000 tokens** is recommended: shorter prompts cut latency and cost, and hold the model's attention better. It can also be replaced for a single session by sending `overrides.system_prompt` when [creating the session](/agents/deploy/authenticated-sessions#overrides).
 
 <Tip>
 Keep the prompt focused:
@@ -28,7 +28,7 @@ Choose how the agent opens each conversation:
 | **Fixed message** | The agent opens with the exact text you provide, every time. | `first_message` |
 | **Prompt** | The agent generates its opening line from instructions you provide. | `first_message_prompt` |
 
-`first_message` and `first_message_prompt` can each hold up to 10,000 characters. The active mode (`first_message_mode`: `off`, `fixed`, or `prompt`) decides what callers hear.
+`first_message` and `first_message_prompt` can each hold up to 10,000 characters. The active mode (`first_message_mode`: `off`, `fixed`, or `prompt`) decides what callers hear. Both fields can be replaced for a single session by sending `overrides.first_message` or `overrides.first_message_prompt` when [creating the session](/agents/deploy/authenticated-sessions#overrides).
 
 ## Voice
 
