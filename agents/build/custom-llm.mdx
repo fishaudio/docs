@@ -1,0 +1,65 @@
+---
+title: "Custom LLM"
+description: "Serve your agent's replies from your own OpenAI-compatible model endpoint"
+icon: "brain-circuit"
+---
+
+By default your agent generates replies with a Fish Audio platform model. With a custom LLM, every reply comes from an endpoint you host instead, whether that is your own fine-tuned model, your own memory and conversation logic, or a proxy inside your VPC. Fish Audio keeps running the rest of the call, including speech recognition, voice synthesis, interruption handling, [tool](/agents/build/tools) execution, recordings, and billing.
+
+## How it works
+
+Your endpoint speaks the standard OpenAI [chat completions](https://platform.openai.com/docs/api-reference/chat) protocol. The platform sends `POST {base_url}/chat/completions` with `stream: true` and reads the reply as server-sent events, so if your prototype already runs against another voice-agent platform through a custom LLM, the same server works here unchanged.
+
+Each conversation turn, your endpoint receives the same fully assembled context a platform model would see. The `messages` array carries the system prompt with [dynamic variables](/agents/build/dynamic-variables) and [session overrides](/agents/deploy/authenticated-sessions#overrides) applied, the complete conversation history, and any retrieved [knowledge](/agents/build/knowledge-base), and the agent's tools are included in OpenAI function format. When your model returns `tool_calls`, the platform executes the tool and calls you again with the result. Two extra fields ride each request body so your server can look up its own state:
+
+| Field | Content |
+|---|---|
+| `session_id` | The Fish Audio session id. |
+| `user_id` | The `end_user_id` you passed when [creating the session](/agents/deploy/authenticated-sessions). Omitted when the session has none. |
+
+Requests authenticate with `Authorization: Bearer <your API key>`. The endpoint must use `https` on a publicly reachable host, and must support function calling if the agent has tools configured.
+
+## Point the agent at your endpoint
+
+Set the `llm.custom` section on the agent's [configuration](/agents/build/configuration#configure-through-the-api):
+
+```bash
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "llm": {
+      "custom": {
+        "base_url": "https://llm.example.com/v1",
+        "model": "persona-70b",
+        "api_key": "sk-your-endpoint-key"
+      }
+    }
+  }'
+```
+
+| Field | Rules |
+|---|---|
+| `base_url` | `https` only, publicly reachable host, no query string or fragment. A trailing `/chat/completions` is stripped. |
+| `model` | Sent to your endpoint verbatim as the request's `model` field. |
+| `api_key` | Sent to your endpoint as the `Authorization` bearer token. The field is write-only, so config and version reads return it as `null`. Omit it (or send `null`) on later patches to keep the stored key. |
+
+Once [published](/agents/deploy/versions-publishing), every session of the agent generates on your endpoint, whether it starts from the web, a phone call, or a [preview call](/agents/test/preview-calls) in the Builder. Rotating the key works the same way as any other config change. Patch a new `api_key` into the draft, then publish; sessions started after the publish use the new key. Send `{ "llm": { "custom": null } }` to switch back to platform models.
+
+## Failure behavior
+
+A custom LLM never silently falls back to a platform model, because a platform model answering with the wrong persona and no memory would be worse than a failed turn.
+
+- Each request gets one retry and a 10 second response cap.
+- When a generation still fails, the agent speaks a brief hold line and stays on the call.
+- After three consecutive failed generations the agent apologizes, hangs up, and the session records `ended_reason: llm_endpoint_failure`. Each failure also emits an `llm.endpoint_error` event on the session timeline.
+
+<Tip>
+Voice conversations are latency sensitive, so aim for a time-to-first-token under 800 ms. Turn latency is attributed per session in [conversation history](/agents/monitor/conversation-history), which lets you tell endpoint time from platform time.
+</Tip>
+
+## Limitations
+
+- [Agent tests](/agents/test/agent-tests) are not supported. A scripted test run refuses to execute rather than substitute a platform model for yours.
+- Configuration is API-only for now. A console UI comes later.
+- The prompt-level safety guardrails still ride the assembled context, but your model decides whether to honor them.
