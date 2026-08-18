@@ -4,7 +4,7 @@ description: "Search, purchase, bind, and release phone numbers for your agents 
 icon: "phone"
 ---
 
-Phone numbers connect your agents to the telephone network. Each number lives in a workspace within your team (purchases land in your default workspace) and is bound to at most one agent: calls to the number are answered by that agent. The `/v1/agent/phone-numbers` API covers the whole lifecycle: search the purchasable inventory, buy a number, bind it to an agent, and release it when you no longer need it.
+Phone numbers connect your agents to the telephone network. Each number lives in a workspace within your team (purchases land in your default workspace) and is bound to at most one agent: calls to the number are answered by that agent. The `/v1/agent/phone-numbers` API covers the whole lifecycle: search the purchasable inventory, buy a number (or [import one you already own](/agents/telephony/byo-sip)), bind it to an agent, and release it when you no longer need it.
 
 ## Search available numbers
 
@@ -17,11 +17,11 @@ curl "https://api.fish.audio/v1/agent/available-phone-numbers?country_code=US&ar
 
 The response is an `available_phone_numbers` array of inventory entries forwarded from the provider: number and region.
 
-| Parameter      | Description                                                                                                                                |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `country_code` | ISO 3166-1 alpha-2 country code, `US` (default) or `CA`.                                                                                   |
-| `area_code`    | Restrict results to one area code, like `415`.                                                                                             |
-| `number_type`  | `local` (default). The managed inventory is US and Canada local numbers only; `toll_free` returns `400`.                                   |
+| Parameter      | Description                                                                                                                               |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `country_code` | ISO 3166-1 alpha-2 country code, `US` (default) or `CA`.                                                                                  |
+| `area_code`    | Restrict results to one area code, like `415`.                                                                                            |
+| `number_type`  | `local` (default). The managed inventory is US and Canada local numbers only; `toll_free` returns `400`.                                  |
 | `provider`     | Inventory to search. Only `twilio` (the default) is available: managed numbers with [call transfer](/agents/telephony/transfers) support. |
 
 <Note>
@@ -46,14 +46,20 @@ curl --request POST https://api.fish.audio/v1/agent/phone-numbers \
 
 Returns `201` with the number object, the same shape the list endpoint returns. The number lands in your default workspace, and its monthly price is billed in daily slices.
 
-| Field          | Description                                                              |
-| -------------- | ------------------------------------------------------------------------ |
+| Field          | Description                                                             |
+| -------------- | ----------------------------------------------------------------------- |
 | `provider`     | Required: `twilio`, the inventory the number came from.                 |
 | `phone_number` | Required: an E.164 number from the search response.                     |
-| `label`        | Optional free-form label, up to 120 characters.                          |
+| `label`        | Optional free-form label, up to 120 characters.                         |
 | `agent_id`     | Optional: bind an agent so the number answers inbound calls right away. |
 
 A `409` means the number is already on the platform; a `502` means the provider refused the purchase; the number stays visible with status `error` and is safe to release.
+
+<Note>
+  Already have a number at your own carrier? The same endpoint imports it with
+  `provider: "sip"` instead of buying one: no rental fee, no telephony charges.
+  See [Bring your own number](/agents/telephony/byo-sip).
+</Note>
 
 ## List your numbers
 
@@ -82,7 +88,7 @@ curl https://api.fish.audio/v1/agent/phone-numbers \
 
 | Field             | Description                                                      |
 | ----------------- | ---------------------------------------------------------------- |
-| `phone_number_id` | Unique identifier; use it in URL paths                          |
+| `phone_number_id` | Unique identifier; use it in URL paths                           |
 | `phone_number`    | The number in E.164 format                                       |
 | `provider`        | Telephony provider backing the number                            |
 | `label`           | Free-form label you assign                                       |

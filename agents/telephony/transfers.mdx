@@ -8,16 +8,16 @@ When a caller needs a person, the agent can transfer the call. Configure a desti
 
 Two modes decide what the handoff feels like:
 
-|                                | Cold                                                                                                        | Warm                                                                                                                                                                  |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Handoff**                    | The agent announces the transfer and drops out; the carrier connects the caller to the destination.         | The caller waits on hold while the agent briefs the human on a private call, then the two are connected.                                                              |
-| **What the human hears first** | The caller, directly.                                                                                       | The agent's briefing: who is calling and what they need.                                                                                                              |
+|                                | Cold                                                                                                       | Warm                                                                                                                                                                |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Handoff**                    | The agent announces the transfer and drops out; the carrier connects the caller to the destination.        | The caller waits on hold while the agent briefs the human on a private call, then the two are connected.                                                            |
+| **What the human hears first** | The caller, directly.                                                                                      | The agent's briefing: who is calling and what they need.                                                                                                            |
 | **Recording & analysis**       | Stop at the handoff: nothing after it appears in [post-call analysis](/agents/monitor/post-call-analysis). | Recording continues after the human joins, capturing the full call audio; the transcript (and therefore analysis) covers only the agent's segment, up to the merge. |
 
 ## Prerequisites
 
 - A phone number bound to your agent, answering inbound calls. See [Inbound calls](/agents/telephony/inbound-calls).
-- The number must support transfers. Numbers purchased from the platform inventory (`provider: "twilio"`) do; see [Phone numbers](/agents/telephony/phone-numbers).
+- The number must support transfers. Numbers purchased from the platform inventory (`provider: "twilio"`) do; see [Phone numbers](/agents/telephony/phone-numbers). [Imported SIP numbers](/agents/telephony/byo-sip) support cold transfers when the carrier honors SIP REFER, and warm transfers when a termination is configured.
 
 ## Configure a destination
 
@@ -62,7 +62,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 | `type`         | Destination type; `phone` is the only value today and the default.                                                           |
 | `label`        | Name for the destination, shown in the Builder. At most 64 characters.                                                       |
 | `phone_number` | The destination in E.164 format, for example `+14155550123`.                                                                 |
-| `mode`         | `cold` (default) or `warm`; see the comparison above.                                                                       |
+| `mode`         | `cold` (default) or `warm`; see the comparison above.                                                                        |
 | `warm_connect` | Warm only: `confirm` (default) waits for the human's go-ahead before connecting; `direct` connects right after the briefing. |
 
 Destination numbers must be E.164 and are limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list.
@@ -74,8 +74,8 @@ Configuring a destination is what enables the built-in `transfer_call` tool: an 
 The built-in instructions are conservative: the agent transfers only when the caller asks for a person, or when the request clearly needs one and the agent cannot help further.
 
 <Tip>
-  Use the system prompt to sharpen the escalation policy, for example
-  "Transfer to a human whenever the caller mentions a refund." See
+  Use the system prompt to sharpen the escalation policy, for example "Transfer
+  to a human whenever the caller mentions a refund." See
   [Tools](/agents/build/tools) for how the agent chooses between its tools.
 </Tip>
 

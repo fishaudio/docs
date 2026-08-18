@@ -1,0 +1,205 @@
+---
+title: "Bring Your Own Number"
+description: "Import a number you already own by pointing your carrier's SIP trunk at Fish Audio: no rental fee, no telephony charges"
+icon: "phone-plus"
+---
+
+If your numbers already live at a carrier, you can connect them to your agents without porting anything. Point the carrier's SIP trunk at Fish Audio and import the number: it stays with your carrier, who keeps billing you for the telephone-network legs, and on Fish Audio the calls bill as ordinary agent sessions. Imported numbers carry no monthly rental and no telephony charges of any kind: no phone surcharge, no transfer fees, agent minutes only.
+
+This works with any carrier or PBX that speaks SIP trunking: Twilio Elastic SIP Trunking, Asterisk or FreePBX, and most SIP providers. It is also the only way to use non-US/CA numbers, which the purchasable inventory does not cover.
+
+## How it works
+
+- **Inbound**: your carrier routes calls for the number over its trunk to Fish Audio's SIP endpoint. The platform matches the dialed number and hands the call to the agent bound to it; from there it is a normal [inbound call](/agents/telephony/inbound-calls).
+- **Outbound** (optional): give the import a termination host and the platform can also place calls from the number. Outbound calls and warm-transfer consult legs dial out through your trunk, with the imported number as the caller ID.
+
+The SIP endpoint to point your trunk at:
+
+```text Origination URI
+sip:1pv316az391.sip.livekit.cloud;transport=tcp
+```
+
+## Prerequisites
+
+- A number at your carrier and access to its SIP trunk configuration.
+- Team owner or admin role (console), or an API key.
+
+## Import the number
+
+### In the console
+
+On the workspace **Phone numbers** page, choose **Import number**. Enter the number in E.164 format, set at least one inbound authentication factor, and optionally fill in the **Outbound calling (termination)** section. The same form is available later from the number's row menu as **Edit configuration**.
+
+### Through the API
+
+Import with the same endpoint that purchases numbers, using the `sip` provider variant:
+
+```bash Request
+curl --request POST https://api.fish.audio/v1/agent/phone-numbers \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "provider": "sip",
+    "phone_number": "+14155550123",
+    "label": "Main line (our carrier)",
+    "inbound_auth_username": "fish-inbound",
+    "inbound_auth_password": "long-random-password",
+    "inbound_allowed_addresses": ["203.0.113.0/24"],
+    "termination_uri": "pbx.example.com",
+    "termination_transport": "tcp",
+    "termination_auth_username": "fish-outbound",
+    "termination_auth_password": "another-long-password"
+  }'
+```
+
+Returns `201` with the number object. Imported numbers land in your default workspace, like purchases.
+
+| Field                       | Description                                                                                                                                |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `provider`                  | Required: `sip`.                                                                                                                           |
+| `phone_number`              | Required: the E.164 number you own at the carrier.                                                                                         |
+| `label`                     | Optional free-form label, up to 120 characters.                                                                                            |
+| `agent_id`                  | Optional: bind an agent so the number answers right away.                                                                                  |
+| `inbound_auth_username`     | SIP digest username your trunk authenticates with; requires the password.                                                                  |
+| `inbound_auth_password`     | The matching digest password.                                                                                                              |
+| `inbound_allowed_addresses` | IP addresses or CIDR ranges allowed to send calls for this number, up to 32.                                                               |
+| `termination_uri`           | Optional: your trunk's termination host as a bare `hostname[:port]`, without the `sip:` prefix. Enables outbound calls and warm transfers. |
+| `termination_transport`     | `auto` (default), `udp`, `tcp`, or `tls`.                                                                                                  |
+| `termination_auth_username` | Optional digest username for your termination; requires the password and a `termination_uri`.                                              |
+| `termination_auth_password` | The matching digest password.                                                                                                              |
+
+At least one inbound factor (digest credentials and/or allowed addresses) is required; a `422` reports what is missing. A `409` means the number is already on the platform. A `502` means trunk provisioning failed; the number stays visible with status `error` and is safe to release and retry.
+
+<Note>
+  Digest passwords are stored only in the underlying trunk objects and are never
+  echoed back by the API.
+</Note>
+
+## Inbound authentication
+
+The SIP endpoint is shared, so an import must prove that calls really come from your trunk:
+
+- **Digest credentials**: the platform challenges your trunk and verifies the username and password. Use this whenever your carrier or PBX answers digest challenges (Asterisk, FreePBX, most SIP providers).
+- **Allowed source addresses**: calls are only accepted from the listed IPs or CIDR ranges. Use this for carriers that do not authenticate their origination traffic; Twilio Elastic SIP Trunking is one, so for Twilio this is the required factor.
+
+Set both when your carrier supports it.
+
+## Carrier walkthroughs
+
+### Twilio Elastic SIP Trunking
+
+<Steps>
+  <Step title="Create a trunk">
+    In the Twilio console, under **Elastic SIP Trunking**, create a trunk (or
+    reuse an existing one).
+  </Step>
+  <Step title="Point origination at Fish Audio">
+    Add an origination URI: `sip:1pv316az391.sip.livekit.cloud;transport=tcp`.
+  </Step>
+  <Step title="Attach your number">
+    On the trunk's **Numbers** tab, add the phone number. Twilio routes its
+    calls through the trunk from then on.
+  </Step>
+  <Step title="Import on Fish Audio">
+    Twilio's origination does not answer digest challenges, so authenticate by
+    source address: allow Twilio's published signaling IP ranges for the regions
+    you use (see [Twilio's IP address
+    list](https://www.twilio.com/docs/sip-trunking/ip-addresses)). In the
+    console, the **Twilio Elastic SIP Trunking preset** button fills the ranges
+    and sets the transport for you.
+  </Step>
+  <Step title="Enable outbound (optional)">
+    On the trunk's **Termination** tab, note the termination SIP URI
+    (`yourprefix.pstn.twilio.com`) and attach a **Credential List**. Pass the
+    host as `termination_uri` and the credentials as `termination_auth_username`
+    and `termination_auth_password`. Credentials are required here: Fish Audio's
+    outbound traffic does not come from fixed IPs, so Twilio IP access control
+    lists cannot authorize it.
+  </Step>
+  <Step title="Allow transfers (optional)">
+    For [cold transfers](/agents/telephony/transfers), enable **Call Transfer
+    (SIP REFER)** in the trunk's settings so Twilio honors the handoff.
+  </Step>
+</Steps>
+
+### Asterisk, FreePBX, and other SIP platforms
+
+- Route the number's inbound calls to `sip:1pv316az391.sip.livekit.cloud;transport=tcp`.
+- Configure digest credentials on the trunk and pass the same pair as `inbound_auth_username` and `inbound_auth_password`; add your PBX's public IPs to `inbound_allowed_addresses` for defense in depth.
+- For outbound, expose a termination host reachable from the internet and pass it as `termination_uri`, with digest credentials if your PBX requires registration or authentication.
+
+## Outbound calls and transfers
+
+What an imported number can do depends on whether you configured a termination:
+
+|                    | Inbound-only (no `termination_uri`)     | With termination                              |
+| ------------------ | --------------------------------------- | --------------------------------------------- |
+| **Inbound calls**  | Yes                                     | Yes                                           |
+| **Cold transfers** | Yes, when your carrier honors SIP REFER | Yes, when your carrier honors SIP REFER       |
+| **Warm transfers** | No                                      | Yes; the consult leg dials through your trunk |
+| **Outbound calls** | No                                      | Yes; caller ID is the imported number         |
+
+The number object reports this as `supports_outbound`.
+
+## Update the configuration
+
+Change any part of an imported number's trunk configuration in place: rotate digest credentials, adjust the allowed addresses, or add, change, and remove the termination. In the console, open **Edit configuration** from the number's row menu; over the API, `PUT` the full desired configuration:
+
+```bash Request
+curl --request PUT https://api.fish.audio/v1/agent/phone-numbers/$PHONE_NUMBER_ID/sip-config \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "inbound_auth_username": "fish-inbound",
+    "inbound_auth_password": "",
+    "inbound_allowed_addresses": ["203.0.113.0/24", "198.51.100.7"],
+    "termination_uri": "pbx.example.com",
+    "termination_transport": "tls",
+    "termination_auth_username": "fish-outbound",
+    "termination_auth_password": ""
+  }'
+```
+
+The body is the import payload without `phone_number`, `label`, and `agent_id`, and it replaces the whole configuration. Two conveniences:
+
+- An empty password next to a set username keeps the stored password, so you can edit other fields without re-entering secrets. Setting a username for the first time requires a password.
+- An empty `termination_uri` removes the termination and makes the number inbound-only again.
+
+Updates apply in place: routing is never interrupted, and calls already in progress are unaffected. The response is the updated number object; for imported numbers it carries the non-secret configuration (`inbound_auth_username`, `inbound_allowed_addresses`, `termination_uri`, `termination_transport`, `termination_auth_username`) alongside `supports_outbound`.
+
+## Billing
+
+Imported numbers are free on Fish Audio: no monthly rental, no phone surcharge, no transfer fees. Calls on them bill as agent minutes only, like web sessions. Your carrier continues to bill you directly for its side of the traffic.
+
+## Release
+
+Releasing an imported number (`DELETE /v1/agent/phone-numbers/$PHONE_NUMBER_ID`) disconnects it from Fish Audio and returns `204`. The number itself stays yours at the carrier; you can import it again later.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card
+    title="Inbound calls"
+    icon="phone-arrow-down-left"
+    href="/agents/telephony/inbound-calls"
+  >
+    What happens when someone dials a bound number.
+  </Card>
+  <Card
+    title="Call transfers"
+    icon="phone-arrow-right"
+    href="/agents/telephony/transfers"
+  >
+    Cold and warm handoffs to a human.
+  </Card>
+  <Card
+    title="Phone numbers"
+    icon="phone"
+    href="/agents/telephony/phone-numbers"
+  >
+    The shared lifecycle: list, bind, label, release.
+  </Card>
+  <Card title="API introduction" icon="key" href="/api-reference/introduction">
+    API keys and workspace scoping for every request.
+  </Card>
+</CardGroup>
