@@ -491,7 +491,7 @@
     "/v1/agent/sessions": {
       "get": {
         "summary": "List Agent Sessions",
-        "description": "List your team's sessions, newest first. Filter by agent, status, caller\nnumber, or creation time. Paginate with `cursor` (recommended; follow\n`next_cursor` while `has_more` is true) or with `page` for offset pagination\nwith a `total` count; the two are mutually exclusive.",
+        "description": "List your team's sessions, newest first. Filter by agent, status, caller\nnumber, or creation time. Paginate with `cursor` (recommended; follow\n`next_cursor` while `has_more` is true) or with `page` for offset pagination\nwith a `total` count \u2014 the two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -2128,7 +2128,7 @@
     "/v1/agent/agents": {
       "get": {
         "summary": "List Agents",
-        "description": "List your team's agents, newest first. Paginate with `cursor` (follow\n`next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count; the two are mutually exclusive.",
+        "description": "List your team's agents, newest first. Paginate with `cursor` (follow\n`next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count \u2014 the two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -2420,7 +2420,7 @@
       },
       "post": {
         "summary": "Create Agent",
-        "description": "Create an agent, optionally with its full initial configuration inline.\nThe agent starts as a draft: publish it before creating sessions with it.",
+        "description": "Create an agent, optionally with its full initial configuration inline \u2014\none call provisions a ready-to-publish agent. The agent starts as a draft:\npublish it before creating sessions with it.",
         "security": [
           {
             "BearerAuth": []
@@ -2921,7 +2921,7 @@
       },
       "patch": {
         "summary": "Update Agent",
-        "description": "Update agent-level fields (name, description, status, public access and\nsession-override policy). Omitted fields keep their value. Conversation\nbehavior (voice, prompt, recording and the rest) is draft configuration:\nuse `PATCH /v1/agent/agents/{agent_id}/config`.",
+        "description": "Update agent-level fields (name, description, status, public access and\nsession-override policy). Omitted fields keep their value. Conversation\nbehavior \u2014 voice, prompt, recording and the rest \u2014 is draft configuration:\nuse `PATCH /v1/agent/agents/{agent_id}/config`.",
         "security": [
           {
             "BearerAuth": []
@@ -3341,7 +3341,7 @@
     "/v1/agent/agents/{agent_id}/widget": {
       "get": {
         "summary": "Get Widget Config",
-        "description": "Unauthenticated display configuration for the embeddable `<fish-agent>`\nwidget. Only agents published as public are reachable, and the request\n`Origin` must match the agent's allowed origins, the same gate as\nanonymous session creation. Attributes set on the embed tag override\nevery field returned here.",
+        "description": "Unauthenticated display configuration for the embeddable `<fish-agent>`\nwidget. Only agents published as public are reachable, and the request\n`Origin` must match the agent's allowed origins \u2014 the same gate as\nanonymous session creation. Attributes set on the embed tag override\nevery field returned here.",
         "parameters": [
           {
             "in": "path",
@@ -3381,7 +3381,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "Display config for the embeddable `<fish-agent>` widget.\n\nServed without authentication for public agents; HTML attributes on the\nembed tag override every field. Grows alongside the Builder widget tab\n(greeting, policy switches, styles): additions only, never renames.",
+                  "description": "Display config for the embeddable `<fish-agent>` widget.\n\nServed without authentication for public agents; HTML attributes on the\nembed tag override every field. Grows alongside the Builder widget tab\n(greeting, policy switches, styles) \u2014 additions only, never renames.",
                   "properties": {
                     "agent_name": {
                       "title": "Agent Name",
@@ -3479,7 +3479,7 @@
     "/v1/agent/agents/{agent_id}/config": {
       "get": {
         "summary": "Get Draft Config",
-        "description": "Read the agent's current draft configuration, the state the next publish\nwill freeze. Sessions run the latest published version, not the draft; use\nthe versions endpoints to see what is live. Webhook signing secrets are\nwrite-only and reported as `has_secret`.",
+        "description": "Read the agent's current draft configuration \u2014 the state the next publish\nwill freeze. Sessions run the latest published version, not the draft; use\nthe versions endpoints to see what is live. Webhook signing secrets are\nwrite-only and reported as `has_secret`.",
         "security": [
           {
             "BearerAuth": []
@@ -3539,6 +3539,9 @@
                     "guardrails": {
                       "$ref": "#/components/schemas/AgentGuardrailsConfig"
                     },
+                    "llm": {
+                      "$ref": "#/components/schemas/AgentLLMConfigRedacted"
+                    },
                     "updated_at": {
                       "format": "date-time",
                       "title": "Updated At",
@@ -3556,6 +3559,7 @@
                     "knowledge_base",
                     "analysis",
                     "guardrails",
+                    "llm",
                     "updated_at"
                   ],
                   "type": "object"
@@ -3681,7 +3685,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 4000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`;\nanything else is 422. `voice.expressive` opts into richer expressive\ndelivery (emotion steering, laughter and sounds, pauses); off keeps the\nstandard delivery. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 4000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`;\nanything else is 422. `voice.expressive` opts into richer expressive\ndelivery (emotion steering, laughter and sounds, pauses); off keeps the\nstandard delivery. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.tier`, cleared\nwith an explicit null.",
         "security": [
           {
             "BearerAuth": []
@@ -3751,6 +3755,9 @@
                     "guardrails": {
                       "$ref": "#/components/schemas/AgentGuardrailsConfig"
                     },
+                    "llm": {
+                      "$ref": "#/components/schemas/AgentLLMConfigRedacted"
+                    },
                     "updated_at": {
                       "format": "date-time",
                       "title": "Updated At",
@@ -3768,6 +3775,7 @@
                     "knowledge_base",
                     "analysis",
                     "guardrails",
+                    "llm",
                     "updated_at"
                   ],
                   "type": "object"
@@ -3939,7 +3947,7 @@
     "/v1/agent/agents/{agent_id}/publish": {
       "post": {
         "summary": "Publish Agent",
-        "description": "Freeze the current draft into an immutable version (version_number\nauto-increments) and make it the live configuration for new sessions. The\nbody is optional; the title and description label the version for audit\nand rollback.",
+        "description": "Freeze the current draft into an immutable version (version_number\nauto-increments) and make it the live configuration for new sessions. If\nthe draft already matches the live version, return that version unchanged.\nThe body is optional; the title and description label a newly created\nversion for audit and rollback.",
         "security": [
           {
             "BearerAuth": []
@@ -4053,6 +4061,43 @@
           },
           "404": {
             "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request conflict",
             "headers": {},
             "content": {
               "application/json": {
@@ -4495,7 +4540,7 @@
     "/v1/agent/agents/{agent_id}/versions/{version_number}": {
       "get": {
         "summary": "Get Agent Version",
-        "description": "One published version with its full frozen configuration snapshot,\nincluding the current live version. Secrets inside the snapshot are\nredacted the same way as the draft config.",
+        "description": "One published version with its full frozen configuration snapshot \u2014\nincluding the current live version. Secrets inside the snapshot are\nredacted the same way as the draft config.",
         "security": [
           {
             "BearerAuth": []
@@ -4964,7 +5009,7 @@
     "/v1/agent/knowledge-sources": {
       "get": {
         "summary": "List Knowledge Sources",
-        "description": "List your team's knowledge sources, newest first. Paginate with `cursor`\n(follow `next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count; the two are mutually exclusive.",
+        "description": "List your team's knowledge sources, newest first. Paginate with `cursor`\n(follow `next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count \u2014 the two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -5751,7 +5796,7 @@
       },
       "patch": {
         "summary": "Update Knowledge Source",
-        "description": "Rename the source and/or replace its content by uploading a new file in\n`source` (multipart). Replacing content increments `revision_number` while\nthe id stays stable, and every attached agent's draft picks it up\nimmediately; published versions pin the revision they were published with,\nso republish each affected agent to put the new content live.",
+        "description": "Rename the source and/or replace its content by uploading a new file in\n`source` (multipart). Replacing content increments `revision_number` while\nthe id stays stable, and every attached agent's draft picks it up\nimmediately; published versions pin the revision they were published with,\nso republish each affected agent to put the new content live \u2014 that\ntwo-step (sync content, republish) is the nightly content-sync recipe.",
         "security": [
           {
             "BearerAuth": []
@@ -6086,7 +6131,7 @@
       },
       "delete": {
         "summary": "Delete Knowledge Source",
-        "description": "Delete a knowledge source. Returns 409 while any agent still references it,\nin its draft or in its currently published version (sessions resolve\nsources at call time, so deleting a published reference would change a\nrunning agent). Check `GET /v1/agent/knowledge-sources/{source_id}/agents`,\ndetach via the agent config, and republish if needed before deleting.",
+        "description": "Delete a knowledge source. Returns 409 while any agent still references it\n\u2014 in its draft or in its currently published version (sessions resolve\nsources at call time, so deleting a published reference would change a\nrunning agent). Check `GET /v1/agent/knowledge-sources/{source_id}/agents`,\ndetach via the agent config, and republish if needed before deleting.",
         "security": [
           {
             "BearerAuth": []
@@ -6267,7 +6312,7 @@
     "/v1/agent/knowledge-sources/{source_id}/agents": {
       "get": {
         "summary": "List Agents Using Knowledge Source",
-        "description": "Every agent that references this source in its draft or currently\npublished configuration: the pre-flight check before a delete.",
+        "description": "Every agent that references this source in its draft or currently\npublished configuration \u2014 the pre-flight check before a delete.",
         "security": [
           {
             "BearerAuth": []
@@ -6436,7 +6481,7 @@
     "/v1/agent/tools": {
       "get": {
         "summary": "List Tools",
-        "description": "List your team's tools, newest first. Filter with `agent_id` to see one\nagent's attached tools. Paginate with `cursor` (follow `next_cursor` while\n`has_more` is true) or with `page` for offset pagination with a `total`\ncount; the two are mutually exclusive.",
+        "description": "List your team's tools, newest first. Filter with `agent_id` to see one\nagent's attached tools. Paginate with `cursor` (follow `next_cursor` while\n`has_more` is true) or with `page` for offset pagination with a `total`\ncount \u2014 the two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -7038,7 +7083,7 @@
     "/v1/agent/tools/{tool_id}": {
       "get": {
         "summary": "Get Tool",
-        "description": "Fetch one tool's full definition. Credential header values are never\nreturned; each credential header reports `has_secret` instead.",
+        "description": "Fetch one tool's full definition. Credential header values are never\nreturned \u2014 each credential header reports `has_secret` instead.",
         "security": [
           {
             "BearerAuth": []
@@ -7315,7 +7360,7 @@
       },
       "patch": {
         "summary": "Update Tool",
-        "description": "Patch tool fields; omitted fields keep their value (null is rejected;\nsend an empty string to clear a text field). `headers` replaces the header\nlist wholesale. Include credential values again whenever you send it,\nsince reads never return them. Attached agents' drafts pick up the change\nimmediately; published versions stay frozen until re-published.",
+        "description": "Patch tool fields; omitted fields keep their value (null is rejected \u2014\nsend an empty string to clear a text field). `headers` replaces the header\nlist wholesale \u2014 include credential values again whenever you send it,\nsince reads never return them. Attached agents' drafts pick up the change\nimmediately; published versions stay frozen until re-published.",
         "security": [
           {
             "BearerAuth": []
@@ -7676,7 +7721,7 @@
       },
       "delete": {
         "summary": "Delete Tool",
-        "description": "Delete a tool. Returns 409 while any agent's draft configuration still\nreferences it. Check `GET /v1/agent/tools/{tool_id}/agents` and detach it\nvia the agent config first, so a delete can never silently change agent\nbehavior.",
+        "description": "Delete a tool. Returns 409 while any agent's draft configuration still\nreferences it \u2014 check `GET /v1/agent/tools/{tool_id}/agents` and detach it\nvia the agent config first, so a delete can never silently change agent\nbehavior.",
         "security": [
           {
             "BearerAuth": []
@@ -7857,7 +7902,7 @@
     "/v1/agent/tools/{tool_id}/agents": {
       "get": {
         "summary": "List Agents Using Tool",
-        "description": "Every agent whose draft configuration references this tool: the\npre-flight check before a delete. Published versions keep executing their\nfrozen tool snapshot, so only draft references block deletion.",
+        "description": "Every agent whose draft configuration references this tool \u2014 the\npre-flight check before a delete. Published versions keep executing their\nfrozen tool snapshot, so only draft references block deletion.",
         "security": [
           {
             "BearerAuth": []
@@ -8026,7 +8071,7 @@
     "/v1/agent/phone-numbers": {
       "get": {
         "summary": "List Phone Numbers",
-        "description": "List your team's phone numbers, newest first. Released numbers are gone\nfor good and never appear. Look an id up by E.164 with `phone_number`, or\nfilter with `agent_id` to see one agent's numbers. Paginate with `cursor`\n(follow `next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count; the two are mutually exclusive.",
+        "description": "List your team's phone numbers, newest first. Released numbers are gone\nfor good and never appear. Look an id up by E.164 with `phone_number`, or\nfilter with `agent_id` to see one agent's numbers. Paginate with `cursor`\n(follow `next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count \u2014 the two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -8345,7 +8390,7 @@
       },
       "post": {
         "summary": "Purchase Phone Number",
-        "description": "Buy a number from the inventory. The number lands in your default\nworkspace, and any `agent_id` you bind must live there too. Billing is the\nmonthly price charged in daily slices: the first day is charged before\nanything is bought (402 costs you nothing), and the daily run advances it\nfrom there. 409 means the number is already on the platform; 502 means the\nprovider refused the purchase; the number stays visible with status\n`error` and is safe to release.",
+        "description": "Buy a number from the inventory. The number lands in your default\nworkspace, and any `agent_id` you bind must live there too. Billing is the\nmonthly price charged in daily slices: the first day is charged before\nanything is bought (402 costs you nothing), and the daily run advances it\nfrom there. 409 means the number is already on the platform; 502 means the\nprovider refused the purchase \u2014 the number stays visible with status\n`error` and is safe to release.",
         "security": [
           {
             "BearerAuth": []
@@ -8979,7 +9024,7 @@
       },
       "patch": {
         "summary": "Update Phone Number",
-        "description": "Change the label and/or repoint the number at another agent: the\ndeployment-pipeline move (rebind from the staging agent to the production\none). Send `agent_id: null` to unbind; unbound numbers ring busy. The\nagent must live in the number's workspace. Rebinding is a routing-table\nupdate resolved on the next inbound call; nothing about the number itself\nis reprovisioned.",
+        "description": "Change the label and/or repoint the number at another agent \u2014 the\ndeployment-pipeline move (rebind from the staging agent to the production\none). Send `agent_id: null` to unbind; unbound numbers ring busy. The\nagent must live in the number's workspace. Rebinding is a routing-table\nupdate resolved on the next inbound call; nothing about the number itself\nis reprovisioned.",
         "security": [
           {
             "BearerAuth": []
@@ -9251,7 +9296,7 @@
       },
       "delete": {
         "summary": "Release Phone Number",
-        "description": "Release a number back to the provider's inventory and stop its daily\nbilling. This is irreversible: anyone (including other platforms) can\nbuy the number afterwards, so callers who saved it may reach a stranger.\nThe number disappears from this API immediately.",
+        "description": "Release a number back to the provider's inventory and stop its daily\nbilling. This is irreversible: anyone \u2014 including other platforms \u2014 can\nbuy the number afterwards, so callers who saved it may reach a stranger.\nThe number disappears from this API immediately.",
         "security": [
           {
             "BearerAuth": []
@@ -10155,7 +10200,7 @@
                       "audio_base64": "SUQzBAAAAAAA...",
                       "chunk_audio_offset_sec": 0,
                       "chunk_seq": 0,
-                      "content": "I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start."
+                      "content": "I can\u2019t believe it\u2019s been this long. It feels like forever since we last really talked. I\u2019ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I\u2019ve thought about calling you so many times, but I never knew where to start."
                     },
                     {
                       "alignment": {
@@ -10416,7 +10461,7 @@
                       "audio_base64": "//uSxOAAF...",
                       "chunk_audio_offset_sec": 0,
                       "chunk_seq": 0,
-                      "content": "I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start."
+                      "content": "I can\u2019t believe it\u2019s been this long. It feels like forever since we last really talked. I\u2019ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I\u2019ve thought about calling you so many times, but I never knew where to start."
                     },
                     {
                       "alignment": {
@@ -10607,7 +10652,7 @@
                       "audio_base64": "//uSxImAl...",
                       "chunk_audio_offset_sec": 16.24,
                       "chunk_seq": 1,
-                      "content": "Seeing you again now makes me realize just how much I’ve missed you. We have so much to catch up on, and I don’t even know which part of my life to tell you about first."
+                      "content": "Seeing you again now makes me realize just how much I\u2019ve missed you. We have so much to catch up on, and I don\u2019t even know which part of my life to tell you about first."
                     }
                   ],
                   "properties": {
@@ -10658,15 +10703,15 @@
                 "examples": {
                   "first_event": {
                     "summary": "First text chunk event with alignment",
-                    "value": "data: {\"audio_base64\": \"SUQzBAAAAAAA...\", \"content\": \"I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start.\", \"alignment\": {\"segments\": [{\"text\": \"I\", \"start\": 0.0, \"end\": 0.16}, {\"text\": \"can't\", \"start\": 0.16, \"end\": 0.48}, {\"text\": \"believe\", \"start\": 0.48, \"end\": 0.8}, {\"text\": \"its\", \"start\": 0.8, \"end\": 1.12}, {\"text\": \"been\", \"start\": 1.2, \"end\": 1.44}, {\"text\": \"this\", \"start\": 1.44, \"end\": 1.76}, {\"text\": \"long\", \"start\": 1.76, \"end\": 2.48}, {\"text\": \"It\", \"start\": 2.56, \"end\": 2.64}, {\"text\": \"feels\", \"start\": 2.72, \"end\": 3.04}, {\"text\": \"like\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"forever\", \"start\": 3.36, \"end\": 4.0}, {\"text\": \"since\", \"start\": 4.0, \"end\": 4.32}, {\"text\": \"we\", \"start\": 4.32, \"end\": 4.48}, {\"text\": \"last\", \"start\": 4.48, \"end\": 4.96}, {\"text\": \"really\", \"start\": 4.96, \"end\": 5.28}, {\"text\": \"talked\", \"start\": 5.28, \"end\": 5.84}, {\"text\": \"Ive\", \"start\": 6.0, \"end\": 6.24}, {\"text\": \"missed\", \"start\": 6.24, \"end\": 6.64}, {\"text\": \"hearing\", \"start\": 6.64, \"end\": 6.96}, {\"text\": \"your\", \"start\": 6.96, \"end\": 7.2}, {\"text\": \"voice\", \"start\": 7.2, \"end\": 7.76}, {\"text\": \"your\", \"start\": 7.76, \"end\": 7.92}, {\"text\": \"stories\", \"start\": 7.92, \"end\": 8.48}, {\"text\": \"even\", \"start\": 8.48, \"end\": 8.72}, {\"text\": \"the\", \"start\": 8.72, \"end\": 8.8}, {\"text\": \"little\", \"start\": 8.8, \"end\": 9.2}, {\"text\": \"things\", \"start\": 9.2, \"end\": 9.52}, {\"text\": \"you\", \"start\": 9.52, \"end\": 9.68}, {\"text\": \"used\", \"start\": 9.68, \"end\": 10.0}, {\"text\": \"to\", \"start\": 10.0, \"end\": 10.08}, {\"text\": \"say\", \"start\": 10.08, \"end\": 10.64}, {\"text\": \"How\", \"start\": 10.64, \"end\": 10.96}, {\"text\": \"have\", \"start\": 10.96, \"end\": 11.12}, {\"text\": \"you\", \"start\": 11.12, \"end\": 11.36}, {\"text\": \"been\", \"start\": 11.36, \"end\": 11.92}, {\"text\": \"Ive\", \"start\": 12.0, \"end\": 12.24}, {\"text\": \"thought\", \"start\": 12.24, \"end\": 12.48}, {\"text\": \"about\", \"start\": 12.48, \"end\": 12.8}, {\"text\": \"calling\", \"start\": 12.8, \"end\": 13.2}, {\"text\": \"you\", \"start\": 13.2, \"end\": 13.36}, {\"text\": \"so\", \"start\": 13.36, \"end\": 13.68}, {\"text\": \"many\", \"start\": 13.68, \"end\": 13.92}, {\"text\": \"times\", \"start\": 13.92, \"end\": 14.56}, {\"text\": \"but\", \"start\": 14.56, \"end\": 14.72}, {\"text\": \"I\", \"start\": 14.72, \"end\": 14.88}, {\"text\": \"never\", \"start\": 14.88, \"end\": 15.2}, {\"text\": \"knew\", \"start\": 15.2, \"end\": 15.36}, {\"text\": \"where\", \"start\": 15.36, \"end\": 15.6}, {\"text\": \"to\", \"start\": 15.6, \"end\": 15.6}, {\"text\": \"start\", \"start\": 15.68, \"end\": 16.24}], \"audio_duration\": 16.24}, \"chunk_seq\": 0, \"chunk_audio_offset_sec\": 0.0}\n\n"
+                    "value": "data: {\"audio_base64\": \"SUQzBAAAAAAA...\", \"content\": \"I can\u2019t believe it\u2019s been this long. It feels like forever since we last really talked. I\u2019ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I\u2019ve thought about calling you so many times, but I never knew where to start.\", \"alignment\": {\"segments\": [{\"text\": \"I\", \"start\": 0.0, \"end\": 0.16}, {\"text\": \"can't\", \"start\": 0.16, \"end\": 0.48}, {\"text\": \"believe\", \"start\": 0.48, \"end\": 0.8}, {\"text\": \"its\", \"start\": 0.8, \"end\": 1.12}, {\"text\": \"been\", \"start\": 1.2, \"end\": 1.44}, {\"text\": \"this\", \"start\": 1.44, \"end\": 1.76}, {\"text\": \"long\", \"start\": 1.76, \"end\": 2.48}, {\"text\": \"It\", \"start\": 2.56, \"end\": 2.64}, {\"text\": \"feels\", \"start\": 2.72, \"end\": 3.04}, {\"text\": \"like\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"forever\", \"start\": 3.36, \"end\": 4.0}, {\"text\": \"since\", \"start\": 4.0, \"end\": 4.32}, {\"text\": \"we\", \"start\": 4.32, \"end\": 4.48}, {\"text\": \"last\", \"start\": 4.48, \"end\": 4.96}, {\"text\": \"really\", \"start\": 4.96, \"end\": 5.28}, {\"text\": \"talked\", \"start\": 5.28, \"end\": 5.84}, {\"text\": \"Ive\", \"start\": 6.0, \"end\": 6.24}, {\"text\": \"missed\", \"start\": 6.24, \"end\": 6.64}, {\"text\": \"hearing\", \"start\": 6.64, \"end\": 6.96}, {\"text\": \"your\", \"start\": 6.96, \"end\": 7.2}, {\"text\": \"voice\", \"start\": 7.2, \"end\": 7.76}, {\"text\": \"your\", \"start\": 7.76, \"end\": 7.92}, {\"text\": \"stories\", \"start\": 7.92, \"end\": 8.48}, {\"text\": \"even\", \"start\": 8.48, \"end\": 8.72}, {\"text\": \"the\", \"start\": 8.72, \"end\": 8.8}, {\"text\": \"little\", \"start\": 8.8, \"end\": 9.2}, {\"text\": \"things\", \"start\": 9.2, \"end\": 9.52}, {\"text\": \"you\", \"start\": 9.52, \"end\": 9.68}, {\"text\": \"used\", \"start\": 9.68, \"end\": 10.0}, {\"text\": \"to\", \"start\": 10.0, \"end\": 10.08}, {\"text\": \"say\", \"start\": 10.08, \"end\": 10.64}, {\"text\": \"How\", \"start\": 10.64, \"end\": 10.96}, {\"text\": \"have\", \"start\": 10.96, \"end\": 11.12}, {\"text\": \"you\", \"start\": 11.12, \"end\": 11.36}, {\"text\": \"been\", \"start\": 11.36, \"end\": 11.92}, {\"text\": \"Ive\", \"start\": 12.0, \"end\": 12.24}, {\"text\": \"thought\", \"start\": 12.24, \"end\": 12.48}, {\"text\": \"about\", \"start\": 12.48, \"end\": 12.8}, {\"text\": \"calling\", \"start\": 12.8, \"end\": 13.2}, {\"text\": \"you\", \"start\": 13.2, \"end\": 13.36}, {\"text\": \"so\", \"start\": 13.36, \"end\": 13.68}, {\"text\": \"many\", \"start\": 13.68, \"end\": 13.92}, {\"text\": \"times\", \"start\": 13.92, \"end\": 14.56}, {\"text\": \"but\", \"start\": 14.56, \"end\": 14.72}, {\"text\": \"I\", \"start\": 14.72, \"end\": 14.88}, {\"text\": \"never\", \"start\": 14.88, \"end\": 15.2}, {\"text\": \"knew\", \"start\": 15.2, \"end\": 15.36}, {\"text\": \"where\", \"start\": 15.36, \"end\": 15.6}, {\"text\": \"to\", \"start\": 15.6, \"end\": 15.6}, {\"text\": \"start\", \"start\": 15.68, \"end\": 16.24}], \"audio_duration\": 16.24}, \"chunk_seq\": 0, \"chunk_audio_offset_sec\": 0.0}\n\n"
                   },
                   "following_event": {
                     "summary": "Following audio event with latest alignment snapshot",
-                    "value": "data: {\"audio_base64\": \"//uSxOAAF...\", \"content\": \"I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start.\", \"alignment\": {\"segments\": [{\"text\": \"I\", \"start\": 0.0, \"end\": 0.16}, {\"text\": \"can't\", \"start\": 0.16, \"end\": 0.48}, {\"text\": \"believe\", \"start\": 0.48, \"end\": 0.8}, {\"text\": \"its\", \"start\": 0.8, \"end\": 1.12}, {\"text\": \"been\", \"start\": 1.2, \"end\": 1.44}, {\"text\": \"this\", \"start\": 1.44, \"end\": 1.76}, {\"text\": \"long\", \"start\": 1.76, \"end\": 2.48}, {\"text\": \"It\", \"start\": 2.56, \"end\": 2.64}, {\"text\": \"feels\", \"start\": 2.72, \"end\": 3.04}, {\"text\": \"like\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"forever\", \"start\": 3.36, \"end\": 4.0}, {\"text\": \"since\", \"start\": 4.0, \"end\": 4.32}, {\"text\": \"we\", \"start\": 4.32, \"end\": 4.48}, {\"text\": \"last\", \"start\": 4.48, \"end\": 4.96}, {\"text\": \"really\", \"start\": 4.96, \"end\": 5.28}, {\"text\": \"talked\", \"start\": 5.28, \"end\": 5.84}, {\"text\": \"Ive\", \"start\": 6.0, \"end\": 6.24}, {\"text\": \"missed\", \"start\": 6.24, \"end\": 6.64}, {\"text\": \"hearing\", \"start\": 6.64, \"end\": 6.96}, {\"text\": \"your\", \"start\": 6.96, \"end\": 7.2}, {\"text\": \"voice\", \"start\": 7.2, \"end\": 7.76}, {\"text\": \"your\", \"start\": 7.76, \"end\": 7.92}, {\"text\": \"stories\", \"start\": 7.92, \"end\": 8.48}, {\"text\": \"even\", \"start\": 8.48, \"end\": 8.72}, {\"text\": \"the\", \"start\": 8.72, \"end\": 8.8}, {\"text\": \"little\", \"start\": 8.8, \"end\": 9.2}, {\"text\": \"things\", \"start\": 9.2, \"end\": 9.52}, {\"text\": \"you\", \"start\": 9.52, \"end\": 9.68}, {\"text\": \"used\", \"start\": 9.68, \"end\": 10.0}, {\"text\": \"to\", \"start\": 10.0, \"end\": 10.08}, {\"text\": \"say\", \"start\": 10.08, \"end\": 10.64}, {\"text\": \"How\", \"start\": 10.64, \"end\": 10.96}, {\"text\": \"have\", \"start\": 10.96, \"end\": 11.12}, {\"text\": \"you\", \"start\": 11.12, \"end\": 11.36}, {\"text\": \"been\", \"start\": 11.36, \"end\": 11.92}, {\"text\": \"Ive\", \"start\": 12.0, \"end\": 12.24}, {\"text\": \"thought\", \"start\": 12.24, \"end\": 12.48}, {\"text\": \"about\", \"start\": 12.48, \"end\": 12.8}, {\"text\": \"calling\", \"start\": 12.8, \"end\": 13.2}, {\"text\": \"you\", \"start\": 13.2, \"end\": 13.36}, {\"text\": \"so\", \"start\": 13.36, \"end\": 13.68}, {\"text\": \"many\", \"start\": 13.68, \"end\": 13.92}, {\"text\": \"times\", \"start\": 13.92, \"end\": 14.56}, {\"text\": \"but\", \"start\": 14.56, \"end\": 14.72}, {\"text\": \"I\", \"start\": 14.72, \"end\": 14.88}, {\"text\": \"never\", \"start\": 14.88, \"end\": 15.2}, {\"text\": \"knew\", \"start\": 15.2, \"end\": 15.36}, {\"text\": \"where\", \"start\": 15.36, \"end\": 15.6}, {\"text\": \"to\", \"start\": 15.6, \"end\": 15.6}, {\"text\": \"start\", \"start\": 15.68, \"end\": 16.24}], \"audio_duration\": 16.24}, \"chunk_seq\": 0, \"chunk_audio_offset_sec\": 0.0}\n\n"
+                    "value": "data: {\"audio_base64\": \"//uSxOAAF...\", \"content\": \"I can\u2019t believe it\u2019s been this long. It feels like forever since we last really talked. I\u2019ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I\u2019ve thought about calling you so many times, but I never knew where to start.\", \"alignment\": {\"segments\": [{\"text\": \"I\", \"start\": 0.0, \"end\": 0.16}, {\"text\": \"can't\", \"start\": 0.16, \"end\": 0.48}, {\"text\": \"believe\", \"start\": 0.48, \"end\": 0.8}, {\"text\": \"its\", \"start\": 0.8, \"end\": 1.12}, {\"text\": \"been\", \"start\": 1.2, \"end\": 1.44}, {\"text\": \"this\", \"start\": 1.44, \"end\": 1.76}, {\"text\": \"long\", \"start\": 1.76, \"end\": 2.48}, {\"text\": \"It\", \"start\": 2.56, \"end\": 2.64}, {\"text\": \"feels\", \"start\": 2.72, \"end\": 3.04}, {\"text\": \"like\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"forever\", \"start\": 3.36, \"end\": 4.0}, {\"text\": \"since\", \"start\": 4.0, \"end\": 4.32}, {\"text\": \"we\", \"start\": 4.32, \"end\": 4.48}, {\"text\": \"last\", \"start\": 4.48, \"end\": 4.96}, {\"text\": \"really\", \"start\": 4.96, \"end\": 5.28}, {\"text\": \"talked\", \"start\": 5.28, \"end\": 5.84}, {\"text\": \"Ive\", \"start\": 6.0, \"end\": 6.24}, {\"text\": \"missed\", \"start\": 6.24, \"end\": 6.64}, {\"text\": \"hearing\", \"start\": 6.64, \"end\": 6.96}, {\"text\": \"your\", \"start\": 6.96, \"end\": 7.2}, {\"text\": \"voice\", \"start\": 7.2, \"end\": 7.76}, {\"text\": \"your\", \"start\": 7.76, \"end\": 7.92}, {\"text\": \"stories\", \"start\": 7.92, \"end\": 8.48}, {\"text\": \"even\", \"start\": 8.48, \"end\": 8.72}, {\"text\": \"the\", \"start\": 8.72, \"end\": 8.8}, {\"text\": \"little\", \"start\": 8.8, \"end\": 9.2}, {\"text\": \"things\", \"start\": 9.2, \"end\": 9.52}, {\"text\": \"you\", \"start\": 9.52, \"end\": 9.68}, {\"text\": \"used\", \"start\": 9.68, \"end\": 10.0}, {\"text\": \"to\", \"start\": 10.0, \"end\": 10.08}, {\"text\": \"say\", \"start\": 10.08, \"end\": 10.64}, {\"text\": \"How\", \"start\": 10.64, \"end\": 10.96}, {\"text\": \"have\", \"start\": 10.96, \"end\": 11.12}, {\"text\": \"you\", \"start\": 11.12, \"end\": 11.36}, {\"text\": \"been\", \"start\": 11.36, \"end\": 11.92}, {\"text\": \"Ive\", \"start\": 12.0, \"end\": 12.24}, {\"text\": \"thought\", \"start\": 12.24, \"end\": 12.48}, {\"text\": \"about\", \"start\": 12.48, \"end\": 12.8}, {\"text\": \"calling\", \"start\": 12.8, \"end\": 13.2}, {\"text\": \"you\", \"start\": 13.2, \"end\": 13.36}, {\"text\": \"so\", \"start\": 13.36, \"end\": 13.68}, {\"text\": \"many\", \"start\": 13.68, \"end\": 13.92}, {\"text\": \"times\", \"start\": 13.92, \"end\": 14.56}, {\"text\": \"but\", \"start\": 14.56, \"end\": 14.72}, {\"text\": \"I\", \"start\": 14.72, \"end\": 14.88}, {\"text\": \"never\", \"start\": 14.88, \"end\": 15.2}, {\"text\": \"knew\", \"start\": 15.2, \"end\": 15.36}, {\"text\": \"where\", \"start\": 15.36, \"end\": 15.6}, {\"text\": \"to\", \"start\": 15.6, \"end\": 15.6}, {\"text\": \"start\", \"start\": 15.68, \"end\": 16.24}], \"audio_duration\": 16.24}, \"chunk_seq\": 0, \"chunk_audio_offset_sec\": 0.0}\n\n"
                   },
                   "later_text_chunk_event": {
                     "summary": "Later text chunk event with another alignment",
-                    "value": "data: {\"audio_base64\": \"//uSxImAl...\", \"content\": \"Seeing you again now makes me realize just how much I’ve missed you. We have so much to catch up on, and I don’t even know which part of my life to tell you about first.\", \"alignment\": {\"segments\": [{\"text\": \"Seeing\", \"start\": 0.4, \"end\": 0.8}, {\"text\": \"you\", \"start\": 0.8, \"end\": 0.96}, {\"text\": \"again\", \"start\": 0.96, \"end\": 1.44}, {\"text\": \"now\", \"start\": 1.44, \"end\": 1.68}, {\"text\": \"makes\", \"start\": 1.68, \"end\": 2.08}, {\"text\": \"me\", \"start\": 2.08, \"end\": 2.24}, {\"text\": \"realize\", \"start\": 2.24, \"end\": 2.8}, {\"text\": \"just\", \"start\": 2.8, \"end\": 3.12}, {\"text\": \"how\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"much\", \"start\": 3.28, \"end\": 3.6}, {\"text\": \"Ive\", \"start\": 3.6, \"end\": 3.76}, {\"text\": \"missed\", \"start\": 3.84, \"end\": 4.24}, {\"text\": \"you\", \"start\": 4.24, \"end\": 4.56}, {\"text\": \"We\", \"start\": 4.64, \"end\": 4.8}, {\"text\": \"have\", \"start\": 4.8, \"end\": 5.04}, {\"text\": \"so\", \"start\": 5.04, \"end\": 5.36}, {\"text\": \"much\", \"start\": 5.36, \"end\": 5.76}, {\"text\": \"to\", \"start\": 5.76, \"end\": 5.76}, {\"text\": \"catch\", \"start\": 5.76, \"end\": 6.16}, {\"text\": \"up\", \"start\": 6.16, \"end\": 6.4}, {\"text\": \"on\", \"start\": 6.4, \"end\": 6.72}, {\"text\": \"and\", \"start\": 6.8, \"end\": 6.96}, {\"text\": \"I\", \"start\": 6.96, \"end\": 7.04}, {\"text\": \"dont\", \"start\": 7.04, \"end\": 7.36}, {\"text\": \"even\", \"start\": 7.36, \"end\": 7.6}, {\"text\": \"know\", \"start\": 7.6, \"end\": 7.84}, {\"text\": \"which\", \"start\": 7.84, \"end\": 8.08}, {\"text\": \"part\", \"start\": 8.08, \"end\": 8.4}, {\"text\": \"of\", \"start\": 8.4, \"end\": 8.48}, {\"text\": \"my\", \"start\": 8.56, \"end\": 8.72}, {\"text\": \"life\", \"start\": 8.72, \"end\": 8.96}, {\"text\": \"to\", \"start\": 9.12, \"end\": 9.12}, {\"text\": \"tell\", \"start\": 9.12, \"end\": 9.44}, {\"text\": \"you\", \"start\": 9.44, \"end\": 9.6}, {\"text\": \"about\", \"start\": 9.6, \"end\": 10.0}, {\"text\": \"first\", \"start\": 10.08, \"end\": 10.48}], \"audio_duration\": 10.48}, \"chunk_seq\": 1, \"chunk_audio_offset_sec\": 16.24}\n\n"
+                    "value": "data: {\"audio_base64\": \"//uSxImAl...\", \"content\": \"Seeing you again now makes me realize just how much I\u2019ve missed you. We have so much to catch up on, and I don\u2019t even know which part of my life to tell you about first.\", \"alignment\": {\"segments\": [{\"text\": \"Seeing\", \"start\": 0.4, \"end\": 0.8}, {\"text\": \"you\", \"start\": 0.8, \"end\": 0.96}, {\"text\": \"again\", \"start\": 0.96, \"end\": 1.44}, {\"text\": \"now\", \"start\": 1.44, \"end\": 1.68}, {\"text\": \"makes\", \"start\": 1.68, \"end\": 2.08}, {\"text\": \"me\", \"start\": 2.08, \"end\": 2.24}, {\"text\": \"realize\", \"start\": 2.24, \"end\": 2.8}, {\"text\": \"just\", \"start\": 2.8, \"end\": 3.12}, {\"text\": \"how\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"much\", \"start\": 3.28, \"end\": 3.6}, {\"text\": \"Ive\", \"start\": 3.6, \"end\": 3.76}, {\"text\": \"missed\", \"start\": 3.84, \"end\": 4.24}, {\"text\": \"you\", \"start\": 4.24, \"end\": 4.56}, {\"text\": \"We\", \"start\": 4.64, \"end\": 4.8}, {\"text\": \"have\", \"start\": 4.8, \"end\": 5.04}, {\"text\": \"so\", \"start\": 5.04, \"end\": 5.36}, {\"text\": \"much\", \"start\": 5.36, \"end\": 5.76}, {\"text\": \"to\", \"start\": 5.76, \"end\": 5.76}, {\"text\": \"catch\", \"start\": 5.76, \"end\": 6.16}, {\"text\": \"up\", \"start\": 6.16, \"end\": 6.4}, {\"text\": \"on\", \"start\": 6.4, \"end\": 6.72}, {\"text\": \"and\", \"start\": 6.8, \"end\": 6.96}, {\"text\": \"I\", \"start\": 6.96, \"end\": 7.04}, {\"text\": \"dont\", \"start\": 7.04, \"end\": 7.36}, {\"text\": \"even\", \"start\": 7.36, \"end\": 7.6}, {\"text\": \"know\", \"start\": 7.6, \"end\": 7.84}, {\"text\": \"which\", \"start\": 7.84, \"end\": 8.08}, {\"text\": \"part\", \"start\": 8.08, \"end\": 8.4}, {\"text\": \"of\", \"start\": 8.4, \"end\": 8.48}, {\"text\": \"my\", \"start\": 8.56, \"end\": 8.72}, {\"text\": \"life\", \"start\": 8.72, \"end\": 8.96}, {\"text\": \"to\", \"start\": 9.12, \"end\": 9.12}, {\"text\": \"tell\", \"start\": 9.12, \"end\": 9.44}, {\"text\": \"you\", \"start\": 9.44, \"end\": 9.6}, {\"text\": \"about\", \"start\": 9.6, \"end\": 10.0}, {\"text\": \"first\", \"start\": 10.08, \"end\": 10.48}], \"audio_duration\": 10.48}, \"chunk_seq\": 1, \"chunk_audio_offset_sec\": 16.24}\n\n"
                   }
                 }
               }
@@ -10791,7 +10836,7 @@
           {
             "lang": "bash",
             "label": "Stream With Timestamps",
-            "source": "curl --no-buffer --request POST \\\n  --url https://api.fish.audio/v1/tts/stream/with-timestamp \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2.1-pro-free' \\\n  --data '{\n    \"text\": \"[happy] I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start. Seeing you again now makes me realize just how much I’ve missed you. We have so much to catch up on, and I don’t even know which part of my life to tell you about first.\",\n    \"format\": \"opus\",\n    \"normalize\": true,\n    \"temperature\": 0.9,\n    \"chunk_length\": 100,\n    \"top_p\": 0.9,\n    \"latency\": \"balanced\",\n    \"sample_rate\": 48000,\n    \"reference_id\": \"fbe02f8306fc4d3d915e9871722a39d5\"\n  }'"
+            "source": "curl --no-buffer --request POST \\\n  --url https://api.fish.audio/v1/tts/stream/with-timestamp \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2.1-pro-free' \\\n  --data '{\n    \"text\": \"[happy] I can\u2019t believe it\u2019s been this long. It feels like forever since we last really talked. I\u2019ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I\u2019ve thought about calling you so many times, but I never knew where to start. Seeing you again now makes me realize just how much I\u2019ve missed you. We have so much to catch up on, and I don\u2019t even know which part of my life to tell you about first.\",\n    \"format\": \"opus\",\n    \"normalize\": true,\n    \"temperature\": 0.9,\n    \"chunk_length\": 100,\n    \"top_p\": 0.9,\n    \"latency\": \"balanced\",\n    \"sample_rate\": 48000,\n    \"reference_id\": \"fbe02f8306fc4d3d915e9871722a39d5\"\n  }'"
           }
         ]
       }
@@ -13014,6 +13059,419 @@
           "Model"
         ]
       }
+    },
+    "/v1/agent/phone-calls": {
+      "post": {
+        "summary": "Create Phone Call",
+        "description": "Place an outbound call from one of your Twilio phone numbers to a US,\nCanada or Japan destination. A domestic trunk 0 after +81 (e.g.\n+81080...) is accepted and normalized to E.164 (+8180...). Returns\nimmediately with the session queued for\ndialing; subscribe to the `phone_call.dial_finished` webhook or poll\n`GET /v1/agent/sessions/{session_id}` for the dial outcome. Ringing is\nnever billed \u2014 metering starts when the callee answers.\n\nErrors carry a machine-readable `reason` (e.g. `destination_not_allowed`,\n`insufficient_credit`, `daily_limit_exceeded`,\n`concurrency_limit_exceeded`).",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "description": "Retry-safe replay key: the same key with the same body returns the call already placed instead of dialing again (24h window).",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Idempotency-Key"
+            },
+            "deprecated": false
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhoneCallCreatePayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Document created, URL follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "session_id": {
+                      "title": "Session Id",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": "queued",
+                      "default": "queued",
+                      "title": "Status",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "session_id"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "No payment -- see charging schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request forbidden -- authorization will not help",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request conflict",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The user has sent too many requests in a given amount of time (\"rate limiting\")",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid responses from another server/proxy",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Phone Calls"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "Create Phone Call",
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/agent/phone-calls \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'Idempotency-Key: <unique-key>' \\\n  --data '{\n    \"agent_id\": \"<agent-id>\",\n    \"phone_number_id\": \"<phone-number-id>\",\n    \"to_number\": \"+14155550123\"\n  }'"
+          }
+        ]
+      }
     }
   },
   "tags": [],
@@ -13026,7 +13484,7 @@
     },
     "schemas": {
       "AgentSessionSummary": {
-        "description": "One list row: lifecycle facts only; the conversation timeline lives on\nthe detail endpoint (Retell-style thin list).",
+        "description": "One list row: lifecycle facts only \u2014 the conversation timeline lives on\nthe detail endpoint (Retell-style thin list).",
         "properties": {
           "session_id": {
             "title": "Session Id",
@@ -14329,6 +14787,17 @@
               }
             ],
             "default": null
+          },
+          "llm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentLLMPatch"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "title": "PublicAgentConfigPatchPayload",
@@ -14590,6 +15059,80 @@
         "title": "PublicAgentKnowledgeBasePatch",
         "type": "object"
       },
+      "PublicAgentLLMCustomConfig": {
+        "additionalProperties": false,
+        "properties": {
+          "base_url": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Base Url",
+            "type": "string"
+          },
+          "model": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "api_key": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Sent to your endpoint as the Authorization bearer token; write-only, reads return null. Required when introducing `custom`; omit to keep the stored key when updating.",
+            "title": "Api Key"
+          }
+        },
+        "required": [
+          "base_url",
+          "model"
+        ],
+        "title": "PublicAgentLLMCustomConfig",
+        "type": "object"
+      },
+      "PublicAgentLLMPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "tier": {
+            "anyOf": [
+              {
+                "enum": [
+                  "instant",
+                  "medium",
+                  "high"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tier"
+          },
+          "custom": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentLLMCustomConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Your own OpenAI-compatible endpoint; mutually exclusive with `tier`, explicit null reverts to the tier."
+          }
+        },
+        "title": "PublicAgentLLMPatch",
+        "type": "object"
+      },
       "PublicAgentPromptPatch": {
         "additionalProperties": false,
         "properties": {
@@ -14756,6 +15299,18 @@
       "PublicAgentWebhooksPatch": {
         "additionalProperties": false,
         "properties": {
+          "conversation_init": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicConversationInitWebhookPayload"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Pre-call webhook for inbound phone calls: called while the call is being set up; the response's dynamic_variables render into the published prompt before the agent speaks. An explicit null removes it. Takes effect after the next publish."
+          },
           "post_call": {
             "anyOf": [
               {
@@ -14775,6 +15330,44 @@
           }
         },
         "title": "PublicAgentWebhooksPatch",
+        "type": "object"
+      },
+      "PublicConversationInitWebhookPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          },
+          "secret": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional HMAC-SHA256 signing secret (X-Fish-Webhook-Signature). Write-only: reads report `has_secret` instead of the value.",
+            "title": "Secret"
+          },
+          "timeout_seconds": {
+            "default": 5,
+            "description": "How long the platform waits for the endpoint before connecting the call without variables.",
+            "maximum": 8,
+            "minimum": 1,
+            "title": "Timeout Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "PublicConversationInitWebhookPayload",
         "type": "object"
       },
       "PublicPostCallWebhookPayload": {
@@ -15156,6 +15749,59 @@
         "title": "AgentGuardrailsConfig",
         "type": "object"
       },
+      "AgentLLMConfigRedacted": {
+        "properties": {
+          "tier": {
+            "default": "medium",
+            "enum": [
+              "instant",
+              "medium",
+              "high"
+            ],
+            "title": "Tier",
+            "type": "string"
+          },
+          "custom": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentLLMCustomConfigRedacted"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "title": "AgentLLMConfigRedacted",
+        "type": "object"
+      },
+      "AgentLLMCustomConfigRedacted": {
+        "description": "Read entity: the stored api_key never leaves the collection.",
+        "properties": {
+          "base_url": {
+            "minLength": 1,
+            "title": "Base Url",
+            "type": "string"
+          },
+          "model": {
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "api_key": {
+            "default": null,
+            "title": "Api Key",
+            "type": "null"
+          }
+        },
+        "required": [
+          "base_url",
+          "model"
+        ],
+        "title": "AgentLLMCustomConfigRedacted",
+        "type": "object"
+      },
       "AgentOutboundConfig": {
         "description": "Outbound-only behavior; mirror of core WorkflowOutbound.\nAbsent node = AMD on, hang up on voicemail.",
         "properties": {
@@ -15219,7 +15865,7 @@
             "type": "string"
           },
           "first_message": {
-            "default": "Hi! Thanks for calling — how can I help you today?",
+            "default": "Hi! Thanks for calling \u2014 how can I help you today?",
             "title": "First Message",
             "type": "string"
           },
@@ -15356,6 +16002,17 @@
       },
       "PublicAgentWebhooksConfig": {
         "properties": {
+          "conversation_init": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicConversationInitWebhook"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "post_call": {
             "items": {
               "$ref": "#/components/schemas/PublicPostCallWebhook"
@@ -15365,6 +16022,30 @@
           }
         },
         "title": "PublicAgentWebhooksConfig",
+        "type": "object"
+      },
+      "PublicConversationInitWebhook": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "has_secret": {
+            "default": false,
+            "description": "Whether a signing secret is configured; the value itself is never returned.",
+            "title": "Has Secret",
+            "type": "boolean"
+          },
+          "timeout_seconds": {
+            "default": 5,
+            "title": "Timeout Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "PublicConversationInitWebhook",
         "type": "object"
       },
       "PublicPostCallWebhook": {
@@ -15469,6 +16150,9 @@
           "guardrails": {
             "$ref": "#/components/schemas/AgentGuardrailsConfig"
           },
+          "llm": {
+            "$ref": "#/components/schemas/AgentLLMConfigRedacted"
+          },
           "updated_at": {
             "format": "date-time",
             "title": "Updated At",
@@ -15486,6 +16170,7 @@
           "knowledge_base",
           "analysis",
           "guardrails",
+          "llm",
           "updated_at"
         ],
         "title": "PublicAgentConfigEntity",
@@ -16303,7 +16988,7 @@
         "type": "object"
       },
       "TTSRequest": {
-        "description": "Request body for text-to-speech synthesis. Supports single-speaker synthesis on all compatible TTS models. Multi-speaker dialogue synthesis is only available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`), not `s1`.\n\n## Single Speaker\nProvide either `reference_id` (string) pointing to a voice model, or `references` (array of ReferenceAudio) for zero-shot cloning.\n\n## Multiple Speakers (Dialogue, S2 family only)\nFor multi-speaker synthesis, provide:\n- `reference_id`: array of voice model IDs, e.g., [\"speaker-0-id\", \"speaker-1-id\"]\n- `text`: use speaker tags `<|speaker:0|>`, `<|speaker:1|>`, etc. to indicate speaker changes, e.g., \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\"\n\nAlternatively, for zero-shot multi-speaker:\n- `references`: 2D array where each inner array contains references for one speaker\n- `reference_id`: array of identifiers (can be arbitrary strings for zero-shot)\n\n## Example (Multi-Speaker with Model IDs)\n```json\n{\n  \"text\": \"<|speaker:0|>Good morning!<|speaker:1|>Good morning! How are you?<|speaker:0|>I'm great, thanks!\",\n  \"reference_id\": [\"model-id-alice\", \"model-id-bob\"]\n}\n```",
+        "description": "Request body for text-to-speech synthesis. Supports single-speaker synthesis on all compatible TTS models. Multi-speaker dialogue synthesis is only available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`), not `s1`.\n\n## Single Speaker\nProvide either `reference_id` (string) pointing to a voice model, or `references` (array of ReferenceAudio) for zero-shot cloning.\n\n## Multiple Speakers (Dialogue \u2014 S2 family only)\nFor multi-speaker synthesis, provide:\n- `reference_id`: array of voice model IDs, e.g., [\"speaker-0-id\", \"speaker-1-id\"]\n- `text`: use speaker tags `<|speaker:0|>`, `<|speaker:1|>`, etc. to indicate speaker changes, e.g., \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\"\n\nAlternatively, for zero-shot multi-speaker:\n- `references`: 2D array where each inner array contains references for one speaker\n- `reference_id`: array of identifiers (can be arbitrary strings for zero-shot)\n\n## Example (Multi-Speaker with Model IDs)\n```json\n{\n  \"text\": \"<|speaker:0|>Good morning!<|speaker:1|>Good morning! How are you?<|speaker:0|>I'm great, thanks!\",\n  \"reference_id\": [\"model-id-alice\", \"model-id-bob\"]\n}\n```",
         "properties": {
           "text": {
             "description": "Text to convert to speech.",
@@ -17324,6 +18009,88 @@
           "audio"
         ],
         "title": "SampleEntity",
+        "type": "object"
+      },
+      "PhoneCallCreatePayload": {
+        "additionalProperties": false,
+        "description": "POST phone-calls body, shared by the public and console routes.\n\nto_number is deliberately not format-validated here: the contract orders\nthe E.164 check after the agent/published checks, so it runs in the\nservice with a machine-readable reason.",
+        "properties": {
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "phone_number_id": {
+            "description": "The team-owned number to dial from (twilio provider only).",
+            "title": "Phone Number Id",
+            "type": "string"
+          },
+          "to_number": {
+            "description": "Destination in E.164, e.g. +14155550123.",
+            "title": "To Number",
+            "type": "string"
+          },
+          "dynamic_variables": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "maxProperties": 50,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Dynamic Variables"
+          },
+          "overrides": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentSessionOverridesPayload"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Metadata"
+          }
+        },
+        "required": [
+          "agent_id",
+          "phone_number_id",
+          "to_number"
+        ],
+        "title": "PhoneCallCreatePayload",
         "type": "object"
       }
     }

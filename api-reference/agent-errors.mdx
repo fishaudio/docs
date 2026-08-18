@@ -25,6 +25,7 @@ The exceptions to that shape:
   ]
   ```
 
+- **Phone-call creation** ([`POST /v1/agent/phone-calls`](/api-reference/endpoint/agent/create-phone-call)) adds a machine-readable `reason` field to its errors; see [Outbound calls](/agents/telephony/outbound-calls#errors) for the full list.
 - A request body that isn't valid JSON returns `400` with `"Malformed JSON"`; a missing body or wrong `Content-Type` returns a bare `415`.
 - A missing or malformed `Authorization` header returns a bare `401` with a `WWW-Authenticate: Bearer` header; a present-but-bad credential returns the JSON shape (`"Invalid token"`, `"Token expired"`).
 
