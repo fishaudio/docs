@@ -1,0 +1,170 @@
+---
+title: "Outbound Calls"
+description: "Place calls from your phone numbers over the API; the agent speaks when the callee answers"
+icon: "phone-arrow-up-right"
+---
+
+Dial any allowed number from one of your workspace numbers and the agent takes the call the moment the callee picks up. Outbound calls are ordinary agent sessions with `direction: "outbound"`: they appear in session history, they are [stored](/agents/monitor/conversation-history#what-gets-stored) and analyzed under the same per-agent settings as any other conversation, and they trigger the same webhooks plus one extra, [`phone_call.dial_finished`](/agents/monitor/webhooks), that reports how the dial attempt ended.
+
+<CardGroup cols={3}>
+  <Card
+    title="Phone numbers"
+    icon="hashtag"
+    href="/agents/telephony/phone-numbers"
+  >
+    Get a number that can place calls.
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/agents/monitor/webhooks">
+    Get the dial outcome pushed to your backend.
+  </Card>
+  <Card
+    title="Dynamic variables"
+    icon="brackets-curly"
+    href="/agents/build/dynamic-variables"
+  >
+    Personalize the call with per-call values.
+  </Card>
+</CardGroup>
+
+## Place a call
+
+<Steps>
+  <Step title="Get a number that supports outbound">
+    Any [purchased number](/agents/telephony/phone-numbers) can place calls. An [imported BYO number](/agents/telephony/byo-sip) can too, once its termination is configured; the number object reports this as `supports_outbound`. The number you dial from is the caller ID the callee sees.
+  </Step>
+  <Step title="Publish your agent">
+    Outbound calls run the agent's published configuration, not the draft. [Publish](/agents/deploy/versions-publishing) before dialing.
+  </Step>
+  <Step title="Create the phone call">
+    ```bash
+    curl --request POST https://api.fish.audio/v1/agent/phone-calls \
+      --header "Authorization: Bearer $FISH_API_KEY" \
+      --header "Content-Type: application/json" \
+      --header "Idempotency-Key: order-4711-reminder-1" \
+      --data '{
+        "agent_id": "YOUR_AGENT_ID",
+        "phone_number_id": "YOUR_PHONE_NUMBER_ID",
+        "to_number": "+14155550123"
+      }'
+    ```
+
+    The request returns `201` as soon as the dial is dispatched:
+
+    ```json
+    { "session_id": "9c41f0d2e8a34b7f", "status": "queued" }
+    ```
+
+  </Step>
+</Steps>
+
+This endpoint requires an API key; there is no anonymous variant. See the [API reference](/api-reference/endpoint/agent/create-phone-call) for the full schema.
+
+### Request fields
+
+| Field               | Description                                                                                                                                                           |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agent_id`          | Required: the agent that speaks on the call. Must have a published version.                                                                                           |
+| `phone_number_id`   | Required: the workspace number to dial from.                                                                                                                          |
+| `to_number`         | Required: the destination in E.164, for example `+14155550123`.                                                                                                       |
+| `dynamic_variables` | Optional: per-call values for `{{placeholders}}` in the agent's configured text, same rules as [session creation](/agents/build/dynamic-variables). Up to 50 entries. |
+| `overrides`         | Optional: replace whole configuration fields for this call, subject to the agent's [override allowlist](/agents/deploy/authenticated-sessions#overrides).             |
+| `metadata`          | Optional: your own JSON object, returned verbatim on session reads and in webhook payloads. Never interpreted.                                                        |
+
+The session's [time and timezone context](/agents/build/time-timezone) resolves from the destination number when the agent has no fixed timezone configured, so "tomorrow morning" means the callee's morning.
+
+### Retry safely with an Idempotency-Key
+
+Outbound dials spend money and ring real phones, so put an `Idempotency-Key` header on every create. For 24 hours, repeating the same key with the same body returns the call already placed instead of dialing again. The same key with a **different** body is refused with `422 idempotency_key_reuse`, and a retry that races an in-flight first attempt gets `409 idempotency_key_conflict`; back off and retry the same request. If the create fails with an ambiguous network error, retry with the same key: you get the placed session back if the first attempt went through.
+
+## The dial outcome
+
+Ringing is never billed; metering starts when the callee answers. A call that is never answered is not billed and not analyzed.
+
+You learn how the dial ended in either of two ways:
+
+- **Push**: subscribe to the [`phone_call.dial_finished` webhook](/agents/monitor/webhooks). It fires exactly once per outbound call, whether or not anyone picked up, before `call.ended`.
+- **Poll**: read `GET /v1/agent/sessions/{session_id}` until `dial_status` is set.
+
+```bash
+curl https://api.fish.audio/v1/agent/sessions/9c41f0d2e8a34b7f \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+Two session fields carry the outcome:
+
+| Field         | Values                                                                                                      |
+| ------------- | ----------------------------------------------------------------------------------------------------------- |
+| `dial_status` | `answered`, `busy`, `no_answer`, or `failed`. `null` while the call is still ringing, and on inbound calls. |
+| `answered_by` | What answering-machine detection heard: `human`, `voicemail`, or `unknown`. `null` unless answered.         |
+
+On outbound sessions the attribution fields are person-centric: `caller_number` is the human you dialed and `dialed_number` is your workspace number. Everything else about the session (transcript, recording, [post-call analysis](/agents/monitor/post-call-analysis), `call.ended` and `call.analyzed` webhooks, hang-up via `POST /v1/agent/sessions/{session_id}/end`) works exactly as for [inbound calls](/agents/telephony/inbound-calls).
+
+## Allowed destinations
+
+Calls from purchased numbers can reach US, Canada, and Japan numbers. Japanese destinations may keep the domestic trunk zero (`+81080...` is accepted and normalized to `+8180...`), and premium-rate segments (such as `0570` Navi Dial and `0990`) are always refused. Calls from [imported BYO numbers](/agents/telephony/byo-sip) dial out through your own trunk, so the country allowlist does not apply; the destination only has to be valid E.164.
+
+Numbers that live on the platform can never be dialed, so an agent cannot call another agent's number.
+
+## Limits
+
+| Limit            | Default                                                                          |
+| ---------------- | -------------------------------------------------------------------------------- |
+| Calls per day    | 200 per workspace, on a fixed UTC day. Rejected attempts count toward the quota. |
+| Concurrent calls | 10 per workspace, counting calls that are still ringing or in conversation.      |
+
+Exceeding either returns `429` with a machine-readable reason (`daily_limit_exceeded`, `concurrency_limit_exceeded`). These are per-workspace defaults; contact support if you need more.
+
+## Errors
+
+Unlike most [Agents API errors](/api-reference/agent-errors), phone-call errors carry a machine-readable `reason` alongside the `message`:
+
+```json
+{
+  "status": 422,
+  "reason": "destination_not_allowed",
+  "message": "Outbound calls are limited to US, Canada and Japan numbers"
+}
+```
+
+| Status | Reason                                                                                               | Cause                                                                                                                            |
+| ------ | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `402`  | `insufficient_credit`                                                                                | Out of API credit; top up first.                                                                                                 |
+| `403`  | `outbound_disabled`                                                                                  | Outbound calling is switched off for this workspace.                                                                             |
+| `404`  | `number_not_found`, `agent_not_found`                                                                | The id doesn't exist, isn't yours, or the number was released.                                                                   |
+| `409`  | `agent_not_published`                                                                                | [Publish](/agents/deploy/versions-publishing) the agent first.                                                                   |
+| `409`  | `idempotency_key_conflict`                                                                           | A request with this key is still in flight; back off and retry the same request.                                                 |
+| `422`  | `number_provider_unsupported`, `number_termination_missing`, `number_inactive`                       | The from-number can't place calls; see [which numbers support outbound](/agents/telephony/byo-sip#outbound-calls-and-transfers). |
+| `422`  | `destination_invalid`, `destination_not_allowed`, `premium_destination_blocked`, `self_call_blocked` | The destination is refused; see [allowed destinations](#allowed-destinations).                                                   |
+| `422`  | `idempotency_key_reuse`                                                                              | The key was already used with a different body; mint a fresh key per distinct call.                                              |
+| `429`  | `daily_limit_exceeded`, `concurrency_limit_exceeded`                                                 | A workspace [limit](#limits) was hit.                                                                                            |
+
+`502` and `503` follow the [general guidance](/api-reference/agent-errors#5xx): retrying is safe, especially with an `Idempotency-Key`.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Webhooks" icon="webhook" href="/agents/monitor/webhooks">
+    The `phone_call.dial_finished` payload in full.
+  </Card>
+  <Card
+    title="Transfers"
+    icon="arrow-right-arrow-left"
+    href="/agents/telephony/transfers"
+  >
+    Hand an answered call to a human; consult legs dial from the same number.
+  </Card>
+  <Card
+    title="Bring your own SIP numbers"
+    icon="server"
+    href="/agents/telephony/byo-sip"
+  >
+    Place calls through your own trunk with your number as caller ID.
+  </Card>
+  <Card
+    title="Conversation history"
+    icon="clock-rotate-left"
+    href="/agents/monitor/conversation-history"
+  >
+    Transcripts, recordings, and session listing filters.
+  </Card>
+</CardGroup>
