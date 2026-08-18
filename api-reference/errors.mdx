@@ -16,7 +16,7 @@ Every Fish Audio error comes back as JSON with a `message` and a `status`:
 
 | Status | Meaning | What to do |
 |---|---|---|
-| `400` | Bad request — invalid parameters, or a `reference_id` / voice that doesn't exist | Fix the request; read the `message`. |
+| `400` | Bad request: invalid parameters, or a `reference_id` / voice that doesn't exist | Fix the request; read the `message`. |
 | `401` | Invalid or missing API key | Send `Authorization: Bearer <key>`; check it on [API Keys](https://fish.audio/app/api-keys). |
 | `402` | Insufficient credits | Top up on [Billing](https://fish.audio/app/billing). |
 | `403` | Not permitted for this key/resource | Check the key's scope and the resource owner. |
@@ -26,7 +26,7 @@ Every Fish Audio error comes back as JSON with a `message` and a `status`:
 
 ## Retries
 
-Retry `429` and `5xx` with exponential backoff. Don't retry other `4xx` codes — they won't succeed without a change to the request.
+Retry `429` and `5xx` with exponential backoff. Don't retry other `4xx` codes; they won't succeed without a change to the request.
 
 ```python
 import time
@@ -45,7 +45,7 @@ for attempt in range(5):
         if e.status >= 500:
             time.sleep(2 ** attempt)
         else:
-            raise                            # 4xx — fix the request
+            raise                            # 4xx: fix the request
 ```
 
 ## Handling errors in the SDKs
@@ -58,7 +58,7 @@ from fishaudio.exceptions import (
     AuthenticationError,  # 401
     RateLimitError,       # 429
     NotFoundError,        # 404
-    APIError,             # any other HTTP error — has .status and .message
+    APIError,             # any other HTTP error; has .status and .message
     FishAudioError,       # base class for all SDK errors
 )
 
@@ -81,7 +81,7 @@ import {
   NotFoundError,             // 404
   BadRequestError,           // 400
   UnprocessableEntityError,  // 422
-  FishAudioError,            // base — has .statusCode and .body
+  FishAudioError,            // base; has .statusCode and .body
 } from "fish-audio";
 
 try {
@@ -100,5 +100,5 @@ try {
 
 <Note>
   Audio playback via `play()` needs `ffmpeg`. If it's missing, the Python SDK raises
-  `DependencyError` — install `ffmpeg` or save the audio to a file instead.
+  `DependencyError`. Install `ffmpeg` or save the audio to a file instead.
 </Note>

@@ -4,19 +4,19 @@ description: "Built-in agent capabilities like hanging up the call, enabled per 
 icon: "toggle-on"
 ---
 
-System tools are capabilities built into the platform. There is nothing to create or host — each agent simply enables the ones it needs.
+System tools are capabilities built into the platform. There is nothing to create or host. Each agent simply enables the ones it needs.
 
 | Tool | Key | What it does |
 |---|---|---|
 | Hang up call | `hang_up_call` | Lets the agent end the call itself. |
 
 <Note>
-Unlike [webhook tools](/agents/build/webhook-tools), system tools are not workspace resources shared across agents. The on/off state is stored per agent — toggling a system tool on one agent never affects another.
+Unlike [webhook tools](/agents/build/webhook-tools), system tools are not workspace resources shared across agents. The on/off state is stored per agent.
 </Note>
 
 ## Toggle in the Builder
 
-Open your agent's **Tools** page in the Builder. The **System tools** card holds the **Hang up call** switch — flip it to enable or disable that capability for this agent.
+Open your agent's **Tools** page in the Builder. The **System tools** card holds the **Hang up call** switch.
 
 ## Toggle via the API
 
@@ -24,7 +24,7 @@ Over the REST API, system tool switches are part of the agent's configuration, i
 
 ## Transfer call
 
-`transfer_call` has no switch of its own: it is enabled automatically once the agent has a transfer destination configured, and only on phone sessions — web sessions have no call to transfer. See [Transfers](/agents/telephony/transfers) for configuring destinations and everything else about transfers.
+`transfer_call` has no switch of its own: it is enabled automatically once the agent has a transfer destination configured, and only on phone sessions (web sessions have no call to transfer). See [Transfers](/agents/telephony/transfers) for configuring destinations and everything else about transfers.
 
 ## Going further
 

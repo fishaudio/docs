@@ -34,7 +34,7 @@ const client = new OpenAI({
 The same change works in any framework that takes an OpenAI-compatible base
 URL. Authentication is the standard `Authorization: Bearer` header; on
 WebSockets, `?api_key=<key>` in the URL also works. The
-Groq SDK speaks the same protocol — see
+Groq SDK speaks the same protocol; see
 [Migrate from Groq](/developer-guide/compat/migrate-from-groq).
 
 | Feature                          | Supported |
@@ -96,20 +96,20 @@ Differences from OpenAI:
 - **Set `response_format` explicitly.** It defaults to `pcm` here, not `mp3`
   as on OpenAI. Code that omits it and writes the bytes to `out.mp3` produces a
   file that won't play.
-- **`voice` is a Fish voice ID** — see
+- **`voice` is a Fish voice ID**; see
   [Voices](/developer-guide/getting-started/migration#voices). Preset names
   (`nova`, `echo`, …) are a 400, except `alloy`, which happens to synthesize in
-  an unrelated voice — see
+  an unrelated voice; see
   [capabilities](/developer-guide/compat/capabilities#what-each-protocol-supports).
 - **`instructions` is refused with a 400.** Use `X-Fish-*` headers or
   `provider.options` for delivery control instead.
 - **`stream_format` must be `audio`.** `stream_format: "sse"` is a first-class
-  parameter in current OpenAI SDKs and is refused with a 400 here — the
+  parameter in current OpenAI SDKs and is refused with a 400 here; the
   response is always the raw audio stream.
 
 `speed` works as on OpenAI. `sample_rate` (Hz) triggers a real resample, but
 each codec accepts only certain rates and asking for one it doesn't take is a
-**400, not a silent fallback** — the per-codec rate table is in
+**400, not a silent fallback**; the per-codec rate table is in
 [Audio formats](/developer-guide/compat/capabilities#audio-formats).
 
 One asymmetry between the two SDKs: `sample_rate` is not a first-class
@@ -130,7 +130,7 @@ with client.audio.speech.with_streaming_response.create(
 
 Your existing model names carry over: `tts-1`, `tts-1-hd`, and
 `gpt-4o-mini-tts` are accepted as aliases for `fish-audio/s2.1-pro`. A name
-that is neither a known alias nor a Fish model is refused with a 400 — never
+that is neither a known alias nor a Fish model is refused with a 400, never
 silently substituted.
 
 ## Transcription
@@ -172,17 +172,16 @@ curl https://api.fish.audio/compat/v1/audio/transcriptions \
 
 `timestamp_granularities=["word"]` is what adds the top-level `words` array;
 without it `verbose_json` returns `segments[]` alone. (Fish times every word, so
-`segments[]` is per-word either way — the flag controls the `words` array, not
+`segments[]` is per-word either way; the flag controls the `words` array, not
 the precision.)
 
 Subtitle formats (`srt`, `vtt`) are aggregated from Fish's word-level
 timestamps into phrase-length cues, so they won't line up one-to-one with the
 per-word entries `verbose_json` returns in `segments[]`.
 
-In `verbose_json`, the `language` field echoes the language **you** sent — it is
-not a detection result, and `transcribe-1` needs no hint to work. Send none and
-the field comes back as an empty string, which is the expected response, not a
-failure. Don't route on it. (The value you send is still passed to Fish's ASR;
+In `verbose_json`, the `language` field echoes the language **you** sent, not a
+detection result; `transcribe-1` needs no hint to work. Send none and the field
+comes back as an empty string, not a failure. Don't route on it. (The value you send is still passed to Fish's ASR;
 it's only the reported field that is an echo rather than a measurement.)
 
 Transcription model names carry over the same way: `whisper-1`,
@@ -191,18 +190,18 @@ Transcription model names carry over the same way: `whisper-1`,
 
 <Note>
   In `verbose_json`, the Whisper-engine internals (`avg_logprob`,
-  `no_speech_prob`, `compression_ratio`, `temperature`) are neutral constants —
+  `no_speech_prob`, `compression_ratio`, `temperature`) are neutral constants;
   don't build quality filters on them.
 </Note>
 
-The OpenAI SDK's `client.audio.translations` has no counterpart here —
+The OpenAI SDK's `client.audio.translations` has no counterpart here:
 `POST /v1/audio/translations` is a 404. Transcribe in the source language and
 translate the text downstream.
 
 ## Chat-modality audio
 
 `POST /v1/chat/completions` serves TTS and STT in the chat-completions shape,
-for SDKs and frameworks that only speak chat — LangChain, Vercel AI SDK, and
+for SDKs and frameworks that only speak chat: LangChain, Vercel AI SDK, and
 similar.
 
 For **speech output**, request the audio modality; the last user message's text
@@ -273,7 +272,7 @@ const client = new OpenAI({
   apiKey: process.env.FISH_AUDIO_API_KEY,
 });
 const rt = new OpenAIRealtimeWS({ model: "fish-audio/s2.1-pro" }, client);
-// Stand-in for your audio pipeline — deltas are base64 chunks.
+// Stand-in for your audio pipeline; deltas are base64 chunks.
 const playChunk = b64 => process.stdout.write(`audio: ${b64.length} b64 chars\n`);
 
 rt.on("session.created", () => {
@@ -291,7 +290,7 @@ rt.on("response.output_audio.delta", ev => playChunk(ev.delta));
 ```
 
 The essentials: the endpoint speaks the Realtime **GA** event names, you drive
-turn detection yourself (`input_audio_buffer.commit` ends an utterance —
+turn detection yourself (`input_audio_buffer.commit` ends an utterance;
 server-side VAD is refused, not ignored), and transcription runs over the same
 socket or in a dedicated transcription session. The full event list, format
 and voice rules, and transcription-session handshakes are in the
@@ -313,17 +312,17 @@ an integer `code`:
 }
 ```
 
-Errors from the Fish Audio API keep their original status — for example 402
-when your account is out of credit — and carry `type: "provider_error"` plus
+Errors from the Fish Audio API keep their original status (for example 402
+when your account is out of credit) and carry `type: "provider_error"` plus
 `"metadata": {"provider_name": "fish-audio"}`. Errors from the compatibility
 layer itself carry no `metadata`. Rate limits return 429 with a `Retry-After`
 header.
 
 Authentication produces both kinds, and the `type` tells you which problem you
 have. No key, or a header that can't be parsed, is a 401 with
-`type: "authentication_error"` and no `metadata` — nothing was checked against
+`type: "authentication_error"` and no `metadata`: nothing was checked against
 your account. A key that fails validation is a 401 with
-`type: "provider_error"` and `metadata.provider_name: "fish-audio"` — the key
+`type: "provider_error"` and `metadata.provider_name: "fish-audio"`: the key
 itself is invalid. Both surface as your SDK's `AuthenticationError`.
 
 `GET /v1/models` is unauthenticated and answers even without a key, so it is
@@ -344,6 +343,6 @@ not a way to check whether a key is valid.
     icon="sliders"
     href="/developer-guide/compat/capabilities#reaching-fish-native-parameters"
   >
-    `latency`, `temperature`, zero-shot cloning — through the OpenAI SDK.
+    `latency`, `temperature`, and zero-shot cloning through the OpenAI SDK.
   </Card>
 </CardGroup>

@@ -4,13 +4,13 @@ description: "Talk to your draft agent in a live voice call, right in the Builde
 icon: "headset"
 ---
 
-Preview calls let you hold a live voice conversation with your agent without leaving the Builder. Every call runs against your current **draft** configuration — edit the system prompt, pick a different voice, and call again to hear the difference immediately, no publish required.
+Preview calls let you hold a live voice conversation with your agent without leaving the Builder. Every call runs against your current **draft** configuration: edit the system prompt, pick a different voice, and call again to hear the difference immediately, no publish required.
 
 ## Start a preview call
 
 <Steps>
   <Step title="Open your agent in the Builder">
-    Preview works from any Builder section — Configuration, Tools, Knowledge
+    Preview works from any Builder section: Configuration, Tools, Knowledge
     base, and so on.
   </Step>
   <Step title="Click Test call">
@@ -19,7 +19,7 @@ Preview calls let you hold a live voice conversation with your agent without lea
   </Step>
   <Step title="Click Start call">
     Your browser asks for microphone access the first time. The call cannot
-    start without a microphone — if you deny permission, the panel tells you to
+    start without a microphone: if you deny permission, the panel tells you to
     allow access in your browser settings and try again.
   </Step>
   <Step title="Talk to your agent">
@@ -29,7 +29,7 @@ Preview calls let you hold a live voice conversation with your agent without lea
   </Step>
 </Steps>
 
-The panel stays connected while you switch between Builder sections, so you can read your configuration mid-call. Navigating away from the Builder — back to the agent list, for example — hangs up. If the call fails to connect, the panel shows an error state and lets you retry; a connection drop mid-call simply ends the call.
+The panel stays connected while you switch between Builder sections, so you can read your configuration mid-call. Navigating away from the Builder (back to the agent list, for example) hangs up. If the call fails to connect, the panel shows an error state and lets you retry; a connection drop mid-call simply ends the call.
 
 ## During the call
 
@@ -46,8 +46,8 @@ When the agent invokes a [tool](/agents/build/tools), the call appears inline in
 
 <Warning>
   Preview calls run your real configuration. [Webhook
-  tools](/agents/build/webhook-tools) send real HTTP requests to your endpoints
-  — point them at a staging environment if you want to avoid side effects while
+  tools](/agents/build/webhook-tools) send real HTTP requests to your endpoints.
+  Point them at a staging environment if you want to avoid side effects while
   testing.
 </Warning>
 
@@ -57,7 +57,7 @@ When the agent invokes a [tool](/agents/build/tools), the call appears inline in
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | Mute     | Toggles your microphone without ending the call                                                                                                |
 | End call | Ends the call and returns the panel to its ready state                                                                                         |
-| Timer    | Shows elapsed time; preview calls are capped at 10 minutes (600 seconds) — or the agent's configured maximum call duration, whichever is lower |
+| Timer    | Shows elapsed time; preview calls are capped at 10 minutes (600 seconds), or the agent's configured maximum call duration, whichever is lower |
 
 ## Drafts, not published versions
 
@@ -68,7 +68,7 @@ Preview calls and production sessions read different configurations:
 | Preview call       | Latest draft, autosaved as you edit in the Builder       |
 | Production session | The published version, unchanged until you publish again |
 
-This makes preview the fast inner loop: tweak the prompt, call, listen, repeat. Your published version — and every live integration using it — is untouched until you decide the draft is ready and [publish it](/agents/deploy/versions-publishing).
+This makes preview the fast inner loop: tweak the prompt, call, listen, repeat, and [publish](/agents/deploy/versions-publishing) when the draft is ready.
 
 <Tip>
   After a config change, hang up and start a new call. A preview call reflects
@@ -79,7 +79,7 @@ This makes preview the fast inner loop: tweak the prompt, call, listen, repeat. 
 
 Preview sessions are built for iteration, not record-keeping:
 
-- **Post-call analysis runs in the panel.** If you have [post-call analysis](/agents/monitor/post-call-analysis) configured, ending the call triggers it and the results — summary, extracted data fields, and per-criterion success / failure / unknown verdicts — appear directly in the panel. Analysis runs however the call ends — including the automatic time limit or closing the tab mid-call — but results are viewable only in the panel, so close the tab and you won't see them.
+- **Post-call analysis runs in the panel.** If you have [post-call analysis](/agents/monitor/post-call-analysis) configured, ending the call triggers it and the results (summary, extracted data fields, and per-criterion success / failure / unknown verdicts) appear directly in the panel. Analysis runs however the call ends (including the automatic time limit or closing the tab mid-call), but results are viewable only in the panel.
 - **Nothing enters conversation history.** Preview calls never appear in [conversation history](/agents/monitor/conversation-history), and the transcript is not preserved after you hang up.
 - **No post-call webhook fires.** Preview sessions never trigger the `call.analyzed` [post-call webhook](/agents/monitor/webhooks), so Builder debugging doesn't push analysis results to your production systems.
 
@@ -87,7 +87,7 @@ Preview sessions are built for iteration, not record-keeping:
 
 <CardGroup cols={2}>
   <Card title="Agent tests" icon="vial" href="/agents/test/agent-tests">
-    Scripted conversations with automated Pass/Fail judging — catch regressions
+    Scripted conversations with automated Pass/Fail judging: catch regressions
     without listening by ear.
   </Card>
   <Card
@@ -102,7 +102,7 @@ Preview sessions are built for iteration, not record-keeping:
     icon="chart-simple"
     href="/agents/monitor/post-call-analysis"
   >
-    Configure summaries, data extraction, and success criteria — results show up
+    Configure summaries, data extraction, and success criteria. Results show up
     in the preview panel.
   </Card>
   <Card title="Web SDK" icon="code" href="/agents/deploy/web-sdk">

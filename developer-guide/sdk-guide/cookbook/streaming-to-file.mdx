@@ -69,7 +69,7 @@ audio = client.tts.stream(text="Hello!").collect()  # -> bytes
 ```
 
 <Tip>
-  `convert()` already returns the complete audio as `bytes` — reach for
+  `convert()` already returns the complete audio as `bytes`. Reach for
   `stream()` when you want to start writing/forwarding bytes before generation
   finishes, or to avoid buffering large files.
 </Tip>

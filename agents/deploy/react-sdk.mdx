@@ -4,7 +4,7 @@ description: "Add voice conversations to your React app with hooks and drop-in c
 icon: "react"
 ---
 
-`@fishaudio/agent-react` wraps the [Web SDK](/agents/deploy/web-sdk) in idiomatic React: a `useConversation` hook for session control, an optional provider that shares one session across your component tree, and a ready-made audio visualizer. The SDK handles microphone capture, audio playback, and transport internally — you write UI.
+`@fishaudio/agent-react` wraps the [Web SDK](/agents/deploy/web-sdk) in idiomatic React: a `useConversation` hook for session control, an optional provider that shares one session across your component tree, and a ready-made audio visualizer. The SDK handles microphone capture, audio playback, and transport internally.
 
 <CardGroup cols={3}>
   <Card title="Web SDK reference" icon="js" href="/agents/deploy/web-sdk">
@@ -86,7 +86,7 @@ export function CallButton() {
 }
 ```
 
-`status`, `mode`, and `isSpeaking` are React state — your component re-renders as the conversation progresses. When the component unmounts, the session ends automatically.
+`status`, `mode`, and `isSpeaking` are React state, so your component re-renders as the conversation progresses. When the component unmounts, the session ends automatically.
 
 <Note>
   Call `startSession` from a user gesture (such as a click handler) so the
@@ -121,14 +121,14 @@ See [Authenticated sessions](/agents/deploy/authenticated-sessions) for the back
 | `session`                         | The live `AgentSession` object (`null` before the first start) for direct event access    |
 
 <Tip>
-`sendUserMessage(text)` injects a typed turn; the agent replies in text only by default — the reply streams back as transcript with no speech. Pass `{ audio: true }` to have the agent speak its reply for that turn.
+`sendUserMessage(text)` injects a typed turn; the agent replies in text only by default; the reply streams back as transcript. Pass `{ audio: true }` to have the agent speak its reply for that turn.
 </Tip>
 
-For transcripts, tool-call events, and error handling, subscribe to events on `session` — see the [Web SDK event reference](/agents/deploy/web-sdk).
+For transcripts, tool-call events, and error handling, subscribe to events on `session`. See the [Web SDK event reference](/agents/deploy/web-sdk).
 
 ## Share one session across components
 
-Wrap your tree in `AgentSessionProvider` when several components need the same conversation — call controls in the header, a transcript panel elsewhere.
+Wrap your tree in `AgentSessionProvider` when several components need the same conversation: call controls in the header, a transcript panel elsewhere.
 
 ```tsx App.tsx
 import { AgentSessionProvider, useAgentMessages } from "@fishaudio/agent-react";
@@ -157,17 +157,17 @@ function Transcript() {
 }
 ```
 
-The provider hosts the conversation, so components inside it read the shared state with `useAgentSessionContext()` instead of calling `useConversation` themselves — it returns the same fields, so the quick-start `CallButton` only needs its hook call swapped.
+The provider hosts the conversation, so components inside it read the shared state with `useAgentSessionContext()` instead of calling `useConversation` themselves. It returns the same fields, so the quick-start `CallButton` only needs its hook call swapped.
 
 | Hook                             | Purpose                                                                                                                                 |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `useAgentSessionContext()`       | Access the active session from anywhere inside the provider                                                                             |
-| `useAgentMessages()`             | Live conversation as a list of `{ key, role, text, final }` messages — segments update in place as they stream, no manual aggregation   |
+| `useAgentMessages()`             | Live conversation as a list of `{ key, role, text, final }` messages: segments update in place as they stream, no manual aggregation   |
 | `useAudioLevels(session?, fps?)` | Live input and output volume as `{ input, output }` (0–1), polled `fps` times per second (default 20); lower `fps` to reduce re-renders |
 
 ## Audio visualizer
 
-`<AgentAudioVisualizer>` renders animated canvas bars driven by the agent's output audio — a drop-in "the agent is talking" indicator. Inside an `AgentSessionProvider` it picks up the active session automatically; elsewhere, pass a `session` prop. Optional `bars`, `width`, `height`, and `className` props control the rendering, and the bars follow the element's CSS `color`.
+`<AgentAudioVisualizer>` renders animated canvas bars driven by the agent's output audio, a drop-in "the agent is talking" indicator. Inside an `AgentSessionProvider` it picks up the active session automatically; elsewhere, pass a `session` prop. Optional `bars`, `width`, `height`, and `className` props control the rendering, and the bars follow the element's CSS `color`.
 
 ```tsx
 import { AgentAudioVisualizer } from "@fishaudio/agent-react";

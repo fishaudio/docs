@@ -1,6 +1,6 @@
 # Text-to-Speech
 
-## Python — `client.tts`
+## Python: `client.tts`
 
 `convert()` returns the **complete audio as `bytes`**. `stream()` returns an iterable of byte chunks.
 
@@ -32,13 +32,13 @@ All keyword-only:
 | ----------------- | ----------------------------------- | ------------- | ---------------------------------------------------------------- |
 | `text`            | `str`                               | — (required)  | Text to synthesize.                                              |
 | `reference_id`    | `str \| None`                       | `None`        | Voice model id to speak with.                                    |
-| `references`      | `list[ReferenceAudio] \| None`      | `None`        | Inline clone samples — see [voice-cloning.md](voice-cloning.md). |
+| `references`      | `list[ReferenceAudio] \| None`      | `None`        | Inline clone samples; see [voice-cloning.md](voice-cloning.md). |
 | `format`          | `"mp3" \| "wav" \| "pcm" \| "opus"` | `"mp3"`       | Output format.                                                   |
 | `latency`         | `"normal" \| "balanced"`            | `"balanced"`  | `normal` = higher quality, `balanced` = faster. (No `"low"`.)    |
 | `speed`           | `float`                             | —             | Shortcut for prosody speed (0.5–2.0).                            |
 | `config`          | `TTSConfig`                         | `TTSConfig()` | Reusable bundle of the settings below.                           |
-| `model`           | `"s2-pro" \| "s1"`                  | `"s2-pro"`    | Synthesis model per current SDK typing. The API also accepts `"s2.1-pro"` / `"s2.1-pro-free"` — forwarded fine at runtime, but add `# type: ignore` for static checkers. `speech-1.5` / `speech-1.6` are deprecated. |
-| `request_options` | `RequestOptions \| None`            | `None`        | Per-request timeout / headers — see [errors.md](errors.md).      |
+| `model`           | `"s2-pro" \| "s1"`                  | `"s2-pro"`    | Synthesis model per current SDK typing. The API also accepts `"s2.1-pro"` / `"s2.1-pro-free"`, forwarded fine at runtime, but add `# type: ignore` for static checkers. `speech-1.5` / `speech-1.6` are deprecated. |
+| `request_options` | `RequestOptions \| None`            | `None`        | Per-request timeout / headers; see [errors.md](errors.md).      |
 
 Direct params (`reference_id`, `format`, `latency`, `speed`) override the matching field on `config` when set.
 
@@ -76,9 +76,9 @@ audio = client.tts.stream(text="Hello!").collect()
 
 Async: every method mirrors onto `AsyncFishAudio`; `await client.tts.convert(...)`, and `client.tts.stream(...)` must be awaited before iterating with `async for`.
 
-## JavaScript — `client.textToSpeech`
+## JavaScript: `client.textToSpeech`
 
-`convert(request, backend?, requestOptions?)` resolves to a `ReadableStream<Uint8Array>` you can `play()` or pipe to a file. `backend` is the **second positional** argument (default `"s2-pro"`) — **not** a named option.
+`convert(request, backend?, requestOptions?)` resolves to a `ReadableStream<Uint8Array>` you can `play()` or pipe to a file. `backend` is the **second positional** argument (default `"s2-pro"`), **not** a named option.
 
 ```ts
 import { FishAudioClient, play } from "fish-audio";
@@ -116,4 +116,4 @@ await new Promise((resolve, reject) =>
 ## Model & expression notes
 
 - `s2-pro` is the default and highest quality; `s1` is the previous generation.
-- Emotion/expression is controlled inline in `text` (S1 uses `(parenthesis)` tags, S2-Pro uses free-form `[bracket]` tags) — there is no separate SDK parameter. Full tag list: `https://docs.fish.audio/api-reference/emotion-reference`.
+- Emotion/expression is controlled inline in `text` (S1 uses `(parenthesis)` tags, S2-Pro uses free-form `[bracket]` tags); there is no separate SDK parameter. Full tag list: `https://docs.fish.audio/api-reference/emotion-reference`.

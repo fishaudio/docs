@@ -108,13 +108,13 @@ console.log("Agent:", reply);
 <Tip>
   For the lowest latency, feed your LLM's token stream straight into
   [`stream_websocket()`](/api-reference/sdk/python/resources#stream_websocket)
-  instead of waiting for the full reply string — see
+  instead of waiting for the full reply string. See
   [Realtime: LLM tokens → speech](/developer-guide/sdk-guide/cookbook/realtime-llm-to-speech).
 </Tip>
 
 ## Reply in the caller's voice
 
-`reference_id` points the reply at a saved voice. Drop it to use the default voice, or clone the caller's voice from the same clip you just transcribed by passing `references` instead — see [Instant voice cloning](/developer-guide/sdk-guide/cookbook/instant-voice-cloning).
+`reference_id` points the reply at a saved voice. Drop it to use the default voice, or clone the caller's voice from the same clip you just transcribed by passing `references` instead. See [Instant voice cloning](/developer-guide/sdk-guide/cookbook/instant-voice-cloning).
 
 ## Related
 

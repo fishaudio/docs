@@ -5,7 +5,7 @@ description: "Point the official OpenRouter TypeScript SDK at Fish Audio: TTS, S
 icon: "route"
 ---
 
-Configure the client once — `serverURL` takes the `/api/v1` prefix:
+Configure the client once. `serverURL` takes the `/api/v1` prefix:
 
 ```typescript
 import { OpenRouter } from "@openrouter/sdk";
@@ -16,7 +16,7 @@ const client = new OpenRouter({
 });
 ```
 
-From Python, OpenRouter's own SDK works the same way — `pip install openrouter`,
+From Python, OpenRouter's own SDK works the same way: `pip install openrouter`,
 then pass `server_url`:
 
 ```python
@@ -37,7 +37,7 @@ res = client.tts.create_speech(
 open("hello.mp3", "wb").write(res.read())
 ```
 
-The OpenAI SDK works against the same base URL too — the Python tabs below
+The OpenAI SDK works against the same base URL too; the Python tabs below
 use it.
 
 | Feature                                            | Supported          |
@@ -104,18 +104,18 @@ curl https://api.fish.audio/compat/api/v1/audio/speech \
 
 The response is a `ReadableStream`: audio bytes arrive as they are synthesized.
 The optional `voice` field takes a voice ID from your Fish voice library
-(omitted or empty = model default — see
+(omitted or empty = model default; see
 [Voices](/developer-guide/getting-started/migration#voices)).
 
-`input_references` — OpenRouter's first-class field for stateless voice
-cloning, reference audio plus its transcript — is supported: no saved voice
+`input_references` (OpenRouter's first-class field for stateless voice
+cloning, reference audio plus its transcript) is supported: no saved voice
 model required. Both SDKs carry the field on their `SpeechRequest` type
 (`inputReferences` in TypeScript, `input_references` in Python).
 
 ### `temperature`, `top_p`, `repetition_penalty`
 
 These three sit **at the top level of the speech request body**, next to
-`model` and `input` — no `provider.options` wrapper required — matching what
+`model` and `input` (no `provider.options` wrapper required), matching what
 the catalog advertises in each model's `supported_parameters`.
 
 ```json
@@ -130,14 +130,14 @@ the catalog advertises in each model's `supported_parameters`.
 ```
 
 Neither SDK's speech type declares them, so they still have to go around the
-typed request — as raw JSON via `fetch`, or through the OpenAI SDK's
+typed request: as raw JSON via `fetch`, or through the OpenAI SDK's
 `extra_body`.
 
 The same three are also reachable through `provider.options.fish-audio` and the
 `X-Fish-*` headers, and if you set a value two ways the more specific one wins:
 **`X-Fish-*` header beats `provider.options`, and `provider.options` beats the
-top level.** Everything else in the Fish parameter set — `latency`,
-`chunk_length`, `normalize`, `prosody`, references — is available only through
+top level.** Everything else in the Fish parameter set (`latency`,
+`chunk_length`, `normalize`, `prosody`, references) is available only through
 those two channels, not at the top level. See
 [Fish-native parameters](/developer-guide/compat/capabilities#reaching-fish-native-parameters).
 
@@ -220,13 +220,13 @@ curl https://api.fish.audio/compat/api/v1/models
 
 Entries validate against the OpenRouter `Model` schema: **every required field
 is present, and the ones with no Fish counterpart are explicitly `null` rather
-than missing** — SDK model validation passes and `model.context_length` reads
+than missing**, so SDK model validation passes and `model.context_length` reads
 as `None`/`null` instead of raising.
 
 Four fields are always `null`: `context_length`, `default_parameters`,
-`per_request_limits`, and `supported_voices`. Six optional ones —
-`alias_target`, `benchmarks`, `expiration_date`, `hugging_face_id`,
-`knowledge_cutoff`, and `reasoning` — are simply absent; don't write code that
+`per_request_limits`, and `supported_voices`. Six optional ones
+(`alias_target`, `benchmarks`, `expiration_date`, `hugging_face_id`,
+`knowledge_cutoff`, and `reasoning`) are simply absent; don't write code that
 expects the key to exist. Filter with `output_modalities=speech` or `text` to
 list one direction only.
 
@@ -236,7 +236,7 @@ Errors use the OpenRouter envelope, with the HTTP status as an integer in
 `error.code`. Failures from the Fish Audio API surface as
 `type: "provider_error"` with their original status and
 `metadata.provider_name: "fish-audio"`; errors from the compatibility layer
-itself carry no `metadata` — just `code`, `message`, and `type`.
+itself carry no `metadata`, just `code`, `message`, and `type`.
 
 ## Going further
 

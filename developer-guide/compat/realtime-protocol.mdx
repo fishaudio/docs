@@ -11,21 +11,22 @@ wss://api.fish.audio/compat/v1/realtime?model=fish-audio/s2.1-pro
 
 Authentication is the standard `Authorization: Bearer` header, or
 `?api_key=<key>` in the URL. The OpenAI SDK derives this URL from the same
-client you configured for REST — a working example is in
+client you configured for REST; a working example is in
 [Migrate from OpenAI](/developer-guide/compat/migrate-from-openai#realtime-websocket).
 
 ## Events
 
 The endpoint speaks the Realtime **GA** event names
-(`response.output_audio.delta` and the rest of the GA set) — what current
-`openai` packages emit, even though the Node module path still says `beta`.
+(`response.output_audio.delta` and the rest of the GA set), which is what
+current `openai` packages emit, even though the Node module path still says
+`beta`.
 
 Supported client events: `session.update`, `transcription_session.update`,
 `conversation.item.create`, `conversation.item.delete`,
 `input_audio_buffer.append` / `commit` / `clear`, `response.create`,
-`response.cancel`. `conversation.item.truncate` is accepted and does nothing —
-it cuts a previous assistant message's audio, and none is retained server-side — so
-it is the one client event that sends no acknowledgement back. Any other event
+`response.cancel`. `conversation.item.truncate` is accepted and does nothing
+(it cuts a previous assistant message's audio, and none is retained
+server-side), so it is the one client event that sends no acknowledgement back. Any other event
 type comes back as an `unknown_event_type` error.
 
 One response at a time per session: a second `response.create` while one is
@@ -33,14 +34,14 @@ running returns the `response_already_active` error.
 
 ## Audio formats
 
-Output formats: `pcm16`, `wav`, `mp3`, `opus` — as a string (`"mp3"`) or the
+Output formats: `pcm16`, `wav`, `mp3`, `opus`, as a string (`"mp3"`) or the
 GA object form (`{"type": "audio/mp3", "rate": 32000}`). `audio/pcmu` and
 `audio/pcma` are rejected explicitly. **Both spellings reset the rate when
-they carry no `rate` of their own** — to that format's default (`audio/pcm` →
+they carry no `rate` of their own**: to that format's default (`audio/pcm` →
 24000, `wav` and `mp3` → 44100, `opus` → 48000), not to what the session was
-using before — so set `rate` explicitly when you switch formats mid-session.
-`session.updated` echoes the resulting output *and* input format — rate
-included — so you can read back what the session settled on. Supported sample
+using before, so set `rate` explicitly when you switch formats mid-session.
+`session.updated` echoes the resulting output *and* input format, rate
+included, so you can read back what the session settled on. Supported sample
 rates per codec are in
 [Audio formats](/developer-guide/compat/capabilities#audio-formats).
 
@@ -49,14 +50,14 @@ rates per codec are in
 `voice` is a Fish voice ID, accepted both at the legacy top-level
 `session.voice` and at the GA `session.audio.output.voice` position; session
 events echo it at the GA position. `speed` follows the same two-position rule
-and the REST endpoint's 0.25–4.0 range — out of range returns an
+and the REST endpoint's 0.25–4.0 range; out of range returns an
 `invalid_speed` error event instead of synthesizing.
 
 ## Turn detection
 
 Turn detection is yours to drive: send `input_audio_buffer.commit` to end an
-utterance. Any `turn_detection` with a type — `server_vad`, `semantic_vad`, or
-anything else, in either the GA or the legacy top-level position — is refused
+utterance. Any `turn_detection` with a type (`server_vad`, `semantic_vad`, or
+anything else, in either the GA or the legacy top-level position) is refused
 with `unsupported_turn_detection` rather than accepted and ignored, and
 `session.created` reports `"turn_detection": null`. Likewise, an
 `output_modalities` that omits `"audio"` is refused: this socket always
@@ -65,11 +66,11 @@ produces audio.
 ## Transcription
 
 Transcription works over the same socket: `input_audio_buffer.append` base64
-audio, then `input_audio_buffer.commit` — the transcript arrives as
+audio, then `input_audio_buffer.commit`. The transcript arrives as
 `conversation.item.input_audio_transcription.completed`, and a failed
 transcription arrives as the matching
 `conversation.item.input_audio_transcription.failed` (the buffered audio is
-kept, so you can retry). The socket returns the transcript text only — for
+kept, so you can retry). The socket returns the transcript text only; for
 word timestamps use `POST /v1/audio/transcriptions`.
 
 Both official ways of opening a **dedicated** transcription session work: send
@@ -82,8 +83,8 @@ TTS model.
 
 ## Limits
 
-Session limits — text and audio caps per conversation item, item counts, frame
-size — are in the
+Session limits (text and audio caps per conversation item, item counts, frame
+size) are in the
 [limits table](/developer-guide/compat/capabilities#limits-and-operational-contract).
 
 ## Related

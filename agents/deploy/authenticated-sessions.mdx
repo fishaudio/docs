@@ -4,7 +4,7 @@ description: "Create short-lived session tokens on your backend and run private 
 icon: "server"
 ---
 
-An authenticated session starts on your server: your backend calls the session endpoint with your API key and receives a short-lived **session token**, which your client uses to connect. The API key never leaves your server, and every session parameter — user identity, overrides, dynamic variables — is set by code you trust. This is how private agents run in production.
+An authenticated session starts on your server: your backend calls the session endpoint with your API key and receives a short-lived **session token**, which your client uses to connect. The API key never leaves your server, and every session parameter (user identity, overrides, dynamic variables) is set by code you trust. This is how private agents run in production.
 
 The token is client-agnostic. Create it the same way regardless of which surface renders the conversation:
 
@@ -18,7 +18,7 @@ The token is client-agnostic. Create it the same way regardless of which surface
 <Note>
   No backend, and anyone may talk to the agent? A [public
   agent](/agents/deploy/public-agents) lets the SDK create sessions with just an
-  `agentId` — no token involved, gated by an origin allowlist and rate limits.
+  `agentId`: no token involved, gated by an origin allowlist and rate limits.
 </Note>
 
 ## Create a token on your backend
@@ -28,7 +28,7 @@ Your backend exchanges your API key for a single-conversation token.
 <Steps>
   <Step title="Create a session from your backend">
     Call `POST /v1/agent/sessions` with your API key. This is where you set
-    per-session parameters — user identity, overrides, dynamic variables.
+    per-session parameters: user identity, overrides, dynamic variables.
   </Step>
   <Step title="Return the response to your frontend">
     The response is the session token. Forward it verbatim.
@@ -109,7 +109,7 @@ More on what the SDK can do once connected is in the [Web SDK](/agents/deploy/we
 
 <Note>
   `overrides`, `dynamic_variables`, `tool_events`, `timezone`, and
-  `world_context` belong in your backend's creation request — the SDK forwards
+  `world_context` belong in your backend's creation request. The SDK forwards
   these options (and its `language` shorthand for `overrides.language`) only in
   [public agent](/agents/deploy/public-agents) mode.
 </Note>
@@ -119,45 +119,45 @@ More on what the SDK can do once connected is in the [Web SDK](/agents/deploy/we
 | Field               | Type              | Description                                                                                                                                                                                                                                                                               |
 | ------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `agent_id`          | string, required  | The agent to talk to. It must have a [published version](/agents/deploy/versions-publishing).                                                                                                                                                                                             |
-| `name`              | string, optional  | Display name for this session in the console's Conversations list, up to 128 characters. Omit it to show the session's start time instead. API-key requests only — keyless (public) creation rejects it with `400`.                                                                       |
-| `overrides`         | object, optional  | Replace parts of the published configuration for this session — see [Overrides](#overrides).                                                                                                                                                                                              |
+| `name`              | string, optional  | Display name for this session in the console's Conversations list, up to 128 characters. Omit it to show the session's start time instead. API-key requests only: keyless (public) creation rejects it with `400`.                                                                       |
+| `overrides`         | object, optional  | Replace parts of the published configuration for this session. See [Overrides](#overrides).                                                                                                                                                                                              |
 | `dynamic_variables` | object, optional  | Up to 50 entries of string, number, or boolean values, substituted into `{{placeholders}}`. See [Dynamic variables](/agents/build/dynamic-variables).                                                                                                                                     |
 | `tool_events`       | boolean, optional | Stream tool lifecycle events (`toolCallStarted` / `toolCallCompleted` / `toolCallFailed`) to the client. Default `true`; set `false` to keep tool inputs and outputs off the client.                                                                                                      |
 | `end_user_id`       | string, optional  | Your identifier for the end user, up to 256 characters. Stored on the session and echoed in [webhook](/agents/monitor/webhooks) payloads and [custom LLM](/agents/build/custom-llm) requests.                                                                                             |
-| `metadata`          | object, optional  | Your own key-value namespace. Stored and returned verbatim on session queries and webhooks — never read or interpreted by the platform.                                                                                                                                                   |
-| `record_audio`      | boolean, optional | Whether to record this session's audio. Overrides the agent's [recording setting](/agents/monitor/conversation-history#what-gets-stored) for this session only — it never changes the agent; omit it to use the agent's configuration.                                                    |
+| `metadata`          | object, optional  | Your own key-value namespace. Stored and returned verbatim on session queries and webhooks, never read or interpreted by the platform.                                                                                                                                                   |
+| `record_audio`      | boolean, optional | Whether to record this session's audio. Overrides the agent's [recording setting](/agents/monitor/conversation-history#what-gets-stored) for this session only; omit it to use the agent's configuration.                                                    |
 | `timezone`          | string, optional  | IANA timezone (like `Asia/Shanghai`) for the agent's sense of local time. Invalid names are rejected with `422`. See [Time & timezone](/agents/build/time-timezone).                                                                                                                      |
 | `client_timezone`   | string, optional  | The end user's browser timezone, filled automatically by the SDK in public-agent mode. A hint, not a demand: it applies only when neither `timezone` nor the agent's configured timezone is set, and invalid values are ignored. See the [resolution order](/agents/build/time-timezone). |
 | `world_context`     | boolean, optional | Whether the agent knows the current date and time. Default `true`; set `false` to withhold both from this session.                                                                                                                                                                        |
 
-Unknown fields — top-level or inside `overrides` — are rejected with `422`.
+Unknown fields (top-level or inside `overrides`) are rejected with `422`.
 
 ## Overrides
 
-`overrides` replaces parts of the agent's published configuration for one session — the agent itself never changes:
+`overrides` replaces parts of the agent's published configuration for one session:
 
 | Field                  | Type                                     | Effect for this session                                                                                                                                                                                           |
 | ---------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `first_message`        | string, up to 10,000 characters          | The agent opens with exactly this text, spoken verbatim — whatever first-message mode the configuration sets. `{{placeholders}}` render inside it.                                                                |
-| `first_message_prompt` | string, up to 10,000 characters          | Instructions the agent generates its opener from, replacing the configured first-message behavior. `{{placeholders}}` render inside it. Mutually exclusive with `first_message` — sending both is `422`.          |
+| `first_message`        | string, up to 10,000 characters          | The agent opens with exactly this text, spoken verbatim, whatever first-message mode the configuration sets. `{{placeholders}}` render inside it.                                                                |
+| `first_message_prompt` | string, up to 10,000 characters          | Instructions the agent generates its opener from, replacing the configured first-message behavior. `{{placeholders}}` render inside it. Mutually exclusive with `first_message`: sending both is `422`.          |
 | `system_prompt`        | string, up to 4,000 tokens               | Replaces the configured system prompt entirely, under the same token budget. `{{placeholders}}` render inside it.                                                                                                 |
-| `voice_id`             | string                                   | The voice the agent speaks with — any [voice model id](/agents/build/voice-language#use-any-voice-model) from the Voice Library. Voices bias pronunciation toward their own language, so pair it with `language`. |
+| `voice_id`             | string                                   | The voice the agent speaks with: any [voice model id](/agents/build/voice-language#use-any-voice-model) from the Voice Library. Voices bias pronunciation toward their own language, so pair it with `language`. |
 | `language`             | `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de` | Pins the conversation language, taking precedence over the configured [speaking language](/agents/build/voice-language#speaking-language).                                                                        |
 
 ```json
 {
   "agent_id": "YOUR_AGENT_ID",
   "overrides": {
-    "first_message": "Welcome back, {{name}} — picking up where we left off.",
+    "first_message": "Welcome back, {{name}}, picking up where we left off.",
     "voice_id": "802e3bc2b27e49c2995d23ef70e6ac89",
     "language": "ja"
   }
 }
 ```
 
-On [public agents](/agents/deploy/public-agents), keyless (browser-created) sessions may override only `language` and `voice_id` — the prompt-shaping fields are rejected with `400` regardless of the agent. Create the session from your backend to use them.
+On [public agents](/agents/deploy/public-agents), keyless (browser-created) sessions may override only `language` and `voice_id`. The prompt-shaping fields are rejected with `400` regardless of the agent. Create the session from your backend to use them.
 
-Everything else on the request is not an override: `dynamic_variables`, `timezone`, `record_audio`, and `tool_events` are separate top-level fields. Session length is not settable per session — `max_duration_seconds` comes from the agent's [conversation configuration](/agents/build/configuration#call-duration).
+Everything else on the request is not an override: `dynamic_variables`, `timezone`, `record_audio`, and `tool_events` are separate top-level fields. Session length is not settable per session: `max_duration_seconds` comes from the agent's [conversation configuration](/agents/build/configuration#call-duration).
 
 ## Response
 
@@ -174,35 +174,35 @@ Everything else on the request is not an override: `dynamic_variables`, `timezon
 
 | Field                  | Description                                                                                                 |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `session_id`           | The session's id — use it later to look up the [conversation record](/agents/monitor/conversation-history). |
+| `session_id`           | The session's id. Use it later to look up the [conversation record](/agents/monitor/conversation-history). |
 | `expires_at`           | Deadline for the client to connect. Create the token right before starting, not ahead of time.              |
 | `max_duration_seconds` | Hard cap on session length.                                                                                 |
 | `transport`            | Which transport the SDK uses for this session; `livekit` today.                                             |
 | `livekit_url`, `token` | Connection details for that transport, consumed by the SDK.                                                 |
 
-Treat the response as opaque and pass it to `start()` unmodified. If the SDK does not recognize the `transport` value, it fails fast with an `unsupported_transport` error asking you to upgrade the SDK — it never silently degrades.
+Treat the response as opaque and pass it to `start()` unmodified. If the SDK does not recognize the `transport` value, it fails fast with an `unsupported_transport` error asking you to upgrade the SDK.
 
 ## Token lifetime
 
 - A session token is **single-use**: `start()` consumes it once to establish the conversation.
-- On network drops the SDK reconnects at the transport level using the same connection state — it never re-creates the session, so you never need a fresh token mid-call.
+- On network drops the SDK reconnects at the transport level; it never re-creates the session, so you never need a fresh token mid-call.
 - Once a session ends, the token is spent. Create a new token for each conversation.
 
 ## Ending sessions from your backend
 
-A session normally ends from the client side — the user disconnects, or the agent [hangs up](/agents/build/system-tools). To force-end a live session server-side, call the end endpoint with your API key and the `session_id` from the creation response:
+A session normally ends from the client side: the user disconnects, or the agent [hangs up](/agents/build/system-tools). To force-end a live session server-side, call the end endpoint with your API key and the `session_id` from the creation response:
 
 ```bash Request
 curl --request POST https://api.fish.audio/v1/agent/sessions/$SESSION_ID/end \
   --header "Authorization: Bearer $FISH_API_KEY"
 ```
 
-The agent disconnects and the call terminates — the response is `204`. The session record stays readable in [conversation history](/agents/monitor/conversation-history), along with the transcript and recording when the agent [stores them](/agents/monitor/conversation-history#what-gets-stored). The same endpoint ends in-progress [phone calls](/agents/telephony/inbound-calls) too.
+The call terminates and the response is `204`. The session record stays readable in [conversation history](/agents/monitor/conversation-history), along with the transcript and recording when the agent [stores them](/agents/monitor/conversation-history#what-gets-stored). The same endpoint ends in-progress [phone calls](/agents/telephony/inbound-calls) too.
 
 ## Keep API keys on the server
 
 <Warning>
-  Your API key grants full access to every resource in your team — agents,
+  Your API key grants full access to every resource in your team: agents,
   sessions, tools, phone numbers. Never embed it in a browser, mobile app, or
   any code you ship to users. The only credential that belongs in a client is
   the session token, and the only credential-free path is a public agent ID.
@@ -218,11 +218,11 @@ Session creation fails with standard HTTP statuses; the SDK surfaces them as a `
 | `401`  | Invalid API key. A request with no `Authorization` header at all is treated as a public-agent request instead.                                |
 | `402`  | Quota exceeded.                                                                                                                               |
 | `403`  | Public-agent request rejected: the agent is not public, or the page's `Origin` is not on the allow-list.                                      |
-| `409`  | Conflict — most commonly the agent has no published version yet. [Publish](/agents/deploy/versions-publishing) to resolve.                    |
-| `422`  | The request body failed validation — an unknown field, an unsupported `language` code, an invalid `timezone`, or an invalid dynamic variable. |
-| `429`  | Rate limited — a public-agent request exceeded the per-agent or per-IP limit.                                                                 |
+| `409`  | Conflict: most commonly the agent has no published version yet. [Publish](/agents/deploy/versions-publishing) to resolve.                    |
+| `422`  | The request body failed validation: an unknown field, an unsupported `language` code, an invalid `timezone`, or an invalid dynamic variable. |
+| `429`  | Rate limited: a public-agent request exceeded the per-agent or per-IP limit.                                                                 |
 
-The complete status-code reference for every `/v1/agent` endpoint — error shapes, `400` vs `422`, conflict semantics — is on [Agents API errors](/api-reference/agent-errors).
+The complete status-code reference for every `/v1/agent` endpoint (error shapes, `400` vs `422`, conflict semantics) is on [Agents API errors](/api-reference/agent-errors).
 
 ## Going further
 

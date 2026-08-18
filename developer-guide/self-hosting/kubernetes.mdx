@@ -11,7 +11,7 @@ they differ only in how usage is accounted.
 <Note>
   This page covers what the deployment involves and what you need to decide. The
   commands, values, and troubleshooting are in the **deployment runbook**, which ships
-  in the documentation bundle alongside the chart version you install — see
+  in the documentation bundle alongside the chart version you install. See
   [Releases](/developer-guide/self-hosting/enterprise-releases). The runbook is
   versioned with the chart; this page is not, so follow the runbook when they differ.
 </Note>
@@ -53,9 +53,9 @@ manage that layer.
 
 Three Kubernetes Secrets have to exist before the install: registry credentials, a JWT
 secret for the edge API, and one shared between the in-cluster model store and the
-workers that read from it — that one authenticates nothing outside the cluster, and the
+workers that read from it. That one authenticates nothing outside the cluster, and the
 value is yours to choose. Generate the JWT secret once
-and keep it stable — changing it invalidates issued tokens. For production, prefer
+and keep it stable, because changing it invalidates issued tokens. For production, prefer
 External Secrets, Sealed Secrets, or your cloud secret manager over plain Secrets.
 
 ## What to expect
@@ -66,13 +66,13 @@ rather than by editing tags.
 The first install is slow: the inference worker compiles its GPU graphs and the
 vocoder builds its inference engine before either becomes ready, which takes far longer
 than any later rollout. Both artifacts are cached on shared storage, so subsequent
-starts are quick — as long as that storage persists.
+starts are quick, as long as that storage persists.
 
 Upgrades, rollback, and uninstall are all standard Helm operations. The runbook covers
 the order to do them in and what to check at each step.
 
 ## Next steps
 
-- [Requirements](/developer-guide/self-hosting/requirements) — hardware, platform, and network baselines
-- [Registry access](/developer-guide/self-hosting/registry-access) — how your team gets the chart
-- [Operations](/developer-guide/self-hosting/operations) — running it once it is live
+- [Requirements](/developer-guide/self-hosting/requirements): hardware, platform, and network baselines
+- [Registry access](/developer-guide/self-hosting/registry-access): how your team gets the chart
+- [Operations](/developer-guide/self-hosting/operations): running it once it is live

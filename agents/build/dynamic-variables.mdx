@@ -4,14 +4,14 @@ description: "Personalize each session with template variables supplied at creat
 icon: "brackets-curly"
 ---
 
-An agent's published configuration is shared by every caller — dynamic variables personalize it per session. Write `{{variable_name}}` placeholders in your agent's system prompt or first message and supply values when you create the session. Substitution happens once, when the published configuration is assembled for the session.
+An agent's published configuration is shared by every caller. Dynamic variables personalize it per session. Write `{{variable_name}}` placeholders in your agent's system prompt or first message and supply values when you create the session. Substitution happens once, when the published configuration is assembled for the session.
 
 ```text System prompt
 You are a support agent for {{company}}. The caller's name is {{customer_name}}
 and they are on the {{plan}} plan. Greet them by name.
 ```
 
-Pass values as a flat object of strings, numbers, or booleans. Variable names must match `[A-Za-z][A-Za-z0-9_]*` (no hyphens or dots), string values are capped at 1,000 characters, and a request can carry at most 50 variables — violations reject session creation with `422`:
+Pass values as a flat object of strings, numbers, or booleans. Variable names must match `[A-Za-z][A-Za-z0-9_]*` (no hyphens or dots), string values are capped at 1,000 characters, and a request can carry at most 50 variables. Violations reject session creation with `422`:
 
 <CodeGroup>
 ```bash API (curl)
@@ -40,7 +40,7 @@ const session = await AgentSession.start({
 </CodeGroup>
 
 <Warning>
-Placeholders with no matching variable are **not** removed — the literal `{{variable_name}}` text stays in the prompt, visible to the model. Make sure every placeholder in your configuration has a value at session creation.
+Placeholders with no matching variable are **not** removed: the literal `{{variable_name}}` text stays in the prompt, visible to the model. Make sure every placeholder in your configuration has a value at session creation.
 </Warning>
 
 <Note>
@@ -48,10 +48,10 @@ Session records never store dynamic variable values.
 </Note>
 
 <Tip>
-You don't need a variable for the current date or time — the agent already knows both, in the session's timezone. See [Time & timezone](/agents/build/time-timezone).
+You don't need a variable for the current date or time. The agent already knows both, in the session's timezone. See [Time & timezone](/agents/build/time-timezone).
 </Tip>
 
-Variables fill placeholders in the configured text. To replace whole configuration fields for a session — the prompt itself, the opener, voice, language — use [overrides](/agents/deploy/authenticated-sessions#overrides) on the same request; `{{placeholders}}` render inside overridden text too.
+Variables fill placeholders in the configured text. To replace whole configuration fields for a session (the prompt itself, the opener, voice, language), use [overrides](/agents/deploy/authenticated-sessions#overrides) on the same request; `{{placeholders}}` render inside overridden text too.
 
 ## Who supplies the values
 
@@ -62,7 +62,7 @@ Where variable values come from depends on the session's [access mode](/agents/d
 | `agentId` ([public agents](/agents/deploy/public-agents)) | The SDK, directly from the browser | The browser, via `AgentSession.start()` options |
 | `sessionToken` (private agents) | Your backend, with your API key | Your backend, in its `POST /v1/agent/sessions` call |
 
-In `sessionToken` mode the SDK's `dynamicVariables` option has no effect — the session already exists by the time the token reaches the browser. Attach personalization server-side instead:
+In `sessionToken` mode the SDK's `dynamicVariables` option has no effect. The session already exists by the time the token reaches the browser. Attach personalization server-side instead:
 
 ```javascript Backend (sessionToken mode)
 // Your backend endpoint, called by your own frontend
@@ -81,7 +81,7 @@ const sessionToken = await response.json(); // pass to AgentSession.start({ sess
 ```
 
 <Tip>
-In `agentId` mode, values arrive from the end user's browser — treat them as untrusted input, and use `sessionToken` mode when personalization must come from data only your backend knows.
+In `agentId` mode, values arrive from the end user's browser. Treat them as untrusted input, and use `sessionToken` mode when personalization must come from data only your backend knows.
 </Tip>
 
 ## Going further

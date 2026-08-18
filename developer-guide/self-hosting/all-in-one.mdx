@@ -4,8 +4,8 @@ description: "The single-container appliance: what it is, what it cannot do, and
 icon: "box"
 ---
 
-The All-in-One image packages the whole speech stack — edge API, model API layer,
-inference router and worker, vocoder, text normalizer, and Redis — into one container,
+The All-in-One image packages the whole speech stack (edge API, model API layer,
+inference router and worker, vocoder, text normalizer, and Redis) into one container,
 with every model weight baked in. Once the image is on the host it runs with no
 Kubernetes and no internet access, which makes it the turnkey option for single-node
 appliances and strict air gaps.
@@ -13,7 +13,7 @@ appliances and strict air gaps.
 <Note>
   This page covers what the appliance is and what to plan for. The commands, tuning
   options, and troubleshooting are in the **All-in-One guide**, which ships in the
-  documentation bundle for the image version you run — see
+  documentation bundle for the image version you run. See
   [Releases](/developer-guide/self-hosting/enterprise-releases).
 </Note>
 
@@ -21,7 +21,7 @@ appliances and strict air gaps.
 
 The appliance runs one inference worker and one vocoder, a GPU each. It does not
 autoscale, does not shard across more GPUs or nodes, and does not ship the forced
-aligner, so it returns no word or segment timings. It is offline-only — there is no
+aligner, so it returns no word or segment timings. It is offline-only: there is no
 hosted-billing variant. For elastic or higher-throughput deployments, use the
 [Kubernetes chart](/developer-guide/self-hosting/kubernetes), which scales replicas
 across all GPUs and nodes.
@@ -55,7 +55,7 @@ of calling a billing service. Two consequences worth designing around:
 - **Any non-empty bearer token is accepted**; a missing or empty one is rejected. The
   appliance has nothing to validate a token against.
 - **The token is recorded verbatim as the billing identity.** Use a stable, distinct
-  token per tenant — two tenants sharing a token are indistinguishable in the ledger.
+  token per tenant. Two tenants sharing a token are indistinguishable in the ledger.
 
 See [Offline usage accounting](/developer-guide/self-hosting/air-gapped#offline-usage-accounting).
 
@@ -72,6 +72,6 @@ per voice.
 
 ## Next steps
 
-- [Requirements](/developer-guide/self-hosting/requirements#all-in-one-container-host) — host baseline
-- [Registry access](/developer-guide/self-hosting/registry-access) — how your team gets the image
-- [Air-gapped deployments](/developer-guide/self-hosting/air-gapped) — moving the image to a disconnected host
+- [Requirements](/developer-guide/self-hosting/requirements#all-in-one-container-host): host baseline
+- [Registry access](/developer-guide/self-hosting/registry-access): how your team gets the image
+- [Air-gapped deployments](/developer-guide/self-hosting/air-gapped): moving the image to a disconnected host

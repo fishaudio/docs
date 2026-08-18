@@ -4,7 +4,7 @@ description: "Automatic summaries, structured data extraction, and success evalu
 icon: "chart-simple"
 ---
 
-After a conversation ends, the platform runs an LLM pass over the [stored transcript](/agents/monitor/conversation-history#what-gets-stored) and produces three results: a **summary**, values for the **data fields** you define, and a verdict for each **success criterion**. Summaries are on by default for every agent — extraction and evaluation are opt-in, configured per agent on the Builder's **Analysis** page.
+After a conversation ends, the platform runs an LLM pass over the [stored transcript](/agents/monitor/conversation-history#what-gets-stored) and produces three results: a **summary**, values for the **data fields** you define, and a verdict for each **success criterion**. Summaries are on by default for every agent. Extraction and evaluation are opt-in, configured per agent on the Builder's **Analysis** page.
 
 <CardGroup cols={3}>
   <Card
@@ -34,21 +34,20 @@ After a conversation ends, the platform runs an LLM pass over the [stored transc
 
 ### Summary
 
-A concise recap of the conversation. Enabled by default — every conversation gets one out of the box.
+A concise recap of the conversation, enabled by default.
 
-- **Custom prompt** (optional, up to 1,000 characters) — replace the platform's default summary instruction with your own, e.g. "Summarize in two sentences, focusing on the caller's request and the outcome."
-- **Output language** — fixed per agent, chosen from 10 locales (English, Chinese, Japanese, Korean, Spanish, French, German, Portuguese, Russian, Arabic). Default is English.
+- **Custom prompt** (optional, up to 1,000 characters): replace the platform's default summary instruction with your own, e.g. "Summarize in two sentences, focusing on the caller's request and the outcome."
+- **Output language**: fixed per agent, chosen from 10 locales (English, Chinese, Japanese, Korean, Spanish, French, German, Portuguese, Russian, Arabic). Default is English.
 
 <Note>
-  The summary language does **not** follow the conversation language. Summaries
-  and rationales are always written in the configured language, even when the
-  conversation happened in another one — so downstream systems see consistent
-  output.
+  Summaries and rationales are always written in the configured language, even
+  when the conversation happened in another one, so downstream systems see
+  consistent output.
 </Note>
 
 ### Data fields
 
-Structured values extracted from the transcript — up to **20 fields** per agent. Each field is:
+Structured values extracted from the transcript, up to **20 fields** per agent. Each field is:
 
 | Property       | Description                                                                                                |
 | -------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -57,27 +56,27 @@ Structured values extracted from the transcript — up to **20 fields** per agen
 | `description`  | Instruction telling the model what to extract (up to 500 characters)                                       |
 | `enum_options` | For `enum` fields only: 2–20 allowed values                                                                |
 
-When the conversation doesn't contain the information, the field's value is `null` with a rationale explaining why — the model never guesses.
+When the conversation doesn't contain the information, the field's value is `null` with a rationale explaining why.
 
 ### Success criteria
 
-Up to **10 criteria** per agent, each a `name` plus a `description` (up to 500 characters) stating what a successful conversation looks like — "The agent resolved the caller's issue or set clear next steps."
+Up to **10 criteria** per agent, each a `name` plus a `description` (up to 500 characters) stating what a successful conversation looks like, such as "The agent resolved the caller's issue or set clear next steps."
 
 Every criterion gets a three-state verdict with a rationale:
 
-- **`success`** — the transcript shows the expectation was met.
-- **`failure`** — the transcript shows it was not.
-- **`unknown`** — the transcript is incomplete, the answer was ambiguous, or the information needed to judge is missing.
+- **`success`**: the transcript shows the expectation was met.
+- **`failure`**: the transcript shows it was not.
+- **`unknown`**: the transcript is incomplete, the answer was ambiguous, or the information needed to judge is missing.
 
 <Tip>
   The `unknown` state is deliberate: rather than forcing an ambiguous call into
-  a binary verdict, the model tells you it couldn't judge — so your success-rate
+  a binary verdict, the model tells you it couldn't judge, so your success-rate
   numbers stay honest.
 </Tip>
 
 ## Configure analysis
 
-Open your agent's **Analysis** page in the Builder. Three cards — Summary, Data fields, and Criteria — autosave to the draft as you edit. You can also set the `analysis` section of the configuration via the API:
+Open your agent's **Analysis** page in the Builder. Three cards (Summary, Data fields, and Criteria) autosave to the draft as you edit. You can also set the `analysis` section of the configuration via the API:
 
 ```bash
 curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
@@ -111,27 +110,26 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 
 Like all configuration, edits land in the [draft](/agents/deploy/versions-publishing). Preview calls use the draft immediately; production sessions pick up analysis changes after you **publish**.
 
-To disable analysis entirely, turn the summary off and leave both lists empty — conversations then finish with analysis status `skipped` and no LLM call is made.
+To disable analysis entirely, turn the summary off and leave both lists empty. Conversations then finish with analysis status `skipped` and no LLM call is made.
 
 ## When analysis runs
 
-Analysis starts automatically when a conversation ends — production sessions from any source, and preview calls when you end them. A run moves through these statuses:
+Analysis starts automatically when a conversation ends: production sessions from any source, and preview calls when you end them. A run moves through these statuses:
 
 | Status      | Meaning                                                                             |
 | ----------- | ----------------------------------------------------------------------------------- |
 | `queued`    | Scheduled, waiting to run                                                           |
 | `running`   | The LLM pass is in progress                                                         |
 | `completed` | Results are available                                                               |
-| `skipped`   | Nothing to analyze — the conversation had no user messages, or analysis is disabled |
+| `skipped`   | Nothing to analyze: the conversation had no user messages, or analysis is disabled |
 | `error`     | The run failed; no results                                                          |
 
 Results are typically ready within seconds of the conversation ending.
 
 <Note>
   Production sessions are analyzed against the agent version pinned when the
-  session started — editing your criteria afterwards never changes how past
-  conversations were judged, and each result stays attributable to the
-  configuration that produced it.
+  session started; editing your criteria afterwards never changes how past
+  conversations were judged.
 </Note>
 
 ## Read the results
@@ -173,7 +171,7 @@ curl "https://api.fish.audio/v1/agent/sessions/$SESSION_ID" \
 }
 ```
 
-To push results into your CRM or data warehouse as soon as they're ready, configure a [post-call webhook](/agents/monitor/webhooks) — `call.analyzed` fires as soon as the run settles, whatever the outcome, with `analysis.status` telling you which of the terminal statuses above it reached.
+To push results into your CRM or data warehouse as soon as they're ready, configure a [post-call webhook](/agents/monitor/webhooks). `call.analyzed` fires as soon as the run settles, whatever the outcome, with `analysis.status` telling you which of the terminal statuses above it reached.
 
 ## Going further
 

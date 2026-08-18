@@ -1,13 +1,13 @@
 ---
 title: "MCP Server"
-description: "Connect Claude, Cursor, or any MCP client to your Fish Audio account — search voices, generate speech, and transcribe audio"
+description: "Connect Claude, Cursor, or any MCP client to your Fish Audio account: search voices, generate speech, and transcribe audio"
 icon: "plug"
 ---
 
 The Fish Audio MCP server gives AI agents direct access to your Fish Audio account: they can browse the voice library, generate speech, and transcribe audio for you.
 
 - **Endpoint**: `https://api.fish.audio/mcp` (streamable HTTP)
-- **Authentication**: OAuth. Your MCP client opens a browser window and you sign in with your Fish Audio account — no API key required.
+- **Authentication**: OAuth. Your MCP client opens a browser window and you sign in with your Fish Audio account.
 - **Billing**: usage draws from your plan's package credits, exactly like the [web app](https://fish.audio/app). It does not consume developer API credits.
 
 ## Connect
@@ -68,11 +68,11 @@ The Fish Audio MCP server gives AI agents direct access to your Fish Audio accou
 
 ## Try it
 
-Once connected, ask in plain language — the agent picks the right tools:
+Once connected, ask in plain language. The agent picks the right tools:
 
 <CardGroup cols={2}>
   <Card title="Narrate a script" icon="microphone">
-    "Find a calm English narration voice and read intro.md aloud — give me the audio link."
+    "Find a calm English narration voice, read intro.md aloud, and give me the audio link."
   </Card>
 
   <Card title="Voice casting" icon="magnifying-glass">
@@ -92,7 +92,7 @@ In coding agents like Claude Code and Codex, tools compose with the shell: the a
 
 ## Good to know
 
-- Add audio tags in square brackets inside the text to control delivery — `[whispering]`, `[excited]`, `[laughing]`. Tags are performed, never spoken.
+- Add audio tags in square brackets inside the text to control delivery: `[whispering]`, `[excited]`, `[laughing]`. Tags are performed, never spoken.
 - If no voice is specified, a curated default voice for the requested language is used.
 - Generated audio is returned as a permanent URL; failed generations are refunded.
-- Local files can be transcribed too — the agent uploads them to a temporary slot that is deleted automatically after 7 days.
+- Local files can be transcribed too. The agent uploads them to a temporary slot that is deleted automatically after 7 days.

@@ -185,7 +185,7 @@ async def text_chunks():
 
 async def main():
     async with AsyncFishAudio() as client:
-        # stream_websocket is an async generator — iterate it, don't await the call
+        # stream_websocket is an async generator: iterate it, don't await the call
         audio_stream = client.tts.stream_websocket(text_chunks(), latency="balanced")
         with open("out.mp3", "wb") as f:
             async for chunk in audio_stream:

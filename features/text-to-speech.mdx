@@ -1,15 +1,15 @@
 ---
 title: "Text to Speech"
 sidebarTitle: "Overview"
-description: "Turn text into lifelike speech — use it however you build"
+description: "Turn text into lifelike speech"
 icon: "microphone"
 ---
 
-Generate natural speech from text with the `s2.1-pro`, `s2-pro`, and `s1` models. Pick a voice, choose a format, and go — from the API directly, the Python library, or JavaScript.
+Generate natural speech from text with the `s2.1-pro`, `s2-pro`, and `s1` models, from the API directly, the Python library, or JavaScript.
 
 <CardGroup cols={3}>
   <Card title="Use it in the web app" icon="browser" href="https://fish.audio/app/text-to-speech">
-    No code — type, pick a voice, generate.
+    No code: type, pick a voice, generate.
   </Card>
   <Card title="API reference" icon="brackets-curly" href="/api-reference/endpoint/openapi-v1/text-to-speech">
     Every parameter for `POST /v1/tts`.
@@ -26,7 +26,7 @@ Generate natural speech from text with the `s2.1-pro`, `s2-pro`, and `s1` models
     Audiobooks, explainers, ads, and video narration.
   </Card>
   <Card title="Conversational AI" icon="comments">
-    Speak an assistant's replies — pair with [streaming](/features/realtime-streaming) for low latency.
+    Speak an assistant's replies. Pair with [streaming](/features/realtime-streaming) for low latency.
   </Card>
   <Card title="Accessibility & IVR" icon="universal-access">
     Read content aloud, phone menus, notifications.
@@ -107,10 +107,10 @@ curl --request POST https://api.fish.audio/v1/tts \
 
 ### Models
 
-- **`s2.1-pro`** — recommended for production, with improved quality, latency, and throughput over S2-Pro.
-- **`s2.1-pro-free`** — the same model at $0 for testing, prototyping, development, and smaller businesses, without TTFA or DPA guarantees.
-- **`s2-pro`** — previous-generation S2 model with multi-speaker and natural-language expression control.
-- **`s1`** — previous generation, `(parenthesis)` emotion tags.
+- **`s2.1-pro`**: recommended for production, with improved quality, latency, and throughput over S2-Pro.
+- **`s2.1-pro-free`**: the same model at $0 for testing, prototyping, development, and smaller businesses, without TTFA or DPA guarantees.
+- **`s2-pro`**: previous-generation S2 model with multi-speaker and natural-language expression control.
+- **`s1`**: previous generation, `(parenthesis)` emotion tags.
 
 In the API, select with the `model` request header; requests without it use `s2.1-pro`. The Python SDK always sends a model and defaults to `model="s2-pro"`. See [Choosing a Model](/developer-guide/models-pricing/choosing-a-model).
 
@@ -163,7 +163,7 @@ The Python SDK exposes three ways to generate, depending on whether you have the
 
 | Method | Returns | Use it for |
 |---|---|---|
-| `tts.convert()` | complete audio `bytes` | most cases — you have the text, you want the file |
+| `tts.convert()` | complete audio `bytes` | most cases: you have the text, you want the file |
 | `tts.stream()` | `AudioStream` (iterate chunks, or `.collect()`) | memory-efficient transfer of large audio; write chunks to disk as they arrive |
 | `tts.stream_websocket()` | iterator of audio `bytes` | text arriving in real time (LLM tokens, live captions) |
 
@@ -179,7 +179,7 @@ For real-time text streaming with `stream_websocket()`, see [Realtime Streaming]
 
 ### Instant voice cloning (reference audio)
 
-Instead of a saved `reference_id`, pass raw audio plus its transcript to clone a voice on the fly — no training step. Best with a clean 10–30s sample.
+Instead of a saved `reference_id`, pass raw audio plus its transcript to clone a voice on the fly, with no training step. Best with a clean 10–30s sample.
 
 ```python
 from fishaudio.types import ReferenceAudio
@@ -201,7 +201,7 @@ Pick a format for your delivery channel, and tune bitrate to trade size against 
 |---|---|
 | `mp3` (default) | good size/quality balance; set `mp3_bitrate` to `64`, `128`, or `192` |
 | `wav` | uncompressed, highest quality; set `sample_rate` (e.g. `44100`) |
-| `pcm` | raw samples, no container — for low-latency playback and telephony pipelines |
+| `pcm` | raw samples, no container; for low-latency playback and telephony pipelines |
 | `opus` | efficient for streaming; bitrate is automatic (`opus_bitrate=-1000`) |
 
 ```python
@@ -217,9 +217,9 @@ audio = client.tts.convert(
 
 `latency` trades stability for speed; `chunk_length` controls how much text the engine batches before it starts generating.
 
-- `latency="balanced"` (default) — lower time-to-first-audio (~300ms). Good for interactive use.
-- `latency="normal"` — most stable output, at slightly higher latency.
-- `chunk_length` (`100`–`300`, default `200`) — smaller chunks start audio sooner; larger chunks are more efficient for long text.
+- `latency="balanced"` (default): lower time-to-first-audio (~300ms). Good for interactive use.
+- `latency="normal"`: most stable output, at slightly higher latency.
+- `chunk_length` (`100`–`300`, default `200`): smaller chunks start audio sooner; larger chunks are more efficient for long text.
 
 <CodeGroup>
 ```python Python
@@ -243,7 +243,7 @@ curl --request POST https://api.fish.audio/v1/tts \
 
 ### Direct API (MessagePack)
 
-`POST /v1/tts` also accepts a MessagePack body (`Content-Type: application/msgpack`) — the path the [API reference](/api-reference/endpoint/openapi-v1/text-to-speech) is built around. Use it to send binary reference audio in the request without base64 overhead, or when you don't want the SDK.
+`POST /v1/tts` also accepts a MessagePack body (`Content-Type: application/msgpack`), the path the [API reference](/api-reference/endpoint/openapi-v1/text-to-speech) is built around. Use it to send binary reference audio in the request without base64 overhead, or when you don't want the SDK.
 
 ```python
 import os
@@ -265,11 +265,11 @@ with open("out.mp3", "wb") as f:
     f.write(resp.content)
 ```
 
-The `model` header is optional — if omitted or set to an unrecognized value, the request falls back to `s2.1-pro`. JSON and MessagePack accept the same fields.
+If the `model` header is omitted or set to an unrecognized value, the request falls back to `s2.1-pro`. JSON and MessagePack accept the same fields.
 
 ### Advanced generation tuning
 
-For finer control, `TTSConfig` exposes the model's sampling parameters. The defaults are well-tuned — reach for these only when you need to dial in determinism or curb artifacts.
+For finer control, `TTSConfig` exposes the model's sampling parameters. The defaults are well-tuned. Reach for these only when you need to dial in determinism or curb artifacts.
 
 ```python
 from fishaudio.types import TTSConfig, Prosody
@@ -286,7 +286,7 @@ config = TTSConfig(
 audio = client.tts.convert(text="Carefully tuned output.", config=config)
 ```
 
-A `TTSConfig` is reusable — define it once and pass it to many `convert()` calls. See the [full field list](/api-reference/sdk/python/types#ttsconfig-objects) for every parameter and default.
+Define a `TTSConfig` once and pass it to many `convert()` calls. See the [full field list](/api-reference/sdk/python/types#ttsconfig-objects) for every parameter and default.
 
 ## Going further
 

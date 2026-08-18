@@ -13,16 +13,16 @@ dashboard.
 Sign in to fish.audio and open **Developer → Self Host**. Everything your team needs to
 start is there:
 
-- **Your deployment** — the delivery forms your team is granted. If it is empty, or the
+- **Your deployment**: the delivery forms your team is granted. If it is empty, or the
   page reports that self-host deployment is not enabled, contact your account manager.
-- **The versions available to you**, and the documentation bundle for each — see
+- **The versions available to you**, and the documentation bundle for each. See
   [Releases](/developer-guide/self-hosting/enterprise-releases).
 - **Install commands built for your team**, with the registry host, artifact references,
   and the version you pick already filled in.
 
 <Note>
   The registry host, the artifact references, and the versions available to you are
-  specific to your team and are shown only in the dashboard — copy them from the Self
+  specific to your team and are shown only in the dashboard. Copy them from the Self
   Host page.
 </Note>
 
@@ -50,7 +50,7 @@ start is there:
 
 A team can hold up to five deploy tokens at a time. Tokens carry the grants of the team
 that owns them, not of the person who created them, and follow those grants as they
-change — there is no token to recreate when your entitlement is updated.
+change, so there is no token to recreate when your entitlement is updated.
 
 Authenticate with your account email as the username and the deploy token as the
 password. Docker, Helm, and the cluster's image pull secret all use the same pair; the
@@ -66,7 +66,7 @@ exact commands are on the Self Host page and in the deployment runbook.
 
 Recommended practice:
 
-- Issue one token per consumer — production cluster, staging cluster, CI mirror — so a
+- Issue one token per consumer (production cluster, staging cluster, CI mirror) so a
   single revocation never takes down more than one of them.
 - Store tokens in your secret manager, not in values files or version control.
 - Rotate on your normal credential schedule and whenever someone with access to a token
