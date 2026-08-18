@@ -1,6 +1,6 @@
 ---
 title: "Call Transfers"
-description: "Let the agent hand a phone call to a human — a cold carrier handoff, or a warm transfer with hold music and a private briefing"
+description: "Let the agent hand a phone call to a human: a cold carrier handoff, or a warm transfer with hold music and a private briefing"
 icon: "phone-arrow-right"
 ---
 
@@ -12,22 +12,22 @@ Two modes decide what the handoff feels like:
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Handoff**                    | The agent announces the transfer and drops out; the carrier connects the caller to the destination.         | The caller waits on hold while the agent briefs the human on a private call, then the two are connected.                                                              |
 | **What the human hears first** | The caller, directly.                                                                                       | The agent's briefing: who is calling and what they need.                                                                                                              |
-| **Recording & analysis**       | Stop at the handoff — nothing after it appears in [post-call analysis](/agents/monitor/post-call-analysis). | Recording continues after the human joins, capturing the full call audio; the transcript — and therefore analysis — covers only the agent's segment, up to the merge. |
+| **Recording & analysis**       | Stop at the handoff: nothing after it appears in [post-call analysis](/agents/monitor/post-call-analysis). | Recording continues after the human joins, capturing the full call audio; the transcript (and therefore analysis) covers only the agent's segment, up to the merge. |
 
 ## Prerequisites
 
-- A phone number bound to your agent, answering inbound calls — see [Inbound calls](/agents/telephony/inbound-calls).
-- The number must support transfers — numbers purchased from the platform inventory (`provider: "twilio"`) do; see [Phone numbers](/agents/telephony/phone-numbers).
+- A phone number bound to your agent, answering inbound calls. See [Inbound calls](/agents/telephony/inbound-calls).
+- The number must support transfers. Numbers purchased from the platform inventory (`provider: "twilio"`) do; see [Phone numbers](/agents/telephony/phone-numbers).
 
 ## Configure a destination
 
 ### In the console
 
-On the agent's **Phone** page, under **Inbound calls**, turn on **Call transfer**. Give the destination a name, enter its phone number, and pick the transfer mode — choosing **Warm** adds a handoff choice (ask the human to accept first, or connect immediately after the briefing). Like every config edit, the change lands in the agent's draft and takes effect on live calls after you [publish](/agents/deploy/versions-publishing).
+On the agent's **Phone** page, under **Inbound calls**, turn on **Call transfer**. Give the destination a name, enter its phone number, and pick the transfer mode. Choosing **Warm** adds a handoff choice (ask the human to accept first, or connect immediately after the briefing). Like every config edit, the change lands in the agent's draft and takes effect on live calls after you [publish](/agents/deploy/versions-publishing).
 
 ### Through the API
 
-Transfer destinations live in the `conversation` section of the [agent config](/agents/build/configuration), as `transfer_destinations`. An empty list disables transfers; only one destination is supported for now — a longer list is rejected.
+Transfer destinations live in the `conversation` section of the [agent config](/agents/build/configuration), as `transfer_destinations`. An empty list disables transfers; only one destination is supported for now, and a longer list is rejected.
 
 <CodeGroup>
 ```bash Enable
@@ -62,19 +62,19 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 | `type`         | Destination type; `phone` is the only value today and the default.                                                           |
 | `label`        | Name for the destination, shown in the Builder. At most 64 characters.                                                       |
 | `phone_number` | The destination in E.164 format, for example `+14155550123`.                                                                 |
-| `mode`         | `cold` (default) or `warm` — see the comparison above.                                                                       |
+| `mode`         | `cold` (default) or `warm`; see the comparison above.                                                                       |
 | `warm_connect` | Warm only: `confirm` (default) waits for the human's go-ahead before connecting; `direct` connects right after the briefing. |
 
-Destination numbers must be E.164 and are limited to a set of supported countries — a number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list.
+Destination numbers must be E.164 and are limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list.
 
 ## How the agent decides to transfer
 
-Configuring a destination is what enables the built-in `transfer_call` tool — there is no separate switch, and an empty destination list removes the tool. Unlike the toggled [system tools](/agents/build/system-tools), you won't find it in the `tools` config section; it ships automatically on phone sessions whenever a valid destination exists.
+Configuring a destination is what enables the built-in `transfer_call` tool: an empty destination list removes it. Unlike the toggled [system tools](/agents/build/system-tools), you won't find it in the `tools` config section; it ships automatically on phone sessions whenever a valid destination exists.
 
-The built-in instructions are conservative: the agent transfers only when the caller asks for a person, or when the request clearly needs one and the agent cannot help further — never preemptively for questions it can answer itself.
+The built-in instructions are conservative: the agent transfers only when the caller asks for a person, or when the request clearly needs one and the agent cannot help further.
 
 <Tip>
-  Use the system prompt to sharpen the escalation policy — for example,
+  Use the system prompt to sharpen the escalation policy, for example
   "Transfer to a human whenever the caller mentions a refund." See
   [Tools](/agents/build/tools) for how the agent chooses between its tools.
 </Tip>
@@ -83,13 +83,13 @@ The built-in instructions are conservative: the agent transfers only when the ca
 
 The agent tells the caller it is transferring them, and once that sentence finishes playing the call is handed to the carrier. The caller hears a dial tone while the destination rings; the agent drops out and its session ends at the handoff.
 
-If the handoff is refused — the destination is unreachable, or the number doesn't support transfers — the agent stays on the line, apologizes, and keeps helping. It can attempt the transfer again later.
+If the handoff is refused (the destination is unreachable, or the number doesn't support transfers), the agent stays on the line, apologizes, and keeps helping. It can attempt the transfer again later.
 
 ## What happens on a warm transfer
 
 <Steps>
   <Step title="The caller goes on hold">
-    The agent asks the caller to hold for a moment — in the session's language —
+    The agent asks the caller to hold for a moment, in the session's language,
     and hold music starts.
   </Step>
   <Step title="The platform dials your human agent">
@@ -109,18 +109,18 @@ If the handoff is refused — the destination is unreachable, or the number does
   </Step>
 </Steps>
 
-If the human cannot be reached, declines, or the consult call hits voicemail, the caller comes off hold and the agent apologizes and continues helping — it can retry if the caller asks. If the caller hangs up while on hold, the agent briefly tells the human what happened and ends the consult call.
+If the human cannot be reached, declines, or the consult call hits voicemail, the caller comes off hold and the agent apologizes and continues helping. It can retry if the caller asks. If the caller hangs up while on hold, the agent briefly tells the human what happened and ends the consult call.
 
 ## Limitations
 
-- **Phone calls only** — web and SDK sessions have no phone leg to hand off, so the `transfer_call` tool never ships for them.
-- **Transfer-capable numbers** — the number the caller dialed must be a `twilio`-provider number.
-- **One destination** — each agent supports a single transfer destination for now.
-- **Supported countries** — destination numbers are limited to an allowlist of country codes.
+- **Phone calls only**: web and SDK sessions have no phone leg to hand off, so the `transfer_call` tool never ships for them.
+- **Transfer-capable numbers**: the number the caller dialed must be a `twilio`-provider number.
+- **One destination**: each agent supports a single transfer destination for now.
+- **Supported countries**: destination numbers are limited to an allowlist of country codes.
 
 ## Billing
 
-Transferred call time is metered separately from agent time, with cold and warm transfers each billed at their own per-minute rate. The standard agent rate applies only while the agent itself is on the call — it stops at the handoff for cold transfers and at the merge for warm transfers, and the connected call is metered as transfer minutes from that point on.
+Transferred call time is metered separately from agent time, with cold and warm transfers each billed at their own per-minute rate. The standard agent rate stops at the handoff for cold transfers and at the merge for warm transfers; from that point the call is metered as transfer minutes.
 
 ## Going further
 

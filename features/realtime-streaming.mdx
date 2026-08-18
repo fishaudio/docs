@@ -4,7 +4,7 @@ description: "Stream audio as it generates for the lowest latency"
 icon: "bolt"
 ---
 
-Start playing audio before the whole clip is ready. Fish Audio streams speech in chunks, so your users hear the first words in a fraction of a second — essential for voice agents and live narration. Two modes: **HTTP streaming** for text you already have, and **WebSocket** for text that arrives incrementally (like LLM tokens).
+Start playing audio before the whole clip is ready. Fish Audio streams speech in chunks, so your users hear the first words in a fraction of a second, essential for voice agents and live narration. Two modes: **HTTP streaming** for text you already have, and **WebSocket** for text that arrives incrementally (like LLM tokens).
 
 <CardGroup cols={3}>
   <Card title="API reference" icon="brackets-curly" href="/api-reference/endpoint/websocket/tts-live">
@@ -25,7 +25,7 @@ Start playing audio before the whole clip is ready. Fish Audio streams speech in
     Conversational AI where time-to-first-audio matters.
   </Card>
   <Card title="LLM to speech" icon="robot">
-    Speak tokens as your model produces them — no waiting for the full reply.
+    Speak tokens as your model produces them.
   </Card>
   <Card title="Live narration" icon="tower-broadcast">
     Long-form content that should start playing immediately.
@@ -69,7 +69,7 @@ import { createWriteStream } from "fs";
 
 const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 
-// convert() returns a ReadableStream<Uint8Array> — write each chunk the
+// convert() returns a ReadableStream<Uint8Array>. Write each chunk the
 // moment it arrives instead of waiting for the whole clip.
 const stream = await client.textToSpeech.convert(
   { text: "Streaming keeps latency low.", format: "mp3" },
@@ -88,7 +88,7 @@ file.end();
 
 ## Stream from an LLM
 
-When text arrives token by token, feed a generator to `stream_websocket`. It opens a WebSocket, sends text as you produce it, and yields audio chunks back — so speech keeps pace with your model.
+When text arrives token by token, feed a generator to `stream_websocket`. It opens a WebSocket, sends text as you produce it, and yields audio chunks back, so speech keeps pace with your model.
 
 <CodeGroup>
 ```python Python
@@ -118,18 +118,18 @@ for chunk in client.tts.stream_websocket(llm_tokens(), reference_id="YOUR_VOICE_
 
 ### Which mode to use
 
-- **HTTP streaming (`tts.stream`)** — you have the full text up front and want low time-to-first-audio. Simplest option.
-- **WebSocket (`tts.stream_websocket`)** — text is still being produced (LLM output, live captions). Lets you start speaking before the sentence is finished.
+- **HTTP streaming (`tts.stream`)**: you have the full text up front and want low time-to-first-audio. Simplest option.
+- **WebSocket (`tts.stream_websocket`)**: text is still being produced (LLM output, live captions). Lets you start speaking before the sentence is finished.
 
 ### Lower the latency further
 
 - Use a streaming-friendly format like `mp3` or `pcm`.
 - Keep the connection warm for back-to-back generations.
-- Pair with a cloned voice via `reference_id` — see [Voice Cloning](/features/voice-cloning).
+- Pair with a cloned voice via `reference_id` (see [Voice Cloning](/features/voice-cloning)).
 
 ## Control where audio generates
 
-The WebSocket buffers incoming text and generates audio once it has enough context for natural-sounding speech, so you don't need to batch tokens yourself. When you *do* want a clean break — end of a sentence, a deliberate pause, or the end of a turn — yield a `FlushEvent` to force generation immediately. Wrap text in a `TextEvent` if you prefer explicit events over bare strings.
+The WebSocket buffers incoming text and generates audio once it has enough context for natural-sounding speech, so you don't need to batch tokens yourself. When you *do* want a clean break (end of a sentence, a deliberate pause, or the end of a turn), yield a `FlushEvent` to force generation immediately. Wrap text in a `TextEvent` if you prefer explicit events over bare strings.
 
 ```python
 from fishaudio import FishAudio
@@ -151,8 +151,8 @@ for chunk in client.tts.stream_websocket(script(), reference_id="YOUR_VOICE_ID")
 
 Both streaming paths take a `latency` mode:
 
-- `latency="balanced"` (default) — lowest time-to-first-audio. Use it for voice agents and live LLM output.
-- `latency="normal"` — slightly higher latency, best audio quality. Use it for narration where you can afford a beat.
+- `latency="balanced"` (default): lowest time-to-first-audio. Use it for voice agents and live LLM output.
+- `latency="normal"`: slightly higher latency, best audio quality. Use it for narration where you can afford a beat.
 
 ```python
 for chunk in client.tts.stream_websocket(llm_tokens(), latency="balanced"):
@@ -189,7 +189,7 @@ async def main():
         async for token in your_async_llm():
             yield token
 
-    # stream_websocket is an async generator — iterate it, don't await the call
+    # stream_websocket is an async generator: iterate it, don't await the call
     async for chunk in client.tts.stream_websocket(
         llm_tokens(), reference_id="YOUR_VOICE_ID", latency="balanced"
     ):
@@ -200,7 +200,7 @@ asyncio.run(main())
 
 ## Direct API (no SDK)
 
-Token-level streaming runs over the WebSocket endpoint — the SDK's `stream_websocket()` handles framing for you. To speak the protocol directly, send MessagePack frames over the socket; the same `application/msgpack` payload format also works for one-shot HTTP streaming, which is faster to serialize than JSON for large reference audio:
+Token-level streaming runs over the WebSocket endpoint. The SDK's `stream_websocket()` handles framing for you. To speak the protocol directly, send MessagePack frames over the socket; the same `application/msgpack` payload format also works for one-shot HTTP streaming, which is faster to serialize than JSON for large reference audio:
 
 ```python
 import os

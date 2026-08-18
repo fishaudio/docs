@@ -26,9 +26,9 @@ Every SDK error inherits from [`FishAudioError`](/api-reference/sdk/python/excep
 | `DependencyError` | a required system tool is missing (e.g. ffmpeg for `play()`) | Carries `.dependency` and `.install_command` |
 
 <Warning>
-  There is no separate `ValidationError` raised at runtime. Invalid request
-  parameters come back as an `APIError` with `status == 422` — catch `APIError`,
-  not `ValidationError`.
+  Invalid request parameters come back as an `APIError` with `status == 422`.
+  Catch `APIError`, not a separate `ValidationError` (none is raised at
+  runtime).
 </Warning>
 
 ## Handling errors
@@ -51,7 +51,7 @@ try:
 except AuthenticationError:
     print("Invalid API key")
 except RateLimitError:
-    print("Rate limited — back off and retry")
+    print("Rate limited: back off and retry")
 except NotFoundError:
     print("That voice model does not exist")
 except APIError as e:
@@ -70,7 +70,7 @@ async def main():
         try:
             audio = await client.tts.convert(text="Hello!")
         except RateLimitError:
-            print("Rate limited — back off and retry")
+            print("Rate limited: back off and retry")
         except APIError as e:
             print(f"API error {e.status}: {e.message}")
         except FishAudioError as e:
@@ -82,7 +82,7 @@ asyncio.run(main())
 
 ## Retries
 
-The Python client does **not** retry automatically — each call makes a single request and raises on failure. Add your own backoff where it matters, typically around `RateLimitError` and `ServerError`:
+The Python client does **not** retry automatically. Add your own backoff where it matters, typically around `RateLimitError` and `ServerError`:
 
 ```python
 import time
@@ -104,7 +104,7 @@ def convert_with_retry(text: str, max_retries: int = 3) -> bytes:
 
 <Note>
   `RequestOptions` accepts a `max_retries` field, but the current client does
-  not act on it — use an explicit loop like the one above.
+  not act on it. Use an explicit loop like the one above.
 </Note>
 
 ## Timeouts
@@ -129,12 +129,12 @@ audio = client.tts.convert(
 ```
 
 <Warning>
-  If you inject your own `httpx_client`, the SDK uses it as-is — the client-level
-  `timeout`, `base_url`, and the `Authorization` header are **not** applied to
-  it. Configure those on the client you pass in.
+  If you inject your own `httpx_client`, the client-level `timeout`,
+  `base_url`, and `Authorization` header are **not** applied to it. Configure
+  those on the client you pass in.
 </Warning>
 
 ## Related
 
 - [Exceptions API reference](/api-reference/sdk/python/exceptions)
-- [Real-time WebSocket](/features/realtime-streaming) — `WebSocketError` handling
+- [Real-time WebSocket](/features/realtime-streaming): `WebSocketError` handling

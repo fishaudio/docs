@@ -4,7 +4,7 @@ description: "Edit safely in a draft, then publish an immutable version that liv
 icon: "code-branch"
 ---
 
-Every agent has one **draft** and a linear history of **published versions**. Edits in the Builder or via the API always land in the draft — production sessions never see them until you publish. Publishing snapshots the draft into an immutable, numbered version, so you can iterate freely without touching live traffic.
+Every agent has one **draft** and a linear history of **published versions**. Edits in the Builder or via the API always land in the draft. Production sessions never see them until you publish. Publishing snapshots the draft into an immutable, numbered version.
 
 <CardGroup cols={3}>
   <Card
@@ -12,7 +12,7 @@ Every agent has one **draft** and a linear history of **published versions**. Ed
     icon="sliders"
     href="/agents/build/configuration"
   >
-    Prompt, voice, and conversation settings — all autosaved.
+    Prompt, voice, and conversation settings, all autosaved.
   </Card>
   <Card
     title="Test before publishing"
@@ -34,21 +34,20 @@ Every agent has one **draft** and a linear history of **published versions**. Ed
 
 |            | Draft                                                                                   | Published version                             |
 | ---------- | --------------------------------------------------------------------------------------- | --------------------------------------------- |
-| Mutability | Editable — Builder and `PATCH .../config` write here                                    | Immutable snapshot                            |
-| Used by    | [Preview calls](/agents/test/preview-calls) and [agent tests](/agents/test/agent-tests) | Production sessions — web, SDK, and phone     |
+| Mutability | Editable: Builder and `PATCH .../config` write here                                    | Immutable snapshot                            |
+| Used by    | [Preview calls](/agents/test/preview-calls) and [agent tests](/agents/test/agent-tests) | Production sessions: web, SDK, and phone     |
 | History    | One per agent, always current                                                           | `version_number` increments with each publish |
 
 <Note>
-  An agent that has never been published cannot take production sessions —
-  session creation returns `409` until the first publish. Publishing is the
-  single gate between editing and live traffic.
+  An agent that has never been published cannot take production sessions:
+  session creation returns `409` until the first publish.
 </Note>
 
 ## Publish from the Builder
 
 <Steps>
-  <Step title="Edit — changes autosave">
-    There is no Save button. Every change is written to the draft automatically;
+  <Step title="Edit: changes autosave">
+    Every change is written to the draft automatically;
     the **Saving… / Draft saved** indicator in the top bar shows the current
     state.
   </Step>
@@ -65,7 +64,7 @@ Every agent has one **draft** and a linear history of **published versions**. Ed
   </Step>
 </Steps>
 
-New sessions use the newly published version from that point on. To hear a change before it goes live, run a [preview call](/agents/test/preview-calls) — previews always use the draft.
+New sessions use the newly published version from that point on. To hear a change before it goes live, run a [preview call](/agents/test/preview-calls). Previews always use the draft.
 
 ## Publish via the API
 
@@ -91,7 +90,7 @@ The publish response includes the new `version_number`.
 
 ## Version history
 
-List published versions, or fetch the complete configuration snapshot of any one of them — including the version currently serving production:
+List published versions, or fetch the complete configuration snapshot of any one of them, including the version currently serving production:
 
 ```bash List versions
 curl "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions" \
@@ -116,8 +115,8 @@ Each version record includes:
 Fetching a single version returns the full configuration as it was published. Because `GET .../config` always shows the draft, the snapshot endpoint is how you read back what is actually running in production.
 
 <Warning>
-  Version snapshots never echo credential secrets. Write-only fields — such as
-  webhook secrets and tool authorization headers — return a `has_secret: true`
+  Version snapshots never echo credential secrets. Write-only fields (such as
+  webhook secrets and tool authorization headers) return a `has_secret: true`
   marker instead of the value, and the custom LLM
   [`api_key`](/agents/build/custom-llm) reads back as `null`, in every version
   including historical ones.
@@ -139,13 +138,13 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   --data '{ "prompt": { "system_prompt": "<system prompt from the snapshot>" } }'
 ```
 
-Patching updates the draft — it does **not** publish. Review or [preview](/agents/test/preview-calls) the restored draft, then publish it as a new version; the rollback becomes part of the linear history, so the audit trail stays intact. Because snapshots never echo secrets (see above), credential fields keep their current draft values unless you set them again explicitly.
+Patching updates the draft. It does **not** publish. Review or [preview](/agents/test/preview-calls) the restored draft, then publish it as a new version; the rollback becomes part of the linear history, so the audit trail stays intact. Because snapshots never echo secrets (see above), credential fields keep their current draft values unless you set them again explicitly.
 
 ## Clone an agent
 
 Cloning creates a new agent from an existing one's **draft** configuration. In the console, open the agents list and choose **Clone** from the agent's row menu.
 
-The clone starts with a copy of the source's current draft. Published versions do not carry over — the new agent is unpublished until you publish it yourself. Use clones to template a base configuration across many agents, or to experiment without risking an agent that is already live.
+The clone starts with a copy of the source's current draft. Published versions do not carry over: the new agent is unpublished until you publish it yourself. Use clones to template a base configuration across many agents, or to experiment without risking an agent that is already live.
 
 ## Going further
 

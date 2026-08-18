@@ -4,11 +4,11 @@ description: "Create a custom voice from audio samples, then speak with it"
 icon: "clone"
 ---
 
-Build a reusable voice model from your own audio, then use it anywhere you generate speech. You get back a voice **id** — pass it as `reference_id` to [Text to Speech](/features/text-to-speech) and every generation speaks in that voice. Works from the API directly, the Python library, or JavaScript.
+Build a reusable voice model from your own audio, then use it anywhere you generate speech. You get back a voice **id**. Pass it as `reference_id` to [Text to Speech](/features/text-to-speech) and every generation speaks in that voice. Works from the API directly, the Python library, or JavaScript.
 
 <CardGroup cols={3}>
   <Card title="Use it in the web app" icon="browser" href="https://fish.audio/app/voice-cloning">
-    No code — clone a voice in the browser.
+    No code: clone a voice in the browser.
   </Card>
   <Card title="API reference" icon="brackets-curly" href="/api-reference/endpoint/model/create-model">
     Every field for `POST /model`.
@@ -90,7 +90,7 @@ console.log(voice._id, voice.state);
 
 ## Use your cloned voice
 
-Pass the voice **id** as `reference_id` to Text to Speech — exactly like any other voice.
+Pass the voice **id** as `reference_id` to Text to Speech, exactly like any other voice.
 
 <CodeGroup>
 ```python Python
@@ -141,14 +141,14 @@ curl --request POST https://api.fish.audio/model \
 
 ### Visibility
 
-Models are `private` by default. Set `unlist` for a shareable link, or `public` to publish to the [Voice Library](/overview/platform). You can change this later — see [Manage Voices](/features/manage-voices).
+Models are `private` by default. Set `unlist` for a shareable link, or `public` to publish to the [Voice Library](/overview/platform). You can change this later in [Manage Voices](/features/manage-voices).
 
 ## Instant vs. persistent clones
 
 There are two ways to clone:
 
-- **Persistent model** (above) — train once with `voices.create()`, get back a reusable `id`. Best when you'll use the same voice repeatedly.
-- **Instant clone** — pass reference audio inline on each generation with no model to manage. Best for one-off or per-request voices.
+- **Persistent model** (above): train once with `voices.create()`, get back a reusable `id`. Best when you'll use the same voice repeatedly.
+- **Instant clone**: pass reference audio inline on each generation with no model to manage. Best for one-off or per-request voices.
 
 For an instant clone, send the reference audio (and its transcript) directly to Text to Speech via `references` instead of `reference_id`:
 

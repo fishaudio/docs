@@ -1,22 +1,25 @@
 ---
 title: "Webhooks"
-description: "Get an HTTP POST when a call ends and when its analysis settles — no polling"
+description: "Get an HTTP POST when a call ends and when its analysis settles, with no polling"
 icon: "bell"
 ---
 
-Point your agent at one or more endpoints on your server and Fish Audio calls them when things happen: `call.ended` the moment a session reaches a terminal state, `call.analyzed` when [post-call analysis](/agents/monitor/post-call-analysis) settles. Use them to write results into your CRM, ticketing system, or data warehouse without polling the sessions API.
+Point your agent at one or more endpoints on your server and Fish Audio calls them when things happen: `call.ended` the moment a session reaches a terminal state, `call.analyzed` when [post-call analysis](/agents/monitor/post-call-analysis) settles, and, on outbound phone calls, `phone_call.dial_finished` as soon as the dial attempt resolves. Use them to write results into your CRM, ticketing system, or data warehouse without polling the sessions API.
 
 ## Events
 
-| Event           | Fires                                                                                            | Payload                                       |
-| --------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------- |
-| `call.ended`    | When a session reaches a terminal state — every real call, whether or not analysis is configured | Session facts plus the reason the call ended  |
-| `call.analyzed` | When post-call analysis settles — completed, skipped, or error                                   | Session facts plus the full `analysis` entity |
+| Event                      | Fires                                                                                            | Payload                                       |
+| -------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| `call.ended`               | When a session reaches a terminal state: every real call, whether or not analysis is configured | Session facts plus the reason the call ended  |
+| `call.analyzed`            | When post-call analysis settles: completed, skipped, or error                                   | Session facts plus the full `analysis` entity |
+| `phone_call.dial_finished` | When an outbound call's dial attempt resolves: answered, busy, no answer, or failed             | Session facts plus `dial_status` and `answered_by` |
 
-For a given session, `call.ended` is delivered before `call.analyzed`, and every production call produces both events. When analysis has nothing to work with (the caller never spoke, or analysis is disabled) or fails, `call.analyzed` still arrives — with `analysis.status` set to `skipped` or `error` and empty result sections. You never have to infer from silence whether a result is still coming: check `analysis.status`.
+For a given session, `call.ended` is delivered before `call.analyzed`, and every answered production call produces both events. When analysis has nothing to work with (the caller never spoke, or analysis is disabled) or fails, `call.analyzed` still arrives, with `analysis.status` set to `skipped` or `error` and empty result sections.
+
+`phone_call.dial_finished` fires only for outbound calls, and it fires whether or not anyone picks up. An answered outbound call produces all three events, `phone_call.dial_finished` first; an outbound call that is never answered (a `dial_status` of `busy`, `no_answer`, or `failed`) produces `phone_call.dial_finished` and nothing else. Unanswered calls are not billed and not analyzed.
 
 <Note>
-  Transcripts are deliberately excluded from webhook payloads — fetch them on
+  Transcripts are deliberately excluded from webhook payloads. Fetch them on
   demand with `GET /v1/agent/sessions/{session_id}`. See [conversation
   history](/agents/monitor/conversation-history).
 </Note>
@@ -71,23 +74,23 @@ httpx.patch(
 
 </CodeGroup>
 
-The list is replaced as a whole on each update — send every endpoint you want to keep, including the ones you aren't changing. Set it to `null` or `[]` to stop deliveries. A single `post_call` object is still accepted and is treated as a one-element list.
+The list is replaced as a whole on each update, so send every endpoint you want to keep. Set it to `null` or `[]` to stop deliveries. A single `post_call` object is still accepted and is treated as a one-element list.
 
 | Field       | Rules                                                                                                                                                                                       |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `post_call` | Up to 5 entries, and their `url` values must be unique — a longer list or a repeated URL is rejected with `422`                                                                             |
-| `url`       | Required on every entry. Up to 4000 characters. Must resolve to a public address — localhost and private-network hosts are rejected with `422`, and the check is repeated at every delivery |
+| `post_call` | Up to 5 entries, and their `url` values must be unique. A longer list or a repeated URL is rejected with `422`                                                                             |
+| `url`       | Required on every entry. Up to 4000 characters. Must resolve to a public address. Localhost and private-network hosts are rejected with `422`, and the check is repeated at every delivery |
 | `secret`    | Optional signing key, up to 256 characters, set per entry. **Write-only**: reads return `has_secret: true`, never the value                                                                 |
 
 <Note>
   Webhook settings are part of the agent configuration, so they follow the
-  draft-and-publish flow — [publish](/agents/deploy/versions-publishing) for
+  draft-and-publish flow: [publish](/agents/deploy/versions-publishing) for
   changes to apply to production calls.
 </Note>
 
 ## Payload
 
-Every payload carries the `event` name and a `session` object with a fixed set of session facts. Note the field names differ from the [sessions API](/agents/monitor/conversation-history), which uses `session_id` / `started_at` / `ended_at` for the same facts. `call.ended` adds `ended_reason`; `call.analyzed` adds the `analysis` entity:
+Every payload carries the `event` name and a `session` object with a fixed set of session facts. Note the field names differ from the [sessions API](/agents/monitor/conversation-history), which uses `session_id` / `started_at` / `ended_at` for the same facts. `call.ended` adds `ended_reason`; `call.analyzed` adds the `analysis` entity; `phone_call.dial_finished` adds top-level `dial_status` and `answered_by`:
 
 <CodeGroup>
 
@@ -147,13 +150,41 @@ Every payload carries the `event` name and a `session` object with a fixed set o
 }
 ```
 
+```json phone_call.dial_finished
+{
+  "event": "phone_call.dial_finished",
+  "dial_status": "answered",
+  "answered_by": "human",
+  "session": {
+    "id": "5f3e…",
+    "agent_id": "a1b2…",
+    "branch_id": "b7d4…",
+    "source": "phone",
+    "status": "active",
+    "direction": "outbound",
+    "dial_status": "answered",
+    "answered_by": "human",
+    "batch_call_id": null,
+    "conversation_started_at": "2026-07-23T12:01:12Z",
+    "conversation_ended_at": null,
+    "duration_seconds": null,
+    "end_user_id": "",
+    "metadata": { "lead_ref": "L-2041" },
+    "agent_name": "Follow-up agent",
+    "config_hash": "sha256:9c41…"
+  }
+}
+```
+
 </CodeGroup>
 
-`ended_reason` is `hangup` for a call that terminated normally and `error` when the session failed. New values may be added as richer end causes ship — treat unrecognized values as informational rather than rejecting the event.
+`ended_reason` is `hangup` for a call that terminated normally and `error` when the session failed. New values may be added as richer end causes ship. Treat unrecognized values as informational rather than rejecting the event.
 
-`end_user_id` and `metadata` are echoed exactly as you set them when creating the session — use them to correlate the event with records in your own system. `branch_id` is an internal configuration-lineage identifier — safe to ignore. What lands in `summary`, `data`, and `criteria_results` is defined by your [analysis configuration](/agents/monitor/post-call-analysis).
+`dial_status` is `answered`, `busy`, `no_answer`, or `failed`. `answered_by` reports what answering-machine detection heard (`human`, `voicemail`, or `unknown`) and is `null` unless the call was answered. Both facts also appear on the session, alongside `direction` (`inbound` or `outbound`) and `batch_call_id` (reserved, always `null` today); these session fields are present in every webhook payload, with the dial fields `null` on inbound sessions. The `phone_call.dial_finished` snapshot is taken when the dial resolves, so on an answered call `conversation_ended_at` and `duration_seconds` are still `null`. The final numbers arrive with `call.ended`.
 
-The example shows a `completed` analysis. `analysis.status` can also be `skipped` (nothing to analyze — the caller never spoke, or analysis is disabled) or `error` (the run failed, with the cause in `analysis.error`); both arrive with `summary: null` and empty `data` / `criteria_results`. Check the status before reading results.
+`end_user_id` and `metadata` are echoed exactly as you set them when creating the session. Use them to correlate the event with records in your own system. `branch_id` is an internal configuration-lineage identifier and is safe to ignore. What lands in `summary`, `data`, and `criteria_results` is defined by your [analysis configuration](/agents/monitor/post-call-analysis).
+
+The example shows a `completed` analysis. `analysis.status` can also be `skipped` (nothing to analyze: the caller never spoke, or analysis is disabled) or `error` (the run failed, with the cause in `analysis.error`); both arrive with `summary: null` and empty `data` / `criteria_results`. Check the status before reading results.
 
 ## Verify the signature
 
@@ -163,10 +194,10 @@ When an entry has a `secret`, every request to that endpoint carries a signature
 X-Fish-Webhook-Signature: t=1784808000,v1=8693a4b9…
 ```
 
-`t` is the Unix time (seconds) the request was sent — each retry is signed fresh. `v1` is the hex HMAC. Verify in three steps:
+`t` is the Unix time (seconds) the request was sent; each retry is signed fresh. `v1` is the hex HMAC. Verify in three steps:
 
 1. Parse `t` and `v1` from the header.
-2. Recompute HMAC-SHA256 over the string `{t}.` followed by the **raw request body bytes** — before any JSON parsing or re-serialization — and compare against `v1` in constant time.
+2. Recompute HMAC-SHA256 over the string `{t}.` followed by the **raw request body bytes** (before any JSON parsing or re-serialization) and compare against `v1` in constant time.
 3. Reject requests whose `t` is more than 5 minutes from your clock. Because the timestamp is inside the MAC, a replayed capture can't be refreshed.
 
 <CodeGroup>
@@ -230,8 +261,8 @@ def verify_webhook(raw_body: bytes, signature_header: str, secret: str) -> bool:
 </Warning>
 
 <Note>
-  Future scheme revisions would ship under a new element (`v2=…`) alongside `v1`
-  — parse the elements you know and ignore the rest, as the snippets above do.
+  Future scheme revisions would ship under a new element (`v2=…`) alongside `v1`.
+  Parse the elements you know and ignore the rest, as the snippets above do.
 </Note>
 
 ## Delivery semantics
@@ -242,23 +273,23 @@ def verify_webhook(raw_body: bytes, signature_header: str, secret: str) -> bool:
 | Guarantee | At-least-once, per endpoint                                                                                       |
 | Timeout   | 10 seconds per attempt                                                                                            |
 | Retries   | 2 after the first attempt (3 attempts total) per endpoint, with backoff of 1s / 5s, then that delivery is dropped |
-| Ordering  | `call.ended` before `call.analyzed` for the same session                                                          |
+| Ordering  | `phone_call.dial_finished` (outbound only) before `call.ended` before `call.analyzed` for the same session        |
 
 Endpoints are delivered in parallel and independently: each gets its own attempts, its own retry budget, and its own signature keyed with its own secret. An endpoint that is down and exhausts all three attempts has no effect on the others.
 
-Respond with a `2xx` status within the timeout; a `500` response or a timed-out request counts as a failed attempt. Acknowledge first and process asynchronously — slow handlers burn their own retry budget.
+Respond with a `2xx` status within the timeout; a `500` response or a timed-out request counts as a failed attempt. Acknowledge first and process asynchronously. Slow handlers burn their own retry budget.
 
-**Idempotency.** At-least-once delivery means the same event can arrive more than once. Retries of one delivery carry an identical body, so dedupe `call.ended` on (`event`, `session.id`) and `call.analyzed` on (`event`, `session.id`, `analysis.finished_at`). The extra element matters because a skipped or failed analysis can be re-run from the console: the recovered result arrives as a fresh `call.analyzed` with a newer `finished_at`, superseding the earlier one.
+**Idempotency.** At-least-once delivery means the same event can arrive more than once. Retries of one delivery carry an identical body, so dedupe `call.ended` and `phone_call.dial_finished` on (`event`, `session.id`), and `call.analyzed` on (`event`, `session.id`, `analysis.finished_at`). The extra element matters because a skipped or failed analysis can be re-run from the console: the recovered result arrives as a fresh `call.analyzed` with a newer `finished_at`, superseding the earlier one.
 
 <Note>
   [Preview calls](/agents/test/preview-calls) made from the Builder never
-  trigger webhooks — debugging sessions don't reach your production endpoint. To
-  test end to end, run a real session against your published agent.
+  trigger webhooks. To test end to end, run a real session against your
+  published agent.
 </Note>
 
 ## Auto-ticket unresolved calls
 
-`call.analyzed` closes the loop on conversations the agent couldn't: judge every call with a success criterion, and open a ticket in your helpdesk whenever the verdict isn't `success` — no mid-call decision, no dashboard watching.
+`call.analyzed` closes the loop on conversations the agent couldn't: judge every call with a success criterion, and open a ticket in your helpdesk whenever the verdict isn't `success`.
 
 First give the agent's [analysis configuration](/agents/monitor/post-call-analysis) a criterion that captures resolution:
 
@@ -319,7 +350,7 @@ app.post(
       subject: `Unresolved call ${payload.session.id}`,
       body:
         `${payload.analysis.summary}\n\n` +
-        `issue_resolved: ${verdict.result} — ${verdict.rationale}`,
+        `issue_resolved: ${verdict.result}. ${verdict.rationale}`,
       customer: payload.session.end_user_id,
     });
   }
@@ -371,7 +402,7 @@ async def fish_webhooks(
         open_ticket(
             subject=f"Unresolved call {payload['session']['id']}",
             body=f"{analysis['summary']}\n\n"
-            f"issue_resolved: {verdict['result']} — {verdict['rationale']}",
+            f"issue_resolved: {verdict['result']}. {verdict['rationale']}",
             customer=payload["session"]["end_user_id"],
         )
     return {}
@@ -379,16 +410,16 @@ async def fish_webhooks(
 
 </CodeGroup>
 
-`verifyWebhook` is the function from [Verify the signature](#verify-the-signature); `openTicket` stands in for your helpdesk's API. Escalating on anything but `success` includes `unknown` verdicts — the model couldn't judge the call, which usually deserves human eyes too. Tighten the check to `failure` only if unknowns prove noisy.
+`verifyWebhook` is the function from [Verify the signature](#verify-the-signature); `openTicket` stands in for your helpdesk's API. Escalating on anything but `success` includes `unknown` verdicts: the model couldn't judge the call, which usually deserves human eyes too. Tighten the check to `failure` only if unknowns prove noisy.
 
 Edges worth handling:
 
-- Calls with nothing to analyze arrive with `analysis.status: "skipped"` — the handler above tickets them as unjudged, so every call reaches the helpdesk without also watching `call.ended`. Drop that branch if silent calls don't belong in your queue.
-- Payloads carry no transcript. To include one in the ticket, fetch `GET /v1/agent/sessions/{session_id}` from your handler — see [conversation history](/agents/monitor/conversation-history).
+- Calls with nothing to analyze arrive with `analysis.status: "skipped"`. The handler above tickets them as unjudged, so every call reaches the helpdesk without also watching `call.ended`. Drop that branch if silent calls don't belong in your queue.
+- Payloads carry no transcript. To include one in the ticket, fetch `GET /v1/agent/sessions/{session_id}` from your handler. See [conversation history](/agents/monitor/conversation-history).
 - Set `end_user_id` and `metadata` when creating sessions so tickets attach to the right customer record without a lookup.
 
 <Note>
-  Post-call ticketing is silent — the caller has already hung up. When the
+  Post-call ticketing is silent: the caller has already hung up. When the
   caller should leave the call holding a ticket number, have the agent open it
   mid-call with a [webhook
   tool](/agents/build/webhook-tools#escalate-to-a-ticket-mid-call), and keep
@@ -417,7 +448,7 @@ Edges worth handling:
     icon="code-branch"
     href="/agents/deploy/versions-publishing"
   >
-    How configuration changes — including webhooks — go live.
+    How configuration changes (including webhooks) go live.
   </Card>
   <Card
     title="Agent configuration"

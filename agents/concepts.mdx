@@ -1,11 +1,11 @@
 ---
 title: "Core Concepts"
 sidebarTitle: "Concepts"
-description: "Workspaces, agents, versions, and sessions — the mental model behind Fish Agents"
+description: "Workspaces, agents, versions, and sessions: the mental model behind Fish Agents"
 icon: "sitemap"
 ---
 
-Four nouns cover the whole platform. A **workspace** holds everything your team builds. An **agent** is a voice assistant you configure. Publishing an agent's draft creates an immutable **version**. And every conversation with an agent — from your app, a phone call, or the console — is a **session**.
+Four nouns cover the whole platform. A **workspace** holds everything your team builds. An **agent** is a voice assistant you configure. Publishing an agent's draft creates an immutable **version**. And every conversation with an agent (from your app, a phone call, or the console) is a **session**.
 
 ## Workspaces
 
@@ -24,7 +24,7 @@ Create keys under [API keys](https://fish.audio/app/api-keys/) in the console.
 
 ## Agents
 
-An agent is a bundle of configuration: a system prompt that steers behavior, a first-message policy, a [voice and speaking language](/agents/build/voice-language), attached [tools](/agents/build/tools), and [knowledge sources](/agents/build/knowledge-base). You assemble it in the Builder — the console page you land on after creating an agent — or through the API at `/v1/agent/agents`.
+An agent is a bundle of configuration: a system prompt that steers behavior, a first-message policy, a [voice and speaking language](/agents/build/voice-language), attached [tools](/agents/build/tools), and [knowledge sources](/agents/build/knowledge-base). You assemble it in the Builder (the console page you land on after creating an agent) or through the API at `/v1/agent/agents`.
 
 Creating an agent takes only a name. Everything else is configured afterward, so start minimal and iterate.
 
@@ -34,8 +34,8 @@ Every agent has exactly one **draft** and any number of immutable **published ve
 
 <Steps>
   <Step title="Edit the draft">
-    Everything you change in the Builder autosaves to the draft — there is no
-    Save button. Watch for the `Saving… / Saved` indicator.
+    Everything you change in the Builder autosaves to the draft. Watch for the
+    `Saving… / Saved` indicator.
   </Step>
   <Step title="Publish">
     **Publish** snapshots the draft into a numbered, immutable version and makes
@@ -44,7 +44,7 @@ Every agent has exactly one **draft** and any number of immutable **published ve
   </Step>
   <Step title="Keep iterating">
     Continue editing the draft without affecting live conversations. When you're
-    ready, publish again — the version number increments.
+    ready, publish again. The version number increments.
   </Step>
 </Steps>
 
@@ -57,7 +57,7 @@ The agent list shows one of two states:
 | **Live**  | The agent has been published at least once |
 | **Draft** | The agent has never been published         |
 
-Editing the draft of a Live agent does not change its badge — the Builder shows an unpublished-changes indicator next to **Publish** instead.
+Editing the draft of a Live agent does not change its badge. The Builder shows an unpublished-changes indicator next to **Publish** instead.
 
 ### Which configuration runs
 
@@ -71,7 +71,7 @@ Editing the draft of a Live agent does not change its badge — the Builder show
 
 ### Restore and clone
 
-Past versions stay in the agent's history — review them or restore one back into the draft from [Versions & publishing](/agents/deploy/versions-publishing).
+Past versions stay in the agent's history. Review them or restore one back into the draft from [Versions & publishing](/agents/deploy/versions-publishing).
 
 **Clone** creates a new agent from an existing one's current draft: prompt, voice, and tool and knowledge attachments carry over (shared resources are referenced, not copied). The clone is named `{name} copy`, starts as Draft, and does not inherit the source's publish history.
 
@@ -95,15 +95,15 @@ A session is one conversation between one user and one agent. Sessions start fro
   </Card>
 </CardGroup>
 
-Except [preview calls](/agents/test/preview-calls), which are ephemeral and never enter history, every session appears in [Conversation history](/agents/monitor/conversation-history) and `/v1/agent/sessions` — with its transcript, and its recording when the agent [records audio](/agents/monitor/conversation-history#what-gets-stored) — and can trigger [post-call analysis](/agents/monitor/post-call-analysis) when configured.
+Except [preview calls](/agents/test/preview-calls), which are ephemeral and never enter history, every session appears in [Conversation history](/agents/monitor/conversation-history) and `/v1/agent/sessions` (with its transcript, and its recording when the agent [records audio](/agents/monitor/conversation-history#what-gets-stored)) and can trigger [post-call analysis](/agents/monitor/post-call-analysis) when configured.
 
 ## Deleting resources
 
 Deletion is immediate and, from the console, cannot be undone: a deleted agent disappears from lists, the Builder, and all API responses. The same applies to tools, knowledge sources, and tests.
 
 <Note>
-  Names are freed on deletion — you can immediately create a new agent (or tool)
-  with the same name as one you deleted.
+  Names are freed on deletion: you can immediately create a new agent (or tool)
+  with the same name.
 </Note>
 
 ## Where everything lives

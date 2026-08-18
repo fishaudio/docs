@@ -1,14 +1,14 @@
 ---
 name: fish-audio-sdk
-description: Write code with the official Fish Audio SDKs — Python (`fishaudio`, PyPI `fish-audio-sdk`) and JavaScript/TypeScript (`fish-audio`). Use when the user wants text-to-speech, speech-to-text, voice cloning / voice-model management, or realtime WebSocket TTS through the installed SDK rather than raw HTTP. Covers install and auth, sync + async Python, the TypeScript client, exact method signatures and defaults, model selection (including the S2.1 typing caveat), the real exception types, and the Python↔JavaScript naming differences. For raw REST/WebSocket calls without an SDK (curl, unsupported languages, edge runtimes), use the `fish-audio-api` skill instead.
+description: Write code with the official Fish Audio SDKs, Python (`fishaudio`, PyPI `fish-audio-sdk`) and JavaScript/TypeScript (`fish-audio`). Use when the user wants text-to-speech, speech-to-text, voice cloning / voice-model management, or realtime WebSocket TTS through the installed SDK rather than raw HTTP. Covers install and auth, sync + async Python, the TypeScript client, exact method signatures and defaults, model selection (including the S2.1 typing caveat), the real exception types, and the Python↔JavaScript naming differences. For raw REST/WebSocket calls without an SDK (curl, unsupported languages, edge runtimes), use the `fish-audio-api` skill instead.
 ---
 
 # Fish Audio SDK Skill
 
 Use this skill to generate correct, runnable code with the **official Fish Audio SDKs**:
 
-- **Python** — package `fish-audio-sdk` on PyPI, imported as `fishaudio`. (The same wheel still ships a separate legacy `fish_audio_sdk` package — do **not** mix them; everything here is the modern `fishaudio` package.)
-- **JavaScript / TypeScript** — package `fish-audio` on npm, imported as `FishAudioClient`.
+- **Python**: package `fish-audio-sdk` on PyPI, imported as `fishaudio`. (The same wheel still ships a separate legacy `fish_audio_sdk` package. Do **not** mix them; everything here is the modern `fishaudio` package.)
+- **JavaScript / TypeScript**: package `fish-audio` on npm, imported as `FishAudioClient`.
 
 If the user wants raw `curl` / HTTP / WebSocket without installing an SDK, use the **`fish-audio-api`** skill instead.
 
@@ -16,13 +16,13 @@ If the user wants raw `curl` / HTTP / WebSocket without installing an SDK, use t
 
 ## Global facts
 
-- **Auth:** both SDKs read the API key from the `FISH_API_KEY` environment variable automatically. Get keys at `https://fish.audio/app/api-keys`. Never hardcode a key — read it from the environment.
+- **Auth:** both SDKs read the API key from the `FISH_API_KEY` environment variable automatically. Get keys at `https://fish.audio/app/api-keys`. Never hardcode a key.
 - **Base URL:** `https://api.fish.audio` (override with `base_url=` in Python / `baseUrl:` in JS).
-- **Models:** the API supports `s1`, `s2-pro`, `s2.1-pro` (recommended for production), and `s2.1-pro-free` (free tier), but the SDK type definitions currently list only `s1` and `s2-pro` (`s2-pro` = SDK default). Both SDKs forward the model value without runtime validation, so `"s2.1-pro"` works over the wire — static type checkers will flag it, so add `# type: ignore` (Python) / an `as` cast (TS), or use the `fish-audio-api` skill for raw calls. `speech-1.5` / `speech-1.6` are **deprecated**. In Python pass `model="s2-pro"` (keyword); in JS pass the **positional** `backend` argument.
+- **Models:** the API supports `s1`, `s2-pro`, `s2.1-pro` (recommended for production), and `s2.1-pro-free` (free tier), but the SDK type definitions currently list only `s1` and `s2-pro` (`s2-pro` = SDK default). Both SDKs forward the model value without runtime validation, so `"s2.1-pro"` works over the wire. Static type checkers will flag it, so add `# type: ignore` (Python) / an `as` cast (TS), or use the `fish-audio-api` skill for raw calls. `speech-1.5` / `speech-1.6` are **deprecated**. In Python pass `model="s2-pro"` (keyword); in JS pass the **positional** `backend` argument.
 - **Audio formats:** `mp3` (default), `wav`, `pcm`, `opus`.
-- **Playback in examples:** `play()` shells out to a system audio tool — Python uses **ffmpeg/ffplay** (or `mpv`), JS uses **ffplay**. It is for local/desktop use; in a server, `save()` to a file or stream the bytes instead. See [references/installation.md](references/installation.md).
+- **Playback in examples:** `play()` shells out to a system audio tool: Python uses **ffmpeg/ffplay** (or `mpv`), JS uses **ffplay**. It is for local/desktop use; in a server, `save()` to a file or stream the bytes instead. See [references/installation.md](references/installation.md).
 
-## Quick start — Python
+## Quick start: Python
 
 ```python
 from fishaudio import FishAudio
@@ -37,7 +37,7 @@ save(audio, "output.mp3")   # write to a file
 # play(audio)               # or play locally (needs ffmpeg)
 ```
 
-Async — identical resource tree on `AsyncFishAudio`, used as a context manager:
+Async: identical resource tree on `AsyncFishAudio`, used as a context manager:
 
 ```python
 import asyncio
@@ -52,7 +52,7 @@ async def main():
 asyncio.run(main())
 ```
 
-## Quick start — JavaScript / TypeScript
+## Quick start: JavaScript / TypeScript
 
 ```ts
 import { FishAudioClient, play } from "fish-audio";
@@ -113,7 +113,7 @@ The two SDKs do **not** use the same names. Use this map when porting code betwe
 
 ## Gotchas (verified against the SDK source)
 
-- Python `latency` accepts only **`"normal"` or `"balanced"`** (default `"balanced"`) — there is no `"low"`.
+- Python `latency` accepts only **`"normal"` or `"balanced"`** (default `"balanced"`); there is no `"low"`.
 - The Python client has **no `max_retries`** and does **not** auto-retry; the JS client **does** auto-retry (configurable via per-call `requestOptions.maxRetries`). See [errors](references/errors.md).
-- Python defines a `ValidationError` class but **never raises it** — don't catch it expecting validation failures; a 422 surfaces as `APIError`. The JS SDK throws `UnprocessableEntityError` on 422.
+- Python defines a `ValidationError` class but **never raises it**, so don't catch it expecting validation failures; a 422 surfaces as `APIError`. The JS SDK throws `UnprocessableEntityError` on 422.
 - ASR segment `start` / `end` are in **seconds**, but `duration` is in **milliseconds**. See [speech-to-text](references/speech-to-text.md).

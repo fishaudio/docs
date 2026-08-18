@@ -4,24 +4,24 @@ description: "List past sessions, replay the full timeline of messages and tool 
 icon: "clock-rotate-left"
 ---
 
-Every production session your agents handle — from the API, the console, [public agents](/agents/deploy/public-agents), or [phone calls](/agents/telephony/inbound-calls) — is queryable over REST: a lightweight list for browsing, a merged timeline of messages and tool activity per session, and per-speaker recordings when the agent [records audio](#what-gets-stored). You can query a session while the call is still in progress.
+Every production session your agents handle (from the API, the console, [public agents](/agents/deploy/public-agents), or [phone calls](/agents/telephony/inbound-calls)) is queryable over REST: a lightweight list for browsing, a merged timeline of messages and tool activity per session, and per-speaker recordings when the agent [records audio](#what-gets-stored). You can query a session while the call is still in progress.
 
-This is a server-side API — authenticate with your API key. The client SDKs deliberately expose no history interface; fetch history from your backend and pass it to your frontend as needed.
+This is a server-side API: authenticate with your API key. The client SDKs deliberately expose no history interface; fetch history from your backend and pass it to your frontend as needed.
 
 ## What gets stored
 
-The session record — status, timing, caller attribution, name, and `metadata` — and the conversation transcript are always kept for production sessions. Audio recording is a per-agent choice, on by default: set `conversation.record_audio` in the console under your agent's **Settings** or in the `conversation` section of the [config API](/agents/build/configuration#configure-through-the-api), with a per-session override on the [session request](/agents/deploy/authenticated-sessions). Recording off means there is no audio to download.
+The session record (status, timing, caller attribution, name, and `metadata`) and the conversation transcript are always kept for production sessions. Audio recording is a per-agent choice, on by default: set `conversation.record_audio` in the console under your agent's **Settings** or in the `conversation` section of the [config API](/agents/build/configuration#configure-through-the-api), with a per-session override on the [session request](/agents/deploy/authenticated-sessions). Recording off means there is no audio to download.
 
 The setting doesn't affect the live call: transcript events still stream to connected clients in real time.
 
 <Warning>
-  Recording defaults to on. Call-recording laws vary by jurisdiction — make sure
+  Recording defaults to on. Call-recording laws vary by jurisdiction. Make sure
   callers are informed and consent where required before going live.
 </Warning>
 
 ## List sessions
 
-`GET /v1/agent/sessions` returns session facts, newest first. The list is intentionally thin — no transcripts or tool details — so it stays fast at any volume.
+`GET /v1/agent/sessions` returns session facts, newest first. The list is intentionally thin (no transcripts or tool details) so it stays fast at any volume.
 
 <CodeGroup>
 ```bash API (curl)
@@ -75,12 +75,12 @@ Each row carries the session facts:
 | Parameter                          | Behavior                                                                                              |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | `agent_id`                         | Sessions of a single agent                                                                            |
-| `status`                           | One of `pending`, `active`, `completed`, `failed`, `unknown` — comma-separate values to match several |
+| `status`                           | One of `pending`, `active`, `completed`, `failed`, `unknown`; comma-separate values to match several |
 | `caller_number`                    | Exact match on the caller's E.164 number; a bare number gets `+` prepended automatically              |
 | `created_after` / `created_before` | ISO 8601 timestamps                                                                                   |
 
 <Note>
-  `pending` sessions — a session was created but no participant ever connected —
+  `pending` sessions (a session was created but no participant ever connected)
   are excluded by default. Pass `status=pending` explicitly to see them. Preview
   calls made from the Builder never appear in this API.
 </Note>
@@ -94,7 +94,7 @@ Two modes, mutually exclusive (combining them returns `400`):
 | Cursor | Pass the previous response's `next_cursor` as `cursor`; stop when `has_more` is `false` | Crawling, exports, syncing  |
 | Page   | Pass `page` (1-based); the response always includes `total`                             | Paged UIs with jump-to-page |
 
-`page_size` defaults to 30, maximum 100; values out of range are rejected. In cursor mode `total` is `null` unless you pass `include_total=true`. Page mode is capped at an offset of 100,000 rows — requests beyond it return `400` — and every page response still includes `next_cursor`, so you can switch to cursor crawling from any page for deep scans.
+`page_size` defaults to 30, maximum 100; values out of range are rejected. In cursor mode `total` is `null` unless you pass `include_total=true`. Page mode is capped at an offset of 100,000 rows (requests beyond it return `400`), and every page response still includes `next_cursor`, so you can switch to cursor crawling from any page for deep scans.
 
 ## Get a session
 
@@ -159,43 +159,43 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
 | `type`        | What it is                                                                                                                                                 |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `message`     | One utterance. `role` is `user` or `assistant` (system prompt content is never exposed). `turn_id` groups items belonging to the same conversational turn. |
-| `tool_call`   | A tool invocation as it started. `input` is a JSON string, stored in full — no truncation.                                                                 |
+| `tool_call`   | A tool invocation as it started. `input` is a JSON string, stored in full with no truncation.                                                                 |
 | `tool_result` | The paired outcome, matched by `call_id`. `status` is `completed` or `failed`. `latency_ms` is the execution time.                                         |
 
 Details worth knowing:
 
-- **Role vocabulary** — the history API's `assistant` is the same speaker the [SDK's live events](/agents/deploy/web-sdk) call `agent`.
-- **Order** — items are sorted by `created_at` ascending; a `tool_result`'s timestamp is its completion time, so long-running tools appear where they actually finished, with messages in between. Items sharing a timestamp order `message`, then `tool_call`, then `tool_result`.
-- **`tool_source`** — where the tool ran: `client`, `webhook`, `builtin` (platform tools such as call transfer and hang-up), `mcp` (tools from a connected MCP server), `background` (work the agent delegated to a background task), or `unknown` (calls recorded before source attribution). Treat it as an open set. See [Tools](/agents/build/tools).
-- **Payloads** — `input` and `output` are JSON strings, symmetric with the live SDK events, so one parser covers both. `output` and `error` are stored up to 256 KB; beyond that the text is cut and `output_truncated` is `true`.
-- **Mid-call queries** — you can fetch an `active` session; you get the items persisted so far, and `analysis` is `null` until [post-call analysis](/agents/monitor/post-call-analysis) completes.
+- **Role vocabulary**: the history API's `assistant` is the same speaker the [SDK's live events](/agents/deploy/web-sdk) call `agent`.
+- **Order**: items are sorted by `created_at` ascending; a `tool_result`'s timestamp is its completion time, so long-running tools appear where they actually finished, with messages in between. Items sharing a timestamp order `message`, then `tool_call`, then `tool_result`.
+- **`tool_source`**: where the tool ran, one of `client`, `webhook`, `builtin` (platform tools such as call transfer and hang-up), `mcp` (tools from a connected MCP server), `background` (work the agent delegated to a background task), or `unknown` (calls recorded before source attribution). Treat it as an open set. See [Tools](/agents/build/tools).
+- **Payloads**: `input` and `output` are JSON strings, symmetric with the live SDK events, so one parser covers both. `output` and `error` are stored up to 256 KB; beyond that the text is cut and `output_truncated` is `true`.
+- **Mid-call queries**: you can fetch an `active` session; you get the items persisted so far, and `analysis` is `null` until [post-call analysis](/agents/monitor/post-call-analysis) completes.
 - A `tool_call` without a matching `tool_result` means the execution never resolved.
 
 <Warning>
   `items` is a discriminated union on `type`, and it evolves additively. Ignore
-  item types and fields you don't recognize — new modalities and item kinds will
+  item types and fields you don't recognize. New modalities and item kinds will
   appear without a version bump.
 </Warning>
 
 ### Correlate with live events
 
-`call_id` is the same identifier your client receives in the SDK's `toolCallStarted` / `toolCallCompleted` / `toolCallFailed` events. Log it live, and you can align in-call UI with the post-call record — jump from a tool chip in your interface straight to the matching `tool_call` / `tool_result` pair in history. See the [Web SDK](/agents/deploy/web-sdk).
+`call_id` is the same identifier your client receives in the SDK's `toolCallStarted` / `toolCallCompleted` / `toolCallFailed` events. Log it live, and you can align in-call UI with the post-call record: jump from a tool chip in your interface straight to the matching `tool_call` / `tool_result` pair in history. See the [Web SDK](/agents/deploy/web-sdk).
 
 ## Download recordings
 
-`GET /v1/agent/sessions/{session_id}/recording` returns the recording status and signed download URLs — one audio track per speaker, so you can play or process the agent and the user separately. Recordings exist only when the session was [recorded](#what-gets-stored): for sessions that never recorded — recording turned off, or no audio produced — the endpoint returns `404`.
+`GET /v1/agent/sessions/{session_id}/recording` returns the recording status and signed download URLs: one audio track per speaker, so you can play or process the agent and the user separately. For sessions that never [recorded](#what-gets-stored) (recording turned off, or no audio produced), the endpoint returns `404`.
 
 ```bash API (curl)
 curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID/recording" \
   --header "Authorization: Bearer $FISH_API_KEY"
 ```
 
-Signed URLs are short-lived. Don't store them — store the `session_id` and request fresh URLs when you need the audio. For the same reason, recordings are not embedded in the session detail response.
+Signed URLs are short-lived: store the `session_id` and request fresh URLs when you need the audio. For the same reason, recordings are not embedded in the session detail response.
 
 ## Access semantics
 
 - Your API key sees every production session across your team's workspaces, from all sources.
-- A session that doesn't exist — or belongs to another team — always returns `404`, never `403`. The [recording endpoint](#download-recordings) additionally returns `404` for a session that exists but was never recorded.
+- A session that doesn't exist, or belongs to another team, always returns `404`, never `403`. The [recording endpoint](#download-recordings) additionally returns `404` for a session that exists but was never recorded.
 
 ## Going further
 
@@ -208,7 +208,7 @@ Signed URLs are short-lived. Don't store them — store the `session_id` and req
     What the embedded `analysis` object contains and how to configure it.
   </Card>
   <Card title="Webhooks" icon="webhook" href="/agents/monitor/webhooks">
-    Push instead of poll — get notified when sessions end.
+    Push instead of poll: get notified when sessions end.
   </Card>
   <Card title="Web SDK" icon="js" href="/agents/deploy/web-sdk">
     The live `toolCall*` events that share `call_id` with history.

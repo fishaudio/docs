@@ -491,7 +491,7 @@
     "/v1/agent/sessions": {
       "get": {
         "summary": "List Agent Sessions",
-        "description": "List your team's sessions, newest first. Filter by agent, status, caller\nnumber, or creation time. Paginate with `cursor` (recommended; follow\n`next_cursor` while `has_more` is true) or with `page` for offset pagination\nwith a `total` count — the two are mutually exclusive.",
+        "description": "List your team's sessions, newest first. Filter by agent, status, caller\nnumber, or creation time. Paginate with `cursor` (recommended; follow\n`next_cursor` while `has_more` is true) or with `page` for offset pagination\nwith a `total` count; the two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -2128,7 +2128,7 @@
     "/v1/agent/agents": {
       "get": {
         "summary": "List Agents",
-        "description": "List your team's agents, newest first. Paginate with `cursor` (follow\n`next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count — the two are mutually exclusive.",
+        "description": "List your team's agents, newest first. Paginate with `cursor` (follow\n`next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count; the two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -2420,7 +2420,7 @@
       },
       "post": {
         "summary": "Create Agent",
-        "description": "Create an agent, optionally with its full initial configuration inline —\none call provisions a ready-to-publish agent. The agent starts as a draft:\npublish it before creating sessions with it.",
+        "description": "Create an agent, optionally with its full initial configuration inline.\nThe agent starts as a draft: publish it before creating sessions with it.",
         "security": [
           {
             "BearerAuth": []
@@ -2921,7 +2921,7 @@
       },
       "patch": {
         "summary": "Update Agent",
-        "description": "Update agent-level fields (name, description, status, public access and\nsession-override policy). Omitted fields keep their value. Conversation\nbehavior — voice, prompt, recording and the rest — is draft configuration:\nuse `PATCH /v1/agent/agents/{agent_id}/config`.",
+        "description": "Update agent-level fields (name, description, status, public access and\nsession-override policy). Omitted fields keep their value. Conversation\nbehavior (voice, prompt, recording and the rest) is draft configuration:\nuse `PATCH /v1/agent/agents/{agent_id}/config`.",
         "security": [
           {
             "BearerAuth": []
@@ -3341,7 +3341,7 @@
     "/v1/agent/agents/{agent_id}/widget": {
       "get": {
         "summary": "Get Widget Config",
-        "description": "Unauthenticated display configuration for the embeddable `<fish-agent>`\nwidget. Only agents published as public are reachable, and the request\n`Origin` must match the agent's allowed origins — the same gate as\nanonymous session creation. Attributes set on the embed tag override\nevery field returned here.",
+        "description": "Unauthenticated display configuration for the embeddable `<fish-agent>`\nwidget. Only agents published as public are reachable, and the request\n`Origin` must match the agent's allowed origins, the same gate as\nanonymous session creation. Attributes set on the embed tag override\nevery field returned here.",
         "parameters": [
           {
             "in": "path",
@@ -3381,7 +3381,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "Display config for the embeddable `<fish-agent>` widget.\n\nServed without authentication for public agents; HTML attributes on the\nembed tag override every field. Grows alongside the Builder widget tab\n(greeting, policy switches, styles) — additions only, never renames.",
+                  "description": "Display config for the embeddable `<fish-agent>` widget.\n\nServed without authentication for public agents; HTML attributes on the\nembed tag override every field. Grows alongside the Builder widget tab\n(greeting, policy switches, styles): additions only, never renames.",
                   "properties": {
                     "agent_name": {
                       "title": "Agent Name",
@@ -3479,7 +3479,7 @@
     "/v1/agent/agents/{agent_id}/config": {
       "get": {
         "summary": "Get Draft Config",
-        "description": "Read the agent's current draft configuration — the state the next publish\nwill freeze. Sessions run the latest published version, not the draft; use\nthe versions endpoints to see what is live. Webhook signing secrets are\nwrite-only and reported as `has_secret`.",
+        "description": "Read the agent's current draft configuration, the state the next publish\nwill freeze. Sessions run the latest published version, not the draft; use\nthe versions endpoints to see what is live. Webhook signing secrets are\nwrite-only and reported as `has_secret`.",
         "security": [
           {
             "BearerAuth": []
@@ -4495,7 +4495,7 @@
     "/v1/agent/agents/{agent_id}/versions/{version_number}": {
       "get": {
         "summary": "Get Agent Version",
-        "description": "One published version with its full frozen configuration snapshot —\nincluding the current live version. Secrets inside the snapshot are\nredacted the same way as the draft config.",
+        "description": "One published version with its full frozen configuration snapshot,\nincluding the current live version. Secrets inside the snapshot are\nredacted the same way as the draft config.",
         "security": [
           {
             "BearerAuth": []
@@ -4964,7 +4964,7 @@
     "/v1/agent/knowledge-sources": {
       "get": {
         "summary": "List Knowledge Sources",
-        "description": "List your team's knowledge sources, newest first. Paginate with `cursor`\n(follow `next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count — the two are mutually exclusive.",
+        "description": "List your team's knowledge sources, newest first. Paginate with `cursor`\n(follow `next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count; the two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -5751,7 +5751,7 @@
       },
       "patch": {
         "summary": "Update Knowledge Source",
-        "description": "Rename the source and/or replace its content by uploading a new file in\n`source` (multipart). Replacing content increments `revision_number` while\nthe id stays stable, and every attached agent's draft picks it up\nimmediately; published versions pin the revision they were published with,\nso republish each affected agent to put the new content live — that\ntwo-step (sync content, republish) is the nightly content-sync recipe.",
+        "description": "Rename the source and/or replace its content by uploading a new file in\n`source` (multipart). Replacing content increments `revision_number` while\nthe id stays stable, and every attached agent's draft picks it up\nimmediately; published versions pin the revision they were published with,\nso republish each affected agent to put the new content live.",
         "security": [
           {
             "BearerAuth": []
@@ -6086,7 +6086,7 @@
       },
       "delete": {
         "summary": "Delete Knowledge Source",
-        "description": "Delete a knowledge source. Returns 409 while any agent still references it\n— in its draft or in its currently published version (sessions resolve\nsources at call time, so deleting a published reference would change a\nrunning agent). Check `GET /v1/agent/knowledge-sources/{source_id}/agents`,\ndetach via the agent config, and republish if needed before deleting.",
+        "description": "Delete a knowledge source. Returns 409 while any agent still references it,\nin its draft or in its currently published version (sessions resolve\nsources at call time, so deleting a published reference would change a\nrunning agent). Check `GET /v1/agent/knowledge-sources/{source_id}/agents`,\ndetach via the agent config, and republish if needed before deleting.",
         "security": [
           {
             "BearerAuth": []
@@ -6267,7 +6267,7 @@
     "/v1/agent/knowledge-sources/{source_id}/agents": {
       "get": {
         "summary": "List Agents Using Knowledge Source",
-        "description": "Every agent that references this source in its draft or currently\npublished configuration — the pre-flight check before a delete.",
+        "description": "Every agent that references this source in its draft or currently\npublished configuration: the pre-flight check before a delete.",
         "security": [
           {
             "BearerAuth": []
@@ -6436,7 +6436,7 @@
     "/v1/agent/tools": {
       "get": {
         "summary": "List Tools",
-        "description": "List your team's tools, newest first. Filter with `agent_id` to see one\nagent's attached tools. Paginate with `cursor` (follow `next_cursor` while\n`has_more` is true) or with `page` for offset pagination with a `total`\ncount — the two are mutually exclusive.",
+        "description": "List your team's tools, newest first. Filter with `agent_id` to see one\nagent's attached tools. Paginate with `cursor` (follow `next_cursor` while\n`has_more` is true) or with `page` for offset pagination with a `total`\ncount; the two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -7038,7 +7038,7 @@
     "/v1/agent/tools/{tool_id}": {
       "get": {
         "summary": "Get Tool",
-        "description": "Fetch one tool's full definition. Credential header values are never\nreturned — each credential header reports `has_secret` instead.",
+        "description": "Fetch one tool's full definition. Credential header values are never\nreturned; each credential header reports `has_secret` instead.",
         "security": [
           {
             "BearerAuth": []
@@ -7315,7 +7315,7 @@
       },
       "patch": {
         "summary": "Update Tool",
-        "description": "Patch tool fields; omitted fields keep their value (null is rejected —\nsend an empty string to clear a text field). `headers` replaces the header\nlist wholesale — include credential values again whenever you send it,\nsince reads never return them. Attached agents' drafts pick up the change\nimmediately; published versions stay frozen until re-published.",
+        "description": "Patch tool fields; omitted fields keep their value (null is rejected;\nsend an empty string to clear a text field). `headers` replaces the header\nlist wholesale. Include credential values again whenever you send it,\nsince reads never return them. Attached agents' drafts pick up the change\nimmediately; published versions stay frozen until re-published.",
         "security": [
           {
             "BearerAuth": []
@@ -7676,7 +7676,7 @@
       },
       "delete": {
         "summary": "Delete Tool",
-        "description": "Delete a tool. Returns 409 while any agent's draft configuration still\nreferences it — check `GET /v1/agent/tools/{tool_id}/agents` and detach it\nvia the agent config first, so a delete can never silently change agent\nbehavior.",
+        "description": "Delete a tool. Returns 409 while any agent's draft configuration still\nreferences it. Check `GET /v1/agent/tools/{tool_id}/agents` and detach it\nvia the agent config first, so a delete can never silently change agent\nbehavior.",
         "security": [
           {
             "BearerAuth": []
@@ -7857,7 +7857,7 @@
     "/v1/agent/tools/{tool_id}/agents": {
       "get": {
         "summary": "List Agents Using Tool",
-        "description": "Every agent whose draft configuration references this tool — the\npre-flight check before a delete. Published versions keep executing their\nfrozen tool snapshot, so only draft references block deletion.",
+        "description": "Every agent whose draft configuration references this tool: the\npre-flight check before a delete. Published versions keep executing their\nfrozen tool snapshot, so only draft references block deletion.",
         "security": [
           {
             "BearerAuth": []
@@ -8026,7 +8026,7 @@
     "/v1/agent/phone-numbers": {
       "get": {
         "summary": "List Phone Numbers",
-        "description": "List your team's phone numbers, newest first. Released numbers are gone\nfor good and never appear. Look an id up by E.164 with `phone_number`, or\nfilter with `agent_id` to see one agent's numbers. Paginate with `cursor`\n(follow `next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count — the two are mutually exclusive.",
+        "description": "List your team's phone numbers, newest first. Released numbers are gone\nfor good and never appear. Look an id up by E.164 with `phone_number`, or\nfilter with `agent_id` to see one agent's numbers. Paginate with `cursor`\n(follow `next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count; the two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -8345,7 +8345,7 @@
       },
       "post": {
         "summary": "Purchase Phone Number",
-        "description": "Buy a number from the inventory. The number lands in your default\nworkspace, and any `agent_id` you bind must live there too. Billing is the\nmonthly price charged in daily slices: the first day is charged before\nanything is bought (402 costs you nothing), and the daily run advances it\nfrom there. 409 means the number is already on the platform; 502 means the\nprovider refused the purchase — the number stays visible with status\n`error` and is safe to release.",
+        "description": "Buy a number from the inventory. The number lands in your default\nworkspace, and any `agent_id` you bind must live there too. Billing is the\nmonthly price charged in daily slices: the first day is charged before\nanything is bought (402 costs you nothing), and the daily run advances it\nfrom there. 409 means the number is already on the platform; 502 means the\nprovider refused the purchase; the number stays visible with status\n`error` and is safe to release.",
         "security": [
           {
             "BearerAuth": []
@@ -8979,7 +8979,7 @@
       },
       "patch": {
         "summary": "Update Phone Number",
-        "description": "Change the label and/or repoint the number at another agent — the\ndeployment-pipeline move (rebind from the staging agent to the production\none). Send `agent_id: null` to unbind; unbound numbers ring busy. The\nagent must live in the number's workspace. Rebinding is a routing-table\nupdate resolved on the next inbound call; nothing about the number itself\nis reprovisioned.",
+        "description": "Change the label and/or repoint the number at another agent: the\ndeployment-pipeline move (rebind from the staging agent to the production\none). Send `agent_id: null` to unbind; unbound numbers ring busy. The\nagent must live in the number's workspace. Rebinding is a routing-table\nupdate resolved on the next inbound call; nothing about the number itself\nis reprovisioned.",
         "security": [
           {
             "BearerAuth": []
@@ -9251,7 +9251,7 @@
       },
       "delete": {
         "summary": "Release Phone Number",
-        "description": "Release a number back to the provider's inventory and stop its daily\nbilling. This is irreversible: anyone — including other platforms — can\nbuy the number afterwards, so callers who saved it may reach a stranger.\nThe number disappears from this API immediately.",
+        "description": "Release a number back to the provider's inventory and stop its daily\nbilling. This is irreversible: anyone (including other platforms) can\nbuy the number afterwards, so callers who saved it may reach a stranger.\nThe number disappears from this API immediately.",
         "security": [
           {
             "BearerAuth": []
@@ -13026,7 +13026,7 @@
     },
     "schemas": {
       "AgentSessionSummary": {
-        "description": "One list row: lifecycle facts only — the conversation timeline lives on\nthe detail endpoint (Retell-style thin list).",
+        "description": "One list row: lifecycle facts only; the conversation timeline lives on\nthe detail endpoint (Retell-style thin list).",
         "properties": {
           "session_id": {
             "title": "Session Id",
@@ -16303,7 +16303,7 @@
         "type": "object"
       },
       "TTSRequest": {
-        "description": "Request body for text-to-speech synthesis. Supports single-speaker synthesis on all compatible TTS models. Multi-speaker dialogue synthesis is only available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`), not `s1`.\n\n## Single Speaker\nProvide either `reference_id` (string) pointing to a voice model, or `references` (array of ReferenceAudio) for zero-shot cloning.\n\n## Multiple Speakers (Dialogue — S2 family only)\nFor multi-speaker synthesis, provide:\n- `reference_id`: array of voice model IDs, e.g., [\"speaker-0-id\", \"speaker-1-id\"]\n- `text`: use speaker tags `<|speaker:0|>`, `<|speaker:1|>`, etc. to indicate speaker changes, e.g., \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\"\n\nAlternatively, for zero-shot multi-speaker:\n- `references`: 2D array where each inner array contains references for one speaker\n- `reference_id`: array of identifiers (can be arbitrary strings for zero-shot)\n\n## Example (Multi-Speaker with Model IDs)\n```json\n{\n  \"text\": \"<|speaker:0|>Good morning!<|speaker:1|>Good morning! How are you?<|speaker:0|>I'm great, thanks!\",\n  \"reference_id\": [\"model-id-alice\", \"model-id-bob\"]\n}\n```",
+        "description": "Request body for text-to-speech synthesis. Supports single-speaker synthesis on all compatible TTS models. Multi-speaker dialogue synthesis is only available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`), not `s1`.\n\n## Single Speaker\nProvide either `reference_id` (string) pointing to a voice model, or `references` (array of ReferenceAudio) for zero-shot cloning.\n\n## Multiple Speakers (Dialogue, S2 family only)\nFor multi-speaker synthesis, provide:\n- `reference_id`: array of voice model IDs, e.g., [\"speaker-0-id\", \"speaker-1-id\"]\n- `text`: use speaker tags `<|speaker:0|>`, `<|speaker:1|>`, etc. to indicate speaker changes, e.g., \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\"\n\nAlternatively, for zero-shot multi-speaker:\n- `references`: 2D array where each inner array contains references for one speaker\n- `reference_id`: array of identifiers (can be arbitrary strings for zero-shot)\n\n## Example (Multi-Speaker with Model IDs)\n```json\n{\n  \"text\": \"<|speaker:0|>Good morning!<|speaker:1|>Good morning! How are you?<|speaker:0|>I'm great, thanks!\",\n  \"reference_id\": [\"model-id-alice\", \"model-id-bob\"]\n}\n```",
         "properties": {
           "text": {
             "description": "Text to convert to speech.",

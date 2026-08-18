@@ -125,7 +125,7 @@ await writeFile("out.mp3", Buffer.concat(chunks));
 A voice moves through `created` → `training` → `trained`, or ends in `failed`. Always handle `failed` and the timeout so a stuck voice cannot loop forever.
 
 <Tip>
-  Training a persistent voice takes time, so only create one when you will reuse the voice across many requests. For one-off synthesis, skip the wait entirely and pass a `ReferenceAudio` inline — see [Instant voice cloning](/developer-guide/sdk-guide/cookbook/instant-voice-cloning).
+  Training a persistent voice takes time, so only create one when you will reuse the voice across many requests. For one-off synthesis, skip the wait entirely and pass a `ReferenceAudio` inline. See [Instant voice cloning](/developer-guide/sdk-guide/cookbook/instant-voice-cloning).
 </Tip>
 
 ## Related

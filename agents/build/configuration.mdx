@@ -1,21 +1,21 @@
 ---
 title: "Configuration"
-description: "Set your agent's system prompt, first message, and conversation behavior — in the Builder or through the API"
+description: "Set your agent's system prompt, first message, and conversation behavior, in the Builder or through the API"
 icon: "sliders"
 ---
 
-Configuration is the Builder's home tab: define how your agent behaves, how it opens each conversation, and how it paces its turns. Every edit is saved to the agent's **draft** automatically — callers only hear your changes after you [publish](/agents/deploy/versions-publishing). New to Agents? Start with the [Quickstart](/agents/quickstart).
+Configuration is the Builder's home tab: define how your agent behaves, how it opens each conversation, and how it paces its turns. Every edit is saved to the agent's **draft** automatically. Callers only hear your changes after you [publish](/agents/deploy/versions-publishing). New to Agents? Start with the [Quickstart](/agents/quickstart).
 
 ## System prompt
 
-The system prompt sets the personality, goals, and guardrails that steer every reply. It is capped at **4,000 tokens** — the API rejects longer prompts with `422 Unprocessable Entity`. Keeping it under **2,000 tokens** is recommended: shorter prompts cut latency and cost, and hold the model's attention better. It can also be replaced for a single session by sending `overrides.system_prompt` when [creating the session](/agents/deploy/authenticated-sessions#overrides).
+The system prompt sets the personality, goals, and guardrails that steer every reply. It is capped at **4,000 tokens**. The API rejects longer prompts with `422 Unprocessable Entity`. Keeping it under **2,000 tokens** is recommended: shorter prompts cut latency and cost, and hold the model's attention better. It can also be replaced for a single session by sending `overrides.system_prompt` when [creating the session](/agents/deploy/authenticated-sessions#overrides).
 
 <Tip>
 Keep the prompt focused:
 
 - State who the agent is and what it should accomplish, in a few sentences each.
 - Spell out guardrails explicitly ("If asked about pricing, direct the caller to sales").
-- Write for the ear — replies are spoken aloud, so ask for short, conversational answers.
+- Write for the ear: replies are spoken aloud, so ask for short, conversational answers.
 </Tip>
 
 ## First message
@@ -40,17 +40,17 @@ The Voice panel selects the voice your agent speaks with (`voice_id`), its speak
 
 `conversation.eagerness` controls how quickly the agent starts talking after the caller stops:
 
-- `relaxed` — waits longer, never talks over the caller.
-- `balanced` (default) — waits for a natural pause.
-- `eager` — jumps in quickly.
+- `relaxed`: Waits longer, never talks over the caller.
+- `balanced` (default): Waits for a natural pause.
+- `eager`: Jumps in quickly.
 
 ### Interruptions
 
-- `conversation.interruptible` (default `true`) — whether the caller can barge in while the agent is speaking.
-- `conversation.interruption_sensitivity` — how much caller speech counts as an interruption:
-  - `low` — the agent stops less readily, talking through background noise and short acknowledgements.
-  - `balanced` (default) — interrupts on normal speech.
-  - `high` — the agent stops more readily when the caller speaks, even on brief utterances.
+- `conversation.interruptible` (default `true`): Whether the caller can barge in while the agent is speaking.
+- `conversation.interruption_sensitivity` sets how much caller speech counts as an interruption:
+  - `low`: The agent stops less readily, talking through background noise and short acknowledgements.
+  - `balanced` (default): Interrupts on normal speech.
+  - `high`: The agent stops more readily when the caller speaks, even on brief utterances.
 
 ### Call duration
 
@@ -62,11 +62,11 @@ The Voice panel selects the voice your agent speaks with (`voice_id`), its speak
 
 ### Recording
 
-`conversation.record_audio` (default `true`) — store per-speaker audio for [playback and download](/agents/monitor/conversation-history#what-gets-stored), with a per-session override on the [session request](/agents/deploy/authenticated-sessions). In the console this lives under your agent's **Settings**. Recording defaults to on — make sure callers are informed and consent where your jurisdiction requires it.
+`conversation.record_audio` (default `true`) stores per-speaker audio for [playback and download](/agents/monitor/conversation-history#what-gets-stored), with a per-session override on the [session request](/agents/deploy/authenticated-sessions). In the console this lives under your agent's **Settings**. Make sure callers are informed and consent where your jurisdiction requires it.
 
 ### Timezone
 
-`conversation.timezone` is the default IANA timezone (like `Asia/Shanghai`) the agent uses for dates and times in conversation. Leave it empty for **automatic** — each session follows the caller's device or phone number, falling back to UTC. Set one when your agent serves a single region regardless of who calls. A per-session `timezone` on the [session request](/agents/build/time-timezone) overrides this. See [Time & timezone](/agents/build/time-timezone) for the full resolution order.
+`conversation.timezone` is the default IANA timezone (like `Asia/Shanghai`) the agent uses for dates and times in conversation. Leave it empty for **automatic**: each session follows the caller's device or phone number, falling back to UTC. Set one when your agent serves a single region regardless of who calls. A per-session `timezone` on the [session request](/agents/build/time-timezone) overrides this. See [Time & timezone](/agents/build/time-timezone) for the full resolution order.
 
 ## Autosave and publishing
 
@@ -76,7 +76,7 @@ Drafts never affect live traffic: active integrations keep using the last publis
 
 ## Configure through the API
 
-The same draft is readable and writable over REST — useful for provisioning agents from your own systems.
+The same draft is readable and writable over REST, which is useful for provisioning agents from your own systems.
 
 ### Read the draft
 
@@ -107,11 +107,11 @@ curl --request GET "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 }
 ```
 
-The response also includes the `tools`, `knowledge_base`, `analysis`, and `webhooks` sections, each covered on its own page. `config_hash` identifies this draft revision — it changes whenever an edit changes the draft's content, and a mismatch with the published version is what marks an agent as having unpublished changes.
+The response also includes the `tools`, `knowledge_base`, `analysis`, and `webhooks` sections, each covered on its own page. `config_hash` identifies this draft revision; a mismatch with the published version is what marks an agent as having unpublished changes.
 
 ### Update sections
 
-`PATCH` takes a partial body and deep-merges it into the draft: send only the sections and fields you want to change, and everything else keeps its value. Fields that hold a list — `webhooks.post_call` among them — are replaced as a whole, so send the complete list whenever you change one.
+`PATCH` takes a partial body and deep-merges it into the draft: send only the sections and fields you want to change, and everything else keeps its value. Fields that hold a list (`webhooks.post_call` among them) are replaced as a whole, so send the complete list whenever you change one.
 
 ```bash
 curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
@@ -123,7 +123,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   }'
 ```
 
-The response includes the draft's new `config_hash`. Values outside the documented limits — a system prompt over 4,000 tokens, `max_duration_seconds` outside 60–3600 — are rejected with `422 Unprocessable Entity` and the draft is left unchanged.
+The response includes the draft's new `config_hash`. Values outside the documented limits (a system prompt over 4,000 tokens, `max_duration_seconds` outside 60–3600) are rejected with `422 Unprocessable Entity` and the draft is left unchanged.
 
 ### Config sections
 

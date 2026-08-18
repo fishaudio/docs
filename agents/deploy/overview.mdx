@@ -1,14 +1,14 @@
 ---
 title: "Deploy Your Agent"
 sidebarTitle: "Overview"
-description: "Choose where users meet your agent and who may start sessions — widget, SDKs, or phone; public or authenticated"
+description: "Choose where users meet your agent and who may start sessions: widget, SDKs, or phone; public or authenticated"
 icon: "plug"
 ---
 
 Your agent is one artifact with many front doors. Deploying it is two independent decisions:
 
-1. **Where users meet your agent** — a prebuilt widget, your own UI built on the SDKs, a phone number, or a custom client.
-2. **Who may start sessions** — anyone visiting your pages, or only clients your backend has vouched for.
+1. **Where users meet your agent**: a prebuilt widget, your own UI built on the SDKs, a phone number, or a custom client.
+2. **Who may start sessions**: anyone visiting your pages, or only clients your backend has vouched for.
 
 Every surface runs the same agent with the same published configuration, and the browser surfaces work with either access mode.
 
@@ -25,15 +25,15 @@ In increasing order of integration effort:
 
 <CardGroup cols={2}>
   <Card title="Widget" icon="puzzle-piece" href="/agents/deploy/widget">
-    Drop a prebuilt call widget into your site — two lines of HTML, zero build
+    Drop a prebuilt call widget into your site: two lines of HTML, zero build
     step.
   </Card>
   <Card title="Your own UI" icon="js" href="/agents/deploy/web-sdk">
     Build a custom experience with the [Web SDK](/agents/deploy/web-sdk) or
-    [React SDK](/agents/deploy/react-sdk) — events, transcripts, audio controls.
+    [React SDK](/agents/deploy/react-sdk): events, transcripts, audio controls.
   </Card>
   <Card title="Phone" icon="phone" href="/agents/telephony/phone-numbers">
-    Bind a number and callers dial straight in — no client code at all.
+    Bind a number and callers dial straight in.
   </Card>
   <Card
     title="Custom client"
@@ -47,11 +47,11 @@ In increasing order of integration effort:
 
 ## Who may start sessions
 
-The widget and the SDKs each work with **either** access mode — pick per agent. Phone numbers skip this decision entirely: inbound calls connect through [telephony](/agents/telephony/inbound-calls), not a browser session.
+The widget and the SDKs each work with **either** access mode; pick per agent. Phone numbers skip this decision entirely: inbound calls connect through [telephony](/agents/telephony/inbound-calls), not a browser session.
 
 <CardGroup cols={2}>
   <Card title="Public agents" icon="globe" href="/agents/deploy/public-agents">
-    The client connects with just an `agentId` — no backend, gated by an origin
+    The client connects with just an `agentId`: no backend, gated by an origin
     allowlist and rate limits.
   </Card>
   <Card
@@ -59,7 +59,7 @@ The widget and the SDKs each work with **either** access mode — pick per agent
     icon="server"
     href="/agents/deploy/authenticated-sessions"
   >
-    Your backend creates a short-lived session token with your API key — trusted
+    Your backend creates a short-lived session token with your API key: trusted
     attribution and full control.
   </Card>
 </CardGroup>
@@ -85,14 +85,14 @@ The widget and the SDKs each work with **either** access mode — pick per agent
 
 ## How a browser session starts
 
-For private agents, your backend creates the session — your API key never ships to the browser. The browser SDK takes the resulting session token and handles audio and transport from there.
+For private agents, your backend creates the session. Your API key never ships to the browser. The browser SDK takes the resulting session token and handles audio and transport from there.
 
 ```bash Your backend
 curl --request POST https://api.fish.audio/v1/agent/sessions \
   --header "Authorization: Bearer $FISH_API_KEY" \
   --header "Content-Type: application/json" \
   --data '{ "agent_id": "YOUR_AGENT_ID" }'
-# → 201 session token — return it to your frontend as-is
+# → 201 session token. Return it to your frontend as-is
 ```
 
 ```javascript Your frontend
@@ -104,11 +104,11 @@ const session = await AgentSession.start({ sessionToken });
 
 <Tip>
   Agents marked [public](/agents/deploy/public-agents) skip the backend step
-  entirely — the SDK connects with just an `agentId`, gated by an origin
+  entirely: the SDK connects with just an `agentId`, gated by an origin
   allowlist and rate limits.
 </Tip>
 
-For phone calls there is no client integration: assign a number, and inbound calls connect directly to your agent — which can [transfer callers](/agents/telephony/transfers) to another number mid-call. See [Phone numbers](/agents/telephony/phone-numbers).
+For phone calls there is no client integration: assign a number, and inbound calls connect directly to your agent, which can [transfer callers](/agents/telephony/transfers) to another number mid-call. See [Phone numbers](/agents/telephony/phone-numbers).
 
 ## Going further
 
@@ -125,7 +125,7 @@ For phone calls there is no client integration: assign a number, and inbound cal
     icon="server"
     href="/agents/deploy/authenticated-sessions"
   >
-    The full session-creation reference — request fields, token lifetime,
+    The full session-creation reference: request fields, token lifetime,
     errors.
   </Card>
   <Card

@@ -5,14 +5,14 @@ description: "Build voice agents in the console, ship them with the REST API and
 icon: "robot"
 ---
 
-Fish Agents is a hosted platform for real-time voice agents. Define an agent's prompt, voice, knowledge, and tools in the Builder console, publish it, and talk to it — from your web app through the SDK, over a phone number, or anywhere the REST API reaches. Speech recognition, turn-taking, and speech synthesis are handled for you.
+Fish Agents is a hosted platform for real-time voice agents. Define an agent's prompt, voice, knowledge, and tools in the Builder console, publish it, and talk to it from your web app through the SDK, over a phone number, or anywhere the REST API reaches. Speech recognition, turn-taking, and speech synthesis are handled for you.
 
 <CardGroup cols={3}>
   <Card title="Quickstart" icon="rocket" href="/agents/quickstart">
     Create an agent and have your first conversation in minutes.
   </Card>
   <Card title="Concepts" icon="lightbulb" href="/agents/concepts">
-    Agents, drafts, versions, sessions — the mental model.
+    Agents, drafts, versions, sessions: the mental model.
   </Card>
   <Card title="Integration overview" icon="plug" href="/agents/deploy/overview">
     Pick the right surface for your app.
@@ -23,11 +23,11 @@ Fish Agents is a hosted platform for real-time voice agents. Define an agent's p
 
 | Surface         | What it does                                                                                            | Start here                                      |
 | --------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| **Console**     | Design, test, and publish agents visually — no code.                                                    | [Configuration](/agents/build/configuration)    |
+| **Console**     | Design, test, and publish agents visually, with no code.                                                   | [Configuration](/agents/build/configuration)    |
 | **REST API**    | Manage agents, sessions, tools, and knowledge programmatically under `/v1/agent/*`.                     | [API introduction](/api-reference/introduction) |
 | **Client SDKs** | Run live voice conversations in the browser with `@fishaudio/agent-client` or `@fishaudio/agent-react`. | [Web SDK](/agents/deploy/web-sdk)               |
 
-All three operate on the same agents. The core console workflow — creating agents, editing configuration, publishing versions — is also available over the API with your standard Fish Audio API key:
+All three operate on the same agents. The core console workflow (creating agents, editing configuration, publishing versions) is also available over the API with your standard Fish Audio API key:
 
 ```bash
 curl https://api.fish.audio/v1/agent/agents \
@@ -110,7 +110,7 @@ curl https://api.fish.audio/v1/agent/agents \
     icon="clock-rotate-left"
     href="/agents/monitor/conversation-history"
   >
-    Transcripts, tool timelines, and per-speaker recordings — you choose what
+    Transcripts, tool timelines, and per-speaker recordings. You choose what
     each agent stores.
   </Card>
   <Card
@@ -118,7 +118,7 @@ curl https://api.fish.audio/v1/agent/agents \
     icon="chart-simple"
     href="/agents/monitor/post-call-analysis"
   >
-    Automatic summaries, structured data extraction, and success criteria —
+    Automatic summaries, structured data extraction, and success criteria,
     delivered to your systems via [webhooks](/agents/monitor/webhooks).
   </Card>
 </CardGroup>

@@ -51,7 +51,7 @@ asyncio.run(main())
 
 ## Force generation at a boundary
 
-By default the engine buffers text until it has enough for natural prosody. Yield a [`FlushEvent`](/api-reference/sdk/python/types#flushevent-objects) to force synthesis of what's buffered — useful for turn-taking in a conversation:
+By default the engine buffers text until it has enough for natural prosody. Yield a [`FlushEvent`](/api-reference/sdk/python/types#flushevent-objects) to force synthesis of what's buffered, useful for turn-taking in a conversation:
 
 ```python
 from fishaudio.types import TextEvent, FlushEvent
@@ -62,7 +62,7 @@ def turns():
     yield TextEvent(text="Let's begin.")
 ```
 
-The SDK sends the start/stop frames for you — you only supply text and optional flushes.
+The SDK sends the start/stop frames for you.
 
 <Tip>
   Errors mid-stream surface as `WebSocketError`. Reconnect with a fresh call

@@ -36,13 +36,13 @@ The two changes that matter when migrating:
 
 1. **Voices are your Fish voices.** ElevenLabs preset names (`Rachel`, …)
    don't exist here. Pass the ID of a voice from your
-   [Fish voice library](/developer-guide/getting-started/migration#voices) —
-   `client.voices.get_all()` lists them ([Voice library](#voice-library)) — or
+   [Fish voice library](/developer-guide/getting-started/migration#voices), or
    `default` (also `-`) for the model's default voice.
+   `client.voices.get_all()` lists your voices ([Voice library](#voice-library)).
 2. **Keep your `model_id`, or pick a Fish model.** Existing values like
    `eleven_multilingual_v2` are accepted as-is and served by Fish `s2.1-pro`,
    so your code runs unchanged. To choose a different model, pass its Fish
-   name, e.g. `fish-audio/s2-pro` — see
+   name, e.g. `fish-audio/s2-pro`; see
    [Models](/developer-guide/getting-started/migration#models).
 
 | Feature                                 | Supported |
@@ -95,14 +95,14 @@ all work.
 
 `voice_settings` maps onto Fish's synthesis controls: `speed` sets the speech
 rate, and `stability` becomes Fish `temperature = 1 − stability`. The
-vendor-specific tuning knobs — `similarity_boost`, `style`,
-`use_speaker_boost`, `language_code`, `seed` — are accepted and ignored, never
+vendor-specific tuning knobs (`similarity_boost`, `style`,
+`use_speaker_boost`, `language_code`, `seed`) are accepted and ignored, never
 an error.
 
 ### Output formats
 
 `mp3_*`, `pcm_*`, `opus_*`, and `wav_*` (a Fish Audio extension) work at the
-supported sample rates — 32000 or 44100 for `mp3_*`, 48000 for `opus_*`.
+supported sample rates: 32000 or 44100 for `mp3_*`, 48000 for `opus_*`.
 The 22.05 kHz family (`mp3_22050_32`, `pcm_22050`, …) is refused. The
 sample-rate segment of the format name is honored; the `mp3_*` bitrate segment
 snaps **up** to the nearest Fish tier
@@ -117,16 +117,15 @@ keys in **seconds**; the WebSocket uses camelCase keys in **milliseconds**
 timings are interpolated from Fish segment timestamps at millisecond precision.
 
 - **`normalizedAlignment` is identical to `alignment`**, field for field. Fish
-  synthesizes the text as given, so there is no normalization pass to report;
-  the same alignment is sent under both keys. Pick either — don't diff them
-  expecting to recover normalization.
+  synthesizes the text as given, so there is no normalization pass to report.
+  Pick either; don't diff them expecting to recover normalization.
 - **On the WebSocket, the milliseconds are absolute on the session timeline**
-  (alignment frames need `?sync_alignment=true` — see
+  (alignment frames need `?sync_alignment=true`; see
   [Realtime input streaming](#realtime-input-streaming-websocket)), not
   relative to the current turn. Turn two of a `stream-input` session starts
   where turn one's audio ended (~1022 ms, say), not back at 0. That is what lets
   a client concatenate every frame's audio and alignment and have the captions
-  line up. Don't add your own per-turn offset — you would double-count it.
+  line up. Don't add your own per-turn offset; you would double-count it.
 
 ## Realtime input streaming (WebSocket)
 
@@ -134,13 +133,13 @@ timings are interpolated from Fish segment timestamps at millisecond precision.
 
 The official protocol, unchanged:
 
-1. Send the init message — a single-space `text`, plus optional
+1. Send the init message: a single-space `text`, plus optional
    `voice_settings`.
 2. Send text chunks; `try_trigger_generation` or `flush` forces synthesis now.
 3. Send an empty-string `text` to finish.
 
 The server streams audio frames, then sends `{"isFinal": true}` and closes the
-connection — so SDK iterators that read until close terminate correctly.
+connection, so SDK iterators that read until close terminate correctly.
 
 Frame shapes, precisely, because they are not all the same:
 
@@ -148,23 +147,23 @@ Frame shapes, precisely, because they are not all the same:
   `?sync_alignment=true` to the handshake URL and frames become
   `{"audio": …, "alignment": {…}, "normalizedAlignment": {…}}`. With
   alignment on, a turn's first audio arrives only after its first text chunk
-  has fully synthesized — expect a later first byte than the default mode.
+  has fully synthesized, so expect a later first byte than the default mode.
   Both alignment keys are omitted when there is nothing to report for that
   chunk, so treat them as optional rather than indexing into them blindly.
 - With `sync_alignment`, a turn can end with an **audio-less frame** carrying
-  only `alignment` and `normalizedAlignment` — trailing punctuation and
+  only `alignment` and `normalizedAlignment`: trailing punctuation and
   whitespace that no audio segment spoke. Code that assumes every frame has
   `audio` will throw on it.
-- Errors arrive in band as `{"error": "…", "code": …}` on the open socket —
-  the code is an HTTP status, or a WebSocket close code for transport-level
+- Errors arrive in band as `{"error": "…", "code": …}` on the open socket.
+  The code is an HTTP status, or a WebSocket close code for transport-level
   limits (an over-1 MiB text buffer closes the socket with `1009`).
-- The stream ends with `{"isFinal": true}` — a frame with no `audio` — followed
+- The stream ends with `{"isFinal": true}` (a frame with no `audio`), followed
   by a close.
 
-An `output_format` that is invalid on its face — `ulaw_*`, or a name that
-can't be parsed — fails with HTTP 400 before the upgrade. The 22.05 kHz family
+An `output_format` that is invalid on its face (`ulaw_*`, or a name that
+can't be parsed) fails with HTTP 400 before the upgrade. The 22.05 kHz family
 fails after it instead: the socket opens, then carries a `{"code": 400, …}`
-frame and closes with a normal close code. Neither case is a silent no-op.
+frame and closes with a normal close code.
 
 ```python
 from elevenlabs import VoiceSettings
@@ -181,10 +180,9 @@ audio = b"".join(client.text_to_speech.convert_realtime(
 ))
 ```
 
-`text` is typed `Iterator[str]`. A plain string does run — the SDK re-chunks it
-character by character — but a generator is what the signature asks for and it
-shows what "streaming input" actually means: you yield text as it becomes
-available, rather than having it all up front.
+`text` is typed `Iterator[str]`. A plain string does run (the SDK re-chunks it
+character by character), but a generator is what the signature asks for: you
+yield text as it becomes available, rather than having it all up front.
 
 <Note>
   Pass both `model_id` and `voice_settings` explicitly with `convert_realtime`.
@@ -205,7 +203,7 @@ available, rather than having it all up front.
 ```python Python
 result = client.speech_to_text.convert(
     file=open("meeting.wav", "rb"),
-    model_id="scribe_v1",  # accepted and ignored — Fish's ASR model is used
+    model_id="scribe_v1",  # accepted and ignored; Fish's ASR model is used
     language_code="zh",
 )
 ```
@@ -216,7 +214,7 @@ import fs from "node:fs";
 const buf = fs.readFileSync("meeting.wav");
 const result = await client.speechToText.convert({
   file: new File([buf], "meeting.wav"),
-  modelId: "scribe_v1", // accepted and ignored — Fish's ASR model is used
+  modelId: "scribe_v1", // accepted and ignored; Fish's ASR model is used
 });
 console.log(result.text);
 ```
@@ -235,7 +233,7 @@ The response matches the official shape: `text`, plus `words` entries of
 entries come back whether or not you pass `timestamps_granularity="word"`;
 `timestamps_granularity="character"` is not supported and returns a 400.
 
-Three fields are constants, not measurements — don't build quality gates or
+Three fields are constants, not measurements; don't build quality gates or
 speaker logic on them:
 
 - `language_probability` is always `1.0`.
@@ -243,14 +241,14 @@ speaker logic on them:
 - `words[].speaker_id` is always `null`; requesting diarization returns an
   explicit error instead.
 
-And `language_code` in the response **echoes what you sent** — it is never a
+And `language_code` in the response **echoes what you sent**, never a
 detection result. The value is still forwarded to Fish's ASR; only the reported
 field is an echo rather than a measurement. Fish needs no language hint, so
 sending none is normal; you then get `language_code: ""` alongside
 `language_probability: 1.0`, which reads as total confidence in an empty answer.
 Code branching on `language_probability > 0.9` will act on that empty string.
 
-(On the *synthesis* side `language_code` is a different story — there it is
+(On the *synthesis* side `language_code` is a different story: there it is
 accepted and dropped, along with the other vendor tuning knobs.)
 
 Options that would change the response contract are **rejected with 400**
@@ -274,29 +272,26 @@ rather than silently ignored:
 <Warning>
   **`tag_audio_events` is the one that bites on migration.** ElevenLabs defaults
   it to `true` and their examples pass it explicitly, so code copied from an
-  ElevenLabs project frequently sends it — and gets a 400 here. Drop the
+  ElevenLabs project frequently sends it, and gets a 400 here. Drop the
   parameter; the transcript itself is unaffected.
 </Warning>
 
-Booleans count as requested only when true — `False`, `"False"`, `0`, and `off`
-are treated as unset, so default SDK serialization never trips any of these. A
-refusal means you asked for the behavior, not that your SDK filled in a default.
+Booleans count as requested only when true: `False`, `"False"`, `0`, and `off`
+are treated as unset, so default SDK serialization never trips any of these.
 
 ### Realtime STT
 
 The realtime WebSocket (`/v1/speech-to-text/realtime`) supports
 `commit_strategy=manual` only: stream `input_audio_chunk` messages and set
-`commit: true` to receive the committed transcript. The session uses explicit
-commits — your application decides the segment boundaries — so
-`commit_strategy=vad` is refused at the handshake instead of leaving a session
-waiting.
+`commit: true` to receive the committed transcript. Your application decides
+the segment boundaries, so `commit_strategy=vad` is refused at the handshake
+instead of leaving a session waiting.
 
 <Warning>
   **Set `audio_format` to match your audio.** This socket carries bare PCM
   samples with no container, so the `audio_format` query parameter is the only
   thing that says how to interpret them. It defaults to **`pcm_16000`** (the
-  ElevenLabs SDK's own default) — and nothing in the audio can contradict
-  that.
+  ElevenLabs SDK's own default).
 
   Feed 44.1 kHz samples to a session that says 16000 and you get a **`200` with
   a fluent, confident, completely wrong transcript**, word timestamps and all:
@@ -309,7 +304,7 @@ waiting.
   fail on every commit.
 </Warning>
 
-Audio goes in the `audio_base_64` field of an `input_audio_chunk` message —
+Audio goes in the `audio_base_64` field of an `input_audio_chunk` message;
 other message shapes are ignored by design. Each commit answers with a
 `committed_transcript` message followed by
 `committed_transcript_with_timestamps`.
@@ -319,10 +314,10 @@ other message shapes are ignored by design. Each commit answers with a
 Your Fish voice library and the model catalog are available in the ElevenLabs
 shapes:
 
-- `GET /v1/voices`, `GET /v2/voices`, `GET /v1/voices/{id}` — your voices in
+- `GET /v1/voices`, `GET /v2/voices`, `GET /v1/voices/{id}`: your voices in
   the ElevenLabs `Voice` shape (`category: "cloned"`, tags mapped to `labels`).
-- `GET /v1/models` — the Fish model catalog in the ElevenLabs shape.
-- `GET /v1/user` — a stub for SDK health checks.
+- `GET /v1/models`: the Fish model catalog in the ElevenLabs shape.
+- `GET /v1/user`: a stub for SDK health checks.
 
 <CodeGroup>
 
@@ -351,23 +346,21 @@ Errors on this protocol use the ElevenLabs envelope:
 `provider_error`.
 
 `provider_error` is the one that tells you where the failure happened: the
-request reached the Fish Audio API and its message is passed through verbatim —
-an *invalid* key surfaces this way too, as a 401 `provider_error` carrying
+request reached the Fish Audio API and its message is passed through verbatim.
+An *invalid* key surfaces this way too, as a 401 `provider_error` carrying
 "No permission", while `unauthorized` is reserved for requests that sent no key
 at all. Every other status is raised by the compatibility layer itself.
 
-<Accordion title="Telling the two failure kinds apart — examples worth logging differently">
+<Accordion title="Telling the two failure kinds apart: examples worth logging differently">
   `voice_not_found` and `provider_error` are the easy pair to confuse. Looking
-  up a voice that isn't yours — `GET /v1/voices/{id}` — gives you
+  up a voice that isn't yours (`GET /v1/voices/{id}`) gives you
   `voice_not_found` with a 404. Naming that same voice in a *synthesis* request
-  instead fails as a 400 `provider_error` carrying "Reference not found". Same
-  mistake, two different statuses depending on which endpoint you made it on.
+  instead fails as a 400 `provider_error` carrying "Reference not found".
 
   So `{"status": "invalid_request", "message": "unsupported output_format
   \"ulaw_8000\""}` reports a parameter that is never accepted, while
   `{"status": "provider_error", "message": "Invalid sample rate 22050 for
-  format audio/mpeg…"}` comes from synthesis itself — a distinction worth
-  logging separately.
+  format audio/mpeg…"}` comes from synthesis itself.
 </Accordion>
 
 ## Going further

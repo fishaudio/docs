@@ -6,7 +6,7 @@ icon: "bolt"
 ---
 
 Configure the client once. The Groq SDK speaks the OpenAI protocol and appends
-`/openai/v1` to its base URL itself — give it the bare `/compat` base:
+`/openai/v1` to its base URL itself, so give it the bare `/compat` base:
 
 <CodeGroup>
 
@@ -89,21 +89,21 @@ curl https://api.fish.audio/compat/openai/v1/audio/speech \
 
 </CodeGroup>
 
-Audio streams as it is synthesized. Set `response_format` explicitly — it
+Audio streams as it is synthesized. Set `response_format` explicitly; it
 defaults to `pcm` on this endpoint, not `mp3`. `voice` is a Fish voice ID, not
-a vendor preset — see
+a vendor preset; see
 [Voices](/developer-guide/getting-started/migration#voices).
 
-The accepted formats are `mp3`, `pcm`, `pcm16`, `wav`, and `opus` — the same
+The accepted formats are `mp3`, `pcm`, `pcm16`, `wav`, and `opus`, the same
 set as the rest of `/openai/v1`; the `flac`, `mulaw`, and `ogg`
 the SDK types also offer are formats Fish cannot produce and return a 400.
 `sample_rate` (Hz) is accepted as an extension field on the request body
-(untyped — `extra_body` in Python, an extra property in Node; defaults to
+(untyped: `extra_body` in Python, an extra property in Node; defaults to
 44100); asking for a rate the codec doesn't take is a 400, and the per-codec
 rate table is in
 [Audio formats](/developer-guide/compat/capabilities#audio-formats).
 
-<Accordion title="Groq SDK type quirks: casting pcm, pcm16, opus — and srt, vtt">
+<Accordion title="Groq SDK type quirks: casting pcm, pcm16, opus, and srt, vtt">
   The SDK's `response_format` types omit `pcm`, `pcm16`, and `opus`, and the
   same `Literal` narrows the Python SDK, so type checkers flag them there
   too. Cast at the call site:
@@ -121,7 +121,7 @@ rate table is in
   </CodeGroup>
 
   The transcription side types `response_format` as
-  `json | text | verbose_json`, so `srt`/`vtt` need the same cast — and the
+  `json | text | verbose_json`, so `srt`/`vtt` need the same cast, and the
   SDK hands the subtitle document back as a plain string even though the
   method is typed to return `Transcription`.
 </Accordion>
@@ -159,7 +159,7 @@ curl https://api.fish.audio/compat/openai/v1/audio/transcriptions \
 </CodeGroup>
 
 `verbose_json`, word-level timestamp granularity, and the subtitle formats
-(`srt`, `vtt`) work as they do on the OpenAI protocol — details and placeholder-field
+(`srt`, `vtt`) work as they do on the OpenAI protocol; details and placeholder-field
 caveats in [Migrate from OpenAI](/developer-guide/compat/migrate-from-openai#transcription);
 `srt`/`vtt` need the SDK type cast shown above.
 

@@ -30,7 +30,7 @@ Point a phone number at an agent and it picks up every inbound call. Phone calls
 
 <Steps>
   <Step title="Get a phone number">
-    Add a number to your workspace — see [Phone numbers](/agents/telephony/phone-numbers). Numbers are stored and displayed in E.164 format (for example `+15551234567`).
+    Add a number to your workspace; see [Phone numbers](/agents/telephony/phone-numbers). Numbers are stored and displayed in E.164 format (for example `+15551234567`).
   </Step>
   <Step title="Publish your agent">
     Calls connect to the agent's published configuration, not the draft. [Publish](/agents/deploy/versions-publishing) before pointing traffic at the number.
@@ -59,7 +59,7 @@ Point a phone number at an agent and it picks up every inbound call. Phone calls
 
 <Tip>
   The number-to-agent binding is resolved on each incoming call, so a rebind
-  takes effect on the next call — useful for moving a number from a staging
+  takes effect on the next call, useful for moving a number from a staging
   agent to a production agent.
 </Tip>
 
@@ -102,17 +102,17 @@ curl --request GET "https://api.fish.audio/v1/agent/sessions?agent_id=YOUR_AGENT
 }
 ```
 
-You can combine `caller_number` with the other list filters (`agent_id`, `status`, `created_after`, `created_before`) — see [Conversation history](/agents/monitor/conversation-history) for the full parameter list.
+You can combine `caller_number` with the other list filters (`agent_id`, `status`, `created_after`, `created_before`); see [Conversation history](/agents/monitor/conversation-history) for the full parameter list.
 
 ## Phone sessions behave like any session
 
 Nothing about a phone call needs special handling downstream:
 
-- **Transcript and tool timeline** — `GET /v1/agent/sessions/{session_id}` returns the conversation, including tool calls and results, when the agent [stores transcripts](/agents/monitor/conversation-history#what-gets-stored). See [Conversation history](/agents/monitor/conversation-history).
-- **Recording** — `GET /v1/agent/sessions/{session_id}/recording` returns signed URLs, one track per speaker, when the session was recorded.
-- **Post-call analysis** — summaries, data fields, and evaluation criteria run on phone sessions like any other. See [Post-call analysis](/agents/monitor/post-call-analysis).
-- **Webhooks** — `call.ended` and `call.analyzed` fire for phone sessions too. See [Webhooks](/agents/monitor/webhooks).
-- **Hang up via API** — end an in-progress call with `POST /v1/agent/sessions/{session_id}/end`.
+- **Transcript and tool timeline**: `GET /v1/agent/sessions/{session_id}` returns the conversation, including tool calls and results, when the agent [stores transcripts](/agents/monitor/conversation-history#what-gets-stored). See [Conversation history](/agents/monitor/conversation-history).
+- **Recording**: `GET /v1/agent/sessions/{session_id}/recording` returns signed URLs, one track per speaker, when the session was recorded.
+- **Post-call analysis**: summaries, data fields, and evaluation criteria run on phone sessions like any other. See [Post-call analysis](/agents/monitor/post-call-analysis).
+- **Webhooks**: `call.ended` and `call.analyzed` fire for phone sessions too. See [Webhooks](/agents/monitor/webhooks).
+- **Hang up via API**: end an in-progress call with `POST /v1/agent/sessions/{session_id}/end`.
 
 ## Going further
 

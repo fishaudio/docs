@@ -1,15 +1,15 @@
 ---
 title: "Widget"
-description: "Embed a complete voice and chat UI on any website with two lines of HTML — no build step"
+description: "Embed a complete voice and chat UI on any website with two lines of HTML, no build step"
 icon: "puzzle-piece"
 ---
 
-The widget is the zero-code way to put your agent on a website. A `<fish-agent>` custom element renders the complete experience — a floating launcher that expands into a voice-first chat card with live transcript, typing during the call, and inline tool activity — and a single script tag registers it. Under the hood it runs the same sessions as the [Web SDK](/agents/deploy/web-sdk), so everything downstream (history, analysis, webhooks) works unchanged.
+The widget is the zero-code way to put your agent on a website. A `<fish-agent>` custom element renders the complete experience (a floating launcher that expands into a voice-first chat card with live transcript, typing during the call, and inline tool activity), and a single script tag registers it. Under the hood it runs the same sessions as the [Web SDK](/agents/deploy/web-sdk), so everything downstream (history, analysis, webhooks) works unchanged.
 
 ## Prerequisites
 
 - An agent with a [published version](/agents/deploy/versions-publishing).
-- **Public access** enabled on the agent, with your site's origin on the allowed-origins list — see [Public agents](/agents/deploy/public-agents). `localhost` and `127.0.0.1` count as different origins.
+- **Public access** enabled on the agent, with your site's origin on the allowed-origins list. See [Public agents](/agents/deploy/public-agents). `localhost` and `127.0.0.1` count as different origins.
 - To keep the agent private instead, skip public access and supply session tokens from your backend with [`sessionTokenProvider`](#private-agents).
 
 ## Two-line embed
@@ -29,7 +29,7 @@ Add the element and the script anywhere on the page:
 
 ## Install from npm
 
-Bundlers can install the element instead: `npm install @fishaudio/agent-widget`, then call `registerWidget()` once. Importing the package has no side effects — registration happens only when you call it.
+Bundlers can install the element instead: `npm install @fishaudio/agent-widget`, then call `registerWidget()` once. Importing the package has no side effects.
 
 ```javascript
 import { registerWidget } from "@fishaudio/agent-widget";
@@ -38,7 +38,7 @@ registerWidget(); // defines <fish-agent>
 
 ### React
 
-React apps get a real component: `<FishAgentWidget>` registers and renders the element with camelCase props, object props serialized for you, and the [page events](#page-events) as callback props — `clientTools` is just a prop:
+React apps get a real component: `<FishAgentWidget>` registers and renders the element with camelCase props, object props serialized for you, and the [page events](#page-events) as callback props. `clientTools` is just a prop:
 
 ```tsx
 import { FishAgentWidget } from "@fishaudio/agent-widget/react";
@@ -58,7 +58,7 @@ Every attribute below has a camelCase prop; `dynamicVariables` and `textContents
 
 | Attribute                                                 | Description                                                                                                          |
 | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `agent-id`                                                | Public agent ID. Required unless the `sessionTokenProvider` property is set — see [Private agents](#private-agents). |
+| `agent-id`                                                | Public agent ID. Required unless the `sessionTokenProvider` property is set. See [Private agents](#private-agents). |
 | `agent-name`                                              | Display name in the header.                                                                                          |
 | `greeting`                                                | Home-screen headline.                                                                                                |
 | `proactive-message`                                       | Enables the attention bubble next to the launcher.                                                                   |
@@ -67,7 +67,7 @@ Every attribute below has a camelCase prop; `dynamicVariables` and `textContents
 | `consent`                                                 | `"true"` shows a first-run terms card (default off). Acceptance is remembered in `localStorage`.                     |
 | `consent-text`, `terms-url`, `privacy-url`, `consent-key` | Consent copy, linked policies, and the `localStorage` key (default `fish-agent-consent`).                            |
 | `position`                                                | `bottom-right` (default), `bottom-left`, `top-right`, `top-left`.                                                    |
-| `language`                                                | Pin the session language — see [Overrides](/agents/deploy/authenticated-sessions#overrides).                         |
+| `language`                                                | Pin the session language. See [Overrides](/agents/deploy/authenticated-sessions#overrides).                         |
 | `dynamic-variables`                                       | JSON object of `{{name}}` template values. See [Dynamic variables](/agents/build/dynamic-variables).                 |
 | `user-id`                                                 | Your end-user identifier, stored on the session.                                                                     |
 | `server-url`                                              | Fish API base override. Default `https://api.fish.audio`.                                                            |
@@ -75,7 +75,7 @@ Every attribute below has a camelCase prop; `dynamicVariables` and `textContents
 
 ## Private agents
 
-Keep the agent non-public and set `sessionTokenProvider` instead of an `agent-id`. It's a JS property on the element (functions can't be attributes), called before every session start: fetch the session token from your backend — with whatever auth headers, payload, or credentials the request needs — and return the JSON; it's used verbatim.
+Keep the agent non-public and set `sessionTokenProvider` instead of an `agent-id`. It's a JS property on the element (functions can't be attributes), called before every session start: fetch the session token from your backend (with whatever auth headers, payload, or credentials the request needs) and return the JSON; it's used verbatim.
 
 ```html
 <fish-agent agent-name="Support"></fish-agent>
@@ -100,7 +100,7 @@ Your backend holds the API key and creates the session with `POST /v1/agent/sess
 
 ## Theming
 
-Set CSS custom properties on the element. The widget's internals live in a shadow root — page CSS can't leak in, but every `--fish-*` token is public:
+Set CSS custom properties on the element. The widget's internals live in a shadow root: page CSS can't leak in, but every `--fish-*` token is public:
 
 ```css
 fish-agent {
@@ -130,14 +130,14 @@ The element dispatches `CustomEvent`s (bubbling, composed):
 
 | Event                   | `detail`                                                 | When                                                                                                   |
 | ----------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `fish-agent:call`       | `{ options }` — **mutable** `AgentSession.start` options | Right before a session starts. Mutate `detail.options` to inject `clientTools`, `overrides`, anything. |
+| `fish-agent:call`       | `{ options }`: **mutable** `AgentSession.start` options | Right before a session starts. Mutate `detail.options` to inject `clientTools`, `overrides`, anything. |
 | `fish-agent:connect`    | `{ sessionId }`                                          | Session established.                                                                                   |
 | `fish-agent:disconnect` | `{ reason }`                                             | Session ended.                                                                                         |
 | `fish-agent:error`      | `{ code, message }`                                      | Start failure or in-call error.                                                                        |
 
 Inbound: dispatch `fish-agent:expand` on the element or `document` to open the panel programmatically.
 
-Registering [client tools](/agents/build/client-tools) is just the `:call` event (React apps pass the `clientTools` prop instead — same injection, wrapped):
+Registering [client tools](/agents/build/client-tools) is just the `:call` event (React apps pass the `clientTools` prop instead; same injection, wrapped):
 
 ```javascript
 document
@@ -151,7 +151,7 @@ document
 
 ## Console settings and precedence
 
-On load, the widget anonymously fetches the agent's console widget settings from `GET /v1/agent/agents/{agent_id}/widget` — the same public-plus-origin gate as session creation, so it only answers for public agents to allowed origins. Settings resolve with a fixed precedence: **HTML attribute > console widget config > built-in default**. The endpoint being unreachable never breaks the widget — it renders from attributes and defaults.
+On load, the widget anonymously fetches the agent's console widget settings from `GET /v1/agent/agents/{agent_id}/widget`, the same public-plus-origin gate as session creation, so it only answers for public agents to allowed origins. Settings resolve with a fixed precedence: **HTML attribute > console widget config > built-in default**. The endpoint being unreachable never breaks the widget: it renders from attributes and defaults.
 
 ## Going further
 

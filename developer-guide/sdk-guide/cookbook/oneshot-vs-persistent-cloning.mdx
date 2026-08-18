@@ -14,10 +14,10 @@ import Prerequisites from "/snippets/prerequisites.mdx";
 
 There are two ways to clone a voice. Pick by how often you'll reuse it:
 
-- **One-shot (instant)** — pass a [`ReferenceAudio`](/api-reference/sdk/python/types#referenceaudio-objects) (raw bytes + exact transcript) on each `convert` call. Nothing is stored server-side; the clone lives only for that request.
-- **Persistent** — call `voices.create` once to train a model, then reuse its id as `reference_id` on every request. No reference upload per call, and the same voice is shared across processes.
+- **One-shot (instant)**: pass a [`ReferenceAudio`](/api-reference/sdk/python/types#referenceaudio-objects) (raw bytes + exact transcript) on each `convert` call. Nothing is stored server-side; the clone lives only for that request.
+- **Persistent**: call `voices.create` once to train a model, then reuse its id as `reference_id` on every request. No reference upload per call, and the same voice is shared across processes.
 
-Start with one-shot. Below, a single reference clip is cloned inline with no model to manage:
+Start with one-shot. Below, a single reference clip is cloned inline:
 
 <CodeGroup>
 ```python Synchronous
@@ -104,7 +104,7 @@ Call [`voices.create`](/api-reference/sdk/python/resources#create) to train a mo
 with open("reference.wav", "rb") as f:
     voice = client.voices.create(title="My Narrator", voices=[f.read()])
 
-# reuse the same id on every later request — no reference upload
+# reuse the same id on every later request; no reference upload
 audio = client.tts.convert(
     text="Reusing my saved voice across many requests.",
     reference_id=voice.id,
