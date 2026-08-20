@@ -11,7 +11,7 @@ You are a support agent for {{company}}. The caller's name is {{customer_name}}
 and they are on the {{plan}} plan. Greet them by name.
 ```
 
-Pass values as a flat object of strings, numbers, or booleans. Variable names must match `[A-Za-z][A-Za-z0-9_]*` (no hyphens or dots), string values are capped at 1,000 characters, and a request can carry at most 50 variables. Violations reject session creation with `422`:
+Pass values as a flat object of strings, numbers, or booleans. Variable names must match `[A-Za-z][A-Za-z0-9_]*` (no hyphens or dots; the dotted `system.*` names are reserved for [system variables](#system-variables)), string values are capped at 1,000 characters, and a request can carry at most 50 variables. Violations reject session creation with `422`:
 
 <CodeGroup>
 ```bash API (curl)
@@ -40,7 +40,7 @@ const session = await AgentSession.start({
 </CodeGroup>
 
 <Warning>
-Placeholders with no matching variable are **not** removed: the literal `{{variable_name}}` text stays in the prompt, visible to the model. Make sure every placeholder in your configuration has a value at session creation.
+Placeholders with no matching variable are **not** removed: the literal `{{variable_name}}` text stays in the prompt, visible to the model. Make sure every placeholder in your configuration has a value at session creation. [System variables](#system-variables) are the exception: the platform always fills them.
 </Warning>
 
 <Note>
@@ -48,10 +48,43 @@ Session records never store dynamic variable values.
 </Note>
 
 <Tip>
-You don't need a variable for the current date or time. The agent already knows both, in the session's timezone. See [Time & timezone](/agents/build/time-timezone).
+You don't need a variable for the current date or time. The agent already knows both, in the session's timezone. See [Time & timezone](/agents/build/time-timezone). When you do want the date in a template, `{{system.today}}` is [filled for you](#system-variables).
 </Tip>
 
 Variables fill placeholders in the configured text. To replace whole configuration fields for a session (the prompt itself, the opener, voice, language), use [overrides](/agents/deploy/authenticated-sessions#overrides) on the same request; `{{placeholders}}` render inside overridden text too.
+
+## System variables
+
+The platform fills a handful of `{{system.*}}` placeholders itself, on every session. You cannot supply or override them: the names you pass in `dynamic_variables` cannot contain a dot, so the two namespaces never collide.
+
+| Variable | Value | Notes |
+|---|---|---|
+| `system.channel` | `phone_inbound`, `phone_outbound`, or `web_voice` | Web SDK, API, preview, and agent test sessions are all `web_voice`. `web_text` is reserved and never emitted today. |
+| `system.timezone` | The session's resolved IANA timezone, for example `Asia/Shanghai` | `UTC` when nothing resolves. Always equals the session's `timezone` field; see [which timezone a session uses](/agents/build/time-timezone#which-timezone-a-session-uses). |
+| `system.today` | Today's date in that timezone, ISO 8601 `YYYY-MM-DD` | The calendar date at session creation. There is no `system.now`; see below. |
+| `system.language` | The session language id: `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de` | The `language` [override](/agents/deploy/authenticated-sessions#overrides) when the request carries one, otherwise the agent's [speaking language](/agents/build/voice-language#speaking-language). |
+| `system.caller_number` | The human party's number, E.164 | Inbound: the caller (empty if withheld or not a valid E.164 number). Outbound: the number you dialed. Empty on non-phone sessions. |
+| `system.dialed_number` | Your workspace number, E.164 | Inbound: the number that was called. Outbound: the number the call was placed from. Empty on non-phone sessions. |
+
+The phone numbers are the session's `caller_number` and `dialed_number` fields as shown in [session history](/agents/telephony/inbound-calls#phone-sessions-in-history). Only a value that is a well-formed E.164 number reaches the agent: anything else the carrier sends as the caller id (for example an `anonymous` marker) renders as an empty string, while the history field keeps the raw value. On every session that is not a phone call (web, text, preview, agent tests) both render as an empty string, never as literal `{{system.caller_number}}` text, so one agent can serve web and phone with the same prompt.
+
+`system.today` is deliberately a date, not a time. Variables render once, when the session is created, so a `system.now` would be stale from the first reply onward. You don't need it: the agent already knows the current time, refreshed on every turn, in the session's timezone (see [Time & timezone](/agents/build/time-timezone)). Reach for `system.today` and `system.timezone` when you want to template them explicitly, for example into a webhook tool's query string. The date is always ISO formatted, whatever the session language: in the system prompt the model reads it and speaks it in the session's language, while a fixed first message containing `{{system.today}}` is spoken verbatim as `2026-08-21`. A session that runs past midnight keeps its opening date.
+
+System variables render wherever dynamic variables do (system prompt, first message, the outbound voicemail message, overridden text), and also inside [webhook tool](/agents/build/webhook-tools#argument-templating) requests: the URL, header values, and body template. Dynamic variables you supply do not render into tools. In the URL the value is URL-encoded, like argument values: the leading `+` of an E.164 number travels as `%2B` and the `/` in a timezone name as `%2F`, both decoding back on your server.
+
+```text System prompt
+The caller is calling from {{system.caller_number}}. Confirm the last four digits before discussing the account.
+```
+
+```text Webhook tool URL
+https://crm.example.com/availability?phone={{system.caller_number}}&from={{system.today}}&tz={{system.timezone}}
+```
+
+A reference to a system variable that does not exist (`{{system.foo}}`) is rejected with `422` when you save the configuration or the tool, and when you send it in session overrides. The error lists the available names.
+
+<Note>
+There is no `system.session_id`. The configuration is rendered before the session receives its id, so the id cannot be templated into it. Read it from the `POST /v1/agent/sessions` [response](/agents/deploy/authenticated-sessions), the SDK's `connect` event, or the `session` object in [webhooks](/agents/monitor/webhooks).
+</Note>
 
 ## Who supplies the values
 

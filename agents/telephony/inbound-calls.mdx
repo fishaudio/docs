@@ -104,6 +104,12 @@ curl --request GET "https://api.fish.audio/v1/agent/sessions?agent_id=YOUR_AGENT
 
 You can combine `caller_number` with the other list filters (`agent_id`, `status`, `created_after`, `created_before`); see [Conversation history](/agents/monitor/conversation-history) for the full parameter list.
 
+The agent can read both numbers too, as `{{system.caller_number}}` and `{{system.dialed_number}}` in its system prompt, first message, and webhook tool requests. No variable needs to be passed; see [System variables](/agents/build/dynamic-variables#system-variables).
+
+```text System prompt
+The caller is calling from {{system.caller_number}}. Confirm the last four digits before discussing the account.
+```
+
 ## Phone sessions behave like any session
 
 Nothing about a phone call needs special handling downstream:
