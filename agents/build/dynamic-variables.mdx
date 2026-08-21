@@ -64,14 +64,6 @@ const session = await AgentSession.start({
 Placeholders with no matching variable are **not** removed: the literal `{{variable_name}}` text stays in the prompt, visible to the model. Make sure every placeholder in your configuration has a value at session creation.
 </Warning>
 
-<Note>
-Session records never store custom variable values.
-</Note>
-
-<Tip>
-You don't need a custom variable for the current date or time. The agent already knows both, in the session's timezone. See [Time & timezone](/agents/build/time-timezone). When you do want the date in a template, `{{system.today}}` is [filled for you](#system-variables).
-</Tip>
-
 Variables fill placeholders in the configured text. To replace whole configuration fields for a session (the prompt itself, the opener, voice, language), use [overrides](/agents/deploy/authenticated-sessions#overrides) on the same request; `{{placeholders}}` render inside overridden text too.
 
 ### Who supplies the values
@@ -113,7 +105,7 @@ The platform fills a handful of `{{system.*}}` placeholders itself, on every ses
 |---|---|---|
 | `system.channel` | `phone_inbound`, `phone_outbound`, or `web_voice` | Web SDK, API, preview, and agent test sessions are all `web_voice`. |
 | `system.timezone` | The session's resolved IANA timezone, for example `Asia/Shanghai` | `UTC` when nothing resolves. Always equals the session's `timezone` field; see [which timezone a session uses](/agents/build/time-timezone#which-timezone-a-session-uses). |
-| `system.today` | Today's date in that timezone, ISO 8601 `YYYY-MM-DD` | The calendar date at session creation. There is no `system.now`; see below. |
+| `system.today` | Today's date in that timezone, ISO 8601 `YYYY-MM-DD` | The calendar date at session creation. There is no `system.now`; see [World context](#world-context). |
 | `system.language` | The session language id: `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de` | The `language` [override](/agents/deploy/authenticated-sessions#overrides) when the request carries one, otherwise the agent's [speaking language](/agents/build/voice-language#speaking-language). |
 | `system.caller_number` | The human party's number, E.164 | Inbound: the caller (empty if withheld or not a valid E.164 number). Outbound: the number you dialed. Empty on non-phone sessions. |
 | `system.dialed_number` | Your workspace number, E.164 | Inbound: the number that was called. Outbound: the number the call was placed from. Empty on non-phone sessions. |
@@ -128,7 +120,7 @@ The phone numbers are the session's `caller_number` and `dialed_number` fields a
 
 ### Date and timezone
 
-`system.today` is deliberately a date, not a time. Variables render once, when the session is created, so a `system.now` would be stale from the first reply onward. You don't need it: the agent already knows the current time, refreshed on every turn, in the session's timezone (see [Time & timezone](/agents/build/time-timezone)). Reach for `system.today` and `system.timezone` when you want to template them explicitly, for example into a webhook tool's query string. The date is always ISO formatted, whatever the session language: in the system prompt the model reads it and speaks it in the session's language, while a fixed first message containing `{{system.today}}` is spoken verbatim as `2026-08-21`. A session that runs past midnight keeps its opening date.
+`system.today` is always ISO formatted, whatever the session language: in the system prompt the model reads it and speaks it in the session's language, while a fixed first message containing `{{system.today}}` is spoken verbatim as `2026-08-21`. A session that runs past midnight keeps its opening date. Template it, and `system.timezone`, when a request needs them explicitly, for example a webhook tool's query string; for the agent's own sense of time no variable is needed, see [World context](#world-context).
 
 ### In webhook tools
 
@@ -145,6 +137,12 @@ A reference to a system variable that does not exist (`{{system.foo}}`) is rejec
 <Note>
 There is no `system.session_id`. The configuration is rendered before the session receives its id, so the id cannot be templated into it. Read it from the `POST /v1/agent/sessions` [response](/agents/deploy/authenticated-sessions), the SDK's `connect` event, or the `session` object in [webhooks](/agents/monitor/webhooks).
 </Note>
+
+## World context
+
+The agent knows the current date and time without any variable. The platform states the date and the session's timezone at the start of every session and refreshes the time on every turn, so "tomorrow morning" or "next Tuesday" resolve correctly even in a long conversation. You don't need a custom `{{today}}` or `{{now}}`, and there is no `system.now`: variables render once, when the session is created, so a templated time would be stale from the first reply onward. When you want the date or timezone as text in a template, for example in a webhook tool URL, use the [`system.today` and `system.timezone`](#system-variables) system variables.
+
+See [Time & timezone](/agents/build/time-timezone) for how the timezone is resolved and how to turn the injection off for a session (`world_context: false`).
 
 ## Going further
 
