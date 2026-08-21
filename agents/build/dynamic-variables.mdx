@@ -110,13 +110,27 @@ The platform fills a handful of `{{system.*}}` placeholders itself, on every ses
 | `system.caller_number` | The human party's number, E.164 | Inbound: the caller (empty if withheld or not a valid E.164 number). Outbound: the number you dialed. Empty on non-phone sessions. |
 | `system.dialed_number` | Your workspace number, E.164 | Inbound: the number that was called. Outbound: the number the call was placed from. Empty on non-phone sessions. |
 
-```text System prompt
-The caller is calling from {{system.caller_number}}. Confirm the last four digits before discussing the account.
-```
-
 ### Phone numbers
 
 The phone numbers are the session's `caller_number` and `dialed_number` fields as shown in [session history](/agents/telephony/inbound-calls#phone-sessions-in-history). Only a value that is a well-formed E.164 number reaches the agent: anything else the carrier sends as the caller id (for example an `anonymous` marker) renders as an empty string, while the history field keeps the raw value. On every session that is not a phone call (web, text, preview, agent tests) both render as an empty string, never as literal `{{system.caller_number}}` text, so one agent can serve web and phone with the same prompt.
+
+Write the prompt so it also reads well when the number is empty:
+
+```text System prompt
+You answer the support line {{system.dialed_number}}. The caller's number is
+"{{system.caller_number}}". If it is empty, ask for a callback number; otherwise
+confirm the last four digits before discussing the account.
+```
+
+On an inbound call from +1 415 555 0123 to your number +1 408 555 0199 the model sees:
+
+```text Rendered
+You answer the support line +14085550199. The caller's number is
+"+14155550123". If it is empty, ask for a callback number; otherwise
+confirm the last four digits before discussing the account.
+```
+
+On a web session the same prompt renders `The caller's number is "".`, and the agent asks for a number. To look the caller up in your own systems, template the number into a [webhook tool](#in-webhook-tools) instead of relying on the model to repeat it.
 
 ### Date and timezone
 
