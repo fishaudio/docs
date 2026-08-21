@@ -97,7 +97,7 @@ Two session fields carry the outcome:
 | `dial_status` | `answered`, `busy`, `no_answer`, or `failed`. `null` while the call is still ringing, and on inbound calls. |
 | `answered_by` | What answering-machine detection heard: `human`, `voicemail`, or `unknown`. `null` unless answered.         |
 
-On outbound sessions the attribution fields are person-centric: `caller_number` is the human you dialed and `dialed_number` is your workspace number. Everything else about the session (transcript, recording, [post-call analysis](/agents/monitor/post-call-analysis), `call.ended` and `call.analyzed` webhooks, hang-up via `POST /v1/agent/sessions/{session_id}/end`) works exactly as for [inbound calls](/agents/telephony/inbound-calls).
+On outbound sessions the attribution fields are person-centric: `caller_number` is the human you dialed and `dialed_number` is your workspace number. The same values reach the agent as `{{system.caller_number}}` and `{{system.dialed_number}}`, so a CRM lookup tool can use `https://crm.example.com/contacts?phone={{system.caller_number}}` without a per-call variable; see [System variables](/agents/build/dynamic-variables#system-variables). Everything else about the session (transcript, recording, [post-call analysis](/agents/monitor/post-call-analysis), `call.ended` and `call.analyzed` webhooks, hang-up via `POST /v1/agent/sessions/{session_id}/end`) works exactly as for [inbound calls](/agents/telephony/inbound-calls).
 
 ## Allowed destinations
 

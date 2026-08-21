@@ -37,7 +37,7 @@ In the Builder, open **Tools** and choose **Add tool → Webhook**. A tool creat
 
 ## Argument templating
 
-Reference any declared argument with `{{name}}`: in the URL, in the body template, or both. The platform substitutes the values the agent supplies before sending the request.
+Reference any declared argument with `{{name}}`: in the URL, in header values, or in the body template. The platform substitutes the values the agent supplies before sending the request. [System variables](/agents/build/dynamic-variables#system-variables) such as `{{system.caller_number}}` or `{{system.today}}` are available in the same places; they are filled when the session starts, before the agent supplies any argument.
 
 ```text Endpoint URL
 https://api.example.com/orders/{{order_number}}
@@ -114,7 +114,7 @@ A tool can store mock responses: canned payloads, each with a `name`, a `status_
 
 ## Test your tool
 
-The tool editor's **Test** tab fires a real request at your endpoint. Fill in the arguments as JSON (pre-filled with a sample based on your declared arguments) and send. You get back the status code, latency, response headers, and response body. A failing test never blocks saving the tool.
+The tool editor's **Test** tab fires a real request at your endpoint. Fill in the arguments as JSON (pre-filled with a sample based on your declared arguments) and send. You get back the status code, latency, response headers, and response body. A failing test never blocks saving the tool. There is no live call behind a test, so `{{system.*}}` placeholders have no value: in header values and the body template they render empty unless you add the values to the arguments JSON as a nested object, for example `{"system": {"caller_number": "+15551234567"}}`. The URL is sent exactly as saved; placeholders in it are not substituted by a test request.
 
 Response bodies are captured up to 64 KB; larger bodies are cut off and flagged with `response_truncated`.
 

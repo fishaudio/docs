@@ -22,6 +22,8 @@ The time is refreshed on every turn, so it stays accurate through long conversat
   system prompt's character limit.
 </Note>
 
+Both facts also exist as [system variables](/agents/build/dynamic-variables#system-variables) for the cases where you want to template them yourself, for example into a webhook tool's URL: `{{system.today}}` is the date at session creation as ISO `YYYY-MM-DD`, and `{{system.timezone}}` is the resolved IANA name (`UTC` when nothing resolves). There is no `{{system.now}}`: variables render once, when the session is created, so a templated clock would freeze at the opening. The per-turn time above is the one to rely on.
+
 ## Which timezone a session uses
 
 The timezone is resolved once, when the session is created, taking the first that applies:
