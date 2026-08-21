@@ -10,6 +10,8 @@ Configuration is the Builder's home tab: define how your agent behaves, how it o
 
 The system prompt sets the personality, goals, and guardrails that steer every reply. It is capped at **4,000 tokens**. The API rejects longer prompts with `422 Unprocessable Entity`. Keeping it under **2,000 tokens** is recommended: shorter prompts cut latency and cost, and hold the model's attention better. It can also be replaced for a single session by sending `overrides.system_prompt` when [creating the session](/agents/deploy/authenticated-sessions#overrides).
 
+To personalize the prompt per session without replacing it, write `{{placeholders}}`: [custom variables](/agents/build/dynamic-variables#custom-variables) such as `{{customer_name}}` take the values you pass when creating the session, and [system variables](/agents/build/dynamic-variables#system-variables) such as `{{system.caller_number}}` or `{{system.today}}` are filled in by the platform.
+
 <Tip>
 Keep the prompt focused:
 
@@ -28,7 +30,7 @@ Choose how the agent opens each conversation:
 | **Fixed message** | The agent opens with the exact text you provide, every time. | `first_message` |
 | **Prompt** | The agent generates its opening line from instructions you provide. | `first_message_prompt` |
 
-`first_message` and `first_message_prompt` can each hold up to 10,000 characters. The active mode (`first_message_mode`: `off`, `fixed`, or `prompt`) decides what callers hear. Both fields can be replaced for a single session by sending `overrides.first_message` or `overrides.first_message_prompt` when [creating the session](/agents/deploy/authenticated-sessions#overrides).
+`first_message` and `first_message_prompt` can each hold up to 10,000 characters. The active mode (`first_message_mode`: `off`, `fixed`, or `prompt`) decides what callers hear. Both fields accept the same `{{placeholders}}` as the system prompt (see [Dynamic variables](/agents/build/dynamic-variables)), and both can be replaced for a single session by sending `overrides.first_message` or `overrides.first_message_prompt` when [creating the session](/agents/deploy/authenticated-sessions#overrides).
 
 ## Voice
 
@@ -152,5 +154,8 @@ The response includes the draft's new `config_hash`. Values outside the document
   </Card>
   <Card title="Tools" icon="wrench" href="/agents/build/tools">
     Let the agent call your backend mid-conversation.
+  </Card>
+  <Card title="Dynamic variables" icon="brackets-curly" href="/agents/build/dynamic-variables">
+    Personalize the prompt and first message per session.
   </Card>
 </CardGroup>
