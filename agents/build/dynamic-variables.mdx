@@ -9,7 +9,19 @@ An agent's published configuration is shared by every caller. Dynamic variables 
 - **[Custom variables](#custom-variables)**: values you supply when you create the session, such as the caller's name or plan.
 - **[System variables](#system-variables)**: facts about the session itself, such as the caller's phone number or the date, filled in by the platform under the reserved `system.*` names.
 
-Both render in the system prompt, the first message, the outbound voicemail message, and in [overridden](/agents/deploy/authenticated-sessions#overrides) text. System variables additionally render inside webhook tool requests.
+## Where variables render
+
+Placeholders are substituted in the agent's configured text and in webhook tool requests. Everything else (knowledge base content, tool names and descriptions, post-call analysis prompts) is left as written.
+
+| Where | Custom variables | System variables |
+|---|---|---|
+| System prompt (`prompt.system_prompt`) | Yes | Yes |
+| First message, fixed text or prompt (`prompt.first_message`, `prompt.first_message_prompt`) | Yes | Yes |
+| Session [overrides](/agents/deploy/authenticated-sessions#overrides) of those fields (`overrides.system_prompt`, `overrides.first_message`, `overrides.first_message_prompt`) | Yes | Yes |
+| Outbound voicemail message (`conversation.outbound.voicemail.message`) | Yes | Yes |
+| [Webhook tool](/agents/build/webhook-tools#argument-templating) URL, header values, and body template | No | Yes |
+
+Custom values travel with the request that starts the session: `dynamic_variables` on [`POST /v1/agent/sessions`](/agents/deploy/authenticated-sessions), `dynamicVariables` in the SDK's `AgentSession.start()` for [public agents](/agents/deploy/public-agents), `dynamic_variables` on [`POST /v1/agent/phone-calls`](/agents/telephony/outbound-calls#request-fields) for outbound calls, and the variables panel of a [preview call](/agents/test/preview-calls) in the Builder. Inbound phone calls have no such request: values come from the inbound call webhook on the agent's Webhooks tab when one is configured; the caller's number and the other session facts are always available as system variables.
 
 ## Custom variables
 
