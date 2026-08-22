@@ -178,6 +178,18 @@
                       "default": null,
                       "title": "Subscription Currency"
                     },
+                    "subscription_status": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Subscription Status"
+                    },
                     "extra_balance": {
                       "anyOf": [
                         {
@@ -3685,7 +3697,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 4000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`;\nanything else is 422. `voice.expressive` opts into richer expressive\ndelivery (emotion steering, laughter and sounds, pauses); off keeps the\nstandard delivery. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.tier`, cleared\nwith an explicit null.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 4000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`;\nanything else is 422. `voice.expressive` opts into richer expressive\ndelivery (emotion steering, laughter and sounds, pauses); off keeps the\nstandard delivery. `voice.keyterms` is a speech-recognition vocabulary of\nup to 50 plain terms (brand names, product terms, personal names), each at\nmost 100 characters with no commas or semicolons; `[]` clears it and 20-50\nfocused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
         "security": [
           {
             "BearerAuth": []
@@ -8389,8 +8401,8 @@
         ]
       },
       "post": {
-        "summary": "Purchase Phone Number",
-        "description": "Buy a number from the inventory. The number lands in your default\nworkspace, and any `agent_id` you bind must live there too. Billing is the\nmonthly price charged in daily slices: the first day is charged before\nanything is bought (402 costs you nothing), and the daily run advances it\nfrom there. 409 means the number is already on the platform; 502 means the\nprovider refused the purchase — the number stays visible with status\n`error` and is safe to release.",
+        "summary": "Purchase or Import Phone Number",
+        "description": "`provider` discriminates two variants. `twilio` buys a number from the\nmanaged inventory: it lands in your default workspace, any `agent_id` you\nbind must live there too, and billing is the monthly price charged in\ndaily slices; the first day is charged before anything is bought (402\ncosts you nothing) and the daily run advances it from there. `sip`\nimports a number you already own at your carrier: point your trunk's\norigination at our SIP host, provide inbound authentication (digest\nand/or source CIDRs) and optionally a termination host so the number can\nplace calls; nothing is rented and there is no monthly fee. Either way,\n409 means the number is already on the platform; 502 means the provider\nor trunk provisioning refused, and the number stays visible with status\n`error` and is safe to release.",
         "security": [
           {
             "BearerAuth": []
@@ -8401,7 +8413,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PublicPhoneNumberPurchasePayload"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PublicPhoneNumberPurchasePayload"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PublicSipNumberImportPayload"
+                  }
+                ]
               }
             }
           }
@@ -8430,7 +8449,8 @@
                     "provider": {
                       "enum": [
                         "livekit",
-                        "twilio"
+                        "twilio",
+                        "sip"
                       ],
                       "title": "Provider",
                       "type": "string"
@@ -8467,6 +8487,72 @@
                       "description": "What failed when status is `error`; empty otherwise.",
                       "title": "Status Detail",
                       "type": "string"
+                    },
+                    "supports_outbound": {
+                      "default": false,
+                      "description": "Whether the number can place calls (outbound and warm-transfer consult legs): managed `twilio` always, imported `sip` only when a termination was configured.",
+                      "title": "Supports Outbound",
+                      "type": "boolean"
+                    },
+                    "termination_uri": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Imported `sip` numbers: the customer trunk's termination host.",
+                      "title": "Termination Uri"
+                    },
+                    "inbound_auth_username": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Imported `sip` numbers: the inbound digest username. Passwords are never echoed.",
+                      "title": "Inbound Auth Username"
+                    },
+                    "inbound_allowed_addresses": {
+                      "description": "Imported `sip` numbers: allowed source IPs/CIDRs.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "Inbound Allowed Addresses",
+                      "type": "array"
+                    },
+                    "termination_transport": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Imported `sip` numbers: termination transport.",
+                      "title": "Termination Transport"
+                    },
+                    "termination_auth_username": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Imported `sip` numbers: the termination digest username. Passwords are never echoed.",
+                      "title": "Termination Auth Username"
                     },
                     "created_at": {
                       "format": "date-time",
@@ -8842,7 +8928,8 @@
                     "provider": {
                       "enum": [
                         "livekit",
-                        "twilio"
+                        "twilio",
+                        "sip"
                       ],
                       "title": "Provider",
                       "type": "string"
@@ -8879,6 +8966,72 @@
                       "description": "What failed when status is `error`; empty otherwise.",
                       "title": "Status Detail",
                       "type": "string"
+                    },
+                    "supports_outbound": {
+                      "default": false,
+                      "description": "Whether the number can place calls (outbound and warm-transfer consult legs): managed `twilio` always, imported `sip` only when a termination was configured.",
+                      "title": "Supports Outbound",
+                      "type": "boolean"
+                    },
+                    "termination_uri": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Imported `sip` numbers: the customer trunk's termination host.",
+                      "title": "Termination Uri"
+                    },
+                    "inbound_auth_username": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Imported `sip` numbers: the inbound digest username. Passwords are never echoed.",
+                      "title": "Inbound Auth Username"
+                    },
+                    "inbound_allowed_addresses": {
+                      "description": "Imported `sip` numbers: allowed source IPs/CIDRs.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "Inbound Allowed Addresses",
+                      "type": "array"
+                    },
+                    "termination_transport": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Imported `sip` numbers: termination transport.",
+                      "title": "Termination Transport"
+                    },
+                    "termination_auth_username": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Imported `sip` numbers: the termination digest username. Passwords are never echoed.",
+                      "title": "Termination Auth Username"
                     },
                     "created_at": {
                       "format": "date-time",
@@ -9077,7 +9230,8 @@
                     "provider": {
                       "enum": [
                         "livekit",
-                        "twilio"
+                        "twilio",
+                        "sip"
                       ],
                       "title": "Provider",
                       "type": "string"
@@ -9114,6 +9268,72 @@
                       "description": "What failed when status is `error`; empty otherwise.",
                       "title": "Status Detail",
                       "type": "string"
+                    },
+                    "supports_outbound": {
+                      "default": false,
+                      "description": "Whether the number can place calls (outbound and warm-transfer consult legs): managed `twilio` always, imported `sip` only when a termination was configured.",
+                      "title": "Supports Outbound",
+                      "type": "boolean"
+                    },
+                    "termination_uri": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Imported `sip` numbers: the customer trunk's termination host.",
+                      "title": "Termination Uri"
+                    },
+                    "inbound_auth_username": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Imported `sip` numbers: the inbound digest username. Passwords are never echoed.",
+                      "title": "Inbound Auth Username"
+                    },
+                    "inbound_allowed_addresses": {
+                      "description": "Imported `sip` numbers: allowed source IPs/CIDRs.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "Inbound Allowed Addresses",
+                      "type": "array"
+                    },
+                    "termination_transport": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Imported `sip` numbers: termination transport.",
+                      "title": "Termination Transport"
+                    },
+                    "termination_auth_username": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Imported `sip` numbers: the termination digest username. Passwords are never echoed.",
+                      "title": "Termination Auth Username"
                     },
                     "created_at": {
                       "format": "date-time",
@@ -11599,6 +11819,18 @@
           },
           {
             "in": "query",
+            "name": "licensed",
+            "description": "If True, only voices licensed by Fish Audio (rights secured from the voice owner) are returned; ignored if self is True",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Licensed",
+              "type": "boolean"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
             "name": "sort_by",
             "description": "",
             "required": false,
@@ -12384,6 +12616,11 @@
                       "default": null,
                       "title": "Source"
                     },
+                    "licensed": {
+                      "default": false,
+                      "title": "Licensed",
+                      "type": "boolean"
+                    },
                     "pvc_release_state": {
                       "anyOf": [
                         {
@@ -12746,6 +12983,11 @@
                       ],
                       "default": null,
                       "title": "Source"
+                    },
+                    "licensed": {
+                      "default": false,
+                      "title": "Licensed",
+                      "type": "boolean"
                     },
                     "pvc_release_state": {
                       "anyOf": [
@@ -15100,13 +15342,12 @@
       "PublicAgentLLMPatch": {
         "additionalProperties": false,
         "properties": {
-          "tier": {
+          "model": {
             "anyOf": [
               {
                 "enum": [
-                  "instant",
-                  "medium",
-                  "high"
+                  "google/gemini-3.5-flash-lite",
+                  "google/gemini-3.6-flash"
                 ],
                 "type": "string"
               },
@@ -15115,7 +15356,7 @@
               }
             ],
             "default": null,
-            "title": "Tier"
+            "title": "Model"
           },
           "custom": {
             "anyOf": [
@@ -15127,7 +15368,7 @@
               }
             ],
             "default": null,
-            "description": "Your own OpenAI-compatible endpoint; mutually exclusive with `tier`, explicit null reverts to the tier."
+            "description": "Your own OpenAI-compatible endpoint; mutually exclusive with `model`, explicit null reverts to the platform model."
           }
         },
         "title": "PublicAgentLLMPatch",
@@ -15291,6 +15532,22 @@
             ],
             "default": null,
             "title": "Expressive"
+          },
+          "keyterms": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Keyterms"
           }
         },
         "title": "PublicAgentVoicePatch",
@@ -15751,14 +16008,13 @@
       },
       "AgentLLMConfigRedacted": {
         "properties": {
-          "tier": {
-            "default": "medium",
+          "model": {
+            "default": "google/gemini-3.5-flash-lite",
             "enum": [
-              "instant",
-              "medium",
-              "high"
+              "google/gemini-3.5-flash-lite",
+              "google/gemini-3.6-flash"
             ],
-            "title": "Tier",
+            "title": "Model",
             "type": "string"
           },
           "custom": {
@@ -15956,6 +16212,14 @@
             "default": false,
             "title": "Expressive",
             "type": "boolean"
+          },
+          "keyterms": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Keyterms",
+            "type": "array"
           }
         },
         "title": "AgentVoiceConfig",
@@ -16781,7 +17045,8 @@
           "provider": {
             "enum": [
               "livekit",
-              "twilio"
+              "twilio",
+              "sip"
             ],
             "title": "Provider",
             "type": "string"
@@ -16819,6 +17084,72 @@
             "title": "Status Detail",
             "type": "string"
           },
+          "supports_outbound": {
+            "default": false,
+            "description": "Whether the number can place calls (outbound and warm-transfer consult legs): managed `twilio` always, imported `sip` only when a termination was configured.",
+            "title": "Supports Outbound",
+            "type": "boolean"
+          },
+          "termination_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Imported `sip` numbers: the customer trunk's termination host.",
+            "title": "Termination Uri"
+          },
+          "inbound_auth_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Imported `sip` numbers: the inbound digest username. Passwords are never echoed.",
+            "title": "Inbound Auth Username"
+          },
+          "inbound_allowed_addresses": {
+            "description": "Imported `sip` numbers: allowed source IPs/CIDRs.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Inbound Allowed Addresses",
+            "type": "array"
+          },
+          "termination_transport": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Imported `sip` numbers: termination transport.",
+            "title": "Termination Transport"
+          },
+          "termination_auth_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Imported `sip` numbers: the termination digest username. Passwords are never echoed.",
+            "title": "Termination Auth Username"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -16848,7 +17179,7 @@
         "properties": {
           "provider": {
             "const": "twilio",
-            "description": "Inventory to buy from. Only the managed `twilio` inventory is purchasable (supports call transfer). The field discriminates so importing your own numbers can share this endpoint later.",
+            "description": "`twilio` buys from the managed inventory (supports call transfer); `sip` imports a number you already own at your carrier; see the `sip` request variant.",
             "title": "Provider",
             "type": "string"
           },
@@ -16882,6 +17213,93 @@
           "phone_number"
         ],
         "title": "PublicPhoneNumberPurchasePayload",
+        "type": "object"
+      },
+      "PublicSipNumberImportPayload": {
+        "additionalProperties": false,
+        "description": "The `sip` variant of POST /v1/agent/phone-numbers: import a number that\nstays at your carrier. Point your trunk's origination at our SIP host,\ngive inbound at least one authentication factor (digest and/or source\nCIDRs), and optionally a termination host + credentials so the number can\nplace calls. Nothing is rented: carrier charges stay on your account, and\nimported numbers carry no telephony charges at all: no monthly fee, no\nphone surcharge, no transfer fees; you pay agent minutes only.",
+        "properties": {
+          "inbound_auth_username": {
+            "default": "",
+            "maxLength": 128,
+            "title": "Inbound Auth Username",
+            "type": "string"
+          },
+          "inbound_auth_password": {
+            "default": "",
+            "maxLength": 128,
+            "title": "Inbound Auth Password",
+            "type": "string"
+          },
+          "inbound_allowed_addresses": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Inbound Allowed Addresses",
+            "type": "array"
+          },
+          "termination_uri": {
+            "default": "",
+            "title": "Termination Uri",
+            "type": "string"
+          },
+          "termination_transport": {
+            "default": "auto",
+            "enum": [
+              "auto",
+              "udp",
+              "tcp",
+              "tls"
+            ],
+            "title": "Termination Transport",
+            "type": "string"
+          },
+          "termination_auth_username": {
+            "default": "",
+            "maxLength": 128,
+            "title": "Termination Auth Username",
+            "type": "string"
+          },
+          "termination_auth_password": {
+            "default": "",
+            "maxLength": 128,
+            "title": "Termination Auth Password",
+            "type": "string"
+          },
+          "phone_number": {
+            "title": "Phone Number",
+            "type": "string"
+          },
+          "label": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Label",
+            "type": "string"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Agent Id"
+          },
+          "provider": {
+            "const": "sip",
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "required": [
+          "phone_number",
+          "provider"
+        ],
+        "title": "PublicSipNumberImportPayload",
         "type": "object"
       },
       "PublicPhoneNumberUpdatePayload": {
@@ -17906,6 +18324,11 @@
             ],
             "default": null,
             "title": "Source"
+          },
+          "licensed": {
+            "default": false,
+            "title": "Licensed",
+            "type": "boolean"
           },
           "pvc_release_state": {
             "anyOf": [
