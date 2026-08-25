@@ -76,6 +76,7 @@ on the nodes that host it, plus headroom for rewrites.
 | Redis             | Installed by the chart into the release namespace. Do not point the release at a shared Redis without discussing it first.                                               |
 | Metrics           | Prometheus, scraping `prometheus.io/*` pod annotations. The chart creates no ServiceMonitors, so kube-prometheus-stack users must add an annotation-based scrape config. |
 | Access layer      | Yours to choose. Ingress controller, DNS, TLS, and load balancing are not part of the delivery.                                                                          |
+| License bundle    | The certificate and key from **Developer → Self Host**, loaded into the cluster as a Secret before the install.                                                          |
 
 The cluster also needs working in-cluster DNS, a dedicated namespace, node labels
 and taints for GPU scheduling, and a Pod Security level in that namespace that
@@ -102,6 +103,8 @@ permits `hostPID` and `hostIPC`, which the inference workers require.
 | RAM               | 128 GiB minimum, 192 GiB recommended. The container runs the whole stack in one process tree.                                    |
 | CPU               | 32 vCPU minimum, 48 to 64 recommended.                                                                                           |
 | Disk              | 100 GB free if the host pulls the image itself; 120 GB if you move it as a file, since `docker load` needs the ~30 GB archive and the ~80 GB unpacked image at once. Plus the compile and engine caches. |
+| Network           | Offline form: none at runtime. Online form: outbound HTTPS to the Fish Audio authorization and billing endpoint, on every request. Ask your account team for the hostname to allowlist. |
+| License bundle    | The certificate and key pair from **Developer → Self Host**, in a host directory readable by the container's non-root user.       |
 
 ## Next step
 

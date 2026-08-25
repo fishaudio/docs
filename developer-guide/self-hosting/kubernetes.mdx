@@ -51,12 +51,15 @@ manage that layer.
 | Reference voices            | Requests carrying a `reference_id` resolve from a local archive, never from the network. One zip per voice, staged on shared storage before that traffic starts. |
 | Replica counts              | Talk to your account team first. The shipped shape is what the delivery was sized and validated against.                  |
 
-Three Kubernetes Secrets have to exist before the install: registry credentials, a JWT
-secret for the edge API, and one shared between the in-cluster model store and the
-workers that read from it. That one authenticates nothing outside the cluster, and the
-value is yours to choose. Generate the JWT secret once
-and keep it stable, because changing it invalidates issued tokens. For production, prefer
-External Secrets, Sealed Secrets, or your cloud secret manager over plain Secrets.
+Three Kubernetes Secrets have to exist before the install: registry credentials, the
+license bundle, and one shared between the in-cluster model store and the workers that
+read from it. The license bundle is the certificate and key pair downloaded from
+**Developer → Self Host**; the services that enforce it stay down until the Secret
+exists, and refuse requests once the certificate lapses — renewal is described in
+[Operations](/developer-guide/self-hosting/operations#license-renewal). The model-store
+secret authenticates nothing outside the cluster, so the value is yours to choose. For
+production, prefer External Secrets, Sealed Secrets, or your cloud secret manager over
+plain Secrets.
 
 ## What to expect
 
