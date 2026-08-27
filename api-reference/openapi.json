@@ -12599,6 +12599,22 @@
                       "default": false,
                       "title": "Dmca Taken Down"
                     },
+                    "takedown_category": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "dmca",
+                            "policy"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Takedown Category"
+                    },
                     "default_text": {
                       "default": "",
                       "title": "Default Text",
@@ -12966,6 +12982,22 @@
                       ],
                       "default": false,
                       "title": "Dmca Taken Down"
+                    },
+                    "takedown_category": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "dmca",
+                            "policy"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Takedown Category"
                     },
                     "default_text": {
                       "default": "",
@@ -15552,6 +15584,20 @@
             ],
             "default": null,
             "title": "Keyterms"
+          },
+          "speed": {
+            "anyOf": [
+              {
+                "maximum": 2,
+                "minimum": 0.5,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Speed"
           }
         },
         "title": "PublicAgentVoicePatch",
@@ -16228,6 +16274,13 @@
             "maxItems": 50,
             "title": "Keyterms",
             "type": "array"
+          },
+          "speed": {
+            "default": 1,
+            "maximum": 2,
+            "minimum": 0.5,
+            "title": "Speed",
+            "type": "number"
           }
         },
         "title": "AgentVoiceConfig",
@@ -18315,6 +18368,22 @@
             ],
             "default": false,
             "title": "Dmca Taken Down"
+          },
+          "takedown_category": {
+            "anyOf": [
+              {
+                "enum": [
+                  "dmca",
+                  "policy"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Takedown Category"
           },
           "default_text": {
             "default": "",
