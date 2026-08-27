@@ -150,13 +150,6 @@ These ride the transport's built-in mechanisms rather than custom messages.
 2. **Evolution is additive-only.** Published fields never change name or meaning and are never removed; new fields are always optional. A semantic change ships as a new `type`.
 3. **No replay.** Data-channel delivery is reliable and ordered within a connection, but after a reconnect or late join, missed messages are gone. Never wait for history. Tool terminal messages repeat their identifying fields, and the state attribute is sticky, precisely to soften this.
 
-## Version history
-
-| Version         | Changes                                                                                                                                            |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0.0.1           | Initial public release: the complete message set on this page, including tool lifecycle events and the optional `audio` flag on `user.message`    |
-| 0.1.0 (current) | Revised the session-creation `SessionOverrides` shape; realtime messages unchanged                                                                 |
-
 ## Going further
 
 <CardGroup cols={2}>
