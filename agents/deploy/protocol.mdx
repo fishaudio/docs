@@ -4,7 +4,7 @@ description: "The realtime message contract between clients and agent sessions, 
 icon: "network-wired"
 ---
 
-Everything the SDKs do rides a small, versioned wire protocol: two JSON message channels, plus the transport's standard transcription and state mechanisms. This page documents that contract for consumers that cannot use the SDKs: custom native stacks or ports to new platforms.
+Everything the SDKs do rides a small, versioned wire protocol: two JSON message channels, plus the transport's standard transcription and state mechanisms. The transport is WebRTC, built on [LiveKit](https://docs.livekit.io/home/): audio travels as WebRTC media tracks, and the message channels ride LiveKit's reliable data channels. This page documents that contract for consumers that cannot use the SDKs: custom native stacks or ports to new platforms.
 
 <Note>
   This is an escape hatch. For web and React apps, use the [Web
@@ -43,7 +43,7 @@ curl --request POST https://api.fish.audio/v1/agent/sessions \
 }
 ```
 
-The response is a discriminated union on `transport`. The `livekit` arm carries `livekit_url` and `token`: connect a LiveKit-compatible WebRTC client with them before `expires_at` (the join deadline), publish your microphone track, and subscribe to the agent's audio track.
+The response is a discriminated union on `transport`. The `livekit` arm carries `livekit_url` and `token`: [connect](https://docs.livekit.io/home/client/connect/) a LiveKit-compatible WebRTC client with them before `expires_at` (the join deadline), then [publish your microphone track and subscribe](https://docs.livekit.io/home/client/tracks/) to the agent's audio track.
 
 <Warning>
   If you receive a `transport` value you don't recognize, fail with an explicit
@@ -53,7 +53,7 @@ The response is a discriminated union on `transport`. The `livekit` arm carries 
 
 ## Channels
 
-Once connected, a session uses these channels. The two `*-event` topics carry reliable data packets: one complete JSON object per packet.
+Once connected, a session uses these channels. The two `*-event` topics carry reliable [data packets](https://docs.livekit.io/home/client/data/messages/): one complete JSON object per packet.
 
 | Channel                                | Direction      | Carries                                                   |
 | -------------------------------------- | -------------- | --------------------------------------------------------- |
@@ -137,12 +137,12 @@ Publish these on the `client-event` topic. The agent ignores malformed JSON and 
 
 These ride the transport's built-in mechanisms rather than custom messages.
 
-**Transcription** arrives as text streams on the `lk.transcription` topic. Segments are identified by the `lk.segment_id` stream attribute; `lk.transcription_final: "true"` marks a segment as final. Roles are distinguished by sender identity: the user's segments are sent under the user's own participant identity, the agent's under the agent participant.
+**Transcription** arrives as [text streams](https://docs.livekit.io/home/client/data/text-streams/) on the `lk.transcription` topic. Segments are identified by the `lk.segment_id` stream attribute; `lk.transcription_final: "true"` marks a segment as final. Roles are distinguished by sender identity: the user's segments are sent under the user's own participant identity, the agent's under the agent participant.
 
 - Agent segments stream incrementally, paced to audio playback. An interrupted segment closes containing only the words actually spoken; there is no residual text.
 - User segments are interim until final; each interim update **replaces the entire segment text** under the same segment id.
 
-**Agent state** is published as the sticky `lk.agent.state` participant attribute with values `initializing`, `idle`, `listening`, `thinking`, and `speaking`. Sticky means a client that connects late or reconnects reads the current value immediately. The SDKs derive their three public modes from this attribute plus transcript segment open/close.
+**Agent state** is published as the sticky `lk.agent.state` [participant attribute](https://docs.livekit.io/home/client/state/participant-attributes/) with values `initializing`, `idle`, `listening`, `thinking`, and `speaking`. Sticky means a client that connects late or reconnects reads the current value immediately. The SDKs derive their three public modes from this attribute plus transcript segment open/close.
 
 ## Compatibility rules
 
