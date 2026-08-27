@@ -10,12 +10,86 @@ By default your agent generates replies with a Fish Audio platform model. With a
 
 Your endpoint speaks the standard OpenAI [chat completions](https://platform.openai.com/docs/api-reference/chat) protocol. The platform sends `POST {base_url}/chat/completions` with `stream: true` and reads the reply as server-sent events, so if your prototype already runs against another voice-agent platform through a custom LLM, the same server works here unchanged.
 
-Each conversation turn, your endpoint receives the same fully assembled context a platform model would see. The `messages` array carries the system prompt with [dynamic variables](/agents/build/dynamic-variables) and [session overrides](/agents/deploy/authenticated-sessions#overrides) applied, the complete conversation history, and any retrieved [knowledge](/agents/build/knowledge-base), and the agent's tools are included in OpenAI function format. When your model returns `tool_calls`, the platform executes the tool and calls you again with the result. Two extra fields ride each request body so your server can look up its own state:
+Each conversation turn, your endpoint receives the same fully assembled context a platform model would see. The `messages` array carries the system prompt with [dynamic variables](/agents/build/dynamic-variables) and [session overrides](/agents/deploy/authenticated-sessions#overrides) applied, the complete conversation history, and any retrieved [knowledge](/agents/build/knowledge-base), and the agent's tools are included in OpenAI function format. When your model returns `tool_calls`, the platform executes the tool and calls you again with the result. A few extra top-level fields ride each request body so your server can look up its own state:
 
 | Field | Content |
 |---|---|
 | `session_id` | The Fish Audio session id. |
 | `user_id` | The `end_user_id` you passed when [creating the session](/agents/deploy/authenticated-sessions). Omitted when the session has none. |
+| `fishaudio_extra_body` | The `llm_extra_body` object you passed when creating the session, forwarded verbatim on every request. Use it to carry your own identifiers, such as which chat or thread the user is in. Omitted when the session has none. |
+
+<Tip>
+If your server proxies requests to an upstream provider such as OpenAI, consider removing `session_id`, `user_id`, and `fishaudio_extra_body` from the body first. Some upstream APIs reject parameters they don't recognize.
+</Tip>
+
+### Example request
+
+Suppose the session was created from your backend with `end_user_id: "user-42"` and `llm_extra_body: {"chat_id": "chat-9"}`, the agent has one webhook tool `lookup_order`, and the user has just asked about an order. Your endpoint receives:
+
+```http
+POST /v1/chat/completions HTTP/1.1
+Host: llm.example.com
+Authorization: Bearer sk-your-endpoint-key
+Content-Type: application/json
+```
+
+```json
+{
+  "model": "persona-70b",
+  "stream": true,
+  "stream_options": { "include_usage": true },
+  "messages": [
+    {
+      "role": "system",
+      "content": "Today is Wednesday, August 26, 2026. Session timezone: America/New_York (UTC-4).\n\n…\n\nYou are Aria, the support assistant for Acme Shoes. Help customers with orders and returns. …"
+    },
+    { "role": "assistant", "content": "Hi, this is Aria from Acme Shoes. How can I help you today?" },
+    { "role": "user", "content": "I want to check on my order." },
+    { "role": "assistant", "content": "Sure, what's the order number?" },
+    { "role": "system", "content": "Current date and time: Wednesday, August 26, 2026, 14:07 (America/New_York)." },
+    { "role": "user", "content": "It's A one two three four five." }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "lookup_order",
+        "description": "Look up an order by its number.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "order_number": { "type": "string", "description": "The order number, e.g. A12345." }
+          },
+          "required": ["order_number"]
+        }
+      }
+    }
+  ],
+  "session_id": "sess_01j9x4k2m8v3q7n5p6r8t9w0y1",
+  "user_id": "user-42",
+  "fishaudio_extra_body": { "chat_id": "chat-9" }
+}
+```
+
+A few things to note:
+
+- The first `system` message is the assembled prompt: your agent's [system prompt](/agents/build/configuration#system-prompt) with [dynamic variables](/agents/build/dynamic-variables) and [overrides](/agents/deploy/authenticated-sessions#overrides) applied, plus the platform's own context lines. A short `system` line carrying the current time is inserted before the latest user turn on every request.
+- `messages` carries the full transcript so far. Speech recognition output arrives as plain `user` text; your earlier replies come back as `assistant` messages.
+- `tools` is present only when the agent has tools configured. The `model`, `stream`, and `stream_options` fields are fixed; no `temperature` or `max_tokens` is sent, so apply your own defaults.
+
+When your model returns a `lookup_order` tool call, the platform executes it and immediately sends the next request with the call and its result appended to `messages`, everything else unchanged:
+
+```json
+{
+  "role": "assistant",
+  "tool_calls": [
+    { "id": "call_1", "type": "function", "function": { "name": "lookup_order", "arguments": "{\"order_number\":\"A12345\"}" } }
+  ]
+},
+{ "role": "tool", "tool_call_id": "call_1", "content": "{\"status\":\"shipped\",\"eta\":\"2026-08-28\"}" }
+```
+
+Reply to that request with the spoken answer as ordinary `delta.content` chunks ending in `finish_reason: "stop"`.
 
 Requests authenticate with `Authorization: Bearer <your API key>`. The endpoint must use `https` on a publicly reachable host, and must support function calling if the agent has tools configured.
 
