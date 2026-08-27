@@ -69,6 +69,7 @@ This endpoint requires an API key; there is no anonymous variant. See the [API r
 | `dynamic_variables` | Optional: per-call values for `{{placeholders}}` in the agent's configured text, same rules as [session creation](/agents/build/dynamic-variables). Up to 50 entries. |
 | `overrides`         | Optional: replace whole configuration fields for this call, subject to the agent's [override allowlist](/agents/deploy/authenticated-sessions#overrides).             |
 | `metadata`          | Optional: your own JSON object, returned verbatim on session reads and in webhook payloads. Never interpreted.                                                        |
+| `llm_extra_body`    | Optional: JSON object (at most 16 KB) forwarded to a [custom LLM](/agents/build/custom-llm) endpoint on every request as `fishaudio_extra_body`. Ignored on platform-model agents. |
 
 The session's [time and timezone context](/agents/build/time-timezone) resolves from the destination number when the agent has no fixed timezone configured, so "tomorrow morning" means the callee's morning.
 
