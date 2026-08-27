@@ -30,6 +30,8 @@ Prometheus is the metrics baseline. Watch:
 - CPU and memory usage against the configured requests and limits.
 - Shared storage usage and latency.
 - Redis availability and latency.
+- License validity and time to expiry, exported as metrics; the services also log
+  warnings well before expiry.
 - Image pull failures and Kubernetes events in the release namespace.
 
 Centralize application logs and retain Kubernetes events long enough to
@@ -66,6 +68,19 @@ Back up:
 Compile and model caches on shared storage do not need backing up. Losing them
 costs a slow first start, nothing more.
 
+## License renewal
+
+Update the license Secret in place with the renewed bundle; no restart is needed.
+Kubernetes propagates the change to the running pods, and each service re-verifies on
+its own short cycle, so expect up to a couple of minutes of mixed responses before
+it settles. One exception: a bundle
+that carries a new key rather than a re-signed certificate. The offline form's edge API
+reads the ledger-signing key only at startup, so restart that deployment after
+replacing a key.
+
+Pods with an expired certificate keep running but refuse requests, then recover once
+a renewal propagates.
+
 ## Upgrades
 
 Commands are in the deployment runbook. Before running them, capture the release
@@ -82,12 +97,14 @@ guide that ships in your documentation bundle.
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ImagePullBackOff` or `ErrImagePull`                                     | Missing pull secret, a deploy token that was rotated or deleted, a tag that is not in your mirror, or blocked egress to the registry.                                                              |
 | Pods stay `Pending`                                                      | Not enough CPU, memory, or GPU capacity; GPU node taints without matching tolerations; a node selector that matches nothing.                                                                       |
+| Pods stuck `ContainerCreating`                                           | A Secret the pod mounts does not exist yet — most often the license bundle. The pods recover on their own once it is created.                                                                      |
 | GPU not available, or `nvidia-smi` fails in a pod                        | Driver missing or unhealthy, device plugin or GPU Operator not ready, container runtime not configured for NVIDIA, or an unsupported GPU for the driver stack.                                     |
 | hostPath volume errors, or missing model and cache paths                 | Shared storage is not mounted on that node, a newly added node never got the mount, the mount target is unreachable, or permissions prevent writes.                                                |
 | Requests fail after reaching the edge API, with Redis errors in its logs | The Redis master or replica is not ready, the service is missing, or a network policy blocks it.                                                                                                   |
 | `Reference not found`                                                    | The archive was never staged, the filename does not exactly match the reference id, the zip is malformed, or the reference root was changed without mounting the new path into every edge API pod. |
 | Metrics missing from Prometheus                                          | Scrape annotations disabled in values, Prometheus not configured for annotation-based discovery, a port mismatch, or a network policy blocking scrapes.                                            |
-| `CrashLoopBackOff`                                                       | A missing secret or environment variable, model assets unreachable, or a path the container cannot write.                                                                                          |
+| `CrashLoopBackOff`                                                       | A missing environment variable, a license file missing or unreadable inside the Secret, model assets unreachable, or a path the container cannot write.                                            |
+| Requests refused with a license error                                    | The certificate expired, or a renewal has not finished propagating — see [License renewal](#license-renewal).                                                                                      |
 | Time-to-first-audio high, GPU utilization low                            | Concurrency above what the current replicas can serve, cold caches after a restart, storage latency, or CPU saturation on the API nodes.                                                           |
 
 ## Escalating to Fish Audio

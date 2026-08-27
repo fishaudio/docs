@@ -23,18 +23,18 @@ audio formats, and voice behavior match what you already build against.
 
 ## Delivery forms
 
-The same engine ships in three forms. Your enterprise agreement determines which
+The same engine ships in four forms. Your enterprise agreement determines which
 ones your team is granted.
 
-|                  | Online Helm                                         | Offline Helm                                     | Offline All-in-One                                  |
-| ---------------- | --------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------- |
-| Platform         | Kubernetes                                          | Kubernetes                                       | A single container, `docker run`                    |
-| Model assets     | Served in-cluster from a bundled model warehouse    | Same                                             | Baked into the image                                |
-| Usage accounting | Validated and billed against the Fish Audio service | Local signed usage ledger                        | Local signed usage ledger                           |
-| Runtime egress   | The billing endpoint, plus one more host if you enable timestamps | None                                             | None                                                |
-| Air-gap capable  | No                                                  | Yes, after mirroring images and charts           | Yes                                                 |
-| Scaling          | Scales replicas across all GPUs and nodes           | Same                                             | Single node, single inference worker                |
-| Best for         | Managed clusters with outbound access               | Isolated or regulated production clusters        | Evaluation, single-node appliances, strict air gaps |
+|                  | Online Helm                                         | Offline Helm                                     | Offline All-in-One                                  | Online All-in-One                                |
+| ---------------- | --------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------- | ------------------------------------------------ |
+| Platform         | Kubernetes                                          | Kubernetes                                       | A single container, `docker run`                    | A single container, `docker run`                 |
+| Model assets     | Served in-cluster from a bundled model warehouse    | Same                                             | Baked into the image                                | Baked into the image                             |
+| Usage accounting | Validated and billed against the Fish Audio service | Local signed usage ledger                        | Local signed usage ledger                           | Validated and billed against the Fish Audio service |
+| Runtime egress   | The billing endpoint, plus one more host if you enable timestamps | None                                             | None                                                | The billing endpoint                             |
+| Air-gap capable  | No                                                  | Yes, after mirroring images and charts           | Yes                                                 | No                                               |
+| Scaling          | Scales replicas across all GPUs and nodes           | Same                                             | Single node, single inference worker                | Single node, single inference worker             |
+| Best for         | Managed clusters with outbound access               | Isolated or regulated production clusters        | Evaluation, single-node appliances, strict air gaps | Single-node appliances billed like the hosted service |
 
 Both Helm forms share one deployment procedure and differ only in a few values.
 See [Kubernetes deployment](/developer-guide/self-hosting/kubernetes) for the
@@ -43,7 +43,7 @@ for the single-container form.
 
 ## What is included
 
-| Capability                                | Online Helm                  | Offline Helm             | All-in-One               |
+| Capability                                | Online Helm                  | Offline Helm             | All-in-One (both forms)  |
 | ----------------------------------------- | ---------------------------- | ------------------------ | ------------------------ |
 | Text to speech over `POST /v1/tts`        | Included                     | Included                 | Included                 |
 | WebSocket streaming                       | Included                     | Included                 | Included                 |

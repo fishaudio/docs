@@ -6,9 +6,14 @@ icon: "box"
 
 The All-in-One image packages the whole speech stack (edge API, model API layer,
 inference router and worker, vocoder, text normalizer, and Redis) into one container,
-with every model weight baked in. Once the image is on the host it runs with no
-Kubernetes and no internet access, which makes it the turnkey option for single-node
-appliances and strict air gaps.
+with every model weight baked in. It runs as a turnkey single-node appliance, no Kubernetes.
+
+The two forms, **Offline All-in-One** and **Online All-in-One**, differ only in how
+usage is accounted for. The offline form records usage to a local
+ledger and needs no network once the image is on the host. The online form authorises
+each request against Fish Audio and charges the key that made it, so it needs outbound
+access and a key with credit. The accounting is compiled in, so an image is one or the
+other; the container logs which at startup.
 
 <Note>
   This page covers what the appliance is and what to plan for. The commands, tuning
@@ -21,10 +26,9 @@ appliances and strict air gaps.
 
 The appliance runs one inference worker and one vocoder, a GPU each. It does not
 autoscale, does not shard across more GPUs or nodes, and does not ship the forced
-aligner, so it returns no word or segment timings. It is offline-only: there is no
-hosted-billing variant. For elastic or higher-throughput deployments, use the
-[Kubernetes chart](/developer-guide/self-hosting/kubernetes), which scales replicas
-across all GPUs and nodes.
+aligner, so it returns no word or segment timings. For elastic or higher-throughput
+deployments, use the [Kubernetes chart](/developer-guide/self-hosting/kubernetes), which
+scales replicas across all GPUs and nodes.
 
 ## What running it involves
 
@@ -35,8 +39,13 @@ It needs:
 - **Two GPUs.** The first runs the inference worker, the second the vocoder.
 - **One exposed port** for the API.
 - **One persistent volume.** Compile caches, the vocoder's built engine, reference
-  voice archives, and the usage ledger all live there. Model weights are in the image,
-  not on the volume.
+  voice archives, and — on the offline form — the usage ledger all live there. Model
+  weights are in the image, not on the volume.
+- **The license bundle.** A host directory holding the certificate and key pair from
+  **Developer → Self Host**, mounted read-only. Without it the API never comes up; once
+  the certificate expires the container starts but refuses requests. Renewing is
+  replacing those files in place; only a bundle that carries a new key needs the
+  container restarted.
 
 Everything inside the container runs as a non-root user, so a reused volume or a host
 bind mount has to be writable by it.
@@ -49,15 +58,25 @@ the GPU model, so moving to different cards rebuilds it once.
 
 ## Usage accounting and tenancy
 
-This build records usage to a local, signed, append-only ledger on the volume instead
-of calling a billing service. Two consequences worth designing around:
+The form determines how usage is accounted for and what the bearer token has to be.
+
+**Offline.** Usage goes to a local, signed, append-only ledger on the volume. Two
+consequences worth designing around:
 
 - **Any non-empty bearer token is accepted**; a missing or empty one is rejected. The
   appliance has nothing to validate a token against.
 - **The token is recorded verbatim as the billing identity.** Use a stable, distinct
   token per tenant. Two tenants sharing a token are indistinguishable in the ledger.
 
-See [Offline usage accounting](/developer-guide/self-hosting/air-gapped#offline-usage-accounting).
+Backups and reconciliation: [Offline usage accounting](/developer-guide/self-hosting/air-gapped#offline-usage-accounting).
+
+**Online.** Each request is authorised against Fish Audio and charged to the key that
+made it. The token must be a [Fish Audio API key](/developer-guide/getting-started/api-key)
+with credit — not the deploy token used to pull the image — and anything else is
+rejected. No ledger is written; usage appears in your Fish Audio account instead.
+
+Authorisation happens on every request, not only at startup, and the appliance has no
+local fallback. Treat outbound reachability as a production dependency.
 
 ## Capacity
 
