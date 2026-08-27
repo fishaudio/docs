@@ -4,7 +4,7 @@ description: "The realtime message contract between clients and agent sessions, 
 icon: "network-wired"
 ---
 
-Everything the SDKs do rides a small, versioned wire protocol: two JSON message channels, plus the transport's standard transcription and state mechanisms. The transport is WebRTC, built on [LiveKit](https://docs.livekit.io/home/): audio travels as WebRTC media tracks, and the message channels ride LiveKit's reliable data channels. This page documents that contract for consumers that cannot use the SDKs: custom native stacks or ports to new platforms.
+Everything the SDKs do rides a small, versioned wire protocol: two JSON message channels, plus the transport's standard transcription and state mechanisms. The transport is WebRTC, built on LiveKit: audio travels as WebRTC [media tracks](https://docs.livekit.io/home/client/tracks/), the message channels ride LiveKit's reliable [data channels](https://docs.livekit.io/home/client/data/messages/), and any platform with a [LiveKit client SDK](https://docs.livekit.io/home/client/connect/) can implement it. This page documents that contract for consumers that cannot use the SDKs: custom native stacks or ports to new platforms.
 
 <Note>
   This is an escape hatch. For web and React apps, use the [Web
@@ -64,6 +64,66 @@ Once connected, a session uses these channels. The two `*-event` topics carry re
 | `lk.agent.state` participant attribute | agent → client | Agent pipeline state (sticky)                             |
 
 Data-channel message fields are camelCase; REST bodies are snake_case.
+
+Each channel maps to a standard LiveKit client mechanism:
+
+- **`client-event` (sending)**: publish each message as a UTF-8 JSON payload with [`publishData`](https://docs.livekit.io/home/client/data/messages/), in **reliable** mode, with `topic` set to `client-event`.
+- **`agent-event` (receiving)**: listen for the [`DataReceived`](https://docs.livekit.io/home/client/data/messages/) room event and keep only packets whose topic is `agent-event`; decode each payload as one JSON object.
+- **Transcription**: register a handler for the `lk.transcription` topic with [`registerTextStreamHandler`](https://docs.livekit.io/home/client/data/text-streams/). Segment semantics are described [below](#transcription-and-agent-state).
+- **Agent state**: read `lk.agent.state` from the agent participant's [attributes](https://docs.livekit.io/home/client/state/participant-attributes/) and subscribe to the `AttributesChanged` event for updates.
+
+The complete wiring in the JS SDK (`livekit-client`) looks like this; every LiveKit SDK has equivalent APIs:
+
+```ts Connect and wire up all channels
+import { Room, RoomEvent } from 'livekit-client';
+
+const room = new Room();
+
+// Register all handlers BEFORE connecting: the agent may already be
+// speaking when you join, and `lk.agent.state` is delivered on join.
+
+// Agent events: reliable data packets on the `agent-event` topic
+room.on(RoomEvent.DataReceived, (payload, participant, kind, topic) => {
+  if (topic !== 'agent-event') return;
+  const event = JSON.parse(new TextDecoder().decode(payload));
+  // event.type: 'client_tool.call' | 'tool.started' | 'tool.completed' | ...
+});
+
+// Transcription: text streams on the `lk.transcription` topic
+room.registerTextStreamHandler('lk.transcription', async (reader, participant) => {
+  const segmentId = reader.info.attributes?.['lk.segment_id'];
+  const isFinal = reader.info.attributes?.['lk.transcription_final'] === 'true';
+  const text = await reader.readAll();
+  // participant.identity tells you whether this is the user's or the agent's segment
+});
+
+// Agent state: sticky `lk.agent.state` participant attribute
+room.on(RoomEvent.ParticipantAttributesChanged, (changed, participant) => {
+  if ('lk.agent.state' in changed) {
+    console.log(participant.attributes['lk.agent.state']);
+  }
+});
+
+// Agent speech: attach the agent's audio track when it arrives
+room.on(RoomEvent.TrackSubscribed, (track) => {
+  document.body.appendChild(track.attach());
+});
+
+// Now connect, using `livekit_url` and `token` from the
+// session-creation response above, and publish your microphone
+await room.connect(livekitUrl, token);
+await room.localParticipant.setMicrophoneEnabled(true);
+
+// Client events: publish JSON on the `client-event` topic
+function send(event: object) {
+  return room.localParticipant.publishData(
+    new TextEncoder().encode(JSON.stringify(event)),
+    { reliable: true, topic: 'client-event' },
+  );
+}
+
+await send({ type: 'user.message', text: "What's my balance?" });
+```
 
 ## Agent events: `agent-event`
 
