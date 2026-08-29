@@ -1,0 +1,132 @@
+---
+title: "Pronunciation Dictionaries"
+description: "Reuse pronunciation rules for names, brands, acronyms, and domain terms"
+icon: "book-open"
+---
+
+## Overview
+
+Pronunciation dictionaries are for reusable pronunciation fixes. Use them when the same names, brands, acronyms, product terms, or domain-specific phrases appear across many TTS requests and you want consistent output without adding phoneme tags into every script.
+
+For a one-off correction, inline phoneme tags in `text` are usually faster. For repeated corrections, put the written form in a dictionary `key` and the desired phoneme form in `value`.
+
+<Note>
+  A pronunciation dictionary is not a translation dictionary or a general text
+  normalizer. It only tells synthesis how a matched written form should sound.
+</Note>
+
+## When To Use It
+
+Use a pronunciation dictionary for:
+
+- Product names, brand names, people names, or place names that are often misread.
+- Acronyms and technical terms such as `SQL`, `Kubernetes`, or internal project names.
+- Domain scripts where the same word list is reused across batches, agents, or episodes.
+- Homographs when a larger phrase can remove ambiguity, such as `read endpoint` versus `read yesterday`.
+
+Avoid broad entries for common words unless every occurrence should be read the same way. If pronunciation depends on context, use a longer phrase as the key or place a phoneme tag directly in the text.
+
+## Item Shape
+
+Each dictionary item has this shape:
+
+```json
+{
+  "key": "Kubernetes",
+  "value": "K UW2 B ER0 N EH1 T IY0 Z",
+  "case_sensitive": false
+}
+```
+
+`key` is the exact written text to match in the TTS input. Use the same spelling, script, spacing, and punctuation that you expect to appear in the request text. Prefer leaving punctuation out of the key unless it is part of the term itself.
+
+`value` is the phoneme string that should replace the key during synthesis. Do not include `<|phoneme_start|>` or `<|phoneme_end|>`; the synthesis pipeline wraps dictionary values internally.
+
+Use the same phoneme notation as manual phoneme control:
+
+| Language | Recommended value format                 | Example                     |
+| -------- | ---------------------------------------- | --------------------------- |
+| English  | CMU Arpabet                              | `K UW2 B ER0 N EH1 T IY0 Z` |
+| Chinese  | Tone-number pinyin in reading order      | `chong2 qing4`              |
+| Japanese | OpenJTalk-style romaji with pitch digits | `ha0shi1ga0`                |
+
+`case_sensitive` defaults to `false`. In managed dictionary versions, duplicate detection treats keys that only differ by case as the same rule when `case_sensitive` is `false`. Set it to `true` when `Fish` and `fish` must be separate entries.
+
+## Inline Dictionaries
+
+Pass inline dictionaries directly in a TTS request when the rules are request-specific:
+
+```json
+{
+  "text": "Our Kubernetes service reads SQL from DynamoDB.",
+  "reference_id": "model-id",
+  "pronunciation_dictionary": [
+    {
+      "items": [
+        {
+          "key": "Kubernetes",
+          "value": "K UW2 B ER0 N EH1 T IY0 Z",
+          "case_sensitive": false
+        },
+        {
+          "key": "SQL",
+          "value": "EH1 S K Y UW1 EH1 L",
+          "case_sensitive": true
+        },
+        {
+          "key": "DynamoDB",
+          "value": "D AY1 N AH0 M OW0 D IY1 B IY1",
+          "case_sensitive": false
+        }
+      ]
+    }
+  ]
+}
+```
+
+Inline dictionaries are best for temporary overrides, generated scripts, or per-customer terms that you do not need to manage as reusable platform resources.
+
+## Managed Dictionaries
+
+Use managed dictionaries when the same rules should be reused across requests. A managed dictionary is saved on the platform, then referenced by dictionary id and immutable version id:
+
+```json
+{
+  "text": "Welcome to the Acme onboarding flow.",
+  "reference_id": "model-id",
+  "pronunciation_dictionary": [
+    {
+      "id": "dictionary_id",
+      "version": "version_id"
+    }
+  ]
+}
+```
+
+Always send an explicit `version`. There is no implicit latest version in TTS requests, which keeps synthesis reproducible after a dictionary is edited.
+
+Treat dictionary ids and version ids as sensitive when the entries are sensitive. A version is designed to be read by id and version id so edge services can resolve it during synthesis.
+
+## Processing Rules
+
+The TTS API accepts either managed references or inline dictionaries in one request. Do not mix both forms in the same `pronunciation_dictionary` array.
+
+Send pronunciation dictionaries with `application/json` or `application/msgpack`. Nested dictionary arrays are not representable in `multipart/form-data`.
+
+Processing works like this:
+
+1. The API validates the request. A request can include up to 3 dictionaries. Each dictionary can include up to 5000 items. A key can be 1-256 characters and a value can be 1-1024 characters.
+2. For inline dictionaries, the API preserves item order and merges all items into one flat list.
+3. For managed references, the API fetches each `id` and `version`, uses a read-through cache, and merges resolved items in the order you provided. If a referenced dictionary cannot be fetched, that reference is skipped and synthesis continues.
+4. Empty items and items containing phoneme marker tokens are rejected or dropped before synthesis.
+5. The merged dictionary is sent to the inference engine. The engine matches each `key` according to `case_sensitive`, wraps `value` as a phoneme block, and applies the result during synthesis.
+
+Ordering matters when multiple dictionaries contain the same key. Put the entry that should win earlier in the list.
+
+## Practical Tips
+
+- Write `key` as the listener-facing surface form, not as a regex or pattern.
+- Write `value` as phonemes only, without marker tokens.
+- Use narrow keys for context-sensitive words; use phrase keys when a single word is ambiguous.
+- Keep dictionaries scoped by product, customer, language, or domain so broad rules do not surprise unrelated scripts.
+- Test a new dictionary version with representative text before using it in production traffic.
