@@ -74,13 +74,13 @@ httpx.patch(
 
 </CodeGroup>
 
-The list is replaced as a whole on each update, so send every endpoint you want to keep. Set it to `null` or `[]` to stop deliveries. A single `post_call` object is still accepted and is treated as a one-element list.
+The list is replaced as a whole on each update, so send every endpoint you want to keep. Set it to `null` or `[]` to stop deliveries. A single `post_call` object is still accepted and is treated as a one-element list. Secrets are write-only, so an entry sent without a `secret` keeps the secret already stored for that `url`; you can read the configuration, edit the list, and send it back without re-entering secrets.
 
 | Field       | Rules                                                                                                                                                                                       |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `post_call` | Up to 5 entries, and their `url` values must be unique. A longer list or a repeated URL is rejected with `422`                                                                             |
 | `url`       | Required on every entry. Up to 4000 characters. Must resolve to a public address. Localhost and private-network hosts are rejected with `422`, and the check is repeated at every delivery |
-| `secret`    | Optional signing key, up to 256 characters, set per entry. **Write-only**: reads return `has_secret: true`, never the value                                                                 |
+| `secret`    | Optional signing key, up to 256 characters, set per entry. **Write-only**: reads return `has_secret: true`, never the value. Omit it (or send `null`) to keep the stored secret for the same `url`; send `""` to remove it |
 
 <Note>
   Webhook settings are part of the agent configuration, so they follow the
