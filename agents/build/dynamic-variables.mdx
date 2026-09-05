@@ -21,7 +21,7 @@ Placeholders are substituted in the agent's configured text and in webhook tool 
 | Outbound voicemail message (`conversation.outbound.voicemail.message`) | Yes | Yes |
 | [Webhook tool](/agents/build/webhook-tools#argument-templating) URL, header values, and body template | No | Yes |
 
-Custom values travel with the request that starts the session: `dynamic_variables` on [`POST /v1/agent/sessions`](/agents/deploy/authenticated-sessions), `dynamicVariables` in the SDK's `AgentSession.start()` for [public agents](/agents/deploy/public-agents), `dynamic_variables` on [`POST /v1/agent/phone-calls`](/agents/telephony/outbound-calls#request-fields) for outbound calls, and the variables panel of a [preview call](/agents/test/preview-calls) in the Builder. Inbound phone calls have no such request: values come from the inbound call webhook on the agent's Webhooks tab when one is configured; the caller's number and the other session facts are always available as system variables.
+Custom values travel with the request that starts the session: `dynamic_variables` on [`POST /v1/agent/sessions`](/agents/deploy/authenticated-sessions), `dynamicVariables` in the SDK's `AgentSession.start()` for [public agents](/agents/deploy/public-agents), `dynamic_variables` on [`POST /v1/agent/phone-calls`](/agents/telephony/outbound-calls#request-fields) for outbound calls, and the variables panel of a [preview call](/agents/test/preview-calls) in the Builder. Inbound phone calls have no such request: values come from the [inbound call webhook](/agents/monitor/webhooks#inbound-call-webhook) when one is configured; the caller's number and the other session facts are always available as system variables.
 
 ## Custom variables
 

@@ -110,6 +110,16 @@ The agent can read both numbers too, as `{{system.caller_number}}` and `{{system
 The caller is calling from {{system.caller_number}}. Confirm the last four digits before discussing the account.
 ```
 
+## Personalize calls before the agent answers
+
+Inbound calls have no session-creation request to carry [dynamic variables](/agents/build/dynamic-variables), so the agent has a dedicated hook instead: the [inbound call webhook](/agents/monitor/webhooks#inbound-call-webhook). When configured, the platform posts the caller's number to your endpoint while the call is being set up, and the `dynamic_variables` you return fill the `{{placeholders}}` in the published prompt and first message before the agent speaks.
+
+```text First message
+Hi {{customer_name}}, thanks for calling Acme. Are you calling about order {{last_order}}?
+```
+
+Set it on the agent's **Webhooks** page in the console (**Inbound call webhook**) or through `webhooks.conversation_init` in the config API, then publish. A slow or failing endpoint never blocks the call: after the configured timeout (up to 8 seconds, default 5) the call connects without variables.
+
 ## Phone sessions behave like any session
 
 Nothing about a phone call needs special handling downstream:

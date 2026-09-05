@@ -1,10 +1,12 @@
 ---
 title: "Webhooks"
-description: "Get an HTTP POST when a call ends and when its analysis settles, with no polling"
+description: "Get an HTTP POST when a call ends and when its analysis settles, and personalize inbound phone calls before the agent answers"
 icon: "bell"
 ---
 
 Point your agent at one or more endpoints on your server and Fish Audio calls them when things happen: `call.ended` the moment a session reaches a terminal state, `call.analyzed` when [post-call analysis](/agents/monitor/post-call-analysis) settles, and, on [outbound phone calls](/agents/telephony/outbound-calls), `phone_call.dial_finished` as soon as the dial attempt resolves. Use them to write results into your CRM, ticketing system, or data warehouse without polling the sessions API.
+
+Inbound phone calls also have an [inbound call webhook](#inbound-call-webhook) that runs before the agent answers, so your server can look up the caller and hand back the values for the prompt's `{{placeholders}}`.
 
 ## Events
 
@@ -26,7 +28,7 @@ For a given session, `call.ended` is delivered before `call.analyzed`, and every
 
 ## Configure the endpoint
 
-Webhooks live in the `webhooks` section of your agent's configuration. `post_call` is a list, so one agent can fan events out to several systems at once. Set them in the console on your agent's **Webhooks** page, or via the config API:
+Webhooks live in the `webhooks` section of your agent's configuration. `post_call` is a list, so one agent can fan events out to several systems at once (the section's other entry, `conversation_init`, is the [inbound call webhook](#inbound-call-webhook)). Set them in the console on your agent's **Webhooks** page, or via the config API:
 
 <CodeGroup>
 ```bash API (curl)
@@ -286,6 +288,86 @@ Respond with a `2xx` status within the timeout; a `500` response or a timed-out 
   trigger webhooks. To test end to end, run a real session against your
   published agent.
 </Note>
+
+## Inbound call webhook
+
+`webhooks.conversation_init` is a single endpoint called while an [inbound phone call](/agents/telephony/inbound-calls) is being set up, before the agent answers. It receives the caller's number and returns `dynamic_variables` that fill the `{{placeholders}}` in the agent's published prompt and first message, so the agent can greet a known customer by name or pick up an open order. In the console it is the **Inbound call webhook** on the agent's Webhooks page.
+
+Only inbound phone calls use it. Web sessions and outbound calls carry their [dynamic variables](/agents/build/dynamic-variables) on the request that creates them, and [preview calls](/agents/test/preview-calls) never call it.
+
+```bash Configure
+curl --request PATCH https://api.fish.audio/v1/agent/agents/YOUR_AGENT_ID/config \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "webhooks": {
+      "conversation_init": {
+        "url": "https://example.com/fish-inbound",
+        "secret": "your-signing-secret",
+        "timeout_seconds": 5
+      }
+    }
+  }'
+```
+
+| Field             | Rules                                                                                                                                                                 |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `url`             | Required. Same rules as a `post_call` URL: up to 4000 characters, public address only                                                                                 |
+| `secret`          | Optional signing key, up to 256 characters. Write-only: reads return `has_secret`. When set, requests carry the same [signature header](#verify-the-signature) as post-call events |
+| `timeout_seconds` | How long the platform waits for your response before connecting the call without variables. `1` to `8`, default `5`                                                  |
+
+Send `"conversation_init": null` to remove the endpoint. Like the rest of the configuration, the change applies to phone calls after the next [publish](/agents/deploy/versions-publishing).
+
+### Request
+
+The platform sends one `POST` with a JSON body:
+
+```json call.inbound
+{
+  "event": "call.inbound",
+  "call": {
+    "caller_number": "+15551234567",
+    "dialed_number": "+14155550100",
+    "agent_id": "a1b2…",
+    "phone_number_id": "7e9f…",
+    "twilio_call_sid": "CA5d3a…"
+  }
+}
+```
+
+`caller_number` and `dialed_number` are E.164. `caller_number` is an empty string when the carrier withholds the caller's number, and `twilio_call_sid` is empty when the call did not come through a Twilio number.
+
+### Response
+
+Respond with a `2xx` status and a JSON object whose `dynamic_variables` follow the same rules as on session creation: names match `[A-Za-z][A-Za-z0-9_]*`, values are strings (up to 1,000 characters), numbers, or booleans, and at most 50 entries are read.
+
+```json Response
+{
+  "dynamic_variables": {
+    "customer_name": "Ada",
+    "plan": "Pro",
+    "open_orders": 2
+  }
+}
+```
+
+An entry that breaks a rule is dropped on its own; the call still connects with the rest. Other fields in the response are ignored, so the contract can grow without breaking deployed endpoints. Placeholders that receive no value stay in the text as written, as described under [dynamic variables](/agents/build/dynamic-variables#custom-variables).
+
+```text System prompt
+You are the support line for Acme. The caller is {{customer_name}} on the {{plan}} plan
+with {{open_orders}} open orders. Greet them by name.
+```
+
+### Failure behavior
+
+The endpoint can personalize a call but never block one. The caller is waiting while the request runs, so keep the handler fast and the timeout short.
+
+| Outcome                                  | Effect                                                        |
+| ---------------------------------------- | ------------------------------------------------------------- |
+| Response within the timeout              | Variables are rendered into the prompt and first message      |
+| Timeout                                  | The call connects without variables; the request is not retried |
+| Connection error or non-`2xx` response   | One immediate retry, then the call connects without variables |
+| Body is not a JSON object                | The call connects without variables                           |
 
 ## Auto-ticket unresolved calls
 
