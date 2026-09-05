@@ -15,10 +15,10 @@ Agents bill by the second of conversation, with a small number of add-ons for te
 | Phone call surcharge                   | +$0.01 per minute   | Added to the conversation rate on inbound calls and on outbound calls to the US and Canada                                                                 |
 | Outbound to Japan                      | +$0.25 or +$0.10 per minute | Mobile numbers +$0.25, landline and 050 numbers +$0.10, instead of the standard phone surcharge                                                    |
 | Phone number rental                    | $1.20 per month     | Charged in daily slices while you hold the number; stops when you release it                                                                              |
-| Cold transfer leg                      | $0.015 per minute   | Metered from the handoff; the conversation rate stops at that point                                                                                       |
-| Warm transfer leg                      | $0.025 per minute   | Metered from the merge, with recording and transcription of the joined call                                                                               |
+| Cold transfer                          | $0.015 per minute   | Charged for the time after the agent hands the call to a person; the conversation rate stops at that point                                                 |
+| Warm transfer                          | $0.025 per minute   | Charged for the time after the caller and the person are joined; the joined call is still recorded and transcribed                                       |
 
-Rates are per minute for readability; metering is per second. Only the phone surcharge, number rental, and transfer legs apply to [imported SIP numbers](/agents/telephony/byo-sip): calls on them bill as conversation minutes only, with no telephony charges at all.
+Rates are shown per minute; usage is counted per second. [Imported SIP numbers](/agents/telephony/byo-sip) skip the phone surcharge, number rental, and transfer charges: calls on them bill as conversation minutes only.
 
 ### Models
 
@@ -36,18 +36,18 @@ The surcharge follows the configured model for the whole session. A [custom LLM]
 
 Every account starts with **60 free minutes** of agent conversation. They apply to real usage, so you can take the whole product for a spin before adding credit:
 
-- Web sessions, phone calls, and transfer legs all draw on the same pool, second for second.
+- Web sessions, phone calls, and transferred call time all draw on the same pool, second for second.
 - Number rental draws on it too, at one minute per day of rental, so you can get a number and test inbound calls without a balance.
 - Sessions on a premium model are the exception: they need a paid balance, because the free pool covers only the included models.
 - [Preview calls](/agents/test/preview-calls) in the Builder are free and never count against the pool.
 
 ## Billing
 
-Usage is charged to your **API credit**, the same prepaid balance that pays for the Fish Audio speech APIs. Each session is settled when it ends: its billable seconds times the applicable rates, after the free pool is exhausted. Number rental is charged daily from the same balance.
+Usage is charged to your **API credit**, the same prepaid balance that pays for the Fish Audio speech APIs. Each session is charged when it ends: its seconds times the rates above, once the free minutes are used up. Number rental is charged daily from the same balance.
 
 When the balance runs out, new sessions and inbound calls are refused until you top up. Session creation returns `402`, and the same status appears on [outbound call](/agents/telephony/outbound-calls#errors) requests.
 
-Every charge is itemized on the [Agents billing page](https://fish.audio/app/agents/billing): one record per component (conversation minutes, phone surcharge, transfer legs, number rental), with the rate applied and the free minutes used. The current price list is shown at the bottom of that page.
+Every charge is itemized on the [Agents billing page](https://fish.audio/app/agents/billing): one record per item (conversation minutes, phone surcharge, transfers, number rental), with the rate applied and the free minutes used. The current price list is shown at the bottom of that page.
 
 ## Going further
 
