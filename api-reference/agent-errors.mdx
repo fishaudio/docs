@@ -51,7 +51,7 @@ The exceptions to that shape:
 
 Two quirks worth coding around:
 
-- **Explicit `null` is rejected** on `PATCH` endpoints with `422`: omit a field to keep its value, send `""` to clear a text field.
+- **Explicit `null` is rejected** on most `PATCH` fields with `422`: omit a field to keep its value, send `""` to clear a text field. Write-only secrets (`llm.custom.api_key`, webhook `secret`) treat `null` like omission and keep the stored value.
 - **Path-parameter validation renders `404`, not `422`**: a non-integer `{version_number}` looks like a missing version.
 
 ## 403: what was refused
