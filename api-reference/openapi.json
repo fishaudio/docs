@@ -11942,7 +11942,7 @@
                 "properties": {
                   "visibility": {
                     "default": "private",
-                    "description": "Model visibility, public will be shown in the discovery page, unlist allows anyone with the link to access, private only be visible to the creator",
+                    "description": "Model visibility. Public requests are downgraded to private; use the web publish flow to publish publicly. Unlist allows anyone with the link to access, while private is visible only to the creator.",
                     "enum": [
                       "public",
                       "unlist",
@@ -12033,6 +12033,25 @@
                     "default": null,
                     "description": "Texts corresponding to the voices, if unspecified, ASR will be performed on the voices",
                     "title": "Texts"
+                  },
+                  "voice_design_signatures": {
+                    "anyOf": [
+                      {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Signatures from /v1/voice-design candidates, one per voice in the same order. When every uploaded voice verifies, the model is stamped source=voice_design; an invalid signature rejects the request.",
+                    "title": "Voice Design Signatures"
                   },
                   "tags": {
                     "anyOf": [
@@ -12079,7 +12098,7 @@
                 "properties": {
                   "visibility": {
                     "default": "private",
-                    "description": "Model visibility, public will be shown in the discovery page, unlist allows anyone with the link to access, private only be visible to the creator",
+                    "description": "Model visibility. Public requests are downgraded to private; use the web publish flow to publish publicly. Unlist allows anyone with the link to access, while private is visible only to the creator.",
                     "enum": [
                       "public",
                       "unlist",
@@ -12170,6 +12189,25 @@
                     "default": null,
                     "description": "Texts corresponding to the voices, if unspecified, ASR will be performed on the voices",
                     "title": "Texts"
+                  },
+                  "voice_design_signatures": {
+                    "anyOf": [
+                      {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Signatures from /v1/voice-design candidates, one per voice in the same order. When every uploaded voice verifies, the model is stamped source=voice_design; an invalid signature rejects the request.",
+                    "title": "Voice Design Signatures"
                   },
                   "tags": {
                     "anyOf": [
@@ -12216,7 +12254,7 @@
                 "properties": {
                   "visibility": {
                     "default": "private",
-                    "description": "Model visibility, public will be shown in the discovery page, unlist allows anyone with the link to access, private only be visible to the creator",
+                    "description": "Model visibility. Public requests are downgraded to private; use the web publish flow to publish publicly. Unlist allows anyone with the link to access, while private is visible only to the creator.",
                     "enum": [
                       "public",
                       "unlist",
@@ -12307,6 +12345,25 @@
                     "default": null,
                     "description": "Texts corresponding to the voices, if unspecified, ASR will be performed on the voices",
                     "title": "Texts"
+                  },
+                  "voice_design_signatures": {
+                    "anyOf": [
+                      {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Signatures from /v1/voice-design candidates, one per voice in the same order. When every uploaded voice verifies, the model is stamped source=voice_design; an invalid signature rejects the request.",
+                    "title": "Voice Design Signatures"
                   },
                   "tags": {
                     "anyOf": [
@@ -12353,7 +12410,7 @@
                 "properties": {
                   "visibility": {
                     "default": "private",
-                    "description": "Model visibility, public will be shown in the discovery page, unlist allows anyone with the link to access, private only be visible to the creator",
+                    "description": "Model visibility. Public requests are downgraded to private; use the web publish flow to publish publicly. Unlist allows anyone with the link to access, while private is visible only to the creator.",
                     "enum": [
                       "public",
                       "unlist",
@@ -12444,6 +12501,25 @@
                     "default": null,
                     "description": "Texts corresponding to the voices, if unspecified, ASR will be performed on the voices",
                     "title": "Texts"
+                  },
+                  "voice_design_signatures": {
+                    "anyOf": [
+                      {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Signatures from /v1/voice-design candidates, one per voice in the same order. When every uploaded voice verifies, the model is stamped source=voice_design; an invalid signature rejects the request.",
+                    "title": "Voice Design Signatures"
                   },
                   "tags": {
                     "anyOf": [
@@ -14064,6 +14140,21 @@
             "default": null,
             "title": "Metadata"
           },
+          "llm_extra_body": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Llm Extra Body"
+          },
           "tool_events": {
             "default": true,
             "title": "Tool Events",
@@ -15311,6 +15402,7 @@
               }
             ],
             "default": null,
+            "description": "Whether the agent retrieves from its attached sources. Defaults to true when omitted alongside a non-empty knowledge_source_ids; send false explicitly to attach sources without using them yet.",
             "title": "Enabled"
           },
           "knowledge_source_ids": {
@@ -15380,6 +15472,8 @@
                 "enum": [
                   "google/gemini-3.5-flash-lite",
                   "google/gemini-3.6-flash",
+                  "google/gemma-4-26b-a4b-it",
+                  "qwen/qwen3.5-122b-a10b",
                   "anthropic/claude-haiku-4.5",
                   "anthropic/claude-sonnet-4.6",
                   "openai/gpt-5.6-luna",
@@ -15659,7 +15753,7 @@
               }
             ],
             "default": null,
-            "description": "Optional HMAC-SHA256 signing secret (X-Fish-Webhook-Signature). Write-only: reads report `has_secret` instead of the value.",
+            "description": "Optional HMAC-SHA256 signing secret (X-Fish-Webhook-Signature). Write-only: reads report `has_secret` instead of the value. Omit it (or send null) to keep the secret already stored for the same url; send an empty string to remove it.",
             "title": "Secret"
           },
           "timeout_seconds": {
@@ -15697,7 +15791,7 @@
               }
             ],
             "default": null,
-            "description": "Optional HMAC-SHA256 signing secret (X-Fish-Webhook-Signature). Write-only: reads report `has_secret` instead of the value.",
+            "description": "Optional HMAC-SHA256 signing secret (X-Fish-Webhook-Signature). Write-only: reads report `has_secret` instead of the value. Omit it (or send null) to keep the secret already stored for the same url; send an empty string to remove it.",
             "title": "Secret"
           }
         },
@@ -16063,6 +16157,8 @@
             "enum": [
               "google/gemini-3.5-flash-lite",
               "google/gemini-3.6-flash",
+              "google/gemma-4-26b-a4b-it",
+              "qwen/qwen3.5-122b-a10b",
               "anthropic/claude-haiku-4.5",
               "anthropic/claude-sonnet-4.6",
               "openai/gpt-5.6-luna",
@@ -17468,6 +17564,21 @@
             ],
             "default": null,
             "title": "Metadata"
+          },
+          "llm_extra_body": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Llm Extra Body"
           }
         },
         "required": [
