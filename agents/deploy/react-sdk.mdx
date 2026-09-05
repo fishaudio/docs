@@ -281,8 +281,8 @@ The session-consuming hooks and components (`useAgentMessages`, `useAudioLevels`
 
 - A user turn appears as soon as transcription starts and its `text` is refined in place; always re-render from `text`, never append.
 - An agent turn grows with each response delta and flips to `final: true` when the turn completes.
-- Both directions update the existing entry (matched by `key`), so the array's order and identity are stable for React reconciliation.
-- Mounting mid-session backfills from `session.getTranscript()`, so turns that streamed before the component subscribed still appear, without duplicates.
+- Both directions update the existing entry (matched by `key`), so list order and keys stay stable across renders.
+- A component mounted mid-session starts from `session.getTranscript()`, so turns that streamed before it subscribed still appear, without duplicates.
 - The log resets when a new session starts. Persist it yourself (for example into app state on `disconnect`) if you need history across calls.
 - Events dropped during a reconnection are not replayed, so the log may skip turns lost to an outage.
 

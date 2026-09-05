@@ -110,7 +110,7 @@ When the session ends, `disconnect` fires with a reason (also available as `sess
 | `agent_hangup`    | The server ended the session: the agent hung up (for example via the hang-up [system tool](/agents/build/system-tools)), the session hit its maximum duration, or it was force-ended; the protocol does not distinguish these |
 | `connection_lost` | The connection dropped and could not be recovered, or the agent never joined                                                                                                                                                   |
 
-Brief network drops don't end the session: the SDK moves to `reconnecting` and back to `connected` automatically, reusing the same session. It never creates a new session, so you never need a fresh token mid-call.
+Brief network drops don't end the session: the SDK moves to `reconnecting` and back to `connected` automatically, reusing the same session. It never creates a new session, so you never need a new token mid-call.
 
 <Warning>
   Events are not replayed after a reconnect. Anything emitted while you were in
@@ -293,7 +293,7 @@ try {
 await session.end(); // graceful hangup; disconnect fires with reason "user_hangup"
 ```
 
-`end()` is idempotent, including concurrent calls while teardown is still in flight, and `endReason` stays readable on the ended session.
+Calling `end()` more than once, or while a previous call is still finishing, is safe. `endReason` stays readable on the ended session.
 
 ## Underlying connection
 
