@@ -4,11 +4,11 @@ description: "Add voice conversations to your React app with hooks and drop-in c
 icon: "react"
 ---
 
-`@fishaudio/agent-react` wraps the [Web SDK](/agents/deploy/web-sdk) in idiomatic React: a `useConversation` hook for session control, an optional provider that shares one session across your component tree, and a ready-made audio visualizer. The SDK handles microphone capture, audio playback, and transport internally.
+`@fishaudio/agent-react` wraps the [Web SDK](/agents/deploy/web-sdk) in idiomatic React: a `useConversation` hook for session control, an optional provider that shares one session across your component tree, a streaming chat-log hook, and a ready-made audio visualizer. The SDK handles microphone capture, audio playback, and transport internally. Authentication, events, client tools, and error semantics are the Web SDK's; everything documented there applies here.
 
 <CardGroup cols={3}>
   <Card title="Web SDK reference" icon="js" href="/agents/deploy/web-sdk">
-    Every event, method, and error code.
+    Every option, event, method, and error code.
   </Card>
   <Card
     title="Authenticated sessions"
@@ -38,6 +38,8 @@ yarn add @fishaudio/agent-react
 ```
 
 </CodeGroup>
+
+Requires React 18 or later. The package re-exports the Web SDK's main exports (`AgentSession`, `FishAgentError`, and their types), so app code can import everything from `@fishaudio/agent-react`.
 
 ## Quick start
 
@@ -103,42 +105,142 @@ const sessionToken = await res.json();
 await startSession({ sessionToken });
 ```
 
-See [Authenticated sessions](/agents/deploy/authenticated-sessions) for the backend side. `startSession` accepts the same options as `AgentSession.start` in the [Web SDK](/agents/deploy/web-sdk), including [`clientTools`](/agents/build/client-tools). Session settings such as [`overrides`](/agents/deploy/authenticated-sessions#overrides) and `dynamicVariables` apply when you connect with an `agentId`; with a `sessionToken`, your backend sets them in its session-creation request instead.
+See [Authenticated sessions](/agents/deploy/authenticated-sessions) for the backend side. `startSession` accepts the same options as `AgentSession.start` in the [Web SDK](/agents/deploy/web-sdk#options), including [`clientTools`](/agents/build/client-tools). Session settings such as [`overrides`](/agents/deploy/authenticated-sessions#overrides) and `dynamicVariables` apply when you connect with an `agentId`; with a `sessionToken`, your backend sets them in its session-creation request instead.
 
-## What `useConversation` returns
+### Next.js
 
-| Field                             | Description                                                                               |
-| --------------------------------- | ----------------------------------------------------------------------------------------- |
-| `startSession(options)`           | Create and connect a session (`agentId` or `sessionToken`)                                |
-| `endSession()`                    | Hang up gracefully                                                                        |
-| `status`                          | `"idle"` (no session yet) / `"connecting"` / `"connected"` / `"reconnecting"` / `"ended"` |
-| `mode`                            | `"listening"` / `"thinking"` / `"speaking"`                                               |
-| `isSpeaking`                      | `true` while the agent is audibly speaking                                                |
-| `micMuted`, `setMicMuted(muted)`  | Microphone mute state                                                                     |
-| `sendUserMessage(text, options?)` | Send a typed message as a user turn                                                       |
-| `sendUserActivity()`              | Signal that the user is typing, so the agent holds back                                   |
-| `interrupt()`                     | Explicitly stop the agent mid-response                                                    |
-| `session`                         | The live `AgentSession` object (`null` before the first start) for direct event access    |
+The SDK only touches browser APIs when a session starts, so importing it in Server Components is safe, but any component that calls the hooks needs the `"use client"` directive. Create session tokens in a Route Handler so your API key stays on the server:
 
-<Tip>
-`sendUserMessage(text)` injects a typed turn; the agent replies in text only by default; the reply streams back as transcript. Pass `{ audio: true }` to have the agent speak its reply for that turn.
-</Tip>
+<CodeGroup>
 
-For transcripts, tool-call events, and error handling, subscribe to events on `session`. See the [Web SDK event reference](/agents/deploy/web-sdk).
+```ts app/api/voice-session/route.ts
+export async function POST() {
+  const upstream = await fetch("https://api.fish.audio/v1/agent/sessions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.FISH_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ agent_id: process.env.FISH_AGENT_ID }),
+  });
+  if (!upstream.ok) {
+    return Response.json({ error: "session_unavailable" }, { status: 502 });
+  }
+  return Response.json(await upstream.json());
+}
+```
+
+```tsx app/call-button.tsx
+"use client";
+
+import { useConversation } from "@fishaudio/agent-react";
+
+export function CallButton() {
+  const { startSession, status } = useConversation();
+
+  const start = async () => {
+    const sessionToken = await fetch("/api/voice-session", { method: "POST" })
+      .then(r => r.json());
+    await startSession({ sessionToken });
+  };
+
+  return (
+    <button disabled={status === "connecting"} onClick={start}>
+      Start call
+    </button>
+  );
+}
+```
+
+</CodeGroup>
+
+Start calls made from a user interaction are safe under React Strict Mode's effect replay.
+
+## `useConversation(defaults?)`
+
+Owns one session's lifecycle and re-renders on its state changes. `defaults` is merged into every `startSession(overrides?)` call, with `overrides` winning per key. Put long-lived options such as `clientTools`, `callbacks`, or a public `agentId` in `defaults`, and per-call values such as a freshly fetched `sessionToken` in `overrides`. The latest render's `defaults` are used, so inline objects are fine.
+
+```tsx
+const conversation = useConversation({
+  clientTools: { open_page: ({ page }) => showPanel(String(page)) },
+  callbacks: { onDisconnect: ({ reason }) => showCallEnded(reason) },
+});
+
+const start = async () => {
+  const sessionToken = await fetch("/api/voice-session", { method: "POST" })
+    .then(r => r.json());
+  await conversation.startSession({ sessionToken });
+};
+```
+
+### Returned value
+
+| Field                             | Type                                     | Description                                                                                                                                                                                                                                 |
+| --------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `startSession(overrides?)`        | `(overrides?) => Promise<string>`        | Create and connect a session (`agentId` or `sessionToken`); resolves with the session id                                                                                                                                                    |
+| `endSession()`                    | `() => Promise<void>`                    | Hang up gracefully. Safe to call at any time                                                                                                                                                                                                |
+| `status`                          | `"idle" \| SessionStatus`                | `"idle"` before the first start and after a failed start, then `"connecting"` / `"connected"` / `"reconnecting"` / `"ended"`                                                                                                              |
+| `mode`                            | `AgentMode`                              | `"listening"` / `"thinking"` / `"speaking"`; drive a talking-orb UI with this                                                                                                                                                              |
+| `isSpeaking`                      | `boolean`                                | `true` while the agent is audibly speaking                                                                                                                                                                                                  |
+| `micMuted`, `setMicMuted(muted)`  | `boolean`, `(muted) => Promise<void>`    | Microphone mute state. After a `microphone: false` start it begins `true`, and the first unmute captures the microphone                                                                                                                    |
+| `sendUserMessage(text, options?)` | `(text, { audio? }?) => void`            | Send a typed message as a user turn. The agent replies in text only by default; pass `{ audio: true }` to have it speak the reply. Pair with [`useAgentMessages`](#chat-log-with-useagentmessages) for a chat UI                             |
+| `sendUserActivity()`              | `() => void`                             | Signal that the user is typing, so the agent holds back                                                                                                                                                                                     |
+| `interrupt()`                     | `() => void`                             | Explicitly stop the agent mid-response                                                                                                                                                                                                      |
+| `startAudio()`                    | `() => Promise<void>`                    | Unlock playback inside a user gesture if autoplay was blocked                                                                                                                                                                               |
+| `setOutputVolume(volume)`         | `(volume) => void`                       | Playback volume, `0` to `1`                                                                                                                                                                                                                 |
+| `setInputDevice(deviceId)`        | `(deviceId) => Promise<void>`            | Switch the microphone mid-call. Rejects with `device_change_failed` if the device cannot be activated. No-op before the first start                                                                                                        |
+| `setOutputDevice(deviceId)`       | `(deviceId) => Promise<void>`            | Route playback to another output device (`""` for the default). Rejects with `device_change_failed` where unsupported (common on mobile browsers). No-op before the first start; for a pre-call pick, pass `audio.outputDeviceId` to `startSession` |
+| `session`                         | `AgentSession \| null`                   | The live `AgentSession` object (`null` before the first start) for direct `.on(...)` event access                                                                                                                                          |
+
+For transcripts, tool-call events, and error handling, subscribe to events on `session` or pass `callbacks` in `defaults`. See the [Web SDK event reference](/agents/deploy/web-sdk#events).
+
+### Lifecycle details
+
+- **Double-start safe.** If a session is already live, `startSession` resolves with its id instead of starting a second one; two concurrent calls (a double-click) share one start.
+- **Hangup-during-start safe.** Calling `endSession` while a start is still waiting on session creation, the microphone permission, or the realtime connection marks the conversation ended and waits for that start to settle; a late connection is closed before the hook exposes it. A `startSession` requested during that cleanup waits, then creates a fresh session. If another `endSession` cancels that queued restart, it rejects with an error whose `name` is `"AbortError"`.
+- **Failure resets.** If `startSession` rejects (see [Errors](/agents/deploy/web-sdk#errors)), `status` returns to `"idle"` and the hook is ready for another attempt:
+
+  ```tsx
+  try {
+    await conversation.startSession({ sessionToken });
+  } catch (error) {
+    if (error instanceof FishAgentError && error.code === "mic_permission_denied") {
+      showMicHelp();
+    }
+  }
+  ```
+
+- **Unmount ends the call.** No leaked microphones after navigation. Keep the component mounted for the call's duration; lift it up, or use the [provider](#share-one-session-across-components), if the page around it changes.
+- The message senders (`sendUserMessage`, `sendUserActivity`, `interrupt`) are no-ops before the session connects; they do not queue.
 
 ## Share one session across components
 
-Wrap your tree in `AgentSessionProvider` when several components need the same conversation: call controls in the header, a transcript panel elsewhere.
+Wrap your tree in `AgentSessionProvider` when several components need the same conversation: call controls in the header, a transcript panel elsewhere. The provider hosts one `useConversation(options)`, so its `options` prop takes the hook's `defaults`.
 
 ```tsx App.tsx
-import { AgentSessionProvider, useAgentMessages } from "@fishaudio/agent-react";
+import {
+  AgentSessionProvider,
+  useAgentSessionContext,
+  useAgentMessages,
+  AgentAudioVisualizer,
+} from "@fishaudio/agent-react";
 
 export function App() {
   return (
-    <AgentSessionProvider>
-      <CallButton />
+    <AgentSessionProvider options={{ agentId: "YOUR_AGENT_ID" }}>
+      <CallControls />
       <Transcript />
+      <AgentAudioVisualizer bars={24} />
     </AgentSessionProvider>
+  );
+}
+
+function CallControls() {
+  const { status, startSession, endSession } = useAgentSessionContext();
+  return status === "connected" ? (
+    <button onClick={() => endSession()}>Hang up</button>
+  ) : (
+    <button onClick={() => startSession()}>Start call</button>
   );
 }
 
@@ -157,33 +259,115 @@ function Transcript() {
 }
 ```
 
-The provider hosts the conversation, so components inside it read the shared state with `useAgentSessionContext()` instead of calling `useConversation` themselves. It returns the same fields, so the quick-start `CallButton` only needs its hook call swapped.
+Components inside the provider read the shared state with `useAgentSessionContext()` instead of calling `useConversation` themselves. It returns the same fields, so the quick-start `CallButton` only needs its hook call swapped.
 
-| Hook                             | Purpose                                                                                                                                 |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `useAgentSessionContext()`       | Access the active session from anywhere inside the provider                                                                             |
-| `useAgentMessages()`             | Live conversation as a list of `{ key, role, text, final }` messages: segments update in place as they stream, no manual aggregation   |
-| `useAudioLevels(session?, fps?)` | Live input and output volume as `{ input, output }` (0–1), polled `fps` times per second (default 20); lower `fps` to reduce re-renders |
+| Hook                               | Purpose                                                                                                          |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `useAgentSessionContext()`         | The nearest provider's conversation (the same value `useConversation` returns). Throws outside a provider        |
+| `useOptionalAgentSessionContext()` | Nullable variant, for components that also work standalone                                                       |
 
-## Audio visualizer
+The session-consuming hooks and components (`useAgentMessages`, `useAudioLevels`, `<AgentAudioVisualizer />`) all resolve their session the same way: pass one explicitly (`useAgentMessages(session)`) or omit the argument to use the surrounding provider's. Passing `null` explicitly means "no session"; it does not fall back to the provider.
 
-`<AgentAudioVisualizer>` renders animated canvas bars driven by the agent's output audio, a drop-in "the agent is talking" indicator. Inside an `AgentSessionProvider` it picks up the active session automatically; elsewhere, pass a `session` prop. Optional `bars`, `width`, `height`, and `className` props control the rendering, and the bars follow the element's CSS `color`.
+## Chat log with `useAgentMessages`
+
+`useAgentMessages(session?)` returns the conversation as a live list of `ChatMessage` entries in order, aggregated from the session's transcript events so you do not have to reduce them yourself:
+
+| Field   | Type                  | Description                                          |
+| ------- | --------------------- | ---------------------------------------------------- |
+| `key`   | `string`              | Stable per-turn key; use it as the React list key    |
+| `role`  | `"user" \| "agent"`   | Who is speaking                                      |
+| `text`  | `string`              | The whole turn so far (not a delta)                  |
+| `final` | `boolean`             | `false` while the turn is still streaming            |
+
+- A user turn appears as soon as transcription starts and its `text` is refined in place; always re-render from `text`, never append.
+- An agent turn grows with each response delta and flips to `final: true` when the turn completes.
+- Both directions update the existing entry (matched by `key`), so the array's order and identity are stable for React reconciliation.
+- Mounting mid-session backfills from `session.getTranscript()`, so turns that streamed before the component subscribed still appear, without duplicates.
+- The log resets when a new session starts. Persist it yourself (for example into app state on `disconnect`) if you need history across calls.
+- Events dropped during a reconnection are not replayed, so the log may skip turns lost to an outage.
+
+```tsx Voice and text chat panel
+import { useState } from "react";
+import { useAgentMessages, useAgentSessionContext } from "@fishaudio/agent-react";
+
+function ChatPanel() {
+  const { status, sendUserMessage, sendUserActivity } = useAgentSessionContext();
+  const messages = useAgentMessages();
+  const [draft, setDraft] = useState("");
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!draft.trim()) return;
+    sendUserMessage(draft); // shows up in `messages` like a spoken turn
+    setDraft("");
+  };
+
+  return (
+    <div>
+      <ul>
+        {messages.map(message => (
+          <li key={message.key} style={{ opacity: message.final ? 1 : 0.6 }}>
+            <b>{message.role}:</b> {message.text}
+          </li>
+        ))}
+      </ul>
+      <form onSubmit={submit}>
+        <input
+          value={draft}
+          disabled={status !== "connected"}
+          onChange={event => {
+            setDraft(event.target.value);
+            sendUserActivity(); // hold the agent back while the user types
+          }}
+        />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  );
+}
+```
+
+If you only want finalized messages in order, without streaming updates, subscribe to the session's [`message` event](/agents/deploy/web-sdk#events) directly instead.
+
+## Audio levels and visualizer
+
+`useAudioLevels(session?, fps?)` returns polled `{ input, output }` levels in `0` to `1`: `input` is the microphone, `output` is the agent's voice. It samples 20 times per second by default; raise `fps` for snappier meters, lower it to reduce re-renders. Both are `0` before the session connects.
+
+```tsx Microphone meter
+function MicMeter() {
+  const { input } = useAudioLevels();
+  return (
+    <div style={{ width: 120, background: "#eee" }}>
+      <div style={{ width: `${input * 100}%`, height: 8, background: "#22c55e" }} />
+    </div>
+  );
+}
+```
+
+`<AgentAudioVisualizer />` renders animated canvas frequency bars driven by the agent's output audio, a drop-in "the agent is talking" indicator. Inside an `AgentSessionProvider` it picks up the active session automatically; elsewhere, pass a `session` prop. The bars are colored by the canvas's CSS `color`, so it themes like text.
 
 ```tsx
 import { AgentAudioVisualizer } from "@fishaudio/agent-react";
 
 function CallScreen() {
-  return <AgentAudioVisualizer />;
+  return <AgentAudioVisualizer bars={32} width={320} height={80} className="agent-bars" />;
 }
 ```
 
-For a custom visualization, build on `useAudioLevels` or the session's frequency-data methods from the [Web SDK](/agents/deploy/web-sdk).
+| Prop               | Type                    | Default      | Description                                                        |
+| ------------------ | ----------------------- | ------------ | ------------------------------------------------------------------ |
+| `session`          | `AgentSession \| null`  | provider's   | Explicit session, or omit to use the provider's                    |
+| `bars`             | `number`                | `24`         | Number of frequency bars                                           |
+| `width` / `height` | `number`                | `240` / `64` | Canvas size in pixels                                              |
+| `className`        | `string`                |              | Passed to the `<canvas>`; set `color` through it to theme the bars |
+
+For a fully custom visualization, build on `useAudioLevels` or the session's frequency-data methods from the [Web SDK](/agents/deploy/web-sdk#audio-controls).
 
 ## Going further
 
 <CardGroup cols={2}>
   <Card title="Web SDK" icon="js" href="/agents/deploy/web-sdk">
-    Full event and method reference behind these hooks.
+    Full option, event, and method reference behind these hooks.
   </Card>
   <Card title="Client tools" icon="wrench" href="/agents/build/client-tools">
     Let the agent call functions in your app.
