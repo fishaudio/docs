@@ -52,7 +52,7 @@ curl --request POST https://api.fish.audio/v1/agent/sessions \
 ```
 
 ```javascript Backend (Express)
-app.post("/voice-session", async (req, res) => {
+app.post("/api/voice-session", async (req, res) => {
   const upstream = await fetch("https://api.fish.audio/v1/agent/sessions", {
     method: "POST",
     headers: {
@@ -98,7 +98,7 @@ On the client, fetch the token from your backend and pass it to the SDK unchange
 ```javascript Browser
 import { AgentSession } from "@fishaudio/agent-client";
 
-const sessionToken = await fetch("/voice-session", { method: "POST" }).then(r =>
+const sessionToken = await fetch("/api/voice-session", { method: "POST" }).then(r =>
   r.json()
 );
 

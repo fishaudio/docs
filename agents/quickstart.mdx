@@ -8,8 +8,9 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
 
 **Prerequisites**
 
-- A Fish Audio account
+- A Fish Audio account with access to Agents. Agents is in private beta: open [Agents](https://fish.audio/app/agents) in the console and apply for access if you do not have it yet. Until access is granted, the Agents pages and every `/v1/agent/*` request return `403`.
 - For the API path: a Fish Audio API key. Create one under [API keys](https://fish.audio/app/api-keys/) in the console
+- Every account starts with 60 free minutes of agent conversation, shared across web, phone, and preview calls that leave the Builder. After that, sessions are billed per second against your API credit.
 
 <Tabs>
   <Tab title="Dashboard">
@@ -116,8 +117,8 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
         const session = await AgentSession.start({
           sessionToken,
           callbacks: {
-            userTranscript: ({ text }) => console.log("You:", text),
-            agentResponse: ({ text }) => console.log("Agent:", text),
+            onUserTranscript: ({ text }) => console.log("You:", text),
+            onAgentResponse: ({ text }) => console.log("Agent:", text),
           },
         });
 
@@ -128,7 +129,13 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
         Start talking. You hear the agent reply and both sides of the conversation arrive as transcript events. See the [Web SDK](/agents/deploy/web-sdk) for the full event and method surface, or the [React SDK](/agents/deploy/react-sdk) for hooks.
       </Step>
       <Step title="Put it together">
-        The whole loop is two files: a backend route that creates the session with your API key, and frontend code that starts the call. Run the server with `FISH_API_KEY` and `AGENT_ID` set, serve the frontend from your app's dev server (Vite, Next, or anything that bundles npm imports), and talk.
+        A complete local setup is one backend route that creates the session with your API key, and a page that starts the call. The frontend is served by Vite, which also proxies `/api` to the backend so the browser never sees your key.
+
+        ```bash Install
+        npm init -y
+        npm install express @fishaudio/agent-client
+        npm install --save-dev vite
+        ```
 
         ```javascript server.mjs
         import express from "express";
@@ -145,31 +152,69 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
             body: JSON.stringify({ agent_id: process.env.AGENT_ID }),
           });
           if (!upstream.ok) {
+            console.error("session creation failed:", upstream.status);
             return res.status(502).json({ error: "session_unavailable" });
           }
           res.json(await upstream.json());
         });
 
-        app.listen(3001);
+        app.listen(3001, () => console.log("backend on http://localhost:3001"));
+        ```
+
+        ```javascript vite.config.mjs
+        export default {
+          server: {
+            proxy: { "/api": "http://localhost:3001" },
+          },
+        };
+        ```
+
+        ```html index.html
+        <!doctype html>
+        <button id="start">Start call</button>
+        <button id="end" disabled>Hang up</button>
+        <pre id="log"></pre>
+        <script type="module" src="/main.js"></script>
         ```
 
         ```javascript main.js
         import { AgentSession } from "@fishaudio/agent-client";
 
-        const sessionToken = await fetch("/api/voice-session", {
-          method: "POST",
-        }).then(r => r.json());
+        const startButton = document.getElementById("start");
+        const endButton = document.getElementById("end");
+        const log = (line) => (document.getElementById("log").textContent += line + "\n");
 
-        const session = await AgentSession.start({
-          sessionToken,
-          callbacks: {
-            userTranscript: ({ text }) => console.log("You:", text),
-            agentResponse: ({ text }) => console.log("Agent:", text),
-          },
-        });
+        let session;
+
+        // Start from a click: browsers only grant the microphone and
+        // audio playback inside a user gesture.
+        startButton.onclick = async () => {
+          const sessionToken = await fetch("/api/voice-session", { method: "POST" })
+            .then((r) => r.json());
+
+          session = await AgentSession.start({
+            sessionToken,
+            callbacks: {
+              onUserTranscript: ({ text, final }) => final && log("You: " + text),
+              onAgentResponse: ({ text }) => log("Agent: " + text),
+              onDisconnect: ({ reason }) => log("Call ended: " + reason),
+            },
+          });
+          startButton.disabled = true;
+          endButton.disabled = false;
+        };
+
+        endButton.onclick = () => session?.end();
         ```
 
-        Every request and response on this path is in the [Agents API reference](/api-reference/endpoint/agent/create-agent-session).
+        Run the two processes in separate terminals, then open the Vite URL (`http://localhost:5173`) and click **Start call**:
+
+        ```bash Run
+        FISH_API_KEY=your_key AGENT_ID=your_agent_id node server.mjs
+        npx vite
+        ```
+
+        Every request and response on this path is in the [Agents API reference](/api-reference/endpoint/agent/create-agent-session). For production, keep the same shape: your backend owns the API key and returns session tokens, and the SDK runs in the page.
       </Step>
     </Steps>
 
