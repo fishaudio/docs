@@ -107,7 +107,7 @@ Only the `source` file part is required on create: `name` falls back to the uplo
 
 ### Attach sources to an agent
 
-Attach sources through the agent's configuration. `knowledge_source_ids` replaces the attached list as a whole, and attaching a non-empty list turns retrieval on unless you send `enabled: false` alongside it, which keeps the sources attached but unused until you enable them later. Publish for the change to reach live sessions.
+Attach sources through the agent's configuration. `knowledge_source_ids` replaces the whole attached list. Attaching sources also turns the knowledge base on, unless you send `enabled: false` with them to attach now and switch on later. Publish for the change to reach live sessions.
 
 ```bash Attach sources
 curl --request PATCH https://api.fish.audio/v1/agent/agents/YOUR_AGENT_ID/config \
@@ -122,8 +122,8 @@ curl --request PATCH https://api.fish.audio/v1/agent/agents/YOUR_AGENT_ID/config
 
 | Field                  | Rules                                                                                                                                                             |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `knowledge_source_ids` | Workspace source ids, up to 100. Replaces the attached list wholesale; an unknown id is rejected with `422`. Send `[]` to detach everything                       |
-| `enabled`              | Whether the agent retrieves from the attached sources. Defaults to `true` when omitted with a non-empty `knowledge_source_ids`; send `false` to stage sources without using them |
+| `knowledge_source_ids` | Workspace source ids, up to 100. Replaces the whole attached list; an unknown id is rejected with `422`. Send `[]` to detach everything                       |
+| `enabled`              | Whether the agent uses the attached sources. Defaults to `true` when omitted together with a non-empty `knowledge_source_ids`; send `false` to attach sources without using them yet |
 
 <Note>
 `DELETE` returns `409` while the source is still attached to any agent, in its draft or its published version. Call the dependents endpoint to see which agents use it, then detach it from each (remove its id from `knowledge_base.knowledge_source_ids` in an agent update) and republish any agent whose published version still references it. Deleting from the console instead removes the source from all agents at once, after a confirmation.
