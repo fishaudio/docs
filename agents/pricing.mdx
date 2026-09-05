@@ -1,0 +1,71 @@
+---
+title: "Pricing"
+description: "What agent conversations, phone calls, numbers, and transfers cost, and how the free minutes and API credit work"
+icon: "credit-card"
+---
+
+Agents bill by the second of conversation, with a small number of add-ons for telephony and premium models. Every account starts with free minutes, and everything after that is charged against your API credit.
+
+## Rates
+
+| Item                                   | Price               | Notes                                                                                                                                                     |
+| -------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Agent conversation                     | $0.06 per minute    | Billed per second. Includes speech recognition, the default model tier, speech synthesis, knowledge base retrieval, and tool calls                       |
+| Premium model surcharge                | +$0.05 or +$0.10 per minute | Added while the agent runs a model from a higher tier; see [Models](#models). Custom LLM endpoints carry no surcharge                              |
+| Phone call surcharge                   | +$0.01 per minute   | Added to the conversation rate on inbound calls and on outbound calls to the US and Canada                                                                 |
+| Outbound to Japan                      | +$0.25 or +$0.10 per minute | Mobile numbers +$0.25, landline and 050 numbers +$0.10, instead of the standard phone surcharge                                                    |
+| Phone number rental                    | $1.20 per month     | Charged in daily slices while you hold the number; stops when you release it                                                                              |
+| Cold transfer                          | $0.015 per minute   | Charged for the time after the agent hands the call to a person; the conversation rate stops at that point                                                 |
+| Warm transfer                          | $0.025 per minute   | Charged for the time after the caller and the person are joined; the joined call is still recorded and transcribed                                       |
+
+Rates are shown per minute; usage is counted per second. [Imported SIP numbers](/agents/telephony/byo-sip) skip the phone surcharge, number rental, and transfer charges: calls on them bill as conversation minutes only.
+
+### Models
+
+The model your agent runs is chosen in the Builder, and each option shows its surcharge next to its name:
+
+| Surcharge                | Models                                                                      |
+| ------------------------ | --------------------------------------------------------------------------- |
+| Included                 | Gemini 3.5 Flash Lite (default), GPT-5.6 Luna, Gemma 4 26B, Qwen 3.5 122B  |
+| +$0.05 per minute        | Gemini 3.6 Flash, Claude Haiku 4.5                                          |
+| +$0.10 per minute        | Claude Sonnet 4.6, GPT-4o                                                   |
+
+The surcharge follows the configured model for the whole session. A [custom LLM](/agents/build/custom-llm) endpoint is billed at the base conversation rate.
+
+## Free minutes
+
+Every account starts with **60 free minutes** of agent conversation. They apply to real usage, so you can take the whole product for a spin before adding credit:
+
+- Web sessions, phone calls, and transferred call time all draw on the same pool, second for second.
+- Number rental draws on it too, at one minute per day of rental, so you can get a number and test inbound calls without a balance.
+- Sessions on a premium model are the exception: they need a paid balance, because the free pool covers only the included models.
+- [Preview calls](/agents/test/preview-calls) in the Builder are free and never count against the pool.
+
+## Billing
+
+Usage is charged to your **API credit**, the same prepaid balance that pays for the Fish Audio speech APIs. Each session is charged when it ends: its seconds times the rates above, once the free minutes are used up. Number rental is charged daily from the same balance.
+
+When the balance runs out, new sessions and inbound calls are refused until you top up. Session creation returns `402`, and the same status appears on [outbound call](/agents/telephony/outbound-calls#errors) requests.
+
+Every charge is itemized on the [Agents billing page](https://fish.audio/app/agents/billing): one record per item (conversation minutes, phone surcharge, transfers, number rental), with the rate applied and the free minutes used. The current price list is shown at the bottom of that page.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/agents/quickstart">
+    Create an agent and talk to it within the free minutes.
+  </Card>
+  <Card
+    title="Phone numbers"
+    icon="hashtag"
+    href="/agents/telephony/phone-numbers"
+  >
+    Buy or import a number and bind it to an agent.
+  </Card>
+  <Card title="Transfers" icon="phone-arrow-right" href="/agents/telephony/transfers">
+    Cold and warm transfers to a human.
+  </Card>
+  <Card title="Custom LLM" icon="brain" href="/agents/build/custom-llm">
+    Run your own model endpoint at the base rate.
+  </Card>
+</CardGroup>
