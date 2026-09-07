@@ -3697,7 +3697,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 4000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`;\nanything else is 422. `voice.expressive` opts into richer expressive\ndelivery (emotion steering, laughter and sounds, pauses); off keeps the\nstandard delivery. `voice.keyterms` is a speech-recognition vocabulary of\nup to 50 plain terms (brand names, product terms, personal names), each at\nmost 100 characters with no commas or semicolons; `[]` clears it and 20-50\nfocused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`;\nanything else is 422. `voice.expressive` opts into richer expressive\ndelivery (emotion steering, laughter and sounds, pauses); off keeps the\nstandard delivery. `voice.keyterms` is a speech-recognition vocabulary of\nup to 50 plain terms (brand names, product terms, personal names), each at\nmost 100 characters with no commas or semicolons; `[]` clears it and 20-50\nfocused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
         "security": [
           {
             "BearerAuth": []
@@ -14121,7 +14121,7 @@
           "system_prompt": {
             "anyOf": [
               {
-                "maxLength": 100000,
+                "maxLength": 500000,
                 "type": "string"
               },
               {
@@ -14129,7 +14129,7 @@
               }
             ],
             "default": null,
-            "description": "Limited to 4000 tokens (o200k_base), same budget as the configured prompt it replaces.",
+            "description": "Limited to 32000 tokens (o200k_base), same budget as the configured prompt it replaces.",
             "title": "System Prompt"
           },
           "voice_id": {
@@ -15416,7 +15416,7 @@
           "system_prompt": {
             "anyOf": [
               {
-                "maxLength": 100000,
+                "maxLength": 500000,
                 "type": "string"
               },
               {
@@ -15424,7 +15424,7 @@
               }
             ],
             "default": null,
-            "description": "Limited to 4000 tokens (o200k_base); keeping it under 2000 tokens is recommended for latency and cost.",
+            "description": "Limited to 32000 tokens (o200k_base); keeping it under 2000 tokens is recommended for latency and cost.",
             "title": "System Prompt"
           },
           "first_message_mode": {

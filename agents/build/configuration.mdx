@@ -8,7 +8,7 @@ Configuration is the Builder's home tab: define how your agent behaves, how it o
 
 ## System prompt
 
-The system prompt sets the personality, goals, and guardrails that steer every reply. It is capped at **4,000 tokens**. The API rejects longer prompts with `422 Unprocessable Entity`. Keeping it under **2,000 tokens** is recommended: shorter prompts cut latency and cost, and hold the model's attention better. It can also be replaced for a single session by sending `overrides.system_prompt` when [creating the session](/agents/deploy/authenticated-sessions#overrides).
+The system prompt sets the personality, goals, and guardrails that steer every reply. It is capped at **32,000 tokens**. The API rejects longer prompts with `422 Unprocessable Entity`. Keeping it under **2,000 tokens** is recommended: shorter prompts cut latency and cost, and hold the model's attention better. It can also be replaced for a single session by sending `overrides.system_prompt` when [creating the session](/agents/deploy/authenticated-sessions#overrides).
 
 To personalize the prompt per session without replacing it, write `{{placeholders}}`: [custom variables](/agents/build/dynamic-variables#custom-variables) such as `{{customer_name}}` take the values you pass when creating the session, and [system variables](/agents/build/dynamic-variables#system-variables) such as `{{system.caller_number}}` or `{{system.today}}` are filled in by the platform.
 
@@ -125,7 +125,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   }'
 ```
 
-The response includes the draft's new `config_hash`. Values outside the documented limits (a system prompt over 4,000 tokens, `max_duration_seconds` outside 60–3600) are rejected with `422 Unprocessable Entity` and the draft is left unchanged.
+The response includes the draft's new `config_hash`. Values outside the documented limits (a system prompt over 32,000 tokens, `max_duration_seconds` outside 60–3600) are rejected with `422 Unprocessable Entity` and the draft is left unchanged.
 
 ### Config sections
 
