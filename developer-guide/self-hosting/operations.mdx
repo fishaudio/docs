@@ -4,7 +4,7 @@ description: "Monitoring, scaling, backups, and troubleshooting for a self-hoste
 icon: "chart-line"
 ---
 
-Day-2 guidance for the Kubernetes delivery forms. For the single-container form, see
+Day-2 guidance for the Helm platform. For the single-container platform, see
 [All-in-One container](/developer-guide/self-hosting/all-in-one).
 
 ## Ownership
@@ -74,7 +74,7 @@ Update the license Secret in place with the renewed bundle; no restart is needed
 Kubernetes propagates the change to the running pods, and each service re-verifies on
 its own short cycle, so expect up to a couple of minutes of mixed responses before
 it settles. One exception: a bundle
-that carries a new key rather than a re-signed certificate. The offline form's edge API
+that carries a new key rather than a re-signed certificate. The offline profile's edge API
 reads the ledger-signing key only at startup, so restart that deployment after
 replacing a key.
 
