@@ -72,7 +72,7 @@ on the nodes that host it, plus headroom for rewrites.
 | GPU runtime       | NVIDIA GPU Operator, or the provider-managed driver and device plugin stack. GPU nodes must expose `nvidia.com/gpu`.                                                     |
 | GPU telemetry     | DCGM exporter or the provider equivalent.                                                                                                                                |
 | Storage           | EFS, NFS, or an equivalent shared filesystem mounted on every node.                                                                                                      |
-| Object storage    | Not required. Models are served from inside the cluster in every delivery form. Hosting the weights in your own bucket instead is possible; ask your account team.                        |
+| Object storage    | Not required by default: models are served from inside the cluster. The online profile can pull them from S3-compatible storage instead — see [Kubernetes deployment](/developer-guide/self-hosting/kubernetes). |
 | Redis             | Installed by the chart into the release namespace. Do not point the release at a shared Redis without discussing it first.                                               |
 | Metrics           | Prometheus, scraping `prometheus.io/*` pod annotations. The chart creates no ServiceMonitors, so kube-prometheus-stack users must add an annotation-based scrape config. |
 | Access layer      | Yours to choose. Ingress controller, DNS, TLS, and load balancing are not part of the delivery.                                                                          |
@@ -87,8 +87,8 @@ permits `hostPID` and `hostIPC`, which the inference workers require.
 | Direction                    | Requirement                                                                                                                                                                                                              |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Install-time egress          | Access to the Fish Audio registry to pull images and the chart. Mirror both into your own registry for air-gapped installs.                                                                                              |
-| Runtime egress, offline form | None. No model download and no billing call.                                                                                                                                                                             |
-| Runtime egress, online form  | HTTPS to the Fish Audio authorization and billing endpoint. Models are served from inside the cluster, so no object-store endpoint has to be reachable. Ask your account team for the billing hostname to allowlist. Enabling the timestamp aligner adds one more host. |
+| Runtime egress, offline profile | None. No model download and no billing call.                                                                                                                                                                             |
+| Runtime egress, online profile  | HTTPS to the Fish Audio authorization and billing endpoint. Models are in-cluster by default; if you point the workers at an external model source, allowlist that endpoint too. Ask your account team for the billing hostname to allowlist. Enabling the timestamp aligner adds one more host. |
 | Ingress                      | Customer-approved ingress or a private endpoint, with DNS and TLS in place before production traffic.                                                                                                                    |
 
 ## All-in-One container host
@@ -96,14 +96,14 @@ permits `hostPID` and `hostIPC`, which the inference workers require.
 | Requirement       | Detail                                                                                                                           |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | OS                | Linux x86-64.                                                                                                                    |
-| GPUs              | 2 GPUs, 32 GB of memory or larger. The first runs the inference worker, the second runs the vocoder. No NVLink required.                                    |
-| NVIDIA driver     | Must support CUDA 13.x and your card's compute capability. This applies to the Kubernetes forms too: a driver capped at CUDA 12 reports a healthy GPU and then fails the workloads. |
+| GPUs              | 2 GPUs, no NVLink required — one for the inference worker, one for the vocoder. The Single-GPU mode is a special case: one H100-class 80 GB card shared by both, with lower throughput. |
+| NVIDIA driver     | Must support CUDA 13.x and your card's compute capability. This applies to the Helm platform too: a driver capped at CUDA 12 reports a healthy GPU and then fails the workloads. |
 | Docker            | Docker Engine 24 or newer.                                                                                                       |
 | Container toolkit | NVIDIA Container Toolkit installed and the `nvidia` runtime registered, so `--gpus all` exposes GPUs.                            |
 | RAM               | 128 GiB minimum, 192 GiB recommended. The container runs the whole stack in one process tree.                                    |
 | CPU               | 32 vCPU minimum, 48 to 64 recommended.                                                                                           |
 | Disk              | 100 GB free if the host pulls the image itself; 120 GB if you move it as a file, since `docker load` needs the ~30 GB archive and the ~80 GB unpacked image at once. Plus the compile and engine caches. |
-| Network           | Offline form: none at runtime. Online form: outbound HTTPS to the Fish Audio authorization and billing endpoint, on every request. Ask your account team for the hostname to allowlist. |
+| Network           | Offline mode: none at runtime. Online mode: outbound HTTPS to the Fish Audio authorization and billing endpoint, on every request. Ask your account team for the hostname to allowlist. |
 | License bundle    | The certificate and key pair from **Developer → Self Host**, in a host directory readable by the container's non-root user.       |
 
 ## Next step

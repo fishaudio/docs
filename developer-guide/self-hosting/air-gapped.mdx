@@ -4,7 +4,7 @@ description: "Running Fish Audio Enterprise on a network that cannot reach Fish 
 icon: "shield-halved"
 ---
 
-Both offline delivery forms make no outbound calls at runtime. Neither one, however,
+Both offline modes make no outbound calls at runtime. Neither one, however,
 installs itself out of thin air: a Helm install pulls container images and the chart
 from a registry, and the appliance needs its image on the host. An air-gapped
 deployment is about getting those artifacts across the boundary. The license bundle
@@ -18,12 +18,12 @@ a one-off.
   expect and what to plan for.
 </Note>
 
-## Which form to choose
+## Which one to choose
 
 **The air-gapped All-in-One appliance** is the straightforward answer to a strict air
-gap: one image with every weight baked in, moved to the disconnected host as a file and
-loaded there. There is nothing else to mirror, though the license bundle still has to
-be carried across. Its online counterpart cannot run air
+gap: one image, moved to the disconnected host as a file and loaded there. Beyond the
+image, only the license bundle — and, in the external-weights modes, the weight
+fileset — has to be carried across. Its online counterpart cannot run air
 gapped: it authorises every request against Fish Audio.
 
 **The Helm chart** is more work, because the release is many images rather than one.
@@ -63,5 +63,5 @@ complete it.
 ## Next steps
 
 - [Requirements](/developer-guide/self-hosting/requirements): hardware, platform, and network baselines
-- [All-in-One container](/developer-guide/self-hosting/all-in-one): the single-container form
-- [Kubernetes deployment](/developer-guide/self-hosting/kubernetes): the Helm forms
+- [All-in-One container](/developer-guide/self-hosting/all-in-one): the single-container platform
+- [Kubernetes deployment](/developer-guide/self-hosting/kubernetes): the Helm platform

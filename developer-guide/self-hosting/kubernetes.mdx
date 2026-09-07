@@ -5,7 +5,7 @@ icon: "dharmachakra"
 ---
 
 Fish Audio Enterprise ships as a Helm chart that installs the whole speech stack into
-a cluster you run. Both Helm delivery forms use the same chart and the same procedure;
+a cluster you run. Both Helm profiles use the same chart and the same procedure;
 they differ only in how usage is accounted.
 
 <Note>
@@ -16,23 +16,33 @@ they differ only in how usage is accounted.
   versioned with the chart; this page is not, so follow the runbook when they differ.
 </Note>
 
-## Choose a delivery form
+## Choose a billing profile
 
 |                  | Offline                                          | Online                                              |
 | ---------------- | ------------------------------------------------ | --------------------------------------------------- |
 | Usage accounting | Local signed ledger on shared storage            | Validated and billed against the Fish Audio service |
-| Runtime egress   | None                                             | The billing endpoint on 443                         |
-| Model assets     | Served in-cluster by the bundled model warehouse | The same                                            |
+| Runtime egress   | None                                             | The billing endpoint on 443 — plus the model-source endpoint, if you use one |
+| Model assets     | Served in-cluster by the bundled model warehouse | In-cluster by default; can instead pull from S3-compatible storage |
 
-Both forms serve model weights from inside the cluster, so neither reaches an external
-object store at runtime. "Offline" means runtime-offline: installation still pulls
+The bearer-token rules follow the profile: online requests must carry a
+[Fish Audio API key](/developer-guide/getting-started/api-key) with credit, while
+offline accepts any stable non-empty token and records it verbatim as the billing
+identity — the same semantics as the
+[All-in-One's usage accounting](/developer-guide/self-hosting/all-in-one#usage-accounting-and-tenancy).
+
+Both profiles serve model weights from inside the cluster by default. The online
+profile can point the workers at S3-compatible storage instead — Fish Audio's
+hosted bucket or your own; the deployment runbook's "Model source" section covers
+the how. The offline profile stays in-cluster, since it runs with no egress.
+"Offline" means runtime-offline: installation still pulls
 images and the chart from a registry. For a cluster with no network access at all, see
 [Air-gapped deployments](/developer-guide/self-hosting/air-gapped).
 
 ## What gets installed
 
 The chart deploys the edge API, the model API layer, an inference router and worker,
-a vocoder, a text normalizer, the model warehouse that serves the weights, and Redis.
+a vocoder, a text normalizer, the model warehouse that serves the weights when
+you use the default in-cluster model source, and Redis.
 Everything lands in one namespace, in the single-worker shape the delivery was sized
 against.
 
@@ -44,7 +54,7 @@ manage that layer.
 
 | Decision                    | Notes                                                                                                                     |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Namespace                   | `fish-audio` is the supported default. A different one has to be set in two places; the runbook says where. |
+| Namespace                   | `fish-audio` is the supported default. A different one only needs Helm's `--namespace` argument. |
 | Shared storage path         | Mounted at the same path on **every** node. See [Requirements](/developer-guide/self-hosting/requirements#shared-storage). |
 | GPU scheduling              | Tolerations and node selectors, if your GPU nodes are tainted or you run more than one GPU model.                          |
 | Metrics                     | The chart exposes Prometheus annotations and creates no ServiceMonitors, so an annotation-scraping Prometheus works as-is and kube-prometheus-stack needs a scrape config. |
@@ -53,7 +63,8 @@ manage that layer.
 
 Three Kubernetes Secrets have to exist before the install: registry credentials, the
 license bundle, and one shared between the in-cluster model store and the workers that
-read from it. The license bundle is the certificate and key pair downloaded from
+read from it (with an external model source, that secret instead carries the real
+access keys for the storage — the runbook covers it). The license bundle is the certificate and key pair downloaded from
 **Developer → Self Host**; the services that enforce it stay down until the Secret
 exists, and refuse requests once the certificate lapses — renewal is described in
 [Operations](/developer-guide/self-hosting/operations#license-renewal). The model-store

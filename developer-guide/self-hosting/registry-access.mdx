@@ -10,18 +10,22 @@ dashboard.
 
 ## The Self Host page
 
-Sign in to fish.audio and open **Developer → Self Host**. Everything your team needs to
-start is there:
+Sign in to fish.audio and open **Developer → Self Host**. The page opens with
+**Before you start** — the platforms and modes your team is granted, with the
+prerequisites it checks. If it is empty, or reports that self-host deployment
+is not enabled, contact your account manager. Then four steps:
 
-- **Your deployment**: the delivery forms your team is granted. If it is empty, or the
-  page reports that self-host deployment is not enabled, contact your account manager.
-- **The versions available to you**, and the documentation bundle for each. See
-  [Releases](/developer-guide/self-hosting/enterprise-releases).
-- **Your license bundle**: the certificate and key the deployment needs before it will
-  serve. Some contracts bind it to specific GPUs — have the card UUIDs ready when you
-  request it.
-- **Install commands built for your team**, with the registry host, artifact references,
-  and the version you pick already filled in.
+1. **Deploy token** — create the credential the install commands authenticate with.
+2. **Sign in** — one registry login with that token.
+3. **License** — download the certificate and key bundle the deployment needs
+   before it will serve, at first install and at every renewal. Some contracts
+   bind it to specific GPUs — have the card UUIDs ready when you request it.
+4. **Install** — pick your mode and version; the download commands are built for
+   your team, with the registry host, artifact references, and the version you pick
+   already filled in. The same step downloads the **deployment guide** for that
+   version — the documentation bundle the other pages here call the runbook or
+   guide. See
+   [Releases](/developer-guide/self-hosting/enterprise-releases) for how versions work.
 
 <Note>
   The registry host, the artifact references, and the versions available to you are
@@ -38,7 +42,7 @@ start is there:
 ## Create a deploy token
 
 <Steps>
-  <Step title="Open the Deploy Tokens card">
+  <Step title="Open the Deploy token step">
     On **Developer → Self Host**, select **Create Deploy Token**.
   </Step>
   <Step title="Name it for where it will be used">

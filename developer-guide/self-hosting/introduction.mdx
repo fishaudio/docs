@@ -18,32 +18,49 @@ audio formats, and voice behavior match what you already build against.
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | Colocation              | Run inference in the same region, VPC, or rack as your application and remove public-internet round trips from time-to-first-audio.     |
 | Single-tenant isolation | Dedicated GPUs and queues. Capacity is not shared with other tenants, and you decide when the deployment is upgraded.                   |
-| Security posture        | Voice traffic never leaves your network. The offline delivery forms make no outbound calls at runtime and run on disconnected networks. |
+| Security posture        | Voice traffic never leaves your network. The offline modes make no outbound calls at runtime and run on disconnected networks. |
 | Data sovereignty        | Input text, generated audio, and reference voices stay inside your boundary and under your own retention policy.                        |
 
-## Delivery forms
+## Platforms and modes
 
-The same engine ships in four forms. Your enterprise agreement determines which
-ones your team is granted.
+The same engine ships on two platforms. Your enterprise agreement determines
+which platforms — and which modes of each — your team is granted.
 
-|                  | Online Helm                                         | Offline Helm                                     | Offline All-in-One                                  | Online All-in-One                                |
-| ---------------- | --------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------- | ------------------------------------------------ |
-| Platform         | Kubernetes                                          | Kubernetes                                       | A single container, `docker run`                    | A single container, `docker run`                 |
-| Model assets     | Served in-cluster from a bundled model warehouse    | Same                                             | Baked into the image                                | Baked into the image                             |
-| Usage accounting | Validated and billed against the Fish Audio service | Local signed usage ledger                        | Local signed usage ledger                           | Validated and billed against the Fish Audio service |
-| Runtime egress   | The billing endpoint, plus one more host if you enable timestamps | None                                             | None                                                | The billing endpoint                             |
-| Air-gap capable  | No                                                  | Yes, after mirroring images and charts           | Yes                                                 | No                                               |
-| Scaling          | Scales replicas across all GPUs and nodes           | Same                                             | Single node, single inference worker                | Single node, single inference worker             |
-| Best for         | Managed clusters with outbound access               | Isolated or regulated production clusters        | Evaluation, single-node appliances, strict air gaps | Single-node appliances billed like the hosted service |
+|          | Helm (Kubernetes)                                                              | All-in-One (Docker)                                    |
+| -------- | ------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| Shape    | The chart on your cluster: replicas across GPUs and nodes, rolling upgrades.   | One container on one GPU host; the smallest footprint. |
+| Best for | Production clusters and elastic capacity.                                       | Evaluation, fixed-size appliances, strict air gaps.    |
 
-Both Helm forms share one deployment procedure and differ only in a few values.
+A **mode** is a combination of the axes below; on Helm only billing is a mode —
+the other axes are cluster configuration. **Developer → Self Host** shows the
+modes your team can install.
+
+**Online** billing authorizes and bills each request against Fish Audio and
+needs outbound access; **Offline** records usage to a local signed ledger and
+runs air-gapped.
+
+| Axis     | All-in-One                                                                                          | Helm                                                                                                                |
+| -------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Billing  | Online or Offline.                                                                                  | The same two, as deployment profiles of one chart — a values file selects the profile.                               |
+| Topology | **Dual-GPU** — worker and vocoder on a card each. **Single-GPU** — a special case: both share one H100-class 80 GB card, with lower throughput. | Not a mode — each component takes a whole GPU; you add replicas to grow.                                             |
+| Weights  | **Baked** into the image, or **external** — mounted at run time.                                    | In-cluster by default; the online profile can instead pull from S3-compatible storage — see [Kubernetes deployment](/developer-guide/self-hosting/kubernetes). |
+
+The offline modes are air-gap capable — the Helm profile after mirroring images
+and the chart into your own registry.
+
+Choose the platform and mode that fit your constraints, then agree them with
+your Fish Audio account team — your agreement determines what **Developer →
+Self Host** offers you. Combinations beyond this standard set can be discussed
+there too.
+
+Both Helm profiles share one deployment procedure and differ only in a few values.
 See [Kubernetes deployment](/developer-guide/self-hosting/kubernetes) for the
-Helm forms and [All-in-One container](/developer-guide/self-hosting/all-in-one)
-for the single-container form.
+Helm platform and [All-in-One container](/developer-guide/self-hosting/all-in-one)
+for the single-container platform.
 
 ## What is included
 
-| Capability                                | Online Helm                  | Offline Helm             | All-in-One (both forms)  |
+| Capability                                | Online Helm                  | Offline Helm             | All-in-One (all modes)  |
 | ----------------------------------------- | ---------------------------- | ------------------------ | ------------------------ |
 | Text to speech over `POST /v1/tts`        | Included                     | Included                 | Included                 |
 | WebSocket streaming                       | Included                     | Included                 | Included                 |
@@ -56,7 +73,7 @@ for the single-container form.
   Timestamp alignment is served by a separate forced-aligner component. It is
   disabled by default, is not part of the offline model bundle, and is not built
   into the All-in-One image, so `/v1/tts/stream/with-timestamp` returns audio
-  without alignment data on those forms. Contact Fish Audio if your deployment
+  without alignment data in those modes. Contact Fish Audio if your deployment
   needs timestamps.
 </Note>
 
@@ -66,6 +83,9 @@ on fish.audio are not automatically available to it. Products other than text to
 speech are hosted-only unless your agreement says otherwise.
 
 ## Architecture at a glance
+
+The table describes the Helm deployment; the All-in-One runs the same components
+inside one container.
 
 | Component          | Role                                                                                           |
 | ------------------ | ---------------------------------------------------------------------------------------------- |
@@ -96,9 +116,9 @@ configure.
     image where applicable.
   </Step>
   <Step title="Create a deploy token">
-    Sign in to fish.audio and open **Developer → Self Host** to see the delivery
-    forms your team is granted and to create the token that authenticates
-    against the registry. See [Registry
+    Sign in to fish.audio and open **Developer → Self Host** to see the
+    platforms and modes your team is granted and to create the token that
+    authenticates against the registry. See [Registry
     access](/developer-guide/self-hosting/registry-access).
   </Step>
 </Steps>
