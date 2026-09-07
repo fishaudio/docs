@@ -6,11 +6,11 @@ icon: "box"
 
 The All-in-One image packages the whole speech stack (edge API, model API layer,
 inference router and worker, vocoder, text normalizer, and Redis) into one container,
-with every model weight baked in. It runs as a turnkey single-node appliance, no Kubernetes.
+with the model weights baked into the image, except in the external-weights modes. It runs as a turnkey single-node appliance, no Kubernetes.
 
-The two forms, **Offline All-in-One** and **Online All-in-One**, differ only in how
-usage is accounted for. The offline form records usage to a local
-ledger and needs no network once the image is on the host. The online form authorises
+The two billing modes, **Offline All-in-One** and **Online All-in-One**, differ only in how
+usage is accounted for. The offline mode records usage to a local
+ledger and needs no network once the image is on the host. The online mode authorises
 each request against Fish Audio and charges the key that made it, so it needs outbound
 access and a key with credit. The accounting is compiled in, so an image is one or the
 other; the container logs which at startup.
@@ -24,7 +24,8 @@ other; the container logs which at startup.
 
 ## What it cannot do
 
-The appliance runs one inference worker and one vocoder, a GPU each. It does not
+The appliance runs one inference worker and one vocoder — a GPU each, or one
+shared 80 GB-class card in the Single-GPU mode. It does not
 autoscale, does not shard across more GPUs or nodes, and does not ship the forced
 aligner, so it returns no word or segment timings. For elastic or higher-throughput
 deployments, use the [Kubernetes chart](/developer-guide/self-hosting/kubernetes), which
@@ -36,11 +37,13 @@ One `docker run` on a host that meets the
 [All-in-One host requirements](/developer-guide/self-hosting/requirements#all-in-one-container-host).
 It needs:
 
-- **Two GPUs.** The first runs the inference worker, the second the vocoder.
+- **One or two GPUs.** The Dual-GPU modes give the inference worker and the vocoder
+  a card each; the Single-GPU mode runs both on one 80 GB-class card.
 - **One exposed port** for the API.
 - **One persistent volume.** Compile caches, the vocoder's built engine, reference
-  voice archives, and — on the offline form — the usage ledger all live there. Model
-  weights are in the image, not on the volume.
+  voice archives, and — in the offline mode — the usage ledger all live there. Model
+  weights are in the image, not on the volume; the external-weights modes mount
+  them at run time instead — the delivered guide covers that mount.
 - **The license bundle.** A host directory holding the certificate and key pair from
   **Developer → Self Host**, mounted read-only. Without it the API never comes up; once
   the certificate expires the container starts but refuses requests. Renewing is
@@ -58,7 +61,7 @@ the GPU model, so moving to different cards rebuilds it once.
 
 ## Usage accounting and tenancy
 
-The form determines how usage is accounted for and what the bearer token has to be.
+The billing mode determines how usage is accounted for and what the bearer token has to be.
 
 **Offline.** Usage goes to a local, signed, append-only ledger on the volume. Two
 consequences worth designing around:
