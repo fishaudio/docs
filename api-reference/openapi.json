@@ -16113,7 +16113,7 @@
         "type": "object"
       },
       "AgentOutboundConfig": {
-        "description": "Outbound-only behavior; mirror of core WorkflowOutbound.\nAbsent node = AMD on, hang up on voicemail.",
+        "description": "Deprecated (2026-09-07): kept for compatibility only. `amd_enabled` and\n`voicemail` no longer change call behavior \u2014 outbound calls greet as soon as\nthe callee answers, and `answered_by` is always `unknown`.",
         "properties": {
           "amd_enabled": {
             "default": true,
