@@ -44,7 +44,7 @@ Capacity is changed through the release configuration: API replicas, GPU worker
 replicas, CPU and memory requests, GPU resource requests, and per-worker concurrency.
 All of it takes effect on an upgrade. Scaling on load instead of by hand is included
 and off by default; while it is on, the replica count is the autoscaler's rather than
-the file's. Your documentation bundle covers turning it on.
+the file's. Your deployment guide covers turning it on.
 
 Add a GPU replica only when a GPU is actually free: a pod that requests one on a full
 cluster stays `Pending` indefinitely.
@@ -91,7 +91,7 @@ until the new one is accepted.
 
 The failures a Kubernetes deployment actually produces, and where each one usually
 comes from. The commands to diagnose each, and the fixes, are in the troubleshooting
-guide that ships in your documentation bundle.
+guide that ships with your deployment guide.
 
 | Symptom                                                                  | Likely causes                                                                                                                                                                                      |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

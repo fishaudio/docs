@@ -11,7 +11,7 @@ they differ only in how usage is accounted.
 <Note>
   This page covers what the deployment involves and what you need to decide. The
   commands, values, and troubleshooting are in the **deployment runbook**, which ships
-  in the documentation bundle alongside the chart version you install. See
+  in the deployment guide download for the chart version you install. See
   [Releases](/developer-guide/self-hosting/enterprise-releases). The runbook is
   versioned with the chart; this page is not, so follow the runbook when they differ.
 </Note>
@@ -23,6 +23,12 @@ they differ only in how usage is accounted.
 | Usage accounting | Local signed ledger on shared storage            | Validated and billed against the Fish Audio service |
 | Runtime egress   | None                                             | The billing endpoint on 443 — plus the model-source endpoint, if you use one |
 | Model assets     | Served in-cluster by the bundled model warehouse | In-cluster by default; can instead pull from S3-compatible storage |
+
+The bearer-token rules follow the profile: online requests must carry a
+[Fish Audio API key](/developer-guide/getting-started/api-key) with credit, while
+offline accepts any stable non-empty token and records it verbatim as the billing
+identity — the same semantics as the
+[All-in-One's usage accounting](/developer-guide/self-hosting/all-in-one#usage-accounting-and-tenancy).
 
 Both profiles serve model weights from inside the cluster by default. The online
 profile can point the workers at S3-compatible storage instead — Fish Audio's
@@ -82,5 +88,5 @@ the order to do them in and what to check at each step.
 ## Next steps
 
 - [Requirements](/developer-guide/self-hosting/requirements): hardware, platform, and network baselines
-- [Registry access](/developer-guide/self-hosting/registry-access): how your team gets the chart
+- [Registry & license](/developer-guide/self-hosting/registry-access): how your team gets the chart
 - [Operations](/developer-guide/self-hosting/operations): running it once it is live
