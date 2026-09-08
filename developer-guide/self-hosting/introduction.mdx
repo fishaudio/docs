@@ -28,7 +28,7 @@ which platforms — and which modes of each — your team is granted.
 
 |          | Helm (Kubernetes)                                                              | All-in-One (Docker)                                    |
 | -------- | ------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| Shape    | The chart on your cluster: replicas across GPUs and nodes, rolling upgrades.   | One container on one GPU host; the smallest footprint. |
+| Shape    | The chart on your cluster: replicas across GPUs and nodes, rolling upgrades.   | One container on a single machine; the smallest footprint. |
 | Best for | Production clusters and elastic capacity.                                       | Evaluation, fixed-size appliances, strict air gaps.    |
 
 A **mode** is a combination of the axes below; on Helm only billing is a mode —
@@ -42,13 +42,16 @@ runs air-gapped.
 | Axis     | All-in-One                                                                                          | Helm                                                                                                                |
 | -------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Billing  | Online or Offline.                                                                                  | The same two, as deployment profiles of one chart — a values file selects the profile.                               |
-| Topology | **Dual-GPU** — worker and vocoder on a card each. **Single-GPU** — both share one 80 GB-class card. | Not a mode — each component takes a whole GPU; you add replicas to grow.                                             |
+| Topology | **Dual-GPU** — worker and vocoder on a card each. **Single-GPU** — a special case: both share one H100-class 80 GB card, with lower throughput. | Not a mode — each component takes a whole GPU; you add replicas to grow.                                             |
 | Weights  | **Baked** into the image, or **external** — mounted at run time.                                    | In-cluster by default; the online profile can instead pull from S3-compatible storage — see [Kubernetes deployment](/developer-guide/self-hosting/kubernetes). |
 
 The offline modes are air-gap capable — the Helm profile after mirroring images
 and the chart into your own registry.
 
-Combinations beyond this standard set can be discussed with your account team.
+Choose the platform and mode that fit your constraints, then agree them with
+your Fish Audio account team — your agreement determines what **Developer →
+Self Host** offers you. Combinations beyond this standard set can be discussed
+there too.
 
 Both Helm profiles share one deployment procedure and differ only in a few values.
 See [Kubernetes deployment](/developer-guide/self-hosting/kubernetes) for the
@@ -115,8 +118,8 @@ configure.
   <Step title="Create a deploy token">
     Sign in to fish.audio and open **Developer → Self Host** to see the
     platforms and modes your team is granted and to create the token that
-    authenticates against the registry. See [Registry
-    access](/developer-guide/self-hosting/registry-access).
+    authenticates against the registry. See
+    [Registry & license](/developer-guide/self-hosting/registry-access).
   </Step>
 </Steps>
 
@@ -131,7 +134,7 @@ configure.
     GPU, CPU, memory, storage, and platform baselines.
   </Card>
   <Card
-    title="Registry access"
+    title="Registry & license"
     icon="key"
     href="/developer-guide/self-hosting/registry-access"
   >

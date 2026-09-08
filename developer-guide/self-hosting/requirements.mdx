@@ -9,7 +9,11 @@ account team once your traffic profile and target GPU are known: time-to-first-a
 and throughput depend on the model, GPU, text length, and concurrency, and should be
 measured on your own hardware before you commit to a capacity plan.
 
-## Kubernetes deployments
+## Helm (Kubernetes)
+
+Everything in this section — cluster topology, GPUs, shared storage, platform
+baseline, and network — is for the Helm platform. The All-in-One's host requirements,
+including its own network row, are the [next section](#all-in-one-docker).
 
 ### Cluster topology
 
@@ -91,12 +95,12 @@ permits `hostPID` and `hostIPC`, which the inference workers require.
 | Runtime egress, online profile  | HTTPS to the Fish Audio authorization and billing endpoint. Models are in-cluster by default; if you point the workers at an external model source, allowlist that endpoint too. Ask your account team for the billing hostname to allowlist. Enabling the timestamp aligner adds one more host. |
 | Ingress                      | Customer-approved ingress or a private endpoint, with DNS and TLS in place before production traffic.                                                                                                                    |
 
-## All-in-One container host
+## All-in-One (Docker)
 
 | Requirement       | Detail                                                                                                                           |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | OS                | Linux x86-64.                                                                                                                    |
-| GPUs              | 1–2 GPUs, no NVLink required. Dual-GPU modes run the inference worker and the vocoder on a card each; the Single-GPU mode runs both on one 80 GB-class card. |
+| GPUs              | 2 GPUs, no NVLink required — one for the inference worker, one for the vocoder. The Single-GPU mode is a special case: one H100-class 80 GB card shared by both, with lower throughput. |
 | NVIDIA driver     | Must support CUDA 13.x and your card's compute capability. This applies to the Helm platform too: a driver capped at CUDA 12 reports a healthy GPU and then fails the workloads. |
 | Docker            | Docker Engine 24 or newer.                                                                                                       |
 | Container toolkit | NVIDIA Container Toolkit installed and the `nvidia` runtime registered, so `--gpus all` exposes GPUs.                            |
@@ -109,4 +113,4 @@ permits `hostPID` and `hostIPC`, which the inference workers require.
 ## Next step
 
 Once the platform checks pass, authenticate to the Fish Audio registry in
-[Registry access](/developer-guide/self-hosting/registry-access).
+[Registry & license](/developer-guide/self-hosting/registry-access).

@@ -1,6 +1,6 @@
 ---
-title: "Registry access"
-description: "The Self Host dashboard, deploy tokens, and how your team reaches the Fish Audio registry"
+title: "Registry & license"
+description: "The Self Host dashboard: deploy tokens, registry sign-in, and your license bundle"
 icon: "key"
 ---
 
@@ -10,24 +10,21 @@ dashboard.
 
 ## The Self Host page
 
-Sign in to fish.audio and open **Developer → Self Host**. The page walks your team
-through four steps:
+Sign in to fish.audio and open **Developer → Self Host**. The page opens with
+**Before you start** — the platforms and modes your team is granted, with the
+prerequisites it checks. If it is empty, or reports that self-host deployment
+is not enabled, contact your account manager. Then four steps:
 
-1. **Choose your platform** — the platforms and modes your team is granted, and the
-   prerequisites to check first. If the page is empty, or reports that self-host
-   deployment is not enabled, contact your account manager.
-2. **Deploy token** — create the credential the install commands in step 4
-   authenticate with.
-3. **Sign in** — one registry login with that token.
+1. **Deploy token** — create the credential the install commands authenticate with.
+2. **Sign in** — one registry login with that token.
+3. **License** — download the certificate and key bundle the deployment needs
+   before it will serve, at first install and at every renewal. Some contracts
+   bind it to specific GPUs — have the card UUIDs ready when you request it.
 4. **Install** — pick your mode and version; the download commands are built for
    your team, with the registry host, artifact references, and the version you pick
-   already filled in. The same step downloads the **documentation bundle** for that
+   already filled in. The same step downloads the **deployment guide** for that
    version — the runbook or guide the other pages here refer to. See
    [Releases](/developer-guide/self-hosting/enterprise-releases) for how versions work.
-
-Below the steps, the **License card** holds the certificate and key bundle the
-deployment needs before it will serve. Some contracts bind it to specific GPUs —
-have the card UUIDs ready when you request it.
 
 <Note>
   The registry host, the artifact references, and the versions available to you are
@@ -44,7 +41,7 @@ have the card UUIDs ready when you request it.
 ## Create a deploy token
 
 <Steps>
-  <Step title="Open the Deploy Tokens card">
+  <Step title="Open the Deploy token step">
     On **Developer → Self Host**, select **Create Deploy Token**.
   </Step>
   <Step title="Name it for where it will be used">
@@ -80,6 +77,30 @@ Recommended practice:
 - Store tokens in your secret manager, not in values files or version control.
 - Rotate on your normal credential schedule and whenever someone with access to a token
   leaves the team.
+
+## The license
+
+The license is the product permit: every platform and billing mode needs one to
+run, and it is separate from how usage is billed. Fish Audio issues the
+license against your contract, and the dashboard's License step is
+where you download the bundle — a certificate (`license.crt`) and key
+(`license.key`) that the deployment mounts, as its guide's License section
+shows. Some contracts bind the license to specific GPU UUIDs; the dashboard
+shows the binding.
+
+The two failure modes are worth knowing before they happen. **Missing**, the
+services never come up. **Expired**, they start but refuse every request with a
+license error (403) until the renewed bundle is in place.
+
+**Validity and renewal.** The certificate carries a validity window bounded by
+your contract term; the dashboard shows the current expiry. Renewals are driven
+by Fish Audio: before the expiry, settle the period's invoice — and, on offline
+billing, send the usage ledger for reconciliation — and a renewed license is
+issued. A renewal replaces only `license.crt`, in place, and the running
+services reload it without a restart; only a bundle that carries a new key
+needs one. The Helm-side mechanics are in
+[License renewal](/developer-guide/self-hosting/operations#license-renewal);
+the All-in-One's are in its deployment guide.
 
 ## Next step
 
