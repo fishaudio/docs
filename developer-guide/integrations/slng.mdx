@@ -28,16 +28,7 @@ Choose a model and use its endpoint path with `https://api.slng.ai` for HTTP or 
 | -------- | -------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | S2.1 Pro | `/v1/tts/slng/fish/tts:s2.1-pro` | Europe, Australia | [HTTP POST](https://docs.slng.ai/api-reference/tts/fish-tts-2-1-pro/fish-tts-2-1-pro-http), [WebSocket](https://docs.slng.ai/api-reference/tts/fish-tts-2-1-pro/fish-tts-2-1-pro-ws) |
 
-### Select a model and region
-
-Set the endpoint path from the table and choose **Europe (`eu`)** or **Australia (`au`)**. Both examples below read these settings:
-
-```bash
-export SLNG_TTS_PATH="/v1/tts/slng/fish/tts:s2.1-pro"
-export SLNG_REGION="eu"
-```
-
-Change `SLNG_REGION` to `au` to use Australia. The examples pass this value in the optional `X-World-Part-Override` header; if you omit the header, SLNG selects the region automatically.
+The examples below use S2.1 Pro in Europe (`eu`). Change the endpoint path to use a different model, or set `X-World-Part-Override` to `au` for Australia. If you omit the header, SLNG selects the region automatically.
 
 ## Voices
 
@@ -45,15 +36,15 @@ Set `reference_id` to a Fish Audio voice-model ID from the [Fish Audio Voice Lib
 
 For voice cloning with inline reference audio, SLNG accepts `references` containing audio bytes and their transcripts through MessagePack requests. See your model's HTTP reference in [Available models](#available-models) for the request schema.
 
-## Text-to-speech over HTTP
+## REST API
 
 Synthesize a complete utterance with a single request:
 
 ```bash
 curl --fail-with-body --request POST \
-  --url "https://api.slng.ai${SLNG_TTS_PATH}" \
+  --url "https://api.slng.ai/v1/tts/slng/fish/tts:s2.1-pro" \
   --header "Authorization: Bearer $SLNG_API_KEY" \
-  --header "X-World-Part-Override: $SLNG_REGION" \
+  --header "X-World-Part-Override: eu" \
   --header 'Content-Type: application/json' \
   --data '{
     "text": "Hello from Fish Audio on SLNG.",
@@ -78,10 +69,10 @@ from websockets.asyncio.client import connect
 
 
 async def tts_stream():
-    url = f"wss://api.slng.ai{os.environ['SLNG_TTS_PATH']}"
+    url = "wss://api.slng.ai/v1/tts/slng/fish/tts:s2.1-pro"
     headers = {
         "Authorization": f"Bearer {os.environ['SLNG_API_KEY']}",
-        "X-World-Part-Override": os.environ["SLNG_REGION"],
+        "X-World-Part-Override": "eu",
     }
 
     async with connect(url, additional_headers=headers) as ws:
