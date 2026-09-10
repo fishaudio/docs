@@ -47,7 +47,7 @@ Required headers:
 
 Optional headers:
 
-- `model`: values `s1`, `s2-pro`, `s2.1-pro`, `s2.1-pro-free`. If omitted or unrecognized, the server falls back to `s2.1-pro` (paid). Default to `s2.1-pro` for production; use `s2.1-pro-free` for free-tier evaluation and prototyping (same model, no TTFA/DPA guarantees).
+- `model`: values `s1`, `s2-pro`, `s2.1-pro`, `s2.1-pro-free`, `drama-3-preview`. If omitted or unrecognized, the server falls back to `s2.1-pro` (paid). Default to `s2.1-pro` for production; use `s2.1-pro-free` for free-tier evaluation and prototyping (same model, no TTFA/DPA guarantees). `drama-3-preview` is a preview model; its behavior and availability may change.
 
 Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set by `format`. Write to a file or pipe to a player. There is **no JSON wrapper** on success.
 
@@ -56,7 +56,7 @@ Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set
 | Field | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `text` | string | — (required) | The text to synthesize. Use speaker tags `<\|speaker:0\|>`, `<\|speaker:1\|>` for multi-speaker. |
-| `reference_id` | string \| string[] \| null | null | Voice model ID. Array = multi-speaker (`s2-pro` and the S2.1-Pro family). |
+| `reference_id` | string \| string[] \| null | null | Voice model ID. Array = multi-speaker (`s2-pro`, the S2.1-Pro family, and `drama-3-preview`). |
 | `references` | ReferenceAudio[] \| ReferenceAudio[][] \| null | null | Inline zero-shot cloning samples. **Requires `application/msgpack`** because `audio` is raw bytes. 2D array for multi-speaker. |
 | `temperature` | number 0–1 | 0.7 | Expressiveness. |
 | `top_p` | number 0–1 | 0.7 | Nucleus sampling. |
@@ -82,7 +82,7 @@ Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set
 
 1. **Library / custom voice model** → set `reference_id` to the model `_id`. Simplest path.
 2. **Zero-shot from audio** → set `references` (array of `{audio, text}`) and use **MessagePack** body. JSON cannot carry raw audio bytes.
-3. **Multi-speaker dialogue (`s2-pro` and the S2.1-Pro family)** → `reference_id: [id0, id1, ...]` and embed `<|speaker:0|>` / `<|speaker:1|>` markers inside `text`. For zero-shot multi-speaker, `references` is an array-of-arrays, one inner array per speaker.
+3. **Multi-speaker dialogue (`s2-pro`, the S2.1-Pro family, and `drama-3-preview`)** → `reference_id: [id0, id1, ...]` and embed `<|speaker:0|>` / `<|speaker:1|>` markers inside `text`. For zero-shot multi-speaker, `references` is an array-of-arrays, one inner array per speaker.
 
 ### Single-speaker curl
 
@@ -373,7 +373,7 @@ For low-latency / streaming TTS (e.g. LLM token stream → speech). All frames a
 ### Connection headers
 
 - `Authorization: Bearer <FISH_API_KEY>`
-- `model`: optional; same values and fallback behavior as `POST /v1/tts` (falls back to `s2.1-pro` when omitted or unrecognized)
+- `model`: optional; values `s1`, `s2-pro`, `s2.1-pro`, `s2.1-pro-free` (falls back to `s2.1-pro` when omitted or unrecognized)
 
 ### Event sequence
 
@@ -504,7 +504,7 @@ The S1 model uses `(parenthesis)` tags inside `text`, e.g. `(happy) What a day!`
 - 402 → out of credit. Check `/wallet/self/api-credit`.
 - 404 → bad `model/{id}` (voice model doesn't exist or isn't visible to you).
 - 422 → validation. The response is an array; each item's `loc` points at the offending field. Most common causes:
-  - `reference_id` is an array but model is `s1` (multi-speaker requires `s2-pro` or an S2.1-Pro model).
+  - `reference_id` is an array but model is `s1` (multi-speaker requires `s2-pro`, an S2.1-Pro model, or `drama-3-preview`).
   - `references` sent with `Content-Type: application/json` (must be msgpack).
   - Numeric param out of range (`temperature`, `top_p`, `chunk_length`, `min_chunk_length`, `prosody.speed`, `early_stop_threshold`).
   - `mp3_bitrate` / `opus_bitrate` set without matching `format`.
