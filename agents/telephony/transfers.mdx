@@ -4,7 +4,7 @@ description: "Let the agent hand a phone call to a human: a cold carrier handoff
 icon: "phone-arrow-right"
 ---
 
-When a caller needs a person, the agent can transfer the call. Configure a destination number and the agent gains a built-in `transfer_call` tool it invokes when the caller asks for a human or the request clearly needs one. Transfers apply to phone calls only.
+When a caller needs a person, the agent can transfer the call. Configure one or more destination numbers and the agent gains a built-in `transfer_call` tool it invokes when the caller asks for a human or the request clearly needs one. With several destinations, the agent picks the one whose name and description best match the conversation, so a single number can act as a switchboard. Transfers apply to phone calls only.
 
 Two modes decide what the handoff feels like:
 
@@ -19,15 +19,15 @@ Two modes decide what the handoff feels like:
 - A phone number bound to your agent, answering inbound calls. See [Inbound calls](/agents/telephony/inbound-calls).
 - The number must support transfers. Numbers purchased from the platform inventory (`provider: "twilio"`) do; see [Phone numbers](/agents/telephony/phone-numbers). [Imported SIP numbers](/agents/telephony/byo-sip) support cold transfers when the carrier honors SIP REFER, and warm transfers when a termination is configured.
 
-## Configure a destination
+## Configure destinations
 
 ### In the console
 
-On the agent's **Phone** page, under **Inbound calls**, turn on **Call transfer**. Give the destination a name, enter its phone number, and pick the transfer mode. Choosing **Warm** adds a handoff choice (ask the human to accept first, or connect immediately after the briefing). Like every config edit, the change lands in the agent's draft and takes effect on live calls after you [publish](/agents/deploy/versions-publishing).
+On the agent's **Phone** page, under **Inbound calls**, turn on **Call transfer**. Give the destination a name, enter its phone number, describe when the agent should transfer there, and pick the transfer mode. Choosing **Warm** adds a handoff choice (ask the human to accept first, or connect immediately after the briefing). **Add destination** adds another card; with more than one, every destination needs a distinct name. Like every config edit, the change lands in the agent's draft and takes effect on live calls after you [publish](/agents/deploy/versions-publishing).
 
 ### Through the API
 
-Transfer destinations live in the `conversation` section of the [agent config](/agents/build/configuration), as `transfer_destinations`. An empty list disables transfers; only one destination is supported for now, and a longer list is rejected.
+Transfer destinations live in the `conversation` section of the [agent config](/agents/build/configuration), as `transfer_destinations`. An empty list disables transfers; the list is replaced as a whole on every write.
 
 <CodeGroup>
 ```bash Enable
@@ -48,6 +48,31 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   }'
 ```
 
+```bash Route by context
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "conversation": {
+      "transfer_destinations": [
+        {
+          "label": "Billing",
+          "description": "Account information, invoices, payments and refunds",
+          "phone_number": "+14155550100",
+          "mode": "cold"
+        },
+        {
+          "label": "Tech support",
+          "description": "Troubleshooting, outages, anything not working",
+          "phone_number": "+14155550200",
+          "mode": "warm",
+          "warm_connect": "confirm"
+        }
+      ]
+    }
+  }'
+```
+
 ```bash Disable
 curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   --header "Authorization: Bearer $FISH_API_KEY" \
@@ -57,31 +82,35 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 
 </CodeGroup>
 
-| Field          | Description                                                                                                                  |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `type`         | Destination type; `phone` is the only value today and the default.                                                           |
-| `label`        | Name for the destination, shown in the Builder. At most 64 characters.                                                       |
-| `phone_number` | The destination in E.164 format, for example `+14155550123`.                                                                 |
-| `mode`         | `cold` (default) or `warm`; see the comparison above.                                                                        |
-| `warm_connect` | Warm only: `confirm` (default) waits for the human's go-ahead before connecting; `direct` connects right after the briefing. |
+| Field          | Description                                                                                                                                                                         |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`         | Destination type; `phone` is the only value today and the default.                                                                                                                  |
+| `label`        | Name for the destination, shown in the Builder and used by the agent to pick one. At most 64 characters. Required, and unique (case-insensitive), once there is more than one entry. |
+| `description`  | When to transfer here, in plain language ("Invoices, payments, account balance"). The agent reads it when choosing between destinations. At most 500 characters.                     |
+| `phone_number` | The destination in E.164 format, for example `+14155550123`.                                                                                                                        |
+| `mode`         | `cold` (default) or `warm`; see the comparison above.                                                                                                                               |
+| `warm_connect` | Warm only: `confirm` (default) waits for the human's go-ahead before connecting; `direct` connects right after the briefing.                                                        |
 
-Destination numbers must be E.164 and are limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list.
+Destination numbers must be E.164 and are limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list. A missing label, or two labels that differ only in case, is rejected the same way. There is no cap on the number of destinations, but every description is part of the agent's tool instructions on every turn, so keep the list to what a receptionist could hold in their head.
 
 ## How the agent decides to transfer
 
 Configuring a destination is what enables the built-in `transfer_call` tool: an empty destination list removes it. Unlike the toggled [system tools](/agents/build/system-tools), you won't find it in the `tools` config section; it ships automatically on phone sessions whenever a valid destination exists.
 
-The built-in instructions are conservative: the agent transfers only when the caller asks for a person, or when the request clearly needs one and the agent cannot help further.
+Your system prompt decides when the agent transfers. Only when it says nothing about transfers does the built-in default apply, which is conservative: the agent transfers when the caller asks for a person, or when the request clearly needs one and the agent cannot help further. A switchboard agent should say so plainly, for example "Route the caller to the right team as soon as you know what they need; do not try to answer billing or technical questions yourself."
+
+With several destinations, the tool gains a `destination` argument listing every label, and its instructions carry each destination's description. The agent picks the destination whose description matches what the caller needs based on the conversation so far, asks one short question when the need is unclear, and otherwise takes the closest match. Write descriptions the way you would brief a receptionist: what the team handles, in the caller's words.
 
 <Tip>
-  Use the system prompt to sharpen the escalation policy, for example "Transfer
-  to a human whenever the caller mentions a refund." See
-  [Tools](/agents/build/tools) for how the agent chooses between its tools.
+  The prompt can loosen the policy as well as tighten it: "Transfer to a human
+  whenever the caller mentions a refund" or "Never transfer before collecting
+  the caller's name and account number." See [Tools](/agents/build/tools) for
+  how the agent chooses between its tools.
 </Tip>
 
 ## What happens on a cold transfer
 
-The agent tells the caller it is transferring them, and once that sentence finishes playing the call is handed to the carrier. The caller hears a dial tone while the destination rings; the agent drops out and its session ends at the handoff.
+The agent says its handoff line and, once that finishes playing, the call is handed to the carrier. By default the line is one short sentence telling the caller they are being transferred; the system prompt can script it ("Say: One moment, connecting you to billing.") or drop it ("Transfer silently, without announcing it."). The caller hears a dial tone while the destination rings; the agent drops out and its session ends at the handoff.
 
 If the handoff is refused (the destination is unreachable, or the number doesn't support transfers), the agent stays on the line, apologizes, and keeps helping. It can attempt the transfer again later.
 
@@ -90,7 +119,8 @@ If the handoff is refused (the destination is unreachable, or the number doesn't
 <Steps>
   <Step title="The caller goes on hold">
     The agent asks the caller to hold for a moment, in the session's language,
-    and hold music starts.
+    and hold music starts. As with a cold transfer, the system prompt can
+    script this line or ask for silence; hold music starts either way.
   </Step>
   <Step title="The platform dials your human agent">
     A separate, private consult call rings the destination for up to 30 seconds.
@@ -115,7 +145,6 @@ If the human cannot be reached, declines, or the consult call hits voicemail, th
 
 - **Phone calls only**: web and SDK sessions have no phone leg to hand off, so the `transfer_call` tool never ships for them.
 - **Transfer-capable numbers**: the number the caller dialed must be a `twilio`-provider number.
-- **One destination**: each agent supports a single transfer destination for now.
 - **Supported countries**: destination numbers are limited to an allowlist of country codes.
 
 ## Billing
