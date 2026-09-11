@@ -11476,6 +11476,221 @@
         ]
       }
     },
+    "/v1/tts/live/with-timestamp": {
+      "get": {
+        "summary": "Text to Speech Live with Timestamps (WebSocket)",
+        "description": "Streaming text-to-speech over a WebSocket that returns word-level timestamps\nalongside the audio. Connect to `wss://api.fish.audio/v1/tts/live/with-timestamp`;\nthis is a WebSocket upgrade, not a plain HTTP request.\n\nUse it when you need to feed text in as it is produced — an LLM token stream,\na live caption feed — and want word timings for lip-sync, subtitles or\nhighlighting. For a one-shot request use `POST /v1/tts/stream/with-timestamp`\ninstead.\n\n## Handshake\n\nSend the same headers as any other API call:\n\n- `Authorization: Bearer <your-api-key>`\n- `model: <model>` — optional, defaults to `s2.1-pro`.\n\n## Framing\n\nEvery frame in both directions is a MessagePack-encoded **binary** frame\nholding a map with an `event` key. Text frames are ignored by the server and\nshould be ignored by your client.\n\n## Client to server\n\nThe inbound protocol is identical to `/v1/tts/live`:\n\n- `start` — opens the session. Send it once per session, before any other\n  event. Carries a `request` object with the same fields as the\n  `POST /v1/tts` body; leave `text` empty and stream the words with `text`\n  events. After a `finish` you may send another `start` to run a new session\n  on the same socket.\n- `text` — appends a text fragment to the session buffer.\n- `flush` — forces buffered text through generation without waiting for the\n  chunk to fill. The session stays open.\n- `stop` — ends the session. The server drains the buffer and answers with a\n  final `finish` event.\n\n## Server to client\n\n- `audio` — one audio chunk. Beyond the `audio` bytes it carries `content`,\n  `alignment`, `chunk_seq` and `chunk_audio_offset_sec`; these last three are\n  what this endpoint adds over `/v1/tts/live`. Concatenate every `audio`\n  payload in arrival order to reconstruct the full audio. Note that `audio`\n  here is raw MessagePack `bin`, not the base64 string used by the SSE\n  endpoint.\n- `finish` — terminal event, with `reason` of `stop` or `error`.\n- `error` — a request-level failure such as an invalid `start` request or a\n  concurrency refusal; the socket closes afterwards.\n\n## Reading the alignment\n\n`alignment` is a **cumulative snapshot** for its `chunk_seq`, not a delta:\nwhen it is non-null, replace the alignment you stored for that chunk rather\nthan appending to it. A `null` alignment means nothing new has been committed\nfor the chunk yet, which is normal early on.\n\nSegment times inside `alignment` are relative to the start of their chunk.\n`chunk_audio_offset_sec` is the chunk's own start time within the full audio,\nso the absolute time of a word is `chunk_audio_offset_sec + segment.start`.\nBoth `chunk_seq` and `chunk_audio_offset_sec` are monotonically\nnon-decreasing. A frame may be labelled with the previous chunk's\n`chunk_seq` while carrying the next chunk's audio bytes, so never use\n`chunk_seq` to attribute audio bytes — only alignment.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "model",
+            "description": "Specify which TTS model to use. Use `s2.1-pro-free` for the free developer tier. `drama-3-preview` is a preview model; its behavior and availability may change. If omitted or set to an unrecognized value, the request falls back to `s2.1-pro`.",
+            "required": false,
+            "schema": {
+              "default": "s2.1-pro",
+              "enum": [
+                "s1",
+                "s2-pro",
+                "s2.1-pro",
+                "s2.1-pro-free",
+                "drama-3-preview"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "WebSocket handshake accepted (the server answers `101 Switching Protocols` on the wire). Every frame the server then sends is a MessagePack-encoded binary frame holding one of the events below. `audio` events carry the audio chunk together with `alignment`, `chunk_seq` and `chunk_audio_offset_sec`; `alignment` is the cumulative snapshot for its `chunk_seq` and replaces the previous one rather than extending it. Segment times are relative to the chunk, so absolute time is `chunk_audio_offset_sec + segment.start`. The stream ends with a `finish` event.",
+            "content": {
+              "application/msgpack": {
+                "schema": {
+                  "discriminator": {
+                    "mapping": {
+                      "audio": "#/components/schemas/TTSLiveWithTimestampAudioEvent",
+                      "error": "#/components/schemas/TTSLiveErrorEvent",
+                      "finish": "#/components/schemas/TTSLiveFinishEvent"
+                    },
+                    "propertyName": "event"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TTSLiveWithTimestampAudioEvent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TTSLiveFinishEvent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TTSLiveErrorEvent"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "No payment -- see charging schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "OpenAPI v1"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "label": "Live WebSocket With Timestamps",
+            "source": "import asyncio\n\nimport ormsgpack\nimport websockets\n\nTEXT = \"Hello there. This is a live synthesis, streamed word by word.\"\n\n\nasync def send_text(socket) -> None:\n    # `request` takes the same fields as POST /v1/tts. Leave `text` empty and\n    # stream the words in as they become available.\n    await socket.send(\n        ormsgpack.packb(\n            {\n                \"event\": \"start\",\n                \"request\": {\n                    \"text\": \"\",\n                    \"format\": \"opus\",\n                    \"latency\": \"balanced\",\n                    \"chunk_length\": 100,\n                    \"reference_id\": \"fbe02f8306fc4d3d915e9871722a39d5\",\n                },\n            }\n        )\n    )\n    for word in TEXT.split(\" \"):\n        await socket.send(ormsgpack.packb({\"event\": \"text\", \"text\": word + \" \"}))\n    await socket.send(ormsgpack.packb({\"event\": \"stop\"}))\n\n\nasync def main() -> None:\n    async with websockets.connect(\n        \"wss://api.fish.audio/v1/tts/live/with-timestamp\",\n        additional_headers={\n            \"Authorization\": \"Bearer <token>\",\n            \"model\": \"s2.1-pro-free\",\n        },\n        max_size=None,\n    ) as socket:\n        # Send and receive concurrently. Sending everything before reading can\n        # stall on flow control once the audio outpaces your receive buffer.\n        sender = asyncio.create_task(send_text(socket))\n\n        audio = bytearray()\n        alignments: dict[int, dict] = {}\n        offsets: dict[int, float] = {}\n\n        try:\n            async for frame in socket:\n                if isinstance(frame, str):\n                    continue\n                message = ormsgpack.unpackb(frame)\n                if message[\"event\"] == \"audio\":\n                    audio += message[\"audio\"]\n                    offsets[message[\"chunk_seq\"]] = message[\"chunk_audio_offset_sec\"]\n                    if message[\"alignment\"] is not None:\n                        # Cumulative snapshot: replace the chunk, never append.\n                        alignments[message[\"chunk_seq\"]] = message[\"alignment\"]\n                elif message[\"event\"] == \"finish\":\n                    if message[\"reason\"] == \"error\":\n                        raise RuntimeError(message.get(\"message\", \"synthesis failed\"))\n                    break\n                elif message[\"event\"] == \"error\":\n                    raise RuntimeError(message[\"error\"])\n        finally:\n            sender.cancel()\n\n        with open(\"output.opus\", \"wb\") as f:\n            f.write(audio)\n\n        # Segment times are chunk-relative; fold in the offset to get absolute.\n        for chunk_seq in sorted(alignments):\n            offset = offsets[chunk_seq]\n            for segment in alignments[chunk_seq][\"segments\"]:\n                start = offset + segment[\"start\"]\n                end = offset + segment[\"end\"]\n                print(f\"{start:6.2f}s -> {end:6.2f}s  {segment['text']}\")\n\n\nasyncio.run(main())"
+          }
+        ],
+        "x-fish-websocket": {
+          "url": "wss://api.fish.audio/v1/tts/live/with-timestamp",
+          "encoding": "application/msgpack",
+          "clientEvents": {
+            "description": "Frames the client sends, MessagePack encoded. Identical to the `/v1/tts/live` inbound protocol: `start` once, then any number of `text` events, optional `flush` events, and a final `stop`.",
+            "schema": {
+              "discriminator": {
+                "mapping": {
+                  "flush": "#/components/schemas/TTSLiveFlushEvent",
+                  "start": "#/components/schemas/TTSLiveStartEvent",
+                  "stop": "#/components/schemas/TTSLiveStopEvent",
+                  "text": "#/components/schemas/TTSLiveTextEvent"
+                },
+                "propertyName": "event"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/TTSLiveStartEvent"
+                },
+                {
+                  "$ref": "#/components/schemas/TTSLiveTextEvent"
+                },
+                {
+                  "$ref": "#/components/schemas/TTSLiveFlushEvent"
+                },
+                {
+                  "$ref": "#/components/schemas/TTSLiveStopEvent"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
     "/v1/voice-design": {
       "post": {
         "summary": "Voice Design",
@@ -18139,6 +18354,729 @@
           "end"
         ],
         "title": "TTSTimestampSegment",
+        "type": "object"
+      },
+      "TTSLiveErrorEvent": {
+        "description": "Request-level failure raised before or instead of synthesis — an invalid `start` request, a missing voice reference, or a concurrency refusal. The socket closes afterwards.",
+        "examples": [
+          {
+            "error": "Concurrency limit exceeded",
+            "event": "error",
+            "max_concurrency": 8
+          }
+        ],
+        "properties": {
+          "event": {
+            "const": "error",
+            "title": "Event",
+            "type": "string"
+          },
+          "error": {
+            "description": "Failure detail.",
+            "title": "Error",
+            "type": "string"
+          },
+          "max_concurrency": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Your account's concurrency ceiling. Present only when the socket was refused for exceeding it.",
+            "title": "Max Concurrency"
+          }
+        },
+        "required": [
+          "event",
+          "error"
+        ],
+        "title": "TTSLiveErrorEvent",
+        "type": "object"
+      },
+      "TTSLiveFinishEvent": {
+        "description": "Terminal event for the session. `reason: \"stop\"` follows a clean `stop`; `reason: \"error\"` reports a server-side failure and carries `message`. No further events arrive for the session.",
+        "examples": [
+          {
+            "event": "finish",
+            "reason": "stop",
+            "time": 5460
+          }
+        ],
+        "properties": {
+          "event": {
+            "const": "finish",
+            "title": "Event",
+            "type": "string"
+          },
+          "reason": {
+            "description": "`stop` when the session ended cleanly, `error` when the server aborted it.",
+            "enum": [
+              "stop",
+              "error"
+            ],
+            "title": "Reason",
+            "type": "string"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Failure detail. Present only when `reason` is `error`.",
+            "title": "Message"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Milliseconds since the server began the session.",
+            "title": "Time"
+          }
+        },
+        "required": [
+          "event",
+          "reason"
+        ],
+        "title": "TTSLiveFinishEvent",
+        "type": "object"
+      },
+      "TTSLiveWithTimestampAudioEvent": {
+        "description": "One audio chunk plus the latest word-level alignment snapshot. Concatenate every `audio` payload in arrival order to reconstruct the complete audio. `alignment` is the cumulative snapshot for `chunk_seq`: replace the stored alignment for that chunk instead of appending to it. Segment times are relative to the chunk, so the absolute time of a word is `chunk_audio_offset_sec + segment.start`.",
+        "examples": [
+          {
+            "alignment": {
+              "audio_duration": 16.24,
+              "segments": [
+                {
+                  "end": 0.16,
+                  "start": 0,
+                  "text": "I"
+                },
+                {
+                  "end": 0.48,
+                  "start": 0.16,
+                  "text": "can't"
+                },
+                {
+                  "end": 0.8,
+                  "start": 0.48,
+                  "text": "believe"
+                },
+                {
+                  "end": 1.12,
+                  "start": 0.8,
+                  "text": "its"
+                },
+                {
+                  "end": 1.44,
+                  "start": 1.2,
+                  "text": "been"
+                },
+                {
+                  "end": 1.76,
+                  "start": 1.44,
+                  "text": "this"
+                },
+                {
+                  "end": 2.48,
+                  "start": 1.76,
+                  "text": "long"
+                },
+                {
+                  "end": 2.64,
+                  "start": 2.56,
+                  "text": "It"
+                },
+                {
+                  "end": 3.04,
+                  "start": 2.72,
+                  "text": "feels"
+                },
+                {
+                  "end": 3.28,
+                  "start": 3.12,
+                  "text": "like"
+                },
+                {
+                  "end": 4,
+                  "start": 3.36,
+                  "text": "forever"
+                },
+                {
+                  "end": 4.32,
+                  "start": 4,
+                  "text": "since"
+                },
+                {
+                  "end": 4.48,
+                  "start": 4.32,
+                  "text": "we"
+                },
+                {
+                  "end": 4.96,
+                  "start": 4.48,
+                  "text": "last"
+                },
+                {
+                  "end": 5.28,
+                  "start": 4.96,
+                  "text": "really"
+                },
+                {
+                  "end": 5.84,
+                  "start": 5.28,
+                  "text": "talked"
+                },
+                {
+                  "end": 6.24,
+                  "start": 6,
+                  "text": "Ive"
+                },
+                {
+                  "end": 6.64,
+                  "start": 6.24,
+                  "text": "missed"
+                },
+                {
+                  "end": 6.96,
+                  "start": 6.64,
+                  "text": "hearing"
+                },
+                {
+                  "end": 7.2,
+                  "start": 6.96,
+                  "text": "your"
+                },
+                {
+                  "end": 7.76,
+                  "start": 7.2,
+                  "text": "voice"
+                },
+                {
+                  "end": 7.92,
+                  "start": 7.76,
+                  "text": "your"
+                },
+                {
+                  "end": 8.48,
+                  "start": 7.92,
+                  "text": "stories"
+                },
+                {
+                  "end": 8.72,
+                  "start": 8.48,
+                  "text": "even"
+                },
+                {
+                  "end": 8.8,
+                  "start": 8.72,
+                  "text": "the"
+                },
+                {
+                  "end": 9.2,
+                  "start": 8.8,
+                  "text": "little"
+                },
+                {
+                  "end": 9.52,
+                  "start": 9.2,
+                  "text": "things"
+                },
+                {
+                  "end": 9.68,
+                  "start": 9.52,
+                  "text": "you"
+                },
+                {
+                  "end": 10,
+                  "start": 9.68,
+                  "text": "used"
+                },
+                {
+                  "end": 10.08,
+                  "start": 10,
+                  "text": "to"
+                },
+                {
+                  "end": 10.64,
+                  "start": 10.08,
+                  "text": "say"
+                },
+                {
+                  "end": 10.96,
+                  "start": 10.64,
+                  "text": "How"
+                },
+                {
+                  "end": 11.12,
+                  "start": 10.96,
+                  "text": "have"
+                },
+                {
+                  "end": 11.36,
+                  "start": 11.12,
+                  "text": "you"
+                },
+                {
+                  "end": 11.92,
+                  "start": 11.36,
+                  "text": "been"
+                },
+                {
+                  "end": 12.24,
+                  "start": 12,
+                  "text": "Ive"
+                },
+                {
+                  "end": 12.48,
+                  "start": 12.24,
+                  "text": "thought"
+                },
+                {
+                  "end": 12.8,
+                  "start": 12.48,
+                  "text": "about"
+                },
+                {
+                  "end": 13.2,
+                  "start": 12.8,
+                  "text": "calling"
+                },
+                {
+                  "end": 13.36,
+                  "start": 13.2,
+                  "text": "you"
+                },
+                {
+                  "end": 13.68,
+                  "start": 13.36,
+                  "text": "so"
+                },
+                {
+                  "end": 13.92,
+                  "start": 13.68,
+                  "text": "many"
+                },
+                {
+                  "end": 14.56,
+                  "start": 13.92,
+                  "text": "times"
+                },
+                {
+                  "end": 14.72,
+                  "start": 14.56,
+                  "text": "but"
+                },
+                {
+                  "end": 14.88,
+                  "start": 14.72,
+                  "text": "I"
+                },
+                {
+                  "end": 15.2,
+                  "start": 14.88,
+                  "text": "never"
+                },
+                {
+                  "end": 15.36,
+                  "start": 15.2,
+                  "text": "knew"
+                },
+                {
+                  "end": 15.6,
+                  "start": 15.36,
+                  "text": "where"
+                },
+                {
+                  "end": 15.6,
+                  "start": 15.6,
+                  "text": "to"
+                },
+                {
+                  "end": 16.24,
+                  "start": 15.68,
+                  "text": "start"
+                }
+              ]
+            },
+            "audio": "<raw audio bytes>",
+            "chunk_audio_offset_sec": 0,
+            "chunk_seq": 0,
+            "content": "I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start.",
+            "event": "audio",
+            "time": 812.5
+          },
+          {
+            "alignment": {
+              "audio_duration": 10.48,
+              "segments": [
+                {
+                  "end": 0.8,
+                  "start": 0.4,
+                  "text": "Seeing"
+                },
+                {
+                  "end": 0.96,
+                  "start": 0.8,
+                  "text": "you"
+                },
+                {
+                  "end": 1.44,
+                  "start": 0.96,
+                  "text": "again"
+                },
+                {
+                  "end": 1.68,
+                  "start": 1.44,
+                  "text": "now"
+                },
+                {
+                  "end": 2.08,
+                  "start": 1.68,
+                  "text": "makes"
+                },
+                {
+                  "end": 2.24,
+                  "start": 2.08,
+                  "text": "me"
+                },
+                {
+                  "end": 2.8,
+                  "start": 2.24,
+                  "text": "realize"
+                },
+                {
+                  "end": 3.12,
+                  "start": 2.8,
+                  "text": "just"
+                },
+                {
+                  "end": 3.28,
+                  "start": 3.12,
+                  "text": "how"
+                },
+                {
+                  "end": 3.6,
+                  "start": 3.28,
+                  "text": "much"
+                },
+                {
+                  "end": 3.76,
+                  "start": 3.6,
+                  "text": "Ive"
+                },
+                {
+                  "end": 4.24,
+                  "start": 3.84,
+                  "text": "missed"
+                },
+                {
+                  "end": 4.56,
+                  "start": 4.24,
+                  "text": "you"
+                },
+                {
+                  "end": 4.8,
+                  "start": 4.64,
+                  "text": "We"
+                },
+                {
+                  "end": 5.04,
+                  "start": 4.8,
+                  "text": "have"
+                },
+                {
+                  "end": 5.36,
+                  "start": 5.04,
+                  "text": "so"
+                },
+                {
+                  "end": 5.76,
+                  "start": 5.36,
+                  "text": "much"
+                },
+                {
+                  "end": 5.76,
+                  "start": 5.76,
+                  "text": "to"
+                },
+                {
+                  "end": 6.16,
+                  "start": 5.76,
+                  "text": "catch"
+                },
+                {
+                  "end": 6.4,
+                  "start": 6.16,
+                  "text": "up"
+                },
+                {
+                  "end": 6.72,
+                  "start": 6.4,
+                  "text": "on"
+                },
+                {
+                  "end": 6.96,
+                  "start": 6.8,
+                  "text": "and"
+                },
+                {
+                  "end": 7.04,
+                  "start": 6.96,
+                  "text": "I"
+                },
+                {
+                  "end": 7.36,
+                  "start": 7.04,
+                  "text": "dont"
+                },
+                {
+                  "end": 7.6,
+                  "start": 7.36,
+                  "text": "even"
+                },
+                {
+                  "end": 7.84,
+                  "start": 7.6,
+                  "text": "know"
+                },
+                {
+                  "end": 8.08,
+                  "start": 7.84,
+                  "text": "which"
+                },
+                {
+                  "end": 8.4,
+                  "start": 8.08,
+                  "text": "part"
+                },
+                {
+                  "end": 8.48,
+                  "start": 8.4,
+                  "text": "of"
+                },
+                {
+                  "end": 8.72,
+                  "start": 8.56,
+                  "text": "my"
+                },
+                {
+                  "end": 8.96,
+                  "start": 8.72,
+                  "text": "life"
+                },
+                {
+                  "end": 9.12,
+                  "start": 9.12,
+                  "text": "to"
+                },
+                {
+                  "end": 9.44,
+                  "start": 9.12,
+                  "text": "tell"
+                },
+                {
+                  "end": 9.6,
+                  "start": 9.44,
+                  "text": "you"
+                },
+                {
+                  "end": 10,
+                  "start": 9.6,
+                  "text": "about"
+                },
+                {
+                  "end": 10.48,
+                  "start": 10.08,
+                  "text": "first"
+                }
+              ]
+            },
+            "audio": "<raw audio bytes>",
+            "chunk_audio_offset_sec": 16.24,
+            "chunk_seq": 1,
+            "content": "Seeing you again now makes me realize just how much I’ve missed you. We have so much to catch up on, and I don’t even know which part of my life to tell you about first.",
+            "event": "audio",
+            "time": 4210
+          }
+        ],
+        "properties": {
+          "event": {
+            "const": "audio",
+            "title": "Event",
+            "type": "string"
+          },
+          "audio": {
+            "description": "Raw audio chunk, carried as a MessagePack `bin` value — not base64, unlike the SSE `/v1/tts/stream/with-timestamp` endpoint. Concatenate every chunk in arrival order to reconstruct the full audio. May be empty on a trailing frame whose only purpose is to deliver a final `alignment` correction.",
+            "format": "binary",
+            "title": "Audio",
+            "type": "string"
+          },
+          "content": {
+            "description": "Text content of the chunk identified by `chunk_seq`.",
+            "title": "Content",
+            "type": "string"
+          },
+          "alignment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TTSTimestampAlignment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cumulative word-level alignment snapshot for `chunk_seq`, with segment times relative to the start of that chunk. Always present on the wire; `null` means the alignment for this chunk has not changed yet (normal early in a chunk, while the aligner is still committing words). When non-null, replace the snapshot you stored for `chunk_seq` — never append to it."
+          },
+          "chunk_seq": {
+            "description": "Sequence number of the text chunk that `alignment` and `content` describe. Monotonically non-decreasing. Bucket alignment snapshots by this value. Note that a frame may be labelled with the previous chunk's `chunk_seq` while carrying the next chunk's audio bytes, so do not use it to attribute audio.",
+            "minimum": 0,
+            "title": "Chunk Seq",
+            "type": "integer"
+          },
+          "chunk_audio_offset_sec": {
+            "description": "Start time of this text chunk within the full audio, in seconds — the sum of the audio durations of every earlier chunk. Add it to a segment's `start`/`end` to get absolute timestamps. Monotonically non-decreasing.",
+            "minimum": 0,
+            "title": "Chunk Audio Offset Sec",
+            "type": "number"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Milliseconds since the server began the session.",
+            "title": "Time"
+          }
+        },
+        "required": [
+          "event",
+          "audio",
+          "content",
+          "alignment",
+          "chunk_seq",
+          "chunk_audio_offset_sec"
+        ],
+        "title": "TTSLiveWithTimestampAudioEvent",
+        "type": "object"
+      },
+      "TTSLiveFlushEvent": {
+        "description": "Forces the buffered text through generation without waiting for the chunk to fill. A text-splitting control only: the session stays open and you may keep sending `text` events afterwards.",
+        "examples": [
+          {
+            "event": "flush"
+          }
+        ],
+        "properties": {
+          "event": {
+            "const": "flush",
+            "title": "Event",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event"
+        ],
+        "title": "TTSLiveFlushEvent",
+        "type": "object"
+      },
+      "TTSLiveStartEvent": {
+        "description": "Opens a synthesis session. Send this first, once per session. `request` carries the same fields as the `POST /v1/tts` body.",
+        "examples": [
+          {
+            "event": "start",
+            "request": {
+              "chunk_length": 100,
+              "format": "opus",
+              "latency": "balanced",
+              "reference_id": "fbe02f8306fc4d3d915e9871722a39d5",
+              "text": ""
+            }
+          }
+        ],
+        "properties": {
+          "event": {
+            "const": "start",
+            "title": "Event",
+            "type": "string"
+          },
+          "request": {
+            "$ref": "#/components/schemas/TTSRequest",
+            "description": "Synthesis parameters for this session, identical to the `POST /v1/tts` request body. `text` may be an empty string here; text sent later with `text` events is appended to it."
+          }
+        },
+        "required": [
+          "event",
+          "request"
+        ],
+        "title": "TTSLiveStartEvent",
+        "type": "object"
+      },
+      "TTSLiveStopEvent": {
+        "description": "Ends the session. The server synthesizes whatever text is still buffered, emits any trailing `audio` events, then a `finish` event with `reason: \"stop\"`.",
+        "examples": [
+          {
+            "event": "stop"
+          }
+        ],
+        "properties": {
+          "event": {
+            "const": "stop",
+            "title": "Event",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event"
+        ],
+        "title": "TTSLiveStopEvent",
+        "type": "object"
+      },
+      "TTSLiveTextEvent": {
+        "description": "Appends a text fragment to the session buffer. Send as many as you like; the server splits the buffer into chunks and synthesizes them as they become long enough.",
+        "examples": [
+          {
+            "event": "text",
+            "text": "Hello there, "
+          }
+        ],
+        "properties": {
+          "event": {
+            "const": "text",
+            "title": "Event",
+            "type": "string"
+          },
+          "text": {
+            "description": "Text fragment appended to the session buffer, verbatim.",
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event",
+          "text"
+        ],
+        "title": "TTSLiveTextEvent",
         "type": "object"
       },
       "VoiceDesignRequest": {
