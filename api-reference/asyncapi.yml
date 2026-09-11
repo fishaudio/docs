@@ -34,24 +34,24 @@ servers:
     protocol: wss
     description: Fish Audio production WebSocket server
     security:
-      - $ref: '#/components/securitySchemes/bearerAuth'
+      - $ref: "#/components/securitySchemes/bearerAuth"
 
 channels:
   ttsLive:
     address: /v1/tts/live
     messages:
       startEvent:
-        $ref: '#/components/messages/StartEvent'
+        $ref: "#/components/messages/StartEvent"
       textEvent:
-        $ref: '#/components/messages/TextEvent'
+        $ref: "#/components/messages/TextEvent"
       flushEvent:
-        $ref: '#/components/messages/FlushEvent'
+        $ref: "#/components/messages/FlushEvent"
       closeEvent:
-        $ref: '#/components/messages/CloseEvent'
+        $ref: "#/components/messages/CloseEvent"
       audioEvent:
-        $ref: '#/components/messages/AudioEvent'
+        $ref: "#/components/messages/AudioEvent"
       finishEvent:
-        $ref: '#/components/messages/FinishEvent'
+        $ref: "#/components/messages/FinishEvent"
     bindings:
       ws:
         headers:
@@ -72,16 +72,55 @@ channels:
       - `Authorization: Bearer <api_key>` - Required for authentication (see security section)
       - `model: <model_name>` - Optional; specifies which TTS model to use (see bindings). Falls back to `s2.1-pro` when omitted or unrecognized
 
+  ttsLiveWithTimestamps:
+    address: /v1/tts/live/with-timestamp
+    messages:
+      startEvent:
+        $ref: "#/components/messages/StartEvent"
+      textEvent:
+        $ref: "#/components/messages/TextEvent"
+      flushEvent:
+        $ref: "#/components/messages/FlushEvent"
+      closeEvent:
+        $ref: "#/components/messages/CloseEvent"
+      timestampAudioEvent:
+        $ref: "#/components/messages/TimestampAudioEvent"
+      timestampFinishEvent:
+        $ref: "#/components/messages/TimestampFinishEvent"
+      errorEvent:
+        $ref: "#/components/messages/ErrorEvent"
+    bindings:
+      ws:
+        headers:
+          type: object
+          properties:
+            model:
+              type: string
+              enum:
+                - s1
+                - s2-pro
+                - s2.1-pro
+                - s2.1-pro-free
+                - drama-3-preview
+              description: TTS model to use for this session. If omitted or set to an unrecognized value, the session falls back to `s2.1-pro`.
+    description: |
+      Real-time TTS streaming channel with word-level timestamps. Clients send
+      text chunks and receive audio chunks with alignment metadata concurrently.
+
+      ## Connection Headers
+      - `Authorization: Bearer <api_key>` - Required for authentication (see security section)
+      - `model: <model_name>` - Optional; specifies which TTS model to use (see bindings). Falls back to `s2.1-pro` when omitted or unrecognized
+
 operations:
   receiveText:
     action: receive
     channel:
-      $ref: '#/channels/ttsLive'
+      $ref: "#/channels/ttsLive"
     messages:
-      - $ref: '#/channels/ttsLive/messages/startEvent'
-      - $ref: '#/channels/ttsLive/messages/textEvent'
-      - $ref: '#/channels/ttsLive/messages/flushEvent'
-      - $ref: '#/channels/ttsLive/messages/closeEvent'
+      - $ref: "#/channels/ttsLive/messages/startEvent"
+      - $ref: "#/channels/ttsLive/messages/textEvent"
+      - $ref: "#/channels/ttsLive/messages/flushEvent"
+      - $ref: "#/channels/ttsLive/messages/closeEvent"
     description: |
       Server receives text and control events from the client.
 
@@ -94,16 +133,51 @@ operations:
   sendAudio:
     action: send
     channel:
-      $ref: '#/channels/ttsLive'
+      $ref: "#/channels/ttsLive"
     messages:
-      - $ref: '#/channels/ttsLive/messages/audioEvent'
-      - $ref: '#/channels/ttsLive/messages/finishEvent'
+      - $ref: "#/channels/ttsLive/messages/audioEvent"
+      - $ref: "#/channels/ttsLive/messages/finishEvent"
     description: |
       Server sends audio chunks and completion events to the client.
 
       **Event Flow:**
       - Server sends AudioEvent messages as audio is generated (multiple times)
       - Server sends FinishEvent once when synthesis completes
+      - Clients should ignore unknown events to support future protocol extensions
+
+  receiveTimestampedText:
+    action: receive
+    channel:
+      $ref: "#/channels/ttsLiveWithTimestamps"
+    messages:
+      - $ref: "#/channels/ttsLiveWithTimestamps/messages/startEvent"
+      - $ref: "#/channels/ttsLiveWithTimestamps/messages/textEvent"
+      - $ref: "#/channels/ttsLiveWithTimestamps/messages/flushEvent"
+      - $ref: "#/channels/ttsLiveWithTimestamps/messages/closeEvent"
+    description: |
+      Server receives text and control events from the client.
+
+      **Event Sequence:**
+      1. Client sends StartEvent once at the beginning with TTS configuration
+      2. Client sends TextEvent for each text chunk to synthesize
+      3. Client optionally sends FlushEvent to force immediate synthesis of buffered text
+      4. Client sends CloseEvent when all text has been sent
+
+  sendTimestampedAudio:
+    action: send
+    channel:
+      $ref: "#/channels/ttsLiveWithTimestamps"
+    messages:
+      - $ref: "#/channels/ttsLiveWithTimestamps/messages/timestampAudioEvent"
+      - $ref: "#/channels/ttsLiveWithTimestamps/messages/timestampFinishEvent"
+      - $ref: "#/channels/ttsLiveWithTimestamps/messages/errorEvent"
+    description: |
+      Server sends audio chunks with word-level alignment metadata and completion events.
+
+      **Event Flow:**
+      - Server sends TimestampAudioEvent messages as audio is generated (multiple times)
+      - Server sends TimestampFinishEvent once when synthesis completes
+      - Server can send ErrorEvent when it cannot start or continue synthesis
       - Clients should ignore unknown events to support future protocol extensions
 
 components:
@@ -123,7 +197,7 @@ components:
             const: start
             description: Event type identifier
           request:
-            $ref: '#/components/schemas/WebSocketTTSRequest'
+            $ref: "#/components/schemas/WebSocketTTSRequest"
       description: |
         Initiates a TTS streaming session with configuration.
 
@@ -327,7 +401,180 @@ components:
             event: finish
             reason: error
 
+    TimestampAudioEvent:
+      name: TimestampAudioEvent
+      title: Audio Chunk with Timestamps
+      contentType: application/msgpack
+      payload:
+        type: object
+        required:
+          - event
+          - audio
+          - content
+          - alignment
+          - chunk_seq
+          - chunk_audio_offset_sec
+        properties:
+          event:
+            type: string
+            const: audio
+            description: Event type identifier
+          audio:
+            type: string
+            format: binary
+            description: Raw audio bytes. The value may be empty on a trailing frame that only carries a final alignment correction.
+          content:
+            type: string
+            description: Text content of the chunk identified by `chunk_seq`.
+          alignment:
+            anyOf:
+              - $ref: "#/components/schemas/TimestampAlignment"
+              - type: "null"
+            description: Cumulative word-level alignment snapshot for `chunk_seq`. Replace the stored snapshot when this value is non-null; do not append it.
+          chunk_seq:
+            type: integer
+            minimum: 0
+            description: Monotonically non-decreasing sequence number for the text chunk described by `content` and `alignment`. Do not use it to attribute audio bytes.
+          chunk_audio_offset_sec:
+            type: number
+            minimum: 0
+            description: Start time of this text chunk within the full audio, in seconds. Add it to a segment's `start` or `end` to get its absolute timestamp.
+          time:
+            anyOf:
+              - type: number
+              - type: "null"
+            default: null
+            description: Milliseconds since the server began the session.
+      description: |
+        Contains generated audio bytes and the latest word-level alignment snapshot.
+
+        Concatenate every `audio` payload in arrival order to reconstruct the
+        complete audio. Alignment is cumulative for each `chunk_seq`, and segment
+        times are relative to that chunk.
+      examples:
+        - payload:
+            event: audio
+            audio: <binary audio data>
+            content: "Hello there."
+            alignment:
+              segments:
+                - text: "Hello"
+                  start: 0.0
+                  end: 0.42
+                - text: "there."
+                  start: 0.42
+                  end: 0.86
+              audio_duration: 0.86
+            chunk_seq: 0
+            chunk_audio_offset_sec: 0.0
+            time: 920
+
+    TimestampFinishEvent:
+      name: TimestampFinishEvent
+      title: Timestamped Session Complete
+      contentType: application/msgpack
+      payload:
+        type: object
+        required:
+          - event
+          - reason
+        properties:
+          event:
+            type: string
+            const: finish
+            description: Event type identifier
+          reason:
+            type: string
+            enum:
+              - stop
+              - error
+            description: "`stop` for normal completion or `error` when the server aborted synthesis."
+          message:
+            anyOf:
+              - type: string
+              - type: "null"
+            default: null
+            description: Failure detail. Present when `reason` is `error`.
+          time:
+            anyOf:
+              - type: number
+              - type: "null"
+            default: null
+            description: Milliseconds since the server began the session.
+      description: |
+        Signals that the timestamped TTS session has completed. After receiving
+        this event, you can send another StartEvent on the same connection.
+      examples:
+        - payload:
+            event: finish
+            reason: stop
+            time: 5460
+
+    ErrorEvent:
+      name: ErrorEvent
+      title: Request Error
+      contentType: application/msgpack
+      payload:
+        type: object
+        required:
+          - event
+          - error
+        properties:
+          event:
+            type: string
+            const: error
+            description: Event type identifier
+          error:
+            type: string
+            description: Failure detail.
+          max_concurrency:
+            anyOf:
+              - type: integer
+              - type: "null"
+            default: null
+            description: Your account's concurrency limit. Present when the connection is refused for exceeding it.
+      description: |
+        Reports a request-level failure, such as an invalid StartEvent, a missing
+        voice reference, or a concurrency refusal. The socket closes afterwards.
+      examples:
+        - payload:
+            event: error
+            error: Concurrency limit exceeded
+            max_concurrency: 8
+
   schemas:
+    TimestampAlignment:
+      type: object
+      required:
+        - segments
+        - audio_duration
+      properties:
+        segments:
+          type: array
+          description: Ordered text timing segments for the generated audio.
+          items:
+            $ref: "#/components/schemas/TimestampSegment"
+        audio_duration:
+          type: number
+          description: Audio duration in seconds for this alignment's content chunk.
+
+    TimestampSegment:
+      type: object
+      required:
+        - text
+        - start
+        - end
+      properties:
+        text:
+          type: string
+          description: Text segment covered by this timing entry.
+        start:
+          type: number
+          description: Segment start time in seconds, relative to the beginning of the chunk.
+        end:
+          type: number
+          description: Segment end time in seconds, relative to the beginning of the chunk.
+
     WebSocketTTSRequest:
       type: object
       description: |
@@ -390,13 +637,13 @@ components:
             - description: "Single speaker: array of reference audio samples"
               type: array
               items:
-                $ref: '#/components/schemas/WebSocketReferenceAudio'
+                $ref: "#/components/schemas/WebSocketReferenceAudio"
             - description: "Multiple speakers: array of arrays, where each inner array contains reference samples for one speaker"
               type: array
               items:
                 type: array
                 items:
-                  $ref: '#/components/schemas/WebSocketReferenceAudio'
+                  $ref: "#/components/schemas/WebSocketReferenceAudio"
             - type: "null"
           description: |
             Inline voice references for zero-shot cloning. Single-speaker uses
@@ -423,7 +670,7 @@ components:
 
         prosody:
           oneOf:
-            - $ref: '#/components/schemas/WebSocketProsodyControl'
+            - $ref: "#/components/schemas/WebSocketProsodyControl"
             - type: "null"
           default: null
           description: Speed and volume adjustments for the output.
