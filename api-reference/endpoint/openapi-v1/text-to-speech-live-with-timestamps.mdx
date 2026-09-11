@@ -1,0 +1,48 @@
+---
+openapi: get /v1/tts/live/with-timestamp
+title: "WebSocket TTS with Timestamps"
+description: "Stream text and receive speech with word-level timestamps over WebSocket"
+icon: "webhook"
+iconType: "solid"
+---
+
+<Note>
+  Connect to `wss://api.fish.audio/v1/tts/live/with-timestamp` with a WebSocket
+  client. The endpoint requires a WebSocket upgrade and returns MessagePack
+  binary frames. A normal HTTP GET request does not start synthesis.
+</Note>
+
+## Before you start
+
+You need a [Fish Audio API key](/developer-guide/getting-started/api-key) and a
+WebSocket client that supports custom authentication headers. To run the Python
+example on this page, install its dependencies:
+
+```bash
+pip install ormsgpack websockets
+```
+
+Replace `<token>` in the example with your API key and set `reference_id` to your
+voice model ID. The `start.request` object accepts the same parameters as the
+[Text to Speech API](/api-reference/endpoint/openapi-v1/text-to-speech).
+Send text and receive audio concurrently, then keep reading after sending `stop`
+until the server sends `finish`.
+
+## Preserve the final timestamps
+
+Process alignment metadata even when an `audio` event contains empty audio bytes:
+a trailing event can carry a final alignment correction. Store each non-null
+`alignment` by `chunk_seq`, replacing its previous snapshot. A null alignment
+does not erase a snapshot you already received.
+
+Add `chunk_audio_offset_sec` to each segment's `start` and `end` to place it on
+the session's audio timeline. The optional `time` field measures elapsed server
+session time in milliseconds; use the segment timestamps for captions.
+
+After `finish`, you can send another `start` on the same socket. Reset your audio
+buffer and stored alignment snapshots for the new session.
+
+## Related endpoints
+
+- [Text to Speech Stream with Timestamps](/api-reference/endpoint/openapi-v1/text-to-speech-stream-with-timestamps): send the full text in one HTTP request and receive audio and timestamps over SSE.
+- [WebSocket TTS Streaming](/api-reference/endpoint/websocket/tts-live): stream text and audio without timestamps.
