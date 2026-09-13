@@ -106,15 +106,6 @@ Calls from purchased numbers can reach US, Canada, and Japan numbers. Japanese d
 
 Numbers that live on the platform can never be dialed, so an agent cannot call another agent's number.
 
-## Limits
-
-| Limit            | Default                                                                          |
-| ---------------- | -------------------------------------------------------------------------------- |
-| Calls per day    | 200 per workspace, on a fixed UTC day. Rejected attempts count toward the quota. |
-| Concurrent calls | 10 per workspace, counting calls that are still ringing or in conversation.      |
-
-Exceeding either returns `429` with a machine-readable reason (`daily_limit_exceeded`, `concurrency_limit_exceeded`). These are per-workspace defaults; contact support if you need more.
-
 ## Errors
 
 Unlike most [Agents API errors](/api-reference/agent-errors), phone-call errors carry a machine-readable `reason` alongside the `message`:
@@ -137,7 +128,6 @@ Unlike most [Agents API errors](/api-reference/agent-errors), phone-call errors 
 | `422`  | `number_provider_unsupported`, `number_termination_missing`, `number_inactive`                       | The from-number can't place calls; see [which numbers support outbound](/agents/telephony/byo-sip#outbound-calls-and-transfers). |
 | `422`  | `destination_invalid`, `destination_not_allowed`, `premium_destination_blocked`, `self_call_blocked` | The destination is refused; see [allowed destinations](#allowed-destinations).                                                   |
 | `422`  | `idempotency_key_reuse`                                                                              | The key was already used with a different body; mint a fresh key per distinct call.                                              |
-| `429`  | `daily_limit_exceeded`, `concurrency_limit_exceeded`                                                 | A workspace [limit](#limits) was hit.                                                                                            |
 
 `502` and `503` follow the [general guidance](/api-reference/agent-errors#5xx): retrying is safe, especially with an `Idempotency-Key`.
 
