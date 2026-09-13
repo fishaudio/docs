@@ -105,7 +105,8 @@ The platform fills a handful of `{{system.*}}` placeholders itself, on every ses
 | `system.channel` | `phone_inbound`, `phone_outbound`, or `web_voice` | Web SDK, API, preview, and agent test sessions are all `web_voice`. |
 | `system.timezone` | The session's resolved IANA timezone, for example `Asia/Shanghai` | `UTC` when nothing resolves. Always equals the session's `timezone` field; see [which timezone a session uses](/agents/build/time-timezone#which-timezone-a-session-uses). |
 | `system.today` | Today's date in that timezone, ISO 8601 `YYYY-MM-DD` | The calendar date at session creation. There is no `system.now`; see [World context](#world-context). |
-| `system.language` | The session language id: `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`, `pt`, `it`, `nl` | The `language` [override](/agents/deploy/authenticated-sessions#overrides) when the request carries one, otherwise the agent's [speaking language](/agents/build/voice-language#speaking-language). |
+| `system.language` | The session language id: `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`, `pt`, `it`, `nl`, `ar`, `hi`, `id`, `tr` |
+ The `language` [override](/agents/deploy/authenticated-sessions#overrides) when the request carries one, otherwise the agent's [speaking language](/agents/build/voice-language#speaking-language). |
 | `system.caller_number` | The human party's number, E.164 | Inbound: the caller (empty if withheld or not a valid E.164 number). Outbound: the number you dialed. Empty on non-phone sessions. |
 | `system.dialed_number` | Your workspace number, E.164 | Inbound: the number that was called. Outbound: the number the call was placed from. Empty on non-phone sessions. |
 
