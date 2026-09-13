@@ -102,7 +102,9 @@ On outbound sessions the attribution fields are person-centric: `caller_number` 
 
 ## Allowed destinations
 
-Calls from purchased numbers can reach US, Canada, and Japan numbers. Japanese destinations may keep the domestic trunk zero (`+81080...` is accepted and normalized to `+8180...`), and premium-rate segments (such as `0570` Navi Dial and `0990`) are always refused. Calls from [imported BYO numbers](/agents/telephony/byo-sip) dial out through your own trunk, so the country allowlist does not apply; the destination only has to be valid E.164.
+Calls from purchased numbers can reach fixed-line and mobile numbers in the US, Canada, Japan, the United Kingdom, Italy, Australia and Mexico. Premium-rate and special-service ranges (such as UK `09` and `084`/`087`, Italian `89x`, Australian `13`/`1300`/`19`, Mexican `900`, Japanese `0570` Navi Dial and `0990`) are refused with `premium_destination_blocked`; freephone, personal-numbering and pager ranges are refused with `destination_not_allowed`. Japanese destinations may keep the domestic trunk zero (`+81080...` is accepted and normalized to `+8180...`). Mexican mobiles may be given with the legacy `+52 1` marker or as ten digits after `+52`.
+
+Outside the US and Canada the phone surcharge depends on the destination country and on whether the number is fixed-line or mobile; see the [pricing page](/agents/pricing) for the per-country rates. Calls from [imported BYO numbers](/agents/telephony/byo-sip) dial out through your own trunk, so the country allowlist does not apply; the destination only has to be valid E.164.
 
 Numbers that live on the platform can never be dialed, so an agent cannot call another agent's number.
 
@@ -123,7 +125,7 @@ Unlike most [Agents API errors](/api-reference/agent-errors), phone-call errors 
 {
   "status": 422,
   "reason": "destination_not_allowed",
-  "message": "Outbound calls are limited to US, Canada and Japan numbers"
+  "message": "Outbound calls are limited to numbers in the US, Canada, Japan, the UK, Italy, Australia and Mexico"
 }
 ```
 

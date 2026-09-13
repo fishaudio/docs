@@ -41,10 +41,13 @@ After a conversation, each message in the dashboard's conversation view shows it
 
 The standard phone surcharge applies to inbound calls and most outbound calls. Outbound calls to the destinations below replace it with a rate that depends on the number dialed:
 
-| Destination                      | Surcharge         |
-| -------------------------------- | ----------------- |
-| Japan, mobile numbers            | +$0.25 per minute |
-| Japan, landlines and 050 numbers | +$0.10 per minute |
+| Destination                              | Landline          | Mobile            |
+| ---------------------------------------- | ----------------- | ----------------- |
+| Japan (landline includes 050 numbers)    | +$0.10 per minute | +$0.22 per minute |
+| United Kingdom (03 numbers: +$0.04)      | +$0.02 per minute | +$0.03 per minute |
+| Italy                                    | +$0.02 per minute | +$0.05 per minute |
+| Australia                                | +$0.03 per minute | +$0.09 per minute |
+| Mexico (mobile means the legacy `+52 1`) | +$0.02 per minute | +$0.05 per minute |
 
 The countries purchased numbers can call are listed under [allowed destinations](/agents/telephony/outbound-calls#allowed-destinations).
 
@@ -69,7 +72,7 @@ Every charge is listed on the [Agents billing page](https://fish.audio/app/agent
 | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------- |
 | Web conversation, 4 min 30 s, basic LLM                                            | Conversation 4.5 min × $0.06 = $0.27                                                                                     | $0.27             |
 | Inbound phone call, 6 min, basic LLM                                               | Conversation 6 min × $0.06 = $0.36<br />Phone surcharge 6 min × $0.01 = $0.06                                            | $0.42             |
-| Outbound call, 10 min, Japanese mobile number                                      | Conversation 10 min × $0.06 = $0.60<br />Japan mobile surcharge 10 min × $0.25 = $2.50                                   | $3.10             |
+| Outbound call, 10 min, Japanese mobile number                                      | Conversation 10 min × $0.06 = $0.60<br />Japan mobile surcharge 10 min × $0.22 = $2.20                                   | $2.80             |
 | Inbound call, 3 min with the agent, then 5 min with a person after a warm transfer | Conversation 3 min × $0.06 = $0.18<br />Phone surcharge 3 min × $0.01 = $0.03<br />Warm transfer 5 min × $0.025 = $0.125 | $0.335            |
 | Web conversation, 5 min, token-billed LLM                                          | Conversation 5 min × $0.06 = $0.30<br />LLM usage: the session's tokens at the LLM's rates                               | $0.30 + LLM usage |
 
