@@ -532,7 +532,7 @@
           {
             "in": "query",
             "name": "status",
-            "description": "Comma-separated status filter (pending/active/completed/failed/unknown). Default: every status except pending.",
+            "description": "Comma-separated status filter (pending/active/completed/failed/unknown). Default: every status.",
             "required": false,
             "schema": {
               "anyOf": [
@@ -1493,6 +1493,13 @@
                       },
                       "title": "Metadata",
                       "type": "object"
+                    },
+                    "unattributed_llm_usage": {
+                      "items": {
+                        "$ref": "#/components/schemas/LLMMessageUsage"
+                      },
+                      "title": "Unattributed Llm Usage",
+                      "type": "array"
                     },
                     "items": {
                       "items": {
@@ -14606,6 +14613,53 @@
       "AgentSessionMessageItem": {
         "description": "One transcript message; system messages never surface here.",
         "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Id"
+          },
+          "runtime_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Runtime Message Id"
+          },
+          "message_generation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message Generation Id"
+          },
+          "llm_usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMMessageUsage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "type": {
             "const": "message",
             "default": "message",
@@ -14831,6 +14885,191 @@
           "status"
         ],
         "title": "AgentSessionToolResultItem",
+        "type": "object"
+      },
+      "LLMMessageTokenCost": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "rate_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Version"
+          },
+          "category": {
+            "enum": [
+              "input",
+              "cache_read",
+              "cache_write_5m",
+              "cache_write_1h",
+              "output"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tokens"
+          },
+          "rate_per_million": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Per Million"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          }
+        },
+        "required": [
+          "model",
+          "rate_version",
+          "category",
+          "tokens",
+          "rate_per_million",
+          "cost_usd"
+        ],
+        "title": "LLMMessageTokenCost",
+        "type": "object"
+      },
+      "LLMMessageUsage": {
+        "properties": {
+          "message_generation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message Generation Id"
+          },
+          "turn_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Turn Id"
+          },
+          "status": {
+            "enum": [
+              "complete",
+              "pending",
+              "unavailable"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "billing_mode": {
+            "enum": [
+              "tokens",
+              "included",
+              "legacy"
+            ],
+            "title": "Billing Mode",
+            "type": "string"
+          },
+          "call_count": {
+            "default": 0,
+            "title": "Call Count",
+            "type": "integer"
+          },
+          "usage_complete": {
+            "default": false,
+            "title": "Usage Complete",
+            "type": "boolean"
+          },
+          "call_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Call Ids",
+            "type": "array"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cost Usd"
+          },
+          "billable_cost_usd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Billable Cost Usd"
+          },
+          "known_cost_usd": {
+            "default": "0",
+            "title": "Known Cost Usd",
+            "type": "string"
+          },
+          "tokens": {
+            "items": {
+              "$ref": "#/components/schemas/LLMMessageTokenCost"
+            },
+            "title": "Tokens",
+            "type": "array"
+          }
+        },
+        "required": [
+          "status",
+          "billing_mode"
+        ],
+        "title": "LLMMessageUsage",
         "type": "object"
       },
       "AgentSessionRecordingTrackEntity": {
@@ -16435,7 +16674,7 @@
         "type": "object"
       },
       "AgentOutboundConfig": {
-        "description": "Deprecated (2026-09-07): kept for compatibility only. `amd_enabled` and\n`voicemail` no longer change call behavior — outbound calls greet as soon as\nthe callee answers, and `answered_by` is always `unknown`.",
+        "description": "Deprecated (2026-09-07): kept for compatibility only. `amd_enabled` and\n`voicemail` no longer change call behavior; outbound calls greet as soon as\nthe callee answers, and `answered_by` is always `unknown`.",
         "properties": {
           "amd_enabled": {
             "default": true,
