@@ -65,8 +65,38 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 
 ## Speaking language
 
-**Speaking language** sets the language for the agent's conversations: one of `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`, `pt`, `it`, `nl`, `ar`, `hi`, `id`, or `tr` (`voice.speaking_language` on the wire). Every session converses in this language.
+**Speaking language** sets the language for the agent's conversations (`voice.speaking_language` on the wire). Every session converses in this language. Any of the 52 languages below can be chosen.
 
+<Accordion title="All 52 supported languages and their codes">
+| Code | Language | Code | Language |
+|---|---|---|---|
+| `en` | English | `da` | Danish |
+| `ja` | Japanese | `no` | Norwegian |
+| `zh` | Chinese | `fi` | Finnish |
+| `ko` | Korean | `et` | Estonian |
+| `es` | Spanish | `lv` | Latvian |
+| `fr` | French | `lt` | Lithuanian |
+| `de` | German | `ca` | Catalan |
+| `pt` | Portuguese | `he` | Hebrew |
+| `it` | Italian | `fa` | Persian |
+| `nl` | Dutch | `ur` | Urdu |
+| `ar` | Arabic | `kk` | Kazakh |
+| `hi` | Hindi | `ka` | Georgian |
+| `id` | Indonesian | `hy` | Armenian |
+| `tr` | Turkish | `bn` | Bengali |
+| `ru` | Russian | `ta` | Tamil |
+| `bg` | Bulgarian | `te` | Telugu |
+| `sr` | Serbian | `kn` | Kannada |
+| `hr` | Croatian | `mr` | Marathi |
+| `cs` | Czech | `gu` | Gujarati |
+| `sk` | Slovak | `pa` | Punjabi |
+| `pl` | Polish | `ne` | Nepali |
+| `uk` | Ukrainian | `th` | Thai |
+| `ro` | Romanian | `vi` | Vietnamese |
+| `hu` | Hungarian | `ms` | Malay |
+| `el` | Greek | `tl` | Tagalog |
+| `sv` | Swedish | `af` | Afrikaans |
+</Accordion>
 
 <Note>
   The voice model and the speaking language are independent settings: picking a voice does not change the language, and vice versa. Choose a voice that sounds natural in the language you configure.
