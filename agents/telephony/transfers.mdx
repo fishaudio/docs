@@ -90,6 +90,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 | `phone_number` | The destination in E.164 format, for example `+14155550123`.                                                                                                                        |
 | `mode`         | `cold` (default) or `warm`; see the comparison above.                                                                                                                               |
 | `warm_connect` | Warm only: `confirm` (default) waits for the human's go-ahead before connecting; `direct` connects right after the briefing.                                                        |
+| `warm_briefing_instructions` | Warm only: what the agent says to your team member before asking them to take the call, replacing the default introduction. Notes from the conversation are always added after it, and [dynamic variables](/agents/build/dynamic-variables) are filled in per call. At most 1000 characters. See [Customizing the briefing](#customizing-the-briefing). |
 
 Destination numbers must be E.164 and are limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list. A missing label, or two labels that differ only in case, is rejected the same way. There is no cap on the number of destinations, but every description is part of the agent's tool instructions on every turn, so keep the list to what a receptionist could hold in their head.
 
@@ -128,9 +129,12 @@ If the handoff is refused (the destination is unreachable, or the number doesn't
     team sees a number they recognize.
   </Step>
   <Step title="The agent briefs the human">
-    The agent greets the human and relays short third-person notes on who is
-    calling and what they need, generated from the conversation so far. The
-    caller hears none of this.
+    The agent greets the human, reads out the caller's number digit by digit
+    with a pause between groups when the caller ID is known, and relays short
+    third-person notes on who is calling and what they need, generated from
+    the conversation so far. The
+    caller hears none of this. `warm_briefing_instructions` scripts the
+    introduction; see [Customizing the briefing](#customizing-the-briefing).
   </Step>
   <Step title="The calls merge">
     With `warm_connect: "confirm"` the merge waits for the human to agree; with
@@ -140,6 +144,43 @@ If the handoff is refused (the destination is unreachable, or the number doesn't
 </Steps>
 
 If the human cannot be reached, declines, or the consult call hits voicemail, the caller comes off hold and the agent apologizes and continues helping. It can retry if the caller asks. If the caller hangs up while on hold, the agent briefly tells the human what happened and ends the consult call.
+
+### Customizing the briefing
+
+By default the agent introduces itself, reads out the caller's number, relays the notes, and asks whether the person can take the call. A warm destination's briefing instructions replace that introduction. The notes generated from the conversation and the handoff itself stay as they are: the agent still waits for a yes (or connects right away with `direct`), so the text only has to say what you want relayed and how.
+
+The text is rendered with [dynamic variables](/agents/build/dynamic-variables) when the session starts, so it can carry facts the conversation may not mention. A custom text is spoken as written, so if it should include the caller's number, put it in yourself with `{{system.caller_number_spoken}}`, which arrives pre-grouped for speech (`+1; 4 1 5; 5 5 5; 0 1 2 3`) so the voice reads it digit by digit in any language; see [Reading a number out loud](/agents/build/dynamic-variables#reading-a-number-out-loud).
+
+Two things to keep in mind. The variables are filled in once, when the session is created, so an order number the caller mentions later reaches the colleague only through the notes. And a withheld caller ID renders as an empty string, so write the text to read well without it.
+
+#### In the console
+
+On the destination card, choosing **Warm** shows a **Briefing instructions** field beneath the handoff choice. Leave it empty to keep the default introduction.
+
+#### Through the API
+
+Set `warm_briefing_instructions` on the destination; it is ignored on cold destinations.
+
+<CodeGroup>
+```bash Custom briefing
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "conversation": {
+      "transfer_destinations": [
+        {
+          "label": "Support desk",
+          "phone_number": "+14155550123",
+          "mode": "warm",
+          "warm_connect": "confirm",
+          "warm_briefing_instructions": "Say the caller number, {{system.caller_number_spoken}}, then explain in one sentence why they are calling and ask if the colleague can take the call. Skip the number if it is empty."
+        }
+      ]
+    }
+  }'
+```
+</CodeGroup>
 
 ## Limitations
 

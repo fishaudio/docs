@@ -18,6 +18,7 @@ Placeholders are substituted in the agent's configured text and in webhook tool 
 | System prompt (`prompt.system_prompt`) | Yes | Yes |
 | First message, fixed text or prompt (`prompt.first_message`, `prompt.first_message_prompt`) | Yes | Yes |
 | Session [overrides](/agents/deploy/authenticated-sessions#overrides) of those fields (`overrides.system_prompt`, `overrides.first_message`, `overrides.first_message_prompt`) | Yes | Yes |
+| [Warm transfer briefing](/agents/telephony/transfers#customizing-the-briefing) (`conversation.transfer_destinations[].warm_briefing_instructions`) | Yes | Yes |
 | [Webhook tool](/agents/build/webhook-tools#argument-templating) URL, header values, and body template | No | Yes |
 
 Custom values travel with the request that starts the session: `dynamic_variables` on [`POST /v1/agent/sessions`](/agents/deploy/authenticated-sessions), `dynamicVariables` in the SDK's `AgentSession.start()` for [public agents](/agents/deploy/public-agents), `dynamic_variables` on [`POST /v1/agent/phone-calls`](/agents/telephony/outbound-calls#request-fields) for outbound calls, and the variables panel of a [preview call](/agents/test/preview-calls) in the Builder. Inbound phone calls have no such request: values come from the [inbound call webhook](/agents/monitor/webhooks#inbound-call-webhook) when one is configured; the caller's number and the other session facts are always available as system variables.
@@ -108,7 +109,12 @@ The platform fills a handful of `{{system.*}}` placeholders itself, on every ses
 | `system.language` | The session language code, one of the [52 supported languages](/agents/build/voice-language#speaking-language) |
  The `language` [override](/agents/deploy/authenticated-sessions#overrides) when the request carries one, otherwise the agent's [speaking language](/agents/build/voice-language#speaking-language). |
 | `system.caller_number` | The human party's number, E.164 | Inbound: the caller (empty if withheld or not a valid E.164 number). Outbound: the number you dialed. Empty on non-phone sessions. |
+| `system.caller_number_spoken` | The same number written for speech, for example `+1; 4 1 5; 5 5 5; 0 1 2 3` | Use it wherever the agent should say the number out loud; see [Reading a number out loud](#reading-a-number-out-loud). Empty whenever `system.caller_number` is empty. |
 | `system.dialed_number` | Your workspace number, E.164 | Inbound: the number that was called. Outbound: the number the call was placed from. Empty on non-phone sessions. |
+
+### Reading a number out loud
+
+Write `{{system.caller_number}}` where the number must stay a plain E.164 string (a tool argument, a lookup, a message the customer reads) and `{{system.caller_number_spoken}}` where the agent should say it. The spoken form puts the country code first, then groups of three or four digits, with a space between digits and a semicolon between groups: `+14155550123` becomes `+1; 4 1 5; 5 5 5; 0 1 2 3`. The agent repeats it as written, and the voice reads it digit by digit with a short pause at each semicolon, in every supported language. The semicolon is deliberate: a comma or a period is spoken as a word in several languages, a semicolon is silent in all of them. A raw E.164 string is read correctly in English and Chinese, but in most other languages it comes out as one long number, and asking the agent in the prompt to "read it digit by digit" leaves the spelling to the model, which occasionally drops a digit.
 
 ### Phone numbers
 
