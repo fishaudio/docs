@@ -532,7 +532,7 @@
           {
             "in": "query",
             "name": "status",
-            "description": "Comma-separated status filter (pending/active/completed/failed/unknown). Default: every status except pending.",
+            "description": "Comma-separated status filter (pending/active/completed/failed/unknown). Default: every status.",
             "required": false,
             "schema": {
               "anyOf": [
@@ -1493,6 +1493,13 @@
                       },
                       "title": "Metadata",
                       "type": "object"
+                    },
+                    "unattributed_llm_usage": {
+                      "items": {
+                        "$ref": "#/components/schemas/LLMMessageUsage"
+                      },
+                      "title": "Unattributed Llm Usage",
+                      "type": "array"
                     },
                     "items": {
                       "items": {
@@ -3697,7 +3704,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts `en`, `ja`, `zh`, `ko`, `es`, `fr`, `de`,\n`pt`, `it`, `nl`; anything else is 422. `voice.expressive` opts into richer expressive\ndelivery (emotion steering, laughter and sounds, pauses); off keeps the\nstandard delivery. `voice.keyterms` is a speech-recognition vocabulary of\nup to 50 plain terms (brand names, product terms, personal names), each at\nmost 100 characters with no commas or semicolons; `[]` clears it and 20-50\nfocused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` opts into richer expressive\n\ndelivery (emotion steering, laughter and sounds, pauses); off keeps the\nstandard delivery. `voice.keyterms` is a speech-recognition vocabulary of\nup to 50 plain terms (brand names, product terms, personal names), each at\nmost 100 characters with no commas or semicolons; `[]` clears it and 20-50\nfocused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
         "security": [
           {
             "BearerAuth": []
@@ -8472,6 +8479,50 @@
                       "description": "Inbound calls route to this agent; unbound numbers ring busy.",
                       "title": "Agent Id"
                     },
+                    "cold_transfer_use_original_caller": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Managed `twilio` numbers: whether a cold-transfer target sees the original caller's number (true) or this number (false). `null` for imported `sip` numbers, whose carrier owns the setting.",
+                      "title": "Cold Transfer Use Original Caller"
+                    },
+                    "cold_transfer_use_original_caller_effective": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The policy the carrier has confirmed; `null` while unknown or for imported `sip` numbers.",
+                      "title": "Cold Transfer Use Original Caller Effective"
+                    },
+                    "caller_id_sync_status": {
+                      "default": "carrier_managed",
+                      "description": "`synced` once the carrier confirmed the policy, `pending` while it is being applied, `error` when the last attempt failed (send `retry_caller_id_sync`), `carrier_managed` for imported `sip` numbers.",
+                      "enum": [
+                        "synced",
+                        "pending",
+                        "error",
+                        "carrier_managed"
+                      ],
+                      "title": "Caller Id Sync Status",
+                      "type": "string"
+                    },
+                    "caller_id_sync_error": {
+                      "default": "",
+                      "description": "Why the last synchronization failed; empty otherwise.",
+                      "title": "Caller Id Sync Error",
+                      "type": "string"
+                    },
                     "status": {
                       "enum": [
                         "provisioning",
@@ -8951,6 +9002,50 @@
                       "description": "Inbound calls route to this agent; unbound numbers ring busy.",
                       "title": "Agent Id"
                     },
+                    "cold_transfer_use_original_caller": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Managed `twilio` numbers: whether a cold-transfer target sees the original caller's number (true) or this number (false). `null` for imported `sip` numbers, whose carrier owns the setting.",
+                      "title": "Cold Transfer Use Original Caller"
+                    },
+                    "cold_transfer_use_original_caller_effective": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The policy the carrier has confirmed; `null` while unknown or for imported `sip` numbers.",
+                      "title": "Cold Transfer Use Original Caller Effective"
+                    },
+                    "caller_id_sync_status": {
+                      "default": "carrier_managed",
+                      "description": "`synced` once the carrier confirmed the policy, `pending` while it is being applied, `error` when the last attempt failed (send `retry_caller_id_sync`), `carrier_managed` for imported `sip` numbers.",
+                      "enum": [
+                        "synced",
+                        "pending",
+                        "error",
+                        "carrier_managed"
+                      ],
+                      "title": "Caller Id Sync Status",
+                      "type": "string"
+                    },
+                    "caller_id_sync_error": {
+                      "default": "",
+                      "description": "Why the last synchronization failed; empty otherwise.",
+                      "title": "Caller Id Sync Error",
+                      "type": "string"
+                    },
                     "status": {
                       "enum": [
                         "provisioning",
@@ -9177,7 +9272,7 @@
       },
       "patch": {
         "summary": "Update Phone Number",
-        "description": "Change the label and/or repoint the number at another agent — the\ndeployment-pipeline move (rebind from the staging agent to the production\none). Send `agent_id: null` to unbind; unbound numbers ring busy. The\nagent must live in the number's workspace. Rebinding is a routing-table\nupdate resolved on the next inbound call; nothing about the number itself\nis reprovisioned.",
+        "description": "Change the label and/or repoint the number at another agent — the\ndeployment-pipeline move (rebind from the staging agent to the production\none). Send `agent_id: null` to unbind; unbound numbers ring busy. The\nagent must live in the number's workspace. Rebinding is a routing-table\nupdate resolved on the next inbound call; nothing about the number itself\nis reprovisioned.\n\nManaged `twilio` numbers also accept `cold_transfer_use_original_caller`,\nwhich picks the number a cold-transfer target sees, and\n`retry_caller_id_sync` to re-apply it after a failed synchronization; read\n`caller_id_sync_status` on the response. Imported `sip` numbers return 409\nfor either field because their carrier owns the setting.",
         "security": [
           {
             "BearerAuth": []
@@ -9252,6 +9347,50 @@
                       ],
                       "description": "Inbound calls route to this agent; unbound numbers ring busy.",
                       "title": "Agent Id"
+                    },
+                    "cold_transfer_use_original_caller": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Managed `twilio` numbers: whether a cold-transfer target sees the original caller's number (true) or this number (false). `null` for imported `sip` numbers, whose carrier owns the setting.",
+                      "title": "Cold Transfer Use Original Caller"
+                    },
+                    "cold_transfer_use_original_caller_effective": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The policy the carrier has confirmed; `null` while unknown or for imported `sip` numbers.",
+                      "title": "Cold Transfer Use Original Caller Effective"
+                    },
+                    "caller_id_sync_status": {
+                      "default": "carrier_managed",
+                      "description": "`synced` once the carrier confirmed the policy, `pending` while it is being applied, `error` when the last attempt failed (send `retry_caller_id_sync`), `carrier_managed` for imported `sip` numbers.",
+                      "enum": [
+                        "synced",
+                        "pending",
+                        "error",
+                        "carrier_managed"
+                      ],
+                      "title": "Caller Id Sync Status",
+                      "type": "string"
+                    },
+                    "caller_id_sync_error": {
+                      "default": "",
+                      "description": "Why the last synchronization failed; empty otherwise.",
+                      "title": "Caller Id Sync Error",
+                      "type": "string"
                     },
                     "status": {
                       "enum": [
@@ -9400,6 +9539,43 @@
           },
           "404": {
             "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request conflict",
             "headers": {},
             "content": {
               "application/json": {
@@ -14466,7 +14642,49 @@
                   "de",
                   "pt",
                   "it",
-                  "nl"
+                  "nl",
+                  "ar",
+                  "hi",
+                  "id",
+                  "tr",
+                  "ru",
+                  "bg",
+                  "sr",
+                  "hr",
+                  "cs",
+                  "sk",
+                  "pl",
+                  "uk",
+                  "ro",
+                  "hu",
+                  "el",
+                  "sv",
+                  "da",
+                  "no",
+                  "fi",
+                  "et",
+                  "lv",
+                  "lt",
+                  "ca",
+                  "he",
+                  "fa",
+                  "ur",
+                  "kk",
+                  "ka",
+                  "hy",
+                  "bn",
+                  "ta",
+                  "te",
+                  "kn",
+                  "mr",
+                  "gu",
+                  "pa",
+                  "ne",
+                  "th",
+                  "vi",
+                  "ms",
+                  "tl",
+                  "af"
                 ],
                 "type": "string"
               },
@@ -14606,6 +14824,53 @@
       "AgentSessionMessageItem": {
         "description": "One transcript message; system messages never surface here.",
         "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Id"
+          },
+          "runtime_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Runtime Message Id"
+          },
+          "message_generation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message Generation Id"
+          },
+          "llm_usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMMessageUsage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "type": {
             "const": "message",
             "default": "message",
@@ -14831,6 +15096,191 @@
           "status"
         ],
         "title": "AgentSessionToolResultItem",
+        "type": "object"
+      },
+      "LLMMessageTokenCost": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "rate_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Version"
+          },
+          "category": {
+            "enum": [
+              "input",
+              "cache_read",
+              "cache_write_5m",
+              "cache_write_1h",
+              "output"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tokens"
+          },
+          "rate_per_million": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Per Million"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          }
+        },
+        "required": [
+          "model",
+          "rate_version",
+          "category",
+          "tokens",
+          "rate_per_million",
+          "cost_usd"
+        ],
+        "title": "LLMMessageTokenCost",
+        "type": "object"
+      },
+      "LLMMessageUsage": {
+        "properties": {
+          "message_generation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message Generation Id"
+          },
+          "turn_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Turn Id"
+          },
+          "status": {
+            "enum": [
+              "complete",
+              "pending",
+              "unavailable"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "billing_mode": {
+            "enum": [
+              "tokens",
+              "included",
+              "legacy"
+            ],
+            "title": "Billing Mode",
+            "type": "string"
+          },
+          "call_count": {
+            "default": 0,
+            "title": "Call Count",
+            "type": "integer"
+          },
+          "usage_complete": {
+            "default": false,
+            "title": "Usage Complete",
+            "type": "boolean"
+          },
+          "call_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Call Ids",
+            "type": "array"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cost Usd"
+          },
+          "billable_cost_usd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Billable Cost Usd"
+          },
+          "known_cost_usd": {
+            "default": "0",
+            "title": "Known Cost Usd",
+            "type": "string"
+          },
+          "tokens": {
+            "items": {
+              "$ref": "#/components/schemas/LLMMessageTokenCost"
+            },
+            "title": "Tokens",
+            "type": "array"
+          }
+        },
+        "required": [
+          "status",
+          "billing_mode"
+        ],
+        "title": "LLMMessageUsage",
         "type": "object"
       },
       "AgentSessionRecordingTrackEntity": {
@@ -15083,8 +15533,11 @@
         "additionalProperties": false,
         "properties": {
           "type": {
-            "const": "phone",
             "default": "phone",
+            "enum": [
+              "phone",
+              "sip"
+            ],
             "title": "Type",
             "type": "string"
           },
@@ -15094,8 +15547,28 @@
             "type": "string"
           },
           "phone_number": {
-            "title": "Phone Number",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Phone Number"
+          },
+          "sip_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sip Uri"
           },
           "description": {
             "default": "",
@@ -15121,9 +15594,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "phone_number"
-        ],
         "title": "AgentTransferDestinationPatch",
         "type": "object"
       },
@@ -15270,15 +15740,57 @@
             "default": "en",
             "enum": [
               "en",
-              "zh",
               "ja",
+              "zh",
               "ko",
               "es",
               "fr",
               "de",
               "pt",
+              "it",
+              "nl",
+              "ar",
+              "hi",
+              "id",
+              "tr",
               "ru",
-              "ar"
+              "bg",
+              "sr",
+              "hr",
+              "cs",
+              "sk",
+              "pl",
+              "uk",
+              "ro",
+              "hu",
+              "el",
+              "sv",
+              "da",
+              "no",
+              "fi",
+              "et",
+              "lv",
+              "lt",
+              "ca",
+              "he",
+              "fa",
+              "ur",
+              "kk",
+              "ka",
+              "hy",
+              "bn",
+              "ta",
+              "te",
+              "kn",
+              "mr",
+              "gu",
+              "pa",
+              "ne",
+              "th",
+              "vi",
+              "ms",
+              "tl",
+              "af"
             ],
             "title": "Language",
             "type": "string"
@@ -15867,7 +16379,49 @@
                   "de",
                   "pt",
                   "it",
-                  "nl"
+                  "nl",
+                  "ar",
+                  "hi",
+                  "id",
+                  "tr",
+                  "ru",
+                  "bg",
+                  "sr",
+                  "hr",
+                  "cs",
+                  "sk",
+                  "pl",
+                  "uk",
+                  "ro",
+                  "hu",
+                  "el",
+                  "sv",
+                  "da",
+                  "no",
+                  "fi",
+                  "et",
+                  "lv",
+                  "lt",
+                  "ca",
+                  "he",
+                  "fa",
+                  "ur",
+                  "kk",
+                  "ka",
+                  "hy",
+                  "bn",
+                  "ta",
+                  "te",
+                  "kn",
+                  "mr",
+                  "gu",
+                  "pa",
+                  "ne",
+                  "th",
+                  "vi",
+                  "ms",
+                  "tl",
+                  "af"
                 ],
                 "type": "string"
               },
@@ -16264,15 +16818,57 @@
             "default": "en",
             "enum": [
               "en",
-              "zh",
               "ja",
+              "zh",
               "ko",
               "es",
               "fr",
               "de",
               "pt",
+              "it",
+              "nl",
+              "ar",
+              "hi",
+              "id",
+              "tr",
               "ru",
-              "ar"
+              "bg",
+              "sr",
+              "hr",
+              "cs",
+              "sk",
+              "pl",
+              "uk",
+              "ro",
+              "hu",
+              "el",
+              "sv",
+              "da",
+              "no",
+              "fi",
+              "et",
+              "lv",
+              "lt",
+              "ca",
+              "he",
+              "fa",
+              "ur",
+              "kk",
+              "ka",
+              "hy",
+              "bn",
+              "ta",
+              "te",
+              "kn",
+              "mr",
+              "gu",
+              "pa",
+              "ne",
+              "th",
+              "vi",
+              "ms",
+              "tl",
+              "af"
             ],
             "title": "Language",
             "type": "string"
@@ -16435,7 +17031,7 @@
         "type": "object"
       },
       "AgentOutboundConfig": {
-        "description": "Deprecated (2026-09-07): kept for compatibility only. `amd_enabled` and\n`voicemail` no longer change call behavior — outbound calls greet as soon as\nthe callee answers, and `answered_by` is always `unknown`.",
+        "description": "Deprecated (2026-09-07): kept for compatibility only. `amd_enabled` and\n`voicemail` no longer change call behavior; outbound calls greet as soon as\nthe callee answers, and `answered_by` is always `unknown`.",
         "properties": {
           "amd_enabled": {
             "default": true,
@@ -16524,8 +17120,11 @@
       "AgentTransferDestination": {
         "properties": {
           "type": {
-            "const": "phone",
             "default": "phone",
+            "enum": [
+              "phone",
+              "sip"
+            ],
             "title": "Type",
             "type": "string"
           },
@@ -16535,8 +17134,28 @@
             "type": "string"
           },
           "phone_number": {
-            "title": "Phone Number",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Phone Number"
+          },
+          "sip_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sip Uri"
           },
           "description": {
             "default": "",
@@ -16562,9 +17181,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "phone_number"
-        ],
         "title": "AgentTransferDestination",
         "type": "object"
       },
@@ -16587,7 +17203,49 @@
               "de",
               "pt",
               "it",
-              "nl"
+              "nl",
+              "ar",
+              "hi",
+              "id",
+              "tr",
+              "ru",
+              "bg",
+              "sr",
+              "hr",
+              "cs",
+              "sk",
+              "pl",
+              "uk",
+              "ro",
+              "hu",
+              "el",
+              "sv",
+              "da",
+              "no",
+              "fi",
+              "et",
+              "lv",
+              "lt",
+              "ca",
+              "he",
+              "fa",
+              "ur",
+              "kk",
+              "ka",
+              "hy",
+              "bn",
+              "ta",
+              "te",
+              "kn",
+              "mr",
+              "gu",
+              "pa",
+              "ne",
+              "th",
+              "vi",
+              "ms",
+              "tl",
+              "af"
             ],
             "title": "Speaking Language",
             "type": "string"
@@ -17459,6 +18117,50 @@
             "description": "Inbound calls route to this agent; unbound numbers ring busy.",
             "title": "Agent Id"
           },
+          "cold_transfer_use_original_caller": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Managed `twilio` numbers: whether a cold-transfer target sees the original caller's number (true) or this number (false). `null` for imported `sip` numbers, whose carrier owns the setting.",
+            "title": "Cold Transfer Use Original Caller"
+          },
+          "cold_transfer_use_original_caller_effective": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The policy the carrier has confirmed; `null` while unknown or for imported `sip` numbers.",
+            "title": "Cold Transfer Use Original Caller Effective"
+          },
+          "caller_id_sync_status": {
+            "default": "carrier_managed",
+            "description": "`synced` once the carrier confirmed the policy, `pending` while it is being applied, `error` when the last attempt failed (send `retry_caller_id_sync`), `carrier_managed` for imported `sip` numbers.",
+            "enum": [
+              "synced",
+              "pending",
+              "error",
+              "carrier_managed"
+            ],
+            "title": "Caller Id Sync Status",
+            "type": "string"
+          },
+          "caller_id_sync_error": {
+            "default": "",
+            "description": "Why the last synchronization failed; empty otherwise.",
+            "title": "Caller Id Sync Error",
+            "type": "string"
+          },
           "status": {
             "enum": [
               "provisioning",
@@ -17721,6 +18423,25 @@
             "default": null,
             "description": "Agent that answers this number's inbound calls. Explicit null unbinds; omit the field to keep the current binding.",
             "title": "Agent Id"
+          },
+          "cold_transfer_use_original_caller": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Managed `twilio` numbers only: show the original caller's number on cold transfers (true) or this number (false). Takes effect for new calls once `caller_id_sync_status` is `synced`.",
+            "title": "Cold Transfer Use Original Caller"
+          },
+          "retry_caller_id_sync": {
+            "default": false,
+            "description": "Re-apply the current caller ID policy after a failed synchronization.",
+            "title": "Retry Caller Id Sync",
+            "type": "boolean"
           }
         },
         "title": "PublicPhoneNumberUpdatePayload",
