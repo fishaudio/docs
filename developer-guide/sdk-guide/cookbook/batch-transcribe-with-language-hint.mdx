@@ -96,9 +96,8 @@ for (const row of results) {
 Each call returns an [`ASRResponse`](/api-reference/sdk/python/types#asrresponse-objects) with `.text`, a `.duration` in seconds, and per-phrase `.segments`. The loop keeps files independent, so one bad file does not block the rest of the batch.
 
 <Tip>
-  Auto-detection (omit `language`) works well, but passing an explicit
-  `language` improves accuracy for similar-sounding languages. Use one
-  `language` per batch — split mixed-language files into separate lists.
+  Use one `language` per batch; split mixed-language files into separate
+  lists.
 </Tip>
 
 ## Related

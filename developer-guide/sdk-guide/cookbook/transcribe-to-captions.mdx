@@ -12,7 +12,7 @@ import Prerequisites from "/snippets/prerequisites.mdx";
 
 ## Recipe
 
-Call [`asr.transcribe()`](/api-reference/sdk/python/resources#transcribe) with `include_timestamps=True`, then turn each [`ASRSegment`](/api-reference/sdk/python/types#asrsegment-objects) into a numbered cue. Segment `start` / `end` are in **seconds**, so the only real work is formatting them — SRT wants `HH:MM:SS,mmm` (comma), WebVTT wants `HH:MM:SS.mmm` (dot).
+Call [`asr.transcribe()`](/api-reference/sdk/python/resources#transcribe) with `include_timestamps=True`, then turn each [`ASRSegment`](/api-reference/sdk/python/types#asrsegment-objects) into a numbered cue. Segment `start` / `end` are in **seconds**, so the only real work is formatting them: SRT wants `HH:MM:SS,mmm` (comma), WebVTT wants `HH:MM:SS.mmm` (dot).
 
 <CodeGroup>
 ```python Python
@@ -88,10 +88,10 @@ console.log(`Wrote ${result.segments.length} cues to captions.srt`);
 ```
 </CodeGroup>
 
-Both files share one timestamp helper — WebVTT is just the SRT formatting with `,` swapped for `.`, so there is no second formatter to keep in sync.
+Both files share one timestamp helper; WebVTT just swaps `,` for `.`.
 
 <Tip>
-  Pass `language=` (for example `"en"` or `"zh"`) when you know it — explicit
+  Pass `language=` (for example `"en"` or `"zh"`) when you know it. Explicit
   language selection sharpens segment boundaries, which keeps your cue timing
   tight.
 </Tip>

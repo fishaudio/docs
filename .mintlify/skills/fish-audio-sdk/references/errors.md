@@ -1,6 +1,6 @@
 # Errors, Retries & Timeouts
 
-The two SDKs have **different** exception models. The tables below reflect what the SDK source actually raises — not every exported class is thrown.
+The two SDKs have **different** exception models. The tables below reflect what the SDK source actually raises; not every exported class is thrown.
 
 ## Python exceptions
 
@@ -9,9 +9,9 @@ Hierarchy (all subclasses of `FishAudioError`):
 | Exception             | When                                           | Attributes                        |
 | --------------------- | ---------------------------------------------- | --------------------------------- |
 | `APIError`            | base for HTTP errors                           | `.status`, `.message`, `.body`    |
-| `AuthenticationError` | 401 — bad/missing key                          | (APIError)                        |
+| `AuthenticationError` | 401 (bad/missing key)                          | (APIError)                        |
 | `PermissionError`     | 403                                            | (APIError)                        |
-| `NotFoundError`       | 404 — voice id not found                       | (APIError)                        |
+| `NotFoundError`       | 404 (voice id not found)                       | (APIError)                        |
 | `RateLimitError`      | 429                                            | (APIError)                        |
 | `ServerError`         | 5xx                                            | (APIError)                        |
 | `WebSocketError`      | realtime stream failed                         | —                                 |
@@ -48,7 +48,7 @@ except FishAudioError as e:
 
 - **No automatic retries.** The Python client makes a single request and raises on failure. Implement your own retry loop if you need one (e.g. back off on `RateLimitError`).
 - **Timeout** is set on the client: `FishAudio(timeout=240.0)` (seconds, default 240).
-- `RequestOptions(max_retries=...)` exists but is currently a **no-op** — don't rely on it. `RequestOptions(timeout=..., additional_headers=...)` does work per request:
+- `RequestOptions(max_retries=...)` exists but is currently a **no-op**, so don't rely on it. `RequestOptions(timeout=..., additional_headers=...)` does work per request:
 
 ```python
 from fishaudio.core.request_options import RequestOptions
@@ -92,7 +92,7 @@ What the JS client actually throws:
 
 | Error                                                 | When                                                                                         |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `UnprocessableEntityError` (extends `FishAudioError`) | 422 — the **only** typed HTTP subclass thrown; `.body` is `{ detail: [{ loc, msg, type }] }` |
+| `UnprocessableEntityError` (extends `FishAudioError`) | 422, the **only** typed HTTP subclass thrown; `.body` is `{ detail: [{ loc, msg, type }] }` |
 | `FishAudioError`                                      | every other non-2xx response; read `.statusCode`, `.body`, `.rawResponse`                    |
 | `FishAudioTimeoutError`                               | request exceeded the timeout                                                                 |
 

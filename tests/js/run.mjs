@@ -14,7 +14,7 @@ import { SPECS } from "./specs.mjs";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FISH = resolve(HERE, "../..");
 const WS = resolve(FISH, "..");
-const PUBLIC_VOICE = "802e3bc2b27e49c2995d23ef70e6ac89";
+const PUBLIC_VOICE = "9a9cf47702da476aa4629e2506d4a857";
 
 function resolveKey() {
   if (process.env.FISH_API_KEY) return process.env.FISH_API_KEY.trim();

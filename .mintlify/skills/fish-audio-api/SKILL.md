@@ -19,7 +19,7 @@ This file condenses those into rules an agent can apply directly.
 - Auth (all endpoints): `Authorization: Bearer <FISH_API_KEY>`
 - Optional distributed tracing for inference APIs: see `https://docs.fish.audio/api-reference/observability`.
 - Get API keys: `https://fish.audio/app/api-keys`
-- Never hardcode keys — read from an env var like `FISH_API_KEY`.
+- Never hardcode keys. Read from an env var like `FISH_API_KEY`.
 - Errors are JSON `{status, message}` for 401 / 402 / 404, and an array of `{loc, type, msg, ctx, in}` for 422 (validation).
 
 ## Endpoint map
@@ -38,13 +38,16 @@ This file condenses those into rules an agent can apply directly.
 | GET | `/wallet/{user_id}/api-credit` | API credit balance (`user_id` defaults to `self`) |
 | WSS | `/v1/tts/live` | Real-time TTS streaming (MessagePack frames) |
 
-## Text-to-Speech — `POST /v1/tts`
+## Text-to-Speech: `POST /v1/tts`
 
 Required headers:
 
 - `Authorization: Bearer <FISH_API_KEY>`
 - `Content-Type: application/json` **or** `application/msgpack`
-- `model: s2-pro` (required). Values: `s1`, `s2-pro`. Default to `s2-pro` unless the user explicitly asks otherwise.
+
+Optional headers:
+
+- `model`: values `s1`, `s2-pro`, `s2.1-pro`, `s2.1-pro-free`, `drama-3-preview`. If omitted or unrecognized, the server falls back to `s2.1-pro` (paid). Default to `s2.1-pro` for production; use `s2.1-pro-free` for free-tier evaluation and prototyping (same model, no TTFA/DPA guarantees). `drama-3-preview` is a preview model; its behavior and availability may change.
 
 Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set by `format`. Write to a file or pipe to a player. There is **no JSON wrapper** on success.
 
@@ -53,13 +56,13 @@ Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set
 | Field | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `text` | string | — (required) | The text to synthesize. Use speaker tags `<\|speaker:0\|>`, `<\|speaker:1\|>` for multi-speaker. |
-| `reference_id` | string \| string[] \| null | null | Voice model ID. Array = multi-speaker (S2-Pro only). |
+| `reference_id` | string \| string[] \| null | null | Voice model ID. Array = multi-speaker (`s2-pro`, the S2.1-Pro family, and `drama-3-preview`). |
 | `references` | ReferenceAudio[] \| ReferenceAudio[][] \| null | null | Inline zero-shot cloning samples. **Requires `application/msgpack`** because `audio` is raw bytes. 2D array for multi-speaker. |
 | `temperature` | number 0–1 | 0.7 | Expressiveness. |
 | `top_p` | number 0–1 | 0.7 | Nucleus sampling. |
 | `prosody.speed` | number 0.5–2 | 1 | Playback speed. |
 | `prosody.volume` | number (dB) | 0 | Loudness offset. |
-| `prosody.normalize_loudness` | bool | true | **S2-Pro only.** |
+| `prosody.normalize_loudness` | bool | true | **`s2-pro` and the S2.1-Pro family.** |
 | `chunk_length` | int 100–300 | 300 | Text segment size. |
 | `min_chunk_length` | int 0–100 | 50 | Min chars before a new chunk. |
 | `normalize` | bool | true | Normalize numbers/etc. for EN/ZH. |
@@ -79,7 +82,7 @@ Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set
 
 1. **Library / custom voice model** → set `reference_id` to the model `_id`. Simplest path.
 2. **Zero-shot from audio** → set `references` (array of `{audio, text}`) and use **MessagePack** body. JSON cannot carry raw audio bytes.
-3. **Multi-speaker dialogue (S2-Pro only)** → `reference_id: [id0, id1, ...]` and embed `<|speaker:0|>` / `<|speaker:1|>` markers inside `text`. For zero-shot multi-speaker, `references` is an array-of-arrays, one inner array per speaker.
+3. **Multi-speaker dialogue (`s2-pro`, the S2.1-Pro family, and `drama-3-preview`)** → `reference_id: [id0, id1, ...]` and embed `<|speaker:0|>` / `<|speaker:1|>` markers inside `text`. For zero-shot multi-speaker, `references` is an array-of-arrays, one inner array per speaker.
 
 ### Single-speaker curl
 
@@ -87,7 +90,7 @@ Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set
 curl --request POST https://api.fish.audio/v1/tts \
   --header "Authorization: Bearer $FISH_API_KEY" \
   --header "Content-Type: application/json" \
-  --header "model: s2-pro" \
+  --header "model: s2.1-pro" \
   --data '{
     "text": "Hello! Welcome to Fish Audio.",
     "reference_id": "<voice-model-id>",
@@ -98,13 +101,13 @@ curl --request POST https://api.fish.audio/v1/tts \
   --output out.mp3
 ```
 
-### Multi-speaker curl (S2-Pro)
+### Multi-speaker curl
 
 ```bash
 curl --request POST https://api.fish.audio/v1/tts \
   --header "Authorization: Bearer $FISH_API_KEY" \
   --header "Content-Type: application/json" \
-  --header "model: s2-pro" \
+  --header "model: s2.1-pro" \
   --data '{
     "text": "<|speaker:0|>Good morning!<|speaker:1|>Good morning! How are you?",
     "reference_id": ["<speaker-0-id>", "<speaker-1-id>"],
@@ -128,7 +131,7 @@ payload = {
 headers = {
     "Authorization": f"Bearer {os.environ['FISH_API_KEY']}",
     "Content-Type": "application/json",
-    "model": "s2-pro",
+    "model": "s2.1-pro",
 }
 
 with httpx.stream("POST", "https://api.fish.audio/v1/tts",
@@ -156,7 +159,7 @@ payload = {
 headers = {
     "Authorization": f"Bearer {os.environ['FISH_API_KEY']}",
     "Content-Type": "application/msgpack",
-    "model": "s2-pro",
+    "model": "s2.1-pro",
 }
 
 body = msgpack.packb(payload, use_bin_type=True)
@@ -180,7 +183,7 @@ const res = await fetch("https://api.fish.audio/v1/tts", {
   headers: {
     Authorization: `Bearer ${process.env.FISH_API_KEY}`,
     "Content-Type": "application/json",
-    model: "s2-pro",
+    model: "s2.1-pro",
   },
   body: JSON.stringify({
     text: "Hello from Fish Audio.",
@@ -194,7 +197,7 @@ if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
 await pipeline(Readable.fromWeb(res.body), createWriteStream("out.mp3"));
 ```
 
-## Speech-to-Text — `POST /v1/asr`
+## Speech-to-Text: `POST /v1/asr`
 
 Required headers: `Authorization`. Content type: `multipart/form-data` or `application/msgpack`.
 
@@ -202,7 +205,7 @@ Form fields:
 
 - `audio` (binary, required)
 - `language` (string, optional; omit to auto-detect)
-- `ignore_timestamps` (bool, default `true`; set `false` to get per-segment timestamps — adds latency on clips < 30 s)
+- `ignore_timestamps` (bool, default `true`; set `false` to get per-segment timestamps, which adds latency on clips < 30 s)
 
 Response (200):
 
@@ -241,7 +244,7 @@ r.raise_for_status()
 print(r.json()["text"])
 ```
 
-## Voice Design — `POST /v1/voice-design`
+## Voice Design: `POST /v1/voice-design`
 
 Required headers:
 
@@ -312,11 +315,11 @@ with open("voice.wav", "wb") as f:
 
 Billing: one successful generation request is charged once, even when it returns multiple candidates. Authentication, validation, balance, concurrency, and service errors are not billed.
 
-## Voice models — `/model`
+## Voice models: `/model`
 
 ### List: `GET /model`
 
-Query params: `page_size` (default 10), `page_number` (default 1), `title`, `tag` (string or array), `self` (bool — only your models), `author_id`, `language`, `title_language`, `sort_by` (`score` | `task_count` | `created_at`, default `score`).
+Query params: `page_size` (default 10), `page_number` (default 1), `title`, `tag` (string or array), `self` (bool; only your models), `author_id`, `language`, `title_language`, `sort_by` (`score` | `task_count` | `created_at`, default `score`).
 
 Returns `{total, items: ModelEntity[]}`.
 
@@ -346,7 +349,7 @@ Returns 201 with the full `ModelEntity` including `_id`, `state` (`created` | `t
 ### Get / Update / Delete
 
 - `GET /model/{id}` → `ModelEntity`
-- `PATCH /model/{id}` — JSON, form-urlencoded, multipart, or msgpack. Nullable fields: `title`, `description`, `cover_image` (binary), `visibility`, `tags`.
+- `PATCH /model/{id}`: JSON, form-urlencoded, multipart, or msgpack. Nullable fields: `title`, `description`, `cover_image` (binary), `visibility`, `tags`.
 - `DELETE /model/{id}` → 200 on success.
 
 ```bash
@@ -359,32 +362,32 @@ curl --request PATCH https://api.fish.audio/model/<id> \
 ## Wallet
 
 - `GET /wallet/self/package` → `{user_id, type, total, balance, created_at, updated_at, finished_at}`
-- `GET /wallet/self/api-credit` → `{_id, user_id, credit, created_at, updated_at, has_phone_sha256, has_free_credit}`. Pass `?check_free_credit=true` to also populate `has_free_credit` (default `false` — the field is `null` when not checked).
+- `GET /wallet/self/api-credit` → `{_id, user_id, credit, created_at, updated_at, has_phone_sha256, has_free_credit}`. Pass `?check_free_credit=true` to also populate `has_free_credit` (default `false`; the field is `null` when not checked).
 
 Replace `self` with a specific `user_id` if you have permission; otherwise always use `self`.
 
-## WebSocket TTS — `wss://api.fish.audio/v1/tts/live`
+## WebSocket TTS: `wss://api.fish.audio/v1/tts/live`
 
 For low-latency / streaming TTS (e.g. LLM token stream → speech). All frames are **MessagePack-encoded** binary messages.
 
 ### Connection headers
 
 - `Authorization: Bearer <FISH_API_KEY>`
-- `model: s2-pro` (or `s1`) — **required**
+- `model`: optional; values `s1`, `s2-pro`, `s2.1-pro`, `s2.1-pro-free` (falls back to `s2.1-pro` when omitted or unrecognized)
 
 ### Event sequence
 
 Client → server:
 
-1. `StartEvent` — once, first message: `{event: "start", request: <TTSRequest>}`. The `request` object is the same schema as `POST /v1/tts` above. Usually `request.text = ""` and the real text streams in `TextEvent`s.
-2. `TextEvent` — one per text chunk: `{event: "text", text: "..."}`. Send as many as needed.
-3. `FlushEvent` — optional: `{event: "flush"}`. Forces the server to synthesize buffered text immediately (use for turn-taking / low-latency flushes).
-4. `CloseEvent` — final: `{event: "stop"}`. **Note the literal is `stop`, not `close`.**
+1. `StartEvent` (once, first message): `{event: "start", request: <TTSRequest>}`. The `request` object is the same schema as `POST /v1/tts` above. Usually `request.text = ""` and the real text streams in `TextEvent`s.
+2. `TextEvent` (one per text chunk): `{event: "text", text: "..."}`. Send as many as needed.
+3. `FlushEvent` (optional): `{event: "flush"}`. Forces the server to synthesize buffered text immediately (use for turn-taking / low-latency flushes).
+4. `CloseEvent` (final): `{event: "stop"}`. **Note the literal is `stop`, not `close`.**
 
 Server → client:
 
-- `AudioEvent`: `{event: "audio", audio: <bytes>}` — many of these, concatenate in order to reconstruct the audio stream in the format set by `request.format`.
-- `FinishEvent`: `{event: "finish", reason: "stop" | "error"}` — exactly one, then the server closes the socket. Ignore unknown events for forward compatibility.
+- `AudioEvent`: `{event: "audio", audio: <bytes>}`. Many of these; concatenate in order to reconstruct the audio stream in the format set by `request.format`.
+- `FinishEvent`: `{event: "finish", reason: "stop" | "error"}`. Exactly one, then the server closes the socket. Ignore unknown events for forward compatibility.
 
 ### Python example (`websockets>=14` + `msgpack`)
 
@@ -409,7 +412,7 @@ start = {
 }
 
 async def run(text_stream):
-    headers = {"Authorization": f"Bearer {API_KEY}", "model": "s2-pro"}
+    headers = {"Authorization": f"Bearer {API_KEY}", "model": "s2.1-pro"}
     async with websockets.connect(URL, additional_headers=headers,
                                   max_size=None) as ws:
         await ws.send(msgpack.packb(start, use_bin_type=True))
@@ -458,7 +461,7 @@ import { createWriteStream } from "node:fs";
 const ws = new WebSocket("wss://api.fish.audio/v1/tts/live", {
   headers: {
     Authorization: `Bearer ${process.env.FISH_API_KEY}`,
-    model: "s2-pro",
+    model: "s2.1-pro",
   },
 });
 
@@ -486,11 +489,11 @@ ws.on("message", (buf) => {
 
 ## Emotion / expression control
 
-The S1 model uses `(parenthesis)` tags inside `text`, e.g. `(happy) What a day!`. S2-Pro uses free-form `[bracket]` natural-language tags, e.g. `[slightly sarcastic, rising tone]`. Either works through `text` — no separate parameter. Full list: `https://docs.fish.audio/api-reference/emotion-reference.md`.
+The S1 model uses `(parenthesis)` tags inside `text`, e.g. `(happy) What a day!`. S2-Pro uses free-form `[bracket]` natural-language tags, e.g. `[slightly sarcastic, rising tone]`. Either works through `text`; there is no separate parameter. Full list: `https://docs.fish.audio/api-reference/emotion-reference.md`.
 
 ## Encoding and content-type rules
 
-- Use `application/json` for normal TTS requests — it's the simplest and works for `reference_id` flows.
+- Use `application/json` for normal TTS requests. It's the simplest and works for `reference_id` flows.
 - Use `application/msgpack` when you need to send raw audio bytes inline (inline `references`, or the WebSocket protocol).
 - Use `multipart/form-data` for `/v1/asr` and `POST /model` because they upload files.
 - All WebSocket frames are MessagePack binary, regardless of inner payload.
@@ -501,18 +504,17 @@ The S1 model uses `(parenthesis)` tags inside `text`, e.g. `(happy) What a day!`
 - 402 → out of credit. Check `/wallet/self/api-credit`.
 - 404 → bad `model/{id}` (voice model doesn't exist or isn't visible to you).
 - 422 → validation. The response is an array; each item's `loc` points at the offending field. Most common causes:
-  - `model` header missing on `/v1/tts` or WebSocket.
-  - `reference_id` is an array but model is `s1` (multi-speaker requires `s2-pro`).
+  - `reference_id` is an array but model is `s1` (multi-speaker requires `s2-pro`, an S2.1-Pro model, or `drama-3-preview`).
   - `references` sent with `Content-Type: application/json` (must be msgpack).
   - Numeric param out of range (`temperature`, `top_p`, `chunk_length`, `min_chunk_length`, `prosody.speed`, `early_stop_threshold`).
   - `mp3_bitrate` / `opus_bitrate` set without matching `format`.
-- WebSocket: a `finish` event with `reason: "error"` means the server failed mid-stream — surface the message and reconnect rather than retrying on the same socket.
+- WebSocket: a `finish` event with `reason: "error"` means the server failed mid-stream. Surface the message and reconnect rather than retrying on the same socket.
 
 ## Decision shortcuts
 
 - User just wants audio from text → `POST /v1/tts` with JSON + `reference_id`.
 - User has a raw voice clip and wants instant cloning → `POST /v1/tts` with MessagePack + `references`.
-- User wants dialogue between multiple speakers → `POST /v1/tts` on `s2-pro` with `reference_id` array and `<|speaker:N|>` tags.
+- User wants dialogue between multiple speakers → `POST /v1/tts` on `s2.1-pro` with `reference_id` array and `<|speaker:N|>` tags.
 - User is streaming tokens from an LLM and wants speech to play as it arrives → WebSocket `/v1/tts/live`.
 - User wants a persistent custom voice they can reuse → `POST /model` first, then reuse the returned `_id` as `reference_id`.
 - User wants a transcript → `POST /v1/asr`.

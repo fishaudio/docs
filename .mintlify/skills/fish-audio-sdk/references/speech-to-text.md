@@ -1,6 +1,6 @@
 # Speech-to-Text (ASR)
 
-## Python — `client.asr.transcribe`
+## Python: `client.asr.transcribe`
 
 ```python
 from fishaudio import FishAudio
@@ -28,18 +28,18 @@ Keyword params:
 ### Response shape (`ASRResponse`)
 
 ```python
-result.text            # str  — full transcript
-result.duration        # float — total audio duration in MILLISECONDS
+result.text            # str:  full transcript
+result.duration        # float: total audio duration in MILLISECONDS
 result.segments        # list[ASRSegment]
 # each segment:
 seg.text               # str
-seg.start              # float — seconds
-seg.end                # float — seconds
+seg.start              # float: seconds
+seg.end                # float: seconds
 ```
 
 > **Unit gotcha (verified in source):** segment `start` / `end` are in **seconds**, but `duration` is in **milliseconds**. Don't assume they share a unit.
 
-## JavaScript — `client.speechToText.convert`
+## JavaScript: `client.speechToText.convert`
 
 ```ts
 import { FishAudioClient } from "fish-audio";

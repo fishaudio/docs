@@ -4,14 +4,14 @@ description: "Understand Fish Audio pricing plans, usage costs, and API rate lim
 icon: "dollar-sign"
 ---
 
-import Support from '/snippets/support.mdx';
-import { AudioTranscript } from '/snippets/audio-transcript.jsx';
+import Support from "/snippets/support.mdx";
+import { AudioTranscript } from "/snippets/audio-transcript.jsx";
 
 {/* speak-mintlify-hash: 6aad8e45c91ed5d293e7b11e34b7b182b14c73b0c2cb15ee92fcd4196a92850f */}
+
 <Visibility for="humans">
   <AudioTranscript page="models-pricing-pricing-and-rate-limits" />
 </Visibility>
-
 
 ## API Pricing
 
@@ -21,34 +21,37 @@ The Fish Audio API uses pay-as-you-go pricing based on actual usage. There are n
 
 TTS pricing is based on the size of input text, measured in millions of UTF-8 bytes.
 
-| Model Name        | Price (USD)            |
-|-------------------|------------------------|
-| `s2.1-pro`        | $15.00 / M UTF-8 bytes |
-| `s2.1-pro-free`   | $0.00 / M UTF-8 bytes  |
-| `s2-pro`          | $15.00 / M UTF-8 bytes |
-| `s1`              | $15.00 / M UTF-8 bytes |
+| Model Name      | Price (USD)            |
+| --------------- | ---------------------- |
+| `s2.1-pro`      | $15.00 / M UTF-8 bytes |
+| `s2.1-pro-free` | $0.00 / M UTF-8 bytes  |
+| `s2-pro`        | $15.00 / M UTF-8 bytes |
+| `s1`            | $15.00 / M UTF-8 bytes |
 
 <Info>
-1M UTF-8 bytes is approximately 180,000 English words, or about 12 hours of speech
+  1M UTF-8 bytes is approximately 180,000 English words, or about 12 hours of
+  speech
 </Info>
 
 ### Automatic Speech Recognition (ASR) Models
 
 | Model Name     | Price (USD)        |
-|----------------|--------------------|
+| -------------- | ------------------ |
 | `transcribe-1` | $0.36 / audio hour |
 
 **How ASR billing works:**
+
 - Charges are based on the duration of audio processed
 - Duration is rounded up to the nearest second
 
 ### Voice Design
 
 | Model Name       | Price (USD)                    |
-|------------------|--------------------------------|
+| ---------------- | ------------------------------ |
 | `voice-design-1` | $0.01 / successful API request |
 
 **How Voice Design billing works:**
+
 - Charges are based on successful `POST /v1/voice-design` requests
 - One successful request is charged once, even when it returns multiple candidates
 - Authentication, validation, balance, concurrency, and service errors are not billed
@@ -59,19 +62,75 @@ These limits help us ensure fair usage and maintain service quality for all user
 
 ### Concurrent Request Limits
 
-| Tier       | Spending Threshold | Concurrent Requests |
-|------------|--------------------|---------------------|
-| Starter    | < $100 paid        | 5 requests          |
-| Elevated   | ≥ $100 paid        | 15 requests         |
-| High Volume | ≥ $1,000 paid     | 50 requests         |
-| Enterprise | Custom             | Custom limits       |
+| Tier        | Spending Threshold | Concurrent Requests |
+| ----------- | ------------------ | ------------------- |
+| Starter     | < $100 paid        | 5 requests          |
+| Elevated    | ≥ $100 paid        | 15 requests         |
+| High Volume | ≥ $1,000 paid      | 50 requests         |
+| Enterprise  | Custom             | Custom limits       |
 
 <Tip>
-    Concurrency tiers unlock as soon as your total prepaid amount reaches the threshold. You do not need to spend the full balance first. If your workload needs a higher concurrency tier, you can top up in advance to unlock the next tier immediately.
+  Concurrency tiers unlock as soon as your total prepaid amount reaches the
+  threshold. You do not need to spend the full balance first. If your workload
+  needs a higher concurrency tier, you can top up in advance to unlock the next
+  tier immediately.
 </Tip>
 
+### Convert Concurrency to QPS or QPM
+
+Fish Audio rate limits are based on **concurrent requests**: the number of
+requests that can be in progress at the same time. This is different from QPS
+(queries per second) or QPM (queries per minute), which measure how many
+requests complete over time.
+
+The conversion depends on how long your Fish Audio request occupies a
+concurrency slot. Short interactive requests can produce much higher QPM from
+the same concurrency tier than long-form synthesis requests.
+
+Use this planning formula:
+
+```text
+QPS ~= concurrency / average_request_duration_seconds
+QPM ~= concurrency * 60 / average_request_duration_seconds
+required_concurrency ~= target_QPM * average_request_duration_seconds / 60
+```
+
+Before you estimate throughput, measure your own average request duration:
+
+1. For TTS workloads, send representative production-shaped requests with
+   `latency="normal"` to get a stable quality-first baseline. For other APIs,
+   use the same request shape you expect in production.
+2. Measure from request start until the full response completes. For WebSocket
+   streaming, measure until the final audio chunk is received or the stream is
+   closed.
+3. Calculate the average duration for each workload type. If one business
+   workflow makes multiple Fish Audio calls, estimate each call separately. Use
+   p95 duration when you need safer capacity planning for bursts, retries, or
+   uneven traffic.
+
+<Info>
+  There is no single fixed conversion from concurrency to QPM. A customer whose
+  average request occupies a slot for 2 seconds can complete about 30 times as
+  many requests per minute as a customer whose average request occupies a slot
+  for 60 seconds, even on the same concurrency tier.
+</Info>
+
+Example planning estimates:
+
+| Workload                         | Average occupied time | 5 concurrency | 15 concurrency | 50 concurrency |
+| -------------------------------- | --------------------- | ------------- | -------------- | -------------- |
+| AI companion short reply         | 2 seconds             | ~150 QPM      | ~450 QPM       | ~1,500 QPM     |
+| Voice-agent support turn         | 4 seconds             | ~75 QPM       | ~225 QPM       | ~750 QPM       |
+| Narration paragraph              | 12 seconds            | ~25 QPM       | ~75 QPM        | ~250 QPM       |
+| Audiobook or long-form synthesis | 60 seconds            | ~5 QPM        | ~15 QPM        | ~50 QPM        |
+
+Treat these numbers as examples, not guarantees. Your actual QPS and QPM depend
+on text length, model, reference audio, output format, network path, streaming
+behavior, and the latency distribution of your own application.
+
 <Note>
-    Please reach out to our team to enable enterprise volume pricing, rate limits, and billing.
+  Please reach out to our team to enable enterprise volume pricing, rate limits,
+  and billing.
 </Note>
 
 <Support />

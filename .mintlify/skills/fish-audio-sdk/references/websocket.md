@@ -1,8 +1,8 @@
 # Realtime WebSocket TTS
 
-Stream text in and get audio out as it's generated — ideal for piping an LLM's token stream to speech.
+Stream text in and get audio out as it's generated, ideal for piping an LLM's token stream to speech.
 
-## Python — `client.tts.stream_websocket`
+## Python: `client.tts.stream_websocket`
 
 The first argument is an **iterable of text chunks** (plain `str`, or `TextEvent` / `FlushEvent` for fine control). The sync method returns an `Iterator[bytes]`; the async method must be awaited and returns an `AsyncIterator[bytes]`.
 
@@ -60,9 +60,9 @@ def events():
     yield TextEvent(text="Second sentence.")
 ```
 
-The SDK sends the start/stop frames for you — you only supply text/flush.
+The SDK sends the start/stop frames for you; you only supply text/flush.
 
-## JavaScript — `client.textToSpeech.convertRealtime`
+## JavaScript: `client.textToSpeech.convertRealtime`
 
 Returns a `RealtimeConnection`; subscribe to events with `RealtimeEvents`. Set `request.text` to `""` and stream the real text via the second argument.
 
@@ -103,5 +103,5 @@ connection.on(RealtimeEvents.CLOSE, async () => {
 
 ## Protocol notes
 
-- The close frame's event literal is **`"stop"`**, not `"close"` (handled for you by both SDKs; relevant only if you drop to raw frames — use the `fish-audio-api` skill for that).
+- The close frame's event literal is **`"stop"`**, not `"close"` (handled for you by both SDKs; relevant only if you drop to raw frames; use the `fish-audio-api` skill for that).
 - A realtime run that fails mid-stream surfaces as `WebSocketError` (Python) / an `ERROR` event (JS). Reconnect rather than retrying on the same socket.

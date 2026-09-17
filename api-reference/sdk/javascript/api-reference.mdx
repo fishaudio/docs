@@ -173,6 +173,8 @@ The backend model to use.
 Backends = 's1' | 's2-pro';
 ```
 
+The API also accepts `s2.1-pro` and `s2.1-pro-free`; the SDK's `Backends` type has not been updated yet, so pass them with a type assertion (for example `'s2.1-pro' as Backends`) or call the [REST API](/api-reference/endpoint/openapi-v1/text-to-speech) directly.
+
 ## Response Classes
 
 ### STTResponse

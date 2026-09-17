@@ -12,7 +12,7 @@ import Prerequisites from "/snippets/prerequisites.mdx";
 
 ## Recipe
 
-Set `self_only=False` on [`voices.list()`](/api-reference/sdk/python/resources#list) to search the public [Voice Library](/features/manage-voices) instead of only your own models. The response carries `total` (matches across all pages) and `items` (this page). Pick a result's `id` and pass it straight to [`tts.convert()`](/api-reference/sdk/python/resources#convert) as `reference_id` — no cloning, no model to manage.
+Set `self_only=False` on [`voices.list()`](/api-reference/sdk/python/resources#list) to search the public [Voice Library](/features/manage-voices) instead of only your own models. The response carries `total` (matches across all pages) and `items` (this page). Pick a result's `id` and pass it straight to [`tts.convert()`](/api-reference/sdk/python/resources#convert) as `reference_id`.
 
 <CodeGroup>
 ```python Python
@@ -72,7 +72,7 @@ await writeFile("out.mp3", Buffer.concat(chunks));
 ```
 </CodeGroup>
 
-`page.total` is the full match count, so `total > len(page.items)` tells you there are more pages — bump `page_number` to walk them. Any public voice `id` is a ready-to-use `reference_id`; nothing is saved to your account.
+`total > len(page.items)` tells you there are more pages; bump `page_number` to walk them. Any public voice `id` works as `reference_id`; nothing is saved to your account.
 
 You can hit the same endpoint directly:
 
