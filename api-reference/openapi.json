@@ -3876,6 +3876,43 @@
               }
             }
           },
+          "409": {
+            "description": "Request conflict",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
           "422": {
             "description": "",
             "headers": {},
@@ -8489,7 +8526,7 @@
                         }
                       ],
                       "default": null,
-                      "description": "Managed `twilio` numbers: whether a cold-transfer target sees the original caller's number (true) or this number (false). `null` for imported `sip` numbers, whose carrier owns the setting.",
+                      "description": "Managed `twilio` numbers: whether a transfer target, cold or warm, sees the original caller's number (true) or this number (false). `null` for imported `sip` numbers, whose carrier owns the setting.",
                       "title": "Cold Transfer Use Original Caller"
                     },
                     "cold_transfer_use_original_caller_effective": {
@@ -8502,7 +8539,7 @@
                         }
                       ],
                       "default": null,
-                      "description": "The policy the carrier has confirmed; `null` while unknown or for imported `sip` numbers.",
+                      "description": "The cold-transfer policy the carrier has confirmed; `null` while unknown or for imported `sip` numbers. Warm transfers follow `cold_transfer_use_original_caller` directly from the next call.",
                       "title": "Cold Transfer Use Original Caller Effective"
                     },
                     "caller_id_sync_status": {
@@ -9012,7 +9049,7 @@
                         }
                       ],
                       "default": null,
-                      "description": "Managed `twilio` numbers: whether a cold-transfer target sees the original caller's number (true) or this number (false). `null` for imported `sip` numbers, whose carrier owns the setting.",
+                      "description": "Managed `twilio` numbers: whether a transfer target, cold or warm, sees the original caller's number (true) or this number (false). `null` for imported `sip` numbers, whose carrier owns the setting.",
                       "title": "Cold Transfer Use Original Caller"
                     },
                     "cold_transfer_use_original_caller_effective": {
@@ -9025,7 +9062,7 @@
                         }
                       ],
                       "default": null,
-                      "description": "The policy the carrier has confirmed; `null` while unknown or for imported `sip` numbers.",
+                      "description": "The cold-transfer policy the carrier has confirmed; `null` while unknown or for imported `sip` numbers. Warm transfers follow `cold_transfer_use_original_caller` directly from the next call.",
                       "title": "Cold Transfer Use Original Caller Effective"
                     },
                     "caller_id_sync_status": {
@@ -9272,7 +9309,7 @@
       },
       "patch": {
         "summary": "Update Phone Number",
-        "description": "Change the label and/or repoint the number at another agent — the\ndeployment-pipeline move (rebind from the staging agent to the production\none). Send `agent_id: null` to unbind; unbound numbers ring busy. The\nagent must live in the number's workspace. Rebinding is a routing-table\nupdate resolved on the next inbound call; nothing about the number itself\nis reprovisioned.\n\nManaged `twilio` numbers also accept `cold_transfer_use_original_caller`,\nwhich picks the number a cold-transfer target sees, and\n`retry_caller_id_sync` to re-apply it after a failed synchronization; read\n`caller_id_sync_status` on the response. Imported `sip` numbers return 409\nfor either field because their carrier owns the setting.",
+        "description": "Change the label and/or repoint the number at another agent — the\ndeployment-pipeline move (rebind from the staging agent to the production\none). Send `agent_id: null` to unbind; unbound numbers ring busy. The\nagent must live in the number's workspace. Rebinding is a routing-table\nupdate resolved on the next inbound call; nothing about the number itself\nis reprovisioned.\n\nManaged `twilio` numbers also accept `cold_transfer_use_original_caller`,\nwhich picks the number a transfer target sees (cold and warm alike), and\n`retry_caller_id_sync` to re-apply it after a failed synchronization; read\n`caller_id_sync_status` on the response. Imported `sip` numbers return 409\nfor either field because their carrier owns the setting.",
         "security": [
           {
             "BearerAuth": []
@@ -9358,7 +9395,7 @@
                         }
                       ],
                       "default": null,
-                      "description": "Managed `twilio` numbers: whether a cold-transfer target sees the original caller's number (true) or this number (false). `null` for imported `sip` numbers, whose carrier owns the setting.",
+                      "description": "Managed `twilio` numbers: whether a transfer target, cold or warm, sees the original caller's number (true) or this number (false). `null` for imported `sip` numbers, whose carrier owns the setting.",
                       "title": "Cold Transfer Use Original Caller"
                     },
                     "cold_transfer_use_original_caller_effective": {
@@ -9371,7 +9408,7 @@
                         }
                       ],
                       "default": null,
-                      "description": "The policy the carrier has confirmed; `null` while unknown or for imported `sip` numbers.",
+                      "description": "The cold-transfer policy the carrier has confirmed; `null` while unknown or for imported `sip` numbers. Warm transfers follow `cold_transfer_use_original_caller` directly from the next call.",
                       "title": "Cold Transfer Use Original Caller Effective"
                     },
                     "caller_id_sync_status": {
@@ -15588,9 +15625,15 @@
             "default": "confirm",
             "enum": [
               "confirm",
+              "briefing",
               "direct"
             ],
             "title": "Warm Connect",
+            "type": "string"
+          },
+          "warm_briefing_instructions": {
+            "default": "",
+            "title": "Warm Briefing Instructions",
             "type": "string"
           }
         },
@@ -16209,11 +16252,13 @@
                 "enum": [
                   "google/gemini-3.5-flash-lite",
                   "google/gemini-3.6-flash",
+                  "google/gemini-2.5-flash",
                   "google/gemma-4-26b-a4b-it",
                   "anthropic/claude-haiku-4.5",
                   "anthropic/claude-sonnet-4.6",
                   "openai/gpt-5.6-luna",
-                  "openai/gpt-4o"
+                  "openai/gpt-4o",
+                  "openai/gpt-4.1"
                 ],
                 "type": "string"
               },
@@ -16980,11 +17025,13 @@
             "enum": [
               "google/gemini-3.5-flash-lite",
               "google/gemini-3.6-flash",
+              "google/gemini-2.5-flash",
               "google/gemma-4-26b-a4b-it",
               "anthropic/claude-haiku-4.5",
               "anthropic/claude-sonnet-4.6",
               "openai/gpt-5.6-luna",
-              "openai/gpt-4o"
+              "openai/gpt-4o",
+              "openai/gpt-4.1"
             ],
             "title": "Model",
             "type": "string"
@@ -17175,9 +17222,15 @@
             "default": "confirm",
             "enum": [
               "confirm",
+              "briefing",
               "direct"
             ],
             "title": "Warm Connect",
+            "type": "string"
+          },
+          "warm_briefing_instructions": {
+            "default": "",
+            "title": "Warm Briefing Instructions",
             "type": "string"
           }
         },
@@ -18127,7 +18180,7 @@
               }
             ],
             "default": null,
-            "description": "Managed `twilio` numbers: whether a cold-transfer target sees the original caller's number (true) or this number (false). `null` for imported `sip` numbers, whose carrier owns the setting.",
+            "description": "Managed `twilio` numbers: whether a transfer target, cold or warm, sees the original caller's number (true) or this number (false). `null` for imported `sip` numbers, whose carrier owns the setting.",
             "title": "Cold Transfer Use Original Caller"
           },
           "cold_transfer_use_original_caller_effective": {
@@ -18140,7 +18193,7 @@
               }
             ],
             "default": null,
-            "description": "The policy the carrier has confirmed; `null` while unknown or for imported `sip` numbers.",
+            "description": "The cold-transfer policy the carrier has confirmed; `null` while unknown or for imported `sip` numbers. Warm transfers follow `cold_transfer_use_original_caller` directly from the next call.",
             "title": "Cold Transfer Use Original Caller Effective"
           },
           "caller_id_sync_status": {
@@ -18434,7 +18487,7 @@
               }
             ],
             "default": null,
-            "description": "Managed `twilio` numbers only: show the original caller's number on cold transfers (true) or this number (false). Takes effect for new calls once `caller_id_sync_status` is `synced`.",
+            "description": "Managed `twilio` numbers only: show the original caller's number on transfers, cold and warm (true), or this number (false). Warm transfers follow it from the next call; cold transfers once `caller_id_sync_status` is `synced`.",
             "title": "Cold Transfer Use Original Caller"
           },
           "retry_caller_id_sync": {
@@ -18565,6 +18618,82 @@
           "end"
         ],
         "title": "ASRSegment",
+        "type": "object"
+      },
+      "PronunciationDictionaryInline": {
+        "additionalProperties": false,
+        "description": "Inline literal pronunciation dictionary. The server forwards the entries directly to the inference engine without contacting the platform.",
+        "properties": {
+          "items": {
+            "description": "Replacement entries for this dictionary. See the top-level `pronunciation_dictionary` field description for replacement semantics.",
+            "items": {
+              "$ref": "#/components/schemas/PronunciationItem"
+            },
+            "maxItems": 5000,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "PronunciationDictionaryInline",
+        "type": "object"
+      },
+      "PronunciationDictionaryRef": {
+        "additionalProperties": false,
+        "description": "Reference to a server-managed pronunciation dictionary. The server resolves contents via the platform pronunciation-dictionaries API and forwards the full merged dictionary to the inference engine, which performs the substitution.",
+        "properties": {
+          "id": {
+            "description": "Dictionary identifier as registered on the platform.",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "version": {
+            "description": "Immutable version identifier for the dictionary. Version is required — there is no implicit `latest`.",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$",
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "version"
+        ],
+        "title": "PronunciationDictionaryRef",
+        "type": "object"
+      },
+      "PronunciationItem": {
+        "additionalProperties": false,
+        "description": "A single key/value entry in a pronunciation dictionary. The inference engine replaces every occurrence of `key` in the request text with the phoneme form `value` during synthesis.",
+        "properties": {
+          "key": {
+            "description": "Source substring to match. Pure substring match — no tokenization, no regex. Overlapping matches resolve leftmost-longest. For CJK text include enough context to disambiguate.",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Key",
+            "type": "string"
+          },
+          "value": {
+            "description": "Phonetic representation that replaces the key during synthesis. Dictionary authors should NOT include the `<|phoneme_start|>` / `<|phoneme_end|>` markers themselves; the inference engine wraps the value with those markers internally so the body is treated as phonemes rather than orthographic text. Requests whose key or value contain either marker are rejected.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          },
+          "case_sensitive": {
+            "default": false,
+            "description": "When true the match is case-sensitive; when false ASCII case folding is applied.",
+            "title": "Case Sensitive",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "key",
+          "value"
+        ],
+        "title": "PronunciationItem",
         "type": "object"
       },
       "ProsodyControl": {
@@ -18813,6 +18942,32 @@
             },
             "title": "Features",
             "type": "array"
+          },
+          "pronunciation_dictionary": {
+            "anyOf": [
+              {
+                "description": "Reference form: list of pointers to platform pronunciation dictionaries. Each entry identifies a dictionary by `id` and `version`; the server resolves the contents from the platform service before forwarding them to the inference engine.",
+                "items": {
+                  "$ref": "#/components/schemas/PronunciationDictionaryRef"
+                },
+                "maxItems": 3,
+                "type": "array"
+              },
+              {
+                "description": "Inline form: list of literal pronunciation dictionaries. Each dictionary carries an `items` array of `{key, value, case_sensitive?}` entries.",
+                "items": {
+                  "$ref": "#/components/schemas/PronunciationDictionaryInline"
+                },
+                "maxItems": 3,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional list of up to 3 pronunciation dictionaries to apply during synthesis. Provide either references to platform-managed dictionaries OR inline literal dictionaries (the two forms are mutually exclusive in a single request). The server resolves and merges the dictionaries, then forwards the full merged dictionary to the inference engine, which performs the substitution. Matching is plain substring matching, leftmost-longest, and case-insensitive unless an entry sets `case_sensitive`. Missing or unresolvable references are silently dropped — the request still succeeds. Use `application/json` or `application/msgpack` content-type; nested arrays are not representable in `multipart/form-data`.",
+            "title": "Pronunciation Dictionary"
           }
         },
         "required": [
@@ -19020,6 +19175,32 @@
             },
             "title": "Features",
             "type": "array"
+          },
+          "pronunciation_dictionary": {
+            "anyOf": [
+              {
+                "description": "Reference form: list of pointers to platform pronunciation dictionaries. Each entry identifies a dictionary by `id` and `version`; the server resolves the contents from the platform service before forwarding them to the inference engine.",
+                "items": {
+                  "$ref": "#/components/schemas/PronunciationDictionaryRef"
+                },
+                "maxItems": 3,
+                "type": "array"
+              },
+              {
+                "description": "Inline form: list of literal pronunciation dictionaries. Each dictionary carries an `items` array of `{key, value, case_sensitive?}` entries.",
+                "items": {
+                  "$ref": "#/components/schemas/PronunciationDictionaryInline"
+                },
+                "maxItems": 3,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional list of up to 3 pronunciation dictionaries to apply during synthesis. Provide either references to platform-managed dictionaries OR inline literal dictionaries (the two forms are mutually exclusive in a single request). The server resolves and merges the dictionaries, then forwards the full merged dictionary to the inference engine, which performs the substitution. Matching is plain substring matching, leftmost-longest, and case-insensitive unless an entry sets `case_sensitive`. Missing or unresolvable references are silently dropped — the request still succeeds. Use `application/json` or `application/msgpack` content-type; nested arrays are not representable in `multipart/form-data`.",
+            "title": "Pronunciation Dictionary"
           }
         },
         "required": [
