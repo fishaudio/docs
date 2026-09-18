@@ -126,7 +126,7 @@ A custom LLM never silently falls back to a platform model, because a platform m
 
 - Each request gets one retry and a 10 second response cap.
 - When a generation still fails, the agent speaks a brief hold line and stays on the call.
-- After three consecutive failed generations the agent apologizes, hangs up, and the session records `ended_reason: llm_endpoint_failure`. Each failure also emits an `llm.endpoint_error` event on the session timeline.
+- After three consecutive failed generations the agent apologizes, hangs up, and the session ends with `end_reason: llm_endpoint_failure` (in the [sessions API](/agents/monitor/conversation-history#status-and-end-reason), the dashboard, and the `call.ended` webhook's `ended_reason`). Each failure also emits an `llm.endpoint_error` event on the session timeline.
 
 <Tip>
 Voice conversations are latency sensitive, so aim for a time-to-first-token under 800 ms. Turn latency is attributed per session in [conversation history](/agents/monitor/conversation-history), which lets you tell endpoint time from platform time.

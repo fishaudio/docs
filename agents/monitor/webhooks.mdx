@@ -105,6 +105,7 @@ Every payload carries the `event` name and a `session` object with a fixed set o
     "branch_id": "b7d4…",
     "source": "phone",
     "status": "completed",
+    "end_reason": "user_hangup",
     "conversation_started_at": "2026-07-23T12:01:12Z",
     "conversation_ended_at": "2026-07-23T12:04:16Z",
     "duration_seconds": 184,
@@ -113,7 +114,7 @@ Every payload carries the `event` name and a `session` object with a fixed set o
     "agent_name": "Support agent",
     "config_hash": "sha256:9c41…"
   },
-  "ended_reason": "hangup"
+  "ended_reason": "user_hangup"
 }
 ```
 
@@ -180,7 +181,7 @@ Every payload carries the `event` name and a `session` object with a fixed set o
 
 </CodeGroup>
 
-`ended_reason` is `hangup` for a call that terminated normally and `error` when the session failed. New values may be added as richer end causes ship. Treat unrecognized values as informational rather than rejecting the event.
+`ended_reason` is the same value as `session.end_reason` and uses the [sessions API vocabulary](/agents/monitor/conversation-history#status-and-end-reason): `user_hangup`, `agent_hangup`, `escalated`, `conversation_timeout`, `heartbeat_timeout`, `agent_join_timeout`, `internal_error`, or `llm_endpoint_failure`. `call.ended` is only sent for sessions in which a participant connected, so the never-connected reasons (`room_join_timeout`, `cancelled`, `dial_failed`) do not appear here; query the sessions API with `status=failed` for those. In the rare case the reason is not settled yet at delivery time, both fields are `null`. New values may be added; treat unrecognized values as informational rather than rejecting the event.
 
 `dial_status` is `answered`, `busy`, `no_answer`, or `failed`. `answered_by` is deprecated: answering-machine detection has been removed, so it is `unknown` once the call is answered and `null` before (older events may carry `human` or `voicemail`). Both facts also appear on the session, alongside `direction` (`inbound` or `outbound`) and `batch_call_id` (reserved, always `null` today); these session fields are present in every webhook payload, with the dial fields `null` on inbound sessions. The `phone_call.dial_finished` snapshot is taken when the dial resolves, so on an answered call `conversation_ended_at` and `duration_seconds` are still `null`. The final numbers arrive with `call.ended`.
 
