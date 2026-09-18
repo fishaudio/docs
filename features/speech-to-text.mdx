@@ -43,7 +43,42 @@ Select the model with the **`model` HTTP header**. Both models use the same endp
 
 `transcribe-1-pro` supports recordings with multiple speakers, such as interviews, meetings, and calls. Send the recording as one audio file to transcribe the conversation.
 
-The current public response returns a combined transcript. It does not provide a speaker list or a `speaker_id` on each segment, so applications should not treat `segments` as speaker-attributed turns.
+Pro identifies speakers with **inline `<|speaker:N|>` markers in the response's `text` string**, where `N` is a numeric speaker label. A marker assigns the following text to that speaker until the next marker. The same label can appear again when that speaker resumes talking.
+
+For example, this illustrative response contains three turns from two speakers. It uses `ignore_timestamps=true`, so `segments` is empty:
+
+```json
+{
+  "text": "<|speaker:0|>你好。<|speaker:1|>[高兴]很开心认识你。<|speaker:0|>我也是。",
+  "duration": 6.4,
+  "segments": [],
+  "language_code": "zh",
+  "language": "Chinese"
+}
+```
+
+| Marker            | How to read this example                                                |
+| ----------------- | ----------------------------------------------------------------------- |
+| `<\|speaker:0\|>` | Speaker 0 says `你好。`, then later `我也是。`.                         |
+| `<\|speaker:1\|>` | Speaker 1 says `很开心认识你。`, with the emotion cue `[高兴]` (happy). |
+
+Treat speaker labels as identifiers within that recording, not as names or identities you can match across separate requests. The response contains one annotated `text` string, not a JSON array of speaker turns. To display turns separately, split the string at speaker markers, preserving any emotion cues in each turn. For example, after decoding the JSON response into `result`:
+
+```python
+import re
+
+pattern = r"<\|speaker:(\d+)\|>(.*?)(?=<\|speaker:\d+\|>|$)"
+for turn in re.finditer(pattern, result["text"], re.DOTALL):
+    print(f"Speaker {turn.group(1)}: {turn.group(2).strip()}")
+```
+
+```text
+Speaker 0: 你好。
+Speaker 1: [高兴]很开心认识你。
+Speaker 0: 我也是。
+```
+
+With `ignore_timestamps=false`, `text` keeps the speaker markers, while `segments` contains aligned speech with `text`, `start`, and `end`. Speaker markers and emotion cues are excluded from timestamp alignment. There is no separate speaker list or per-segment `speaker_id`, so use the markers in `text` to read speaker turns; do not assume each segment corresponds to a turn.
 
 ### Emotion and vocal-event cues
 
@@ -55,7 +90,7 @@ Pro can retain cues about how speech sounds alongside the spoken words. These ap
 
 These are annotations inferred from the audio, not words you need to add to the request. The API has no separate `emotion` field or fixed emotion enum; preserve the returned text when your application needs these cues.
 
-Timestamp alignment uses the spoken words with emotion and event markers removed. Read `text` for the annotated transcript and `segments` for timed speech; the segment text may therefore differ from the full transcript.
+Timestamp alignment uses the spoken words with speaker, emotion, and event markers removed. Read `text` for the annotated transcript and `segments` for timed speech; the segment text may therefore differ from the full transcript.
 
 ## When to use it
 
@@ -75,6 +110,8 @@ Timestamp alignment uses the spoken words with emotion and event markers removed
 </CardGroup>
 
 ## Quick start
+
+Create an [API key](/developer-guide/getting-started/api-key) and set `FISH_API_KEY` in your environment. For the Python examples, [install the Fish Audio SDK](/developer-guide/sdk-guide/quickstart).
 
 The examples below select `transcribe-1-pro` and request timestamps. Set the header to `transcribe-1` to use the standard model.
 

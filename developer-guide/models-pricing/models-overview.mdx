@@ -74,7 +74,7 @@ Both ASR models use `POST /v1/asr`. Select one with the `model` HTTP header.
 | `transcribe-1`     | General transcription with optional timestamps. Default when the `model` header is omitted.                                                                 |
 | `transcribe-1-pro` | Multi-speaker conversation transcription, with inline emotion and vocal-event cues such as `[高兴]` (happy) and `[laughter]`. Supports optional timestamps. |
 
-Pro returns a combined transcript with cues in `text`. The public response does not expose per-segment speaker IDs or a separate emotion field. See the [Speech to Text guide](/features/speech-to-text) for the response format and [ASR pricing](/developer-guide/models-pricing/pricing-and-rate-limits#automatic-speech-recognition-asr-models) for usage costs.
+Pro returns speaker turns as inline `<|speaker:N|>` markers in `text`, alongside emotion cues. Repeated labels identify the same speaker within a recording. Timestamped `segments` contain spoken words without these markers and do not expose per-segment speaker IDs. See the [multi-speaker response example](/features/speech-to-text#multi-speaker-conversations) and [ASR pricing](/developer-guide/models-pricing/pricing-and-rate-limits#automatic-speech-recognition-asr-models).
 
 ## Model Specifications
 
