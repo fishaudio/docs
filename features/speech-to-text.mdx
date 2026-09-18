@@ -1,22 +1,61 @@
 ---
 title: "Speech to Text"
-description: "Transcribe audio to text with per-segment timestamps"
+description: "Transcribe audio with transcribe-1 or transcribe-1-pro, including multi-speaker conversations and emotion cues"
 icon: "waveform"
 ---
 
-Turn spoken audio into accurate text using Fish Audio's ASR model. Send an audio file, get back the transcript, its duration, and timestamped segments. Works the same from the API directly, the Python library, or JavaScript.
+Turn spoken audio into text using Fish Audio's automatic speech recognition (ASR) models. Send an audio file to `POST /v1/asr` to receive a transcript, its duration, and optional timestamped segments. Use `transcribe-1-pro` for multi-speaker conversations and transcripts that preserve emotion and vocal-event cues.
 
 <CardGroup cols={3}>
-  <Card title="Use it in the web app" icon="browser" href="https://fish.audio/app/speech-to-text">
+  <Card
+    title="Use it in the web app"
+    icon="browser"
+    href="https://fish.audio/app/speech-to-text"
+  >
     No code: upload audio, get a transcript.
   </Card>
-  <Card title="API reference" icon="brackets-curly" href="/api-reference/endpoint/openapi-v1/speech-to-text">
+  <Card
+    title="API reference"
+    icon="brackets-curly"
+    href="/api-reference/endpoint/openapi-v1/speech-to-text"
+  >
     Every parameter for `POST /v1/asr`.
   </Card>
-  <Card title="Cookbooks" icon="book-open" href="/developer-guide/sdk-guide/cookbook/transcribe-to-captions">
+  <Card
+    title="Cookbooks"
+    icon="book-open"
+    href="/developer-guide/sdk-guide/cookbook/transcribe-to-captions"
+  >
     Captions, batch transcription, and more.
   </Card>
 </CardGroup>
+
+## Choose an ASR model
+
+| Model              | Use it for                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| `transcribe-1`     | General audio transcription. This is the default when the `model` header is omitted.        |
+| `transcribe-1-pro` | Multi-speaker conversations, with emotion and vocal-event cues preserved in the transcript. |
+
+Select the model with the **`model` HTTP header**. Both models use the same endpoint and request fields; `model` is not a form field. See [ASR pricing](/developer-guide/models-pricing/pricing-and-rate-limits#automatic-speech-recognition-asr-models) for usage costs.
+
+### Multi-speaker conversations
+
+`transcribe-1-pro` supports recordings with multiple speakers, such as interviews, meetings, and calls. Send the recording as one audio file to transcribe the conversation.
+
+The current public response returns a combined transcript. It does not provide a speaker list or a `speaker_id` on each segment, so applications should not treat `segments` as speaker-attributed turns.
+
+### Emotion and vocal-event cues
+
+Pro can retain cues about how speech sounds alongside the spoken words. These appear as inline bracketed text, such as `[高兴]` (happy) or `[laughter]`, in the response's `text` field. For example, a transcript might contain:
+
+```text
+你好，[高兴]很开心认识你
+```
+
+These are annotations inferred from the audio, not words you need to add to the request. The API has no separate `emotion` field or fixed emotion enum; preserve the returned text when your application needs these cues.
+
+Timestamp alignment uses the spoken words with emotion and event markers removed. Read `text` for the annotated transcript and `segments` for timed speech; the segment text may therefore differ from the full transcript.
 
 ## When to use it
 
@@ -25,7 +64,7 @@ Turn spoken audio into accurate text using Fish Audio's ASR model. Send an audio
     Timed segments map straight to SRT/VTT cues.
   </Card>
   <Card title="Meeting & call notes" icon="users">
-    Transcribe recordings for summaries and search.
+    Use Pro to transcribe multi-speaker recordings for summaries and search.
   </Card>
   <Card title="Voice commands & notes" icon="microphone-lines">
     Turn short utterances into text your app can act on.
@@ -37,85 +76,123 @@ Turn spoken audio into accurate text using Fish Audio's ASR model. Send an audio
 
 ## Quick start
 
-Read an audio file, send the bytes, get the transcript. Choose your implementation:
+The examples below select `transcribe-1-pro` and request timestamps. Set the header to `transcribe-1` to use the standard model.
 
 <CodeGroup>
+
 ```python Python
 from fishaudio import FishAudio
+from fishaudio.core import RequestOptions
 
 client = FishAudio()  # reads FISH_API_KEY
 
 with open("speech.wav", "rb") as f:
-    result = client.asr.transcribe(audio=f.read(), language="en")
+    result = client.asr.transcribe(
+        audio=f.read(),
+        include_timestamps=True,
+        request_options=RequestOptions(
+            additional_headers={"model": "transcribe-1-pro"}
+        ),
+    )
 
 print(result.text)
+
 ```
 
 ```bash API (curl)
 curl --request POST https://api.fish.audio/v1/asr \
   --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "model: transcribe-1-pro" \
   --form audio=@speech.wav \
-  --form language=en
+  --form ignore_timestamps=false
 ```
 
-```javascript JavaScript
-import { FishAudioClient } from "fish-audio";
-import { readFile } from "fs/promises";
+```javascript JavaScript (Node.js 20+)
+import { readFile } from "node:fs/promises";
 
-const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+const form = new FormData();
+form.append("audio", new Blob([await readFile("speech.wav")]), "speech.wav");
+form.append("ignore_timestamps", "false");
 
-const result = await client.speechToText.convert({
-  audio: new File([await readFile("speech.wav")], "speech.wav"),
-  language: "en",
+const response = await fetch("https://api.fish.audio/v1/asr", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.FISH_API_KEY}`,
+    model: "transcribe-1-pro",
+  },
+  body: form,
 });
 
+if (!response.ok) throw new Error(await response.text());
+const result = await response.json();
 console.log(result.text);
 ```
+
 </CodeGroup>
 
-The response gives you the full `text`, the audio `duration` in seconds, and timed `segments`.
+The response gives you the full `text`, the audio `duration` in seconds, and `segments`. When available, it also includes the detected `language_code` and display name `language`.
+
+<Note>
+  The Python SDK selects Pro through `RequestOptions.additional_headers`;
+  `asr.transcribe()` has no `model` argument. The JavaScript example calls the
+  REST API directly so the header is explicit. For multipart uploads, let your
+  HTTP client set `Content-Type` and its boundary.
+</Note>
 
 ## Read the timestamps
 
-Each segment carries `start` and `end` times in seconds, ideal for captions. With the API, ask for them explicitly with `ignore_timestamps=false`.
+Each segment carries `text`, `start`, and `end`, with times in **seconds**. With the API, request timestamps with `ignore_timestamps=false`. The default is `true`, which returns an empty `segments` array. Alignment adds processing time, and `segments` can also be empty when alignment is unavailable or no speech is detected.
 
 <CodeGroup>
+
 ```python Python
-result = client.asr.transcribe(audio=audio_bytes, language="en", include_timestamps=True)
+result = client.asr.transcribe(
+    audio=audio_bytes,
+    include_timestamps=True,
+    request_options=RequestOptions(
+        additional_headers={"model": "transcribe-1-pro"}
+    ),
+)
 
 print(f"{result.duration:.1f}s total")
 for seg in result.segments:
     print(f"[{seg.start:6.2f} - {seg.end:6.2f}] {seg.text}")
+
 ```
 
 ```bash API (curl)
 curl --request POST https://api.fish.audio/v1/asr \
   --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "model: transcribe-1-pro" \
   --form audio=@speech.wav \
-  --form language=en \
   --form ignore_timestamps=false | jq '.segments'
 
 # Each segment: { "text": "One", "start": 0.0, "end": 0.24 }
 ```
+
 </CodeGroup>
 
 <Note>
-  In the Python SDK, segment timestamps are **on by default**. Pass `include_timestamps=False` to skip them. That's the *inverse* of the API/JavaScript flag `ignore_timestamps`.
+  In the Python SDK, segment timestamps are **on by default**. Pass
+  `include_timestamps=False` to skip them. That's the *inverse* of the
+  API/JavaScript flag `ignore_timestamps`.
 </Note>
 
 ## Implementation details
 
 ### Language
 
-`language` is optional: Fish Audio auto-detects it when you omit it. Pass an ISO code (`en`, `zh`, `ja`, …) to pin it and improve accuracy on short or noisy clips.
+`language` is an optional hint, such as `en`, `zh`, or `ja`. Language detection still runs when you provide a hint; it does not force the returned language. Use the response's `language_code` in application logic and `language` for display when those fields are available.
 
 <CodeGroup>
+
 ```python Python
 # Auto-detect
 result = client.asr.transcribe(audio=audio_bytes)
 
-# Pin the language
+# Provide a language hint
 result = client.asr.transcribe(audio=audio_bytes, language="zh")
+
 ```
 
 ```bash API (curl)
@@ -125,15 +202,16 @@ curl --request POST https://api.fish.audio/v1/asr \
   --form audio=@speech.wav \
   --form language=zh
 ```
+
 </CodeGroup>
 
 ### Input audio
 
 Common formats work directly: `wav`, `mp3`, `opus`, and more. Send the raw file bytes; no pre-processing required. The endpoint accepts `multipart/form-data` (shown above) or `application/msgpack`.
 
-### File limits
+### Long recordings
 
-One request transcribes one audio file. The endpoint accepts files up to **20 MB** and **60 minutes** long, with a minimum of **1 second** of audio. For longer recordings, split them into chunks and transcribe each, then stitch the segment timestamps back together (offset each chunk's `start`/`end` by where it began in the full recording).
+One request transcribes one audio file. For long recordings, split the audio into shorter clips and transcribe each, then offset each chunk's `start`/`end` by where it began in the full recording. Check that each response covers the complete clip before combining transcripts.
 
 ### Async transcription
 
@@ -142,11 +220,17 @@ The Python SDK ships an async client with the same surface, useful when you're t
 ```python
 import asyncio
 from fishaudio import AsyncFishAudio
+from fishaudio.core import RequestOptions
 
 async def main():
     client = AsyncFishAudio()  # reads FISH_API_KEY
     with open("speech.wav", "rb") as f:
-        result = await client.asr.transcribe(audio=f.read(), language="en")
+        result = await client.asr.transcribe(
+            audio=f.read(),
+            request_options=RequestOptions(
+                additional_headers={"model": "transcribe-1-pro"}
+            ),
+        )
     print(result.text)
 
 asyncio.run(main())
@@ -189,24 +273,38 @@ resp = httpx.post(
     headers={
         "Authorization": f"Bearer {os.environ['FISH_API_KEY']}",
         "Content-Type": "application/msgpack",
+        "model": "transcribe-1-pro",
     },
 )
+resp.raise_for_status()
 result = resp.json()
 print(result["text"])
 ```
 
-The response shape is identical to the multipart path: `text`, `duration` (seconds), and `segments`.
+The response shape is identical to the multipart path: `text`, `duration` (seconds), `segments`, and optional detected-language fields. Model selection stays in the HTTP header for both formats.
 
 ## Going further
 
 <CardGroup cols={2}>
-  <Card title="Generate speech" icon="microphone" href="/features/text-to-speech">
+  <Card
+    title="Generate speech"
+    icon="microphone"
+    href="/features/text-to-speech"
+  >
     The reverse direction: text to lifelike audio.
   </Card>
-  <Card title="Full API parameters" icon="book-open" href="/api-reference/endpoint/openapi-v1/speech-to-text">
+  <Card
+    title="Full API parameters"
+    icon="book-open"
+    href="/api-reference/endpoint/openapi-v1/speech-to-text"
+  >
     Every field and the raw response schema.
   </Card>
-  <Card title="Python reference" icon="python" href="/api-reference/sdk/python/resources">
+  <Card
+    title="Python reference"
+    icon="python"
+    href="/api-reference/sdk/python/resources"
+  >
     `asr.transcribe` options and the `ASRResponse` type.
   </Card>
 </CardGroup>

@@ -35,9 +35,12 @@ TTS pricing is based on the size of input text, measured in millions of UTF-8 by
 
 ### Automatic Speech Recognition (ASR) Models
 
-| Model Name     | Price (USD)        |
-| -------------- | ------------------ |
-| `transcribe-1` | $0.36 / audio hour |
+| Model Name         | Price (USD)        |
+| ------------------ | ------------------ |
+| `transcribe-1`     | $0.36 / audio hour |
+| `transcribe-1-pro` | $0.36 / audio hour |
+
+Both models use the [Speech to Text API](/api-reference/endpoint/openapi-v1/speech-to-text). Select `transcribe-1-pro` with the `model` HTTP header for multi-speaker conversation transcription and inline emotion cues. See the [model comparison](/features/speech-to-text#choose-an-asr-model).
 
 **How ASR billing works:**
 
