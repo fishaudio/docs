@@ -1,11 +1,73 @@
 ---
 openapi: post /v1/asr
-title: 'Speech to Text'
-description: 'Transcribe audio to text'
+title: "Speech to Text"
+description: "Transcribe audio with transcribe-1 or transcribe-1-pro, with optional timestamps and emotion cues"
 icon: "microphone"
 iconType: "solid"
 ---
 
 <Warning>
-This BETA endpoint accepts audio only as `multipart/form-data` (a file upload) or `application/msgpack`. JSON with base64-encoded audio is not supported.
+  This BETA endpoint accepts audio only as `multipart/form-data` (a file upload)
+  or `application/msgpack`. JSON with base64-encoded audio is not supported.
 </Warning>
+
+## Select a model
+
+Send `POST https://api.fish.audio/v1/asr` with `Authorization: Bearer <API_KEY>` and an optional **`model` HTTP header**:
+
+| Header value       | Behavior                                                                                           |
+| ------------------ | -------------------------------------------------------------------------------------------------- |
+| `transcribe-1`     | General transcription; the default if the header is omitted.                                       |
+| `transcribe-1-pro` | Transcription of multi-speaker conversations, preserving emotion and vocal-event cues in the text. |
+
+The model belongs in the header for both multipart and MessagePack requests. The request body contains:
+
+| Field               | Required | Default | Description                                                                               |
+| ------------------- | -------- | ------- | ----------------------------------------------------------------------------------------- |
+| `audio`             | Yes      | —       | Audio file upload for multipart, or raw audio bytes for MessagePack.                      |
+| `language`          | No       | Unset   | Optional language hint, such as `en`, `zh`, or `ja`. The language is still auto-detected. |
+| `ignore_timestamps` | No       | `true`  | Set to `false` to request timestamped segments. Alignment adds processing time.           |
+
+```bash
+curl --request POST https://api.fish.audio/v1/asr \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "model: transcribe-1-pro" \
+  --form audio=@conversation.wav \
+  --form ignore_timestamps=false
+```
+
+Let your HTTP client set the multipart `Content-Type` and boundary. For MessagePack, set `Content-Type: application/msgpack` and encode `audio` as binary bytes. See the [Speech to Text guide](/features/speech-to-text#direct-api-messagepack) for an example.
+
+## Read the response
+
+| Field           | Description                                                                                                                                                                                           |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `text`          | Full transcript. Pro includes inline speaker markers such as `<\|speaker:0\|>` and can include emotion and vocal-event cues such as `[高兴]` (happy) or `[laughter]`.                                 |
+| `duration`      | Audio duration in seconds.                                                                                                                                                                            |
+| `segments`      | Array of `{ "text": string, "start": number, "end": number }`, with timestamps in seconds. Empty when timestamps are skipped; can also be empty if alignment is unavailable or no speech is detected. |
+| `language_code` | Detected language code, such as `en` or `ja`, when available. Use this field in application logic.                                                                                                    |
+| `language`      | Detected language name, such as `English`, when available. Intended for display.                                                                                                                      |
+
+### Multi-speaker response format
+
+Pro returns speaker turns **inside the `text` string**, using `<|speaker:N|>` markers. The numeric label `N` identifies the speaker for the text that follows, up to the next marker. A repeated label means that speaker is speaking again. Labels apply within the recording; they are not names or identities shared across requests.
+
+This illustrative response has two speakers and three turns. With `ignore_timestamps=true`, timestamps are skipped:
+
+```json
+{
+  "text": "<|speaker:0|>你好。<|speaker:1|>[高兴]很开心认识你。<|speaker:0|>我也是。",
+  "duration": 6.4,
+  "segments": [],
+  "language_code": "zh",
+  "language": "Chinese"
+}
+```
+
+Read this as speaker 0 saying `你好。`, speaker 1 saying `[高兴]很开心认识你。`, and speaker 0 saying `我也是。`. The `[高兴]` cue describes the delivery of speaker 1's speech.
+
+With `ignore_timestamps=false` (as in the curl example above), the same markers remain in `text`. The `segments` array contains timed speech with `text`, `start`, and `end`; alignment excludes speaker, emotion, and event markers. Segments are not speaker turns and do not contain a `speaker_id` field.
+
+The API returns no separate speaker list or emotion field. Parse the inline markers in `text` when your application needs speaker turns or emotion cues. See the [speaker parsing example](/features/speech-to-text#multi-speaker-conversations).
+
+See the [model capabilities and SDK examples](/features/speech-to-text) for more detail.

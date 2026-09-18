@@ -15,7 +15,7 @@ Fish Audio is a voice AI platform. Every core feature is available three ways: i
   </Card>
 
   <Card title="Speech to Text" icon="waveform" href="/features/speech-to-text">
-    Transcribe audio to text with per-segment timestamps.
+    Transcribe audio with optional timestamps. Use `transcribe-1-pro` for multi-speaker conversations and emotion cues.
   </Card>
 
   <Card title="Voice Cloning" icon="clone" href="/features/voice-cloning">
@@ -61,6 +61,8 @@ These text-to-speech models power most capabilities:
 - **`s2.1-pro-free`**: the same model at $0 for testing, prototyping, development, and smaller businesses, without TTFA or DPA guarantees.
 - **`s2-pro`**: the previous-generation S2 model, with multi-speaker and natural-language expression control.
 - **`s1`**: the previous generation, with `(parenthesis)` emotion tags.
+
+For speech to text, use **`transcribe-1`** for general transcription or **`transcribe-1-pro`** for multi-speaker conversations and inline emotion cues. Select either model with the `model` header on `POST /v1/asr`.
 
 See [Models Overview](/developer-guide/models-pricing/models-overview) and [Choosing a Model](/developer-guide/models-pricing/choosing-a-model) for the full lineup, languages, and limits.
 

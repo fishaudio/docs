@@ -1,6 +1,6 @@
 ---
 title: "Models Overview"
-description: "Explore Fish Audio's voice generation models and their capabilities"
+description: "Explore Fish Audio's speech generation and transcription models and their capabilities"
 icon: "layer-group"
 ---
 
@@ -16,7 +16,7 @@ import { AudioTranscript } from '/snippets/audio-transcript.jsx';
 
 ## Available Models
 
-Fish Audio offers state-of-the-art text-to-speech models optimized for different use cases and performance requirements.
+Fish Audio offers text-to-speech models for voice generation and ASR models for audio transcription.
 
 ### Recommended Model
 
@@ -64,6 +64,17 @@ We recommend using `s2.1-pro` for production projects. Use `s2.1-pro-free` when 
   - 0.008 WER (0.8% word error rate)
   - Full emotional control capabilities with `(parenthesis)` syntax
 </Card>
+
+## Speech-to-Text Models
+
+Both ASR models use `POST /v1/asr`. Select one with the `model` HTTP header.
+
+| Model              | Capabilities                                                                                                                                                |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `transcribe-1`     | General transcription with optional timestamps. Default when the `model` header is omitted.                                                                 |
+| `transcribe-1-pro` | Multi-speaker conversation transcription, with inline emotion and vocal-event cues such as `[高兴]` (happy) and `[laughter]`. Supports optional timestamps. |
+
+Pro returns speaker turns as inline `<|speaker:N|>` markers in `text`, alongside emotion cues. Repeated labels identify the same speaker within a recording. Timestamped `segments` contain spoken words without these markers and do not expose per-segment speaker IDs. See the [multi-speaker response example](/features/speech-to-text#multi-speaker-conversations) and [ASR pricing](/developer-guide/models-pricing/pricing-and-rate-limits#automatic-speech-recognition-asr-models).
 
 ## Model Specifications
 

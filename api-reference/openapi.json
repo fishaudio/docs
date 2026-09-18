@@ -10291,6 +10291,24 @@
             "BearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "model",
+            "description": "Specify which speech-to-text model to use.",
+            "required": false,
+            "schema": {
+              "default": "transcribe-1",
+              "enum": [
+                "transcribe-1",
+                "transcribe-1-pro"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
