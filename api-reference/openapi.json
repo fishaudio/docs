@@ -503,7 +503,7 @@
     "/v1/agent/sessions": {
       "get": {
         "summary": "List Agent Sessions",
-        "description": "List your team's sessions, newest first. Filter by agent, status, caller\nnumber, or creation time. Paginate with `cursor` (recommended; follow\n`next_cursor` while `has_more` is true) or with `page` for offset pagination\nwith a `total` count — the two are mutually exclusive.",
+        "description": "List your team's sessions, newest first. Filter by agent, status, end\nreason, caller number, or creation time. Paginate with `cursor` (recommended; follow\n`next_cursor` while `has_more` is true) or with `page` for offset pagination\nwith a `total` count — the two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -545,6 +545,25 @@
               ],
               "default": null,
               "title": "Status"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "end_reason",
+            "description": "Comma-separated end reason filter (user_hangup/agent_hangup/escalated/conversation_timeout/heartbeat_timeout/agent_join_timeout/internal_error/llm_endpoint_failure/room_join_timeout/cancelled/dial_failed).",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "End Reason"
             },
             "deprecated": false
           },
@@ -1356,6 +1375,31 @@
                       ],
                       "title": "Status",
                       "type": "string"
+                    },
+                    "end_reason": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "user_hangup",
+                            "agent_hangup",
+                            "escalated",
+                            "conversation_timeout",
+                            "heartbeat_timeout",
+                            "agent_join_timeout",
+                            "internal_error",
+                            "llm_endpoint_failure",
+                            "room_join_timeout",
+                            "cancelled",
+                            "dial_failed"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "End Reason"
                     },
                     "source": {
                       "enum": [
@@ -14318,6 +14362,31 @@
             ],
             "title": "Status",
             "type": "string"
+          },
+          "end_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "user_hangup",
+                  "agent_hangup",
+                  "escalated",
+                  "conversation_timeout",
+                  "heartbeat_timeout",
+                  "agent_join_timeout",
+                  "internal_error",
+                  "llm_endpoint_failure",
+                  "room_join_timeout",
+                  "cancelled",
+                  "dial_failed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "End Reason"
           },
           "source": {
             "enum": [
