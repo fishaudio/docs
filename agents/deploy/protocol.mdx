@@ -55,13 +55,13 @@ The response is a discriminated union on `transport`. The `livekit` arm carries 
 
 Once connected, a session uses these channels. The two `*-event` topics carry reliable [data packets](https://docs.livekit.io/home/client/data/messages/): one complete JSON object per packet.
 
-| Channel                                | Direction      | Carries                                                   |
-| -------------------------------------- | -------------- | --------------------------------------------------------- |
-| Audio tracks                           | both           | Your microphone up, the agent's speech down               |
-| `agent-event` topic                    | agent → client | Control events: client tool calls, tool lifecycle, errors |
-| `client-event` topic                   | client → agent | Text turns, activity, interrupts, hangup, tool results    |
-| `lk.transcription` text streams        | agent → client | Streaming transcripts for both sides                      |
-| `lk.agent.state` participant attribute | agent → client | Agent pipeline state (sticky)                             |
+| Channel                                | Direction      | Carries                                                                |
+| -------------------------------------- | -------------- | ---------------------------------------------------------------------- |
+| Audio tracks                           | both           | Your microphone up, the agent's speech down                            |
+| `agent-event` topic                    | agent → client | Control events: client tool calls, tool lifecycle, errors, session end |
+| `client-event` topic                   | client → agent | Text turns, activity, interrupts, hangup, tool results                 |
+| `lk.transcription` text streams        | agent → client | Streaming transcripts for both sides                                   |
+| `lk.agent.state` participant attribute | agent → client | Agent pipeline state (sticky)                                          |
 
 Data-channel message fields are camelCase; REST bodies are snake_case.
 
@@ -165,6 +165,14 @@ These events are on by default and their payloads travel to the end user's clien
 ```
 
 `code` is a coarse category only: `provider_error` (an upstream model or voice provider failed) or `internal_error` (the runtime failed). The message deliberately carries no raw error detail.
+
+### `session.ended`
+
+```json session.ended
+{ "type": "session.ended", "reason": "conversation_timeout" }
+```
+
+Sent once, right before the server ends the call (before the agent leaves the room or the room is deleted), so a client learns the cause instead of inferring it from the disconnect. `reason` is `user_hangup` (the user hung up, or a backend ended the session through the API), `agent_hangup` (the agent hung up or the workflow reached an end node), `conversation_timeout` (the session reached its maximum duration), or `escalated` (the call was transferred to a human). The values match `end_reason` on the [session record](/agents/monitor/conversation-history#status-and-end-reason); treat the set as open, per the [compatibility rules](#compatibility-rules). A call that drops without this message has no announced reason: the SDKs report `connection_lost` once reconnection fails.
 
 ## Client events: `client-event`
 

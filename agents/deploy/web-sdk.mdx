@@ -105,11 +105,15 @@ connecting → connected ⇄ reconnecting → ended(reason)
 
 When the session ends, `disconnect` fires with a reason (also available as `session.endReason`):
 
-| `EndReason`       | Meaning                                                                                                                                                                                                                        |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `user_hangup`     | You called `session.end()`, or the user left the page                                                                                                                                                                          |
-| `agent_hangup`    | The server ended the session: the agent hung up (for example via the hang-up [system tool](/agents/build/system-tools)), the session hit its maximum duration, or it was force-ended; the protocol does not distinguish these |
-| `connection_lost` | The connection dropped and could not be recovered, or the agent never joined                                                                                                                                                   |
+| `EndReason`            | Meaning                                                                                                                                                          |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `user_hangup`          | You called `session.end()`, the user left the page, or your backend [ended the session](/agents/deploy/authenticated-sessions#ending-sessions-from-your-backend) |
+| `agent_hangup`         | The agent ended the call: the hang-up [system tool](/agents/build/system-tools), a workflow end node, or an idle hangup                                          |
+| `conversation_timeout` | The session reached the agent's [maximum duration](/agents/build/configuration#call-duration)                                                                    |
+| `escalated`            | The call was transferred to a human                                                                                                                              |
+| `connection_lost`      | The connection dropped and could not be recovered, the agent never joined, or the call ended before the server could say why                                     |
+
+Every reason except `connection_lost` comes from the server: it sends the protocol's [`session.ended` event](/agents/deploy/protocol) just before tearing the call down, and the values match `end_reason` on the [session record](/agents/monitor/conversation-history#status-and-end-reason), so your client and your backend agree about how a session ended. This needs `@fishaudio/agent-client` 0.3.0 or later; older clients infer the reason from the disconnect and report every server-side end as `agent_hangup`.
 
 Brief network drops don't end the session: the SDK moves to `reconnecting` and back to `connected` automatically, reusing the same session. It never creates a new session, so you never need a new token mid-call.
 
