@@ -54,6 +54,7 @@ Each row carries the session facts:
       "agent_name": "Support agent",
       "name": "Order #4821 follow-up",
       "status": "completed",
+      "end_reason": "user_hangup",
       "source": "phone",
       "caller_number": "+15551234567",
       "dialed_number": "+14155550100",
@@ -70,12 +71,35 @@ Each row carries the session facts:
 
 `caller_number` and `dialed_number` are set for phone sessions only (E.164) and are `null` for web sessions. `name` is the display name you passed when creating the session (`null` when omitted), and `metadata` echoes back whatever you attached when creating the session.
 
+### Status and end reason
+
+`status` says whether a conversation happened: `completed` means a participant connected and the call is over (it is billed even if the runtime ended it), `failed` means nobody ever connected, `active` means it is in progress, `pending` means the session was created and no one has connected yet, and `unknown` means the platform temporarily lost track of a live call.
+
+`end_reason` says why it ended. It is `null` while a session is live, for a short moment after it ends, and on sessions that predate the field.
+
+| `end_reason`           | `status`    | Meaning                                                                          |
+| ---------------------- | ----------- | -------------------------------------------------------------------------------- |
+| `user_hangup`          | `completed` | The caller hung up                                                               |
+| `agent_hangup`         | `completed` | The agent ended the call (end-call tool, workflow end node, or idle hangup)      |
+| `escalated`            | `completed` | The call was transferred to a human                                              |
+| `conversation_timeout` | `completed` | The call reached its maximum duration                                            |
+| `heartbeat_timeout`    | `completed` | The agent runtime stopped responding mid-call                                    |
+| `agent_join_timeout`   | `completed` | The caller connected but no agent joined the call                                |
+| `internal_error`       | `completed` | The agent runtime hit an internal error                                          |
+| `llm_endpoint_failure` | `completed` | A [custom LLM](/agents/build/custom-llm) failed repeatedly and the agent hung up |
+| `room_join_timeout`    | `failed`    | The caller never connected before the join deadline                              |
+| `cancelled`            | `failed`    | The session was ended before anyone connected                                    |
+| `dial_failed`          | `failed`    | An outbound call was not answered; `dial_status` has the detail                  |
+
+The same values appear on the [`call.ended` webhook](/agents/monitor/webhooks) and in the dashboard, so the three surfaces never disagree about a session.
+
 ### Filters
 
 | Parameter                          | Behavior                                                                                              |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | `agent_id`                         | Sessions of a single agent                                                                            |
 | `status`                           | One of `pending`, `active`, `completed`, `failed`, `unknown`; comma-separate values to match several |
+| `end_reason`                       | One or more of the `end_reason` values above, comma-separated                                        |
 | `caller_number`                    | Exact match on the caller's E.164 number; a bare number gets `+` prepended automatically              |
 | `created_after` / `created_before` | ISO 8601 timestamps                                                                                   |
 
@@ -109,6 +133,7 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
 {
   "session_id": "…",
   "status": "completed",
+  "end_reason": "user_hangup",
   "items": [
     {
       "type": "message",
