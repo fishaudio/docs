@@ -28,7 +28,8 @@ Your backend exchanges your API key for a single-conversation token.
 <Steps>
   <Step title="Create a session from your backend">
     Call `POST /v1/agent/sessions` with your API key. This is where you set
-    per-session parameters: user identity, overrides, dynamic variables.
+    per-session parameters: user identity, timezone, overrides, dynamic
+    variables.
   </Step>
   <Step title="Return the response to your frontend">
     The response is the session token. Forward it verbatim.
@@ -47,6 +48,7 @@ curl --request POST https://api.fish.audio/v1/agent/sessions \
   --data '{
     "agent_id": "YOUR_AGENT_ID",
     "end_user_id": "user_42",
+    "timezone": "Asia/Tokyo",
     "dynamic_variables": { "name": "Ada" }
   }'
 ```
@@ -62,6 +64,7 @@ app.post("/api/voice-session", async (req, res) => {
     body: JSON.stringify({
       agent_id: "YOUR_AGENT_ID",
       end_user_id: req.user.id,
+      timezone: req.user.timezone, // IANA name, like "Asia/Tokyo"
       dynamic_variables: { name: req.user.name },
     }),
   });
@@ -77,13 +80,14 @@ app.post("/api/voice-session", async (req, res) => {
 import os
 import requests
 
-def create_voice_session(end_user_id: str, name: str) -> dict:
+def create_voice_session(end_user_id: str, name: str, timezone: str) -> dict:
     response = requests.post(
         "https://api.fish.audio/v1/agent/sessions",
         headers={"Authorization": f"Bearer {os.environ['FISH_API_KEY']}"},
         json={
             "agent_id": "YOUR_AGENT_ID",
             "end_user_id": end_user_id,
+            "timezone": timezone,  # IANA name, like "Asia/Tokyo"
             "dynamic_variables": {"name": name},
         },
     )
@@ -92,6 +96,8 @@ def create_voice_session(end_user_id: str, name: str) -> dict:
 ```
 
 </CodeGroup>
+
+`timezone` overrides the agent's configured timezone for this session, so the agent speaks in your user's local date and time. The default is UTC: see [Time & timezone](/agents/build/time-timezone).
 
 On the client, fetch the token from your backend and pass it to the SDK unchanged:
 
@@ -127,8 +133,8 @@ More on what the SDK can do once connected is in the [Web SDK](/agents/deploy/we
 | `metadata`          | object, optional  | Your own key-value namespace. Stored and returned verbatim on session queries and webhooks, never read or interpreted by the platform.                                                                                                                                                   |
 | `llm_extra_body`    | object, optional  | JSON object (at most 16 KB) forwarded verbatim to your [custom LLM](/agents/build/custom-llm) endpoint on every request as `fishaudio_extra_body`, for example the chat or thread the user is in. Not stored or returned on session reads; ignored when the agent uses a platform model. |
 | `record_audio`      | boolean, optional | Whether to record this session's audio. Overrides the agent's [recording setting](/agents/monitor/conversation-history#what-gets-stored) for this session only; omit it to use the agent's configuration.                                                    |
-| `timezone`          | string, optional  | IANA timezone (like `Asia/Shanghai`) for the agent's sense of local time. Invalid names are rejected with `422`. See [Time & timezone](/agents/build/time-timezone).                                                                                                                      |
-| `client_timezone`   | string, optional  | The end user's browser timezone, filled automatically by the SDK in public-agent mode. A hint, not a demand: it applies only when neither `timezone` nor the agent's configured timezone is set, and invalid values are ignored. See the [resolution order](/agents/build/time-timezone). |
+| `timezone`          | string, optional  | IANA timezone (like `Asia/Tokyo`) for the agent's sense of local time. Invalid names are rejected with `422`. See [Time & timezone](/agents/build/time-timezone).                                                                                                                      |
+| `client_timezone`   | string, optional  | The end user's device timezone as an IANA name. A hint, not a demand: it applies only when neither `timezone` nor the agent's configured timezone is set, and invalid values are ignored. The SDK fills it automatically in public-agent mode. From your backend, forward the value from your client. See the [resolution order](/agents/build/time-timezone). |
 | `world_context`     | boolean, optional | Whether the agent knows the current date and time. Default `true`; set `false` to withhold both from this session.                                                                                                                                                                        |
 
 Unknown fields (top-level or inside `overrides`) are rejected with `422`.

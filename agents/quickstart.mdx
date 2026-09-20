@@ -84,8 +84,10 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
         curl --request POST https://api.fish.audio/v1/agent/sessions \
           --header "Authorization: Bearer $FISH_API_KEY" \
           --header "Content-Type: application/json" \
-          --data '{ "agent_id": "'$AGENT_ID'" }'
+          --data '{ "agent_id": "'$AGENT_ID'", "timezone": "Asia/Tokyo" }'
         ```
+
+        `timezone` overrides the agent's timezone for this session: replace it with your user's IANA timezone. The default is UTC, which you can change in the agent's configuration. See [Time & timezone](/agents/build/time-timezone).
 
         ```json Response
         {
@@ -149,7 +151,10 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
               Authorization: `Bearer ${process.env.FISH_API_KEY}`,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ agent_id: process.env.AGENT_ID }),
+            body: JSON.stringify({
+              agent_id: process.env.AGENT_ID,
+              timezone: "Asia/Tokyo", // your user's IANA timezone
+            }),
           });
           if (!upstream.ok) {
             console.error("session creation failed:", upstream.status);
