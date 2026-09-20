@@ -6,14 +6,21 @@ icon: "clock"
 
 Agents are time-aware out of the box: every session knows today's date and the current time in the session's timezone. You don't reference a variable or add anything to your prompt: "tomorrow morning" and "next Tuesday" ground correctly from the first turn, on every channel (voice, text, and phone).
 
+<Note>
+  The default timezone is **UTC**. Change it for the agent in its
+  [configuration](/agents/build/configuration#timezone), and override it for a
+  single session with `timezone` in the creation request. See
+  [Which timezone a session uses](#which-timezone-a-session-uses).
+</Note>
+
 ## What the agent knows
 
 Fish Audio injects two pieces of world context server-side:
 
 | When | What | Example |
 | ------------------ | ---------------------------- | ------------------------------------------------------------------ |
-| At session start | Today's date and the session timezone | `Today is Thursday, July 23, 2026. Session timezone: Asia/Shanghai (UTC+8).` |
-| Before every reply | The current time, minute precision | `Current date and time: Thursday, July 23, 2026 at 13:00 (Asia/Shanghai).` |
+| At session start | Today's date and the session timezone | `Today is Thursday, July 23, 2026. Session timezone: Asia/Tokyo (UTC+9).` |
+| Before every reply | The current time, minute precision | `Current date and time: Thursday, July 23, 2026 at 13:00 (Asia/Tokyo).` |
 
 The time is refreshed on every turn, so it stays accurate through long conversations and past midnight.
 
@@ -28,7 +35,7 @@ Both facts also exist as [system variables](/agents/build/dynamic-variables#syst
 
 The timezone is resolved once, when the session is created, taking the first that applies:
 
-1. **`timezone`** in the creation request: your explicit per-session choice, as an IANA name like `Asia/Shanghai`. An invalid name rejects the request with `422`.
+1. **`timezone`** in the creation request: your explicit per-session choice, as an IANA name like `Asia/Tokyo`. An invalid name rejects the request with `422`.
 2. **The agent's configured timezone**: set on the agent in the Builder (**Configuration → Timezone**) or via the [agent config API](/agents/build/configuration). Pin one when your agent serves a single region regardless of who calls.
 3. **`client_timezone`**: a hint with the end user's browser timezone, sent automatically by the [Web SDK](/agents/deploy/web-sdk) in public-agent mode. Used only when neither of the above is set; an invalid hint is ignored rather than failing the session.
 4. **The caller's phone number**: inbound calls infer the timezone from the caller's country when that country has a single timezone.
@@ -44,7 +51,7 @@ curl --request POST https://api.fish.audio/v1/agent/sessions \
   --header "Content-Type: application/json" \
   --data '{
     "agent_id": "YOUR_AGENT_ID",
-    "timezone": "Asia/Shanghai"
+    "timezone": "Asia/Tokyo"
   }'
 ```
 
