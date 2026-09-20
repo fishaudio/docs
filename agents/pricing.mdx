@@ -1,10 +1,10 @@
 ---
 title: "Pricing"
-description: "Rates for conversations, LLM usage, telephony, and transfers, plus free minutes and billing"
+description: "Rates for conversations, LLM usage, telephony, and transfers, plus the trial balance and billing"
 icon: "credit-card"
 ---
 
-Agents cost **$0.06 per minute** of conversation, with a small number of add-ons for telephony and token-billed models. Every account starts with free minutes, and everything after that is charged against your API credit.
+Agents cost **$0.06 per minute** of conversation, with a small number of add-ons for telephony and token-billed models. Every account starts with a $5 trial balance, and everything after that is charged against your API credit.
 
 ## Rates
 
@@ -51,14 +51,14 @@ The standard phone surcharge applies to inbound calls and most outbound calls. O
 
 The countries purchased numbers can call are listed under [allowed destinations](/agents/telephony/outbound-calls#allowed-destinations).
 
-## Free minutes
+## Trial balance
 
-Every account starts with **60 free minutes** of agent conversation. They apply to real usage:
+Every account starts with a one-time **$5 trial balance**, about 60 minutes of conversation at the base rate. It pays for real usage at the normal rates:
 
-- Web sessions, phone calls, and transferred call time all draw on the same pool, second for second.
-- Number rental draws on it too, at one minute per day of rental, so you can get a number and test inbound calls without a balance.
-- LLM tokens never draw on the pool. A session on a token-billed LLM needs a positive API credit balance to start. Its conversation minutes still come out of the free pool, and only the tokens are charged.
-- [Preview calls](/agents/test/preview-calls) in the Builder are free on every LLM, including token-billed ones, and never count against the pool.
+- Every charge draws on it first: web sessions, phone calls and their surcharges, transferred call time, number rental, and LLM tokens on token-billed models. Only what the trial balance does not cover is charged to your API credit.
+- A session can start on any model, including token-billed ones, as long as the trial balance or your API credit is above zero.
+- [Preview calls](/agents/test/preview-calls) in the Builder are free on every LLM, including token-billed ones, and never draw on the trial balance.
+- The [Agents billing page](https://fish.audio/app/agents/billing) shows how much of the trial balance is left, and the Agents home page shows it as a usage meter.
 
 ## Billing
 
@@ -80,7 +80,7 @@ Every charge is listed on the [Agents billing page](https://fish.audio/app/agent
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/agents/quickstart">
-    Create an agent and talk to it within the free minutes.
+    Create an agent and talk to it on the trial balance.
   </Card>
   <Card
     title="Phone numbers"
