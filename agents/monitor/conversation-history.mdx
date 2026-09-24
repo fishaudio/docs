@@ -58,6 +58,7 @@ Each row carries the session facts:
       "source": "phone",
       "caller_number": "+15551234567",
       "dialed_number": "+14155550100",
+      "sip_call_id": "7f3a9c@sbc.example.com",
       "started_at": "2026-07-22T09:14:02Z",
       "ended_at": "2026-07-22T09:16:05Z",
       "duration_seconds": 123,
@@ -69,7 +70,7 @@ Each row carries the session facts:
 }
 ```
 
-`caller_number` and `dialed_number` are set for phone sessions only (E.164) and are `null` for web sessions. `name` is the display name you passed when creating the session (`null` when omitted), and `metadata` echoes back whatever you attached when creating the session.
+`caller_number` and `dialed_number` are set for phone sessions only (E.164) and are `null` for web sessions. `sip_call_id` is the SIP `Call-ID` of the call's INVITE. It is `null` on web sessions and on outbound calls that were never answered. See [Match calls with your SIP records](/agents/telephony/byo-sip#match-calls-with-your-sip-records). `name` is the display name you passed when creating the session (`null` when omitted), and `metadata` echoes back whatever you attached when creating the session.
 
 ### Status and end reason
 
@@ -101,6 +102,7 @@ The same values appear on the [`call.ended` webhook](/agents/monitor/webhooks) a
 | `status`                           | One of `pending`, `active`, `completed`, `failed`, `unknown`; comma-separate values to match several |
 | `end_reason`                       | One or more of the `end_reason` values above, comma-separated                                        |
 | `caller_number`                    | Exact match on the caller's E.164 number; a bare number gets `+` prepended automatically              |
+| `sip_call_id`                      | Exact match on the SIP `Call-ID` of the call's INVITE, for looking up the session behind a carrier CDR entry              |
 | `created_after` / `created_before` | ISO 8601 timestamps                                                                                   |
 
 <Note>

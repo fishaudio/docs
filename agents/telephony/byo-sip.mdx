@@ -10,8 +10,10 @@ This works with any carrier or PBX that speaks SIP trunking: Twilio Elastic SIP 
 
 ## How it works
 
-- **Inbound**: your carrier routes calls for the number over its trunk to Fish Audio's SIP endpoint. The platform matches the dialed number and hands the call to the agent bound to it; from there it is a normal [inbound call](/agents/telephony/inbound-calls).
-- **Outbound** (optional): give the import a termination host and the platform can also place calls from the number. Outbound calls and warm-transfer consult legs dial out through your trunk, with the imported number as the caller ID. You can also attach custom SIP headers that every call through the termination carries, for routing hints or tenant identification on your PBX.
+A SIP trunk has two directions, and carriers name them from the carrier's point of view. **Origination** is traffic your carrier originates towards Fish Audio: an inbound call. **Termination** is traffic your carrier terminates for Fish Audio: an outbound call the platform hands to your carrier or PBX to complete. Twilio's trunk configuration uses the same two words, and so do the fields below.
+
+- **Inbound (origination)**: your carrier routes calls for the number over its trunk to Fish Audio's SIP endpoint. The platform matches the dialed number and hands the call to the agent bound to it. From there it is a normal [inbound call](/agents/telephony/inbound-calls).
+- **Outbound (termination)**, optional: give the import a termination host and the platform can also place calls from the number. Outbound calls and warm-transfer consult legs dial out through your trunk, with the imported number as the caller ID. You can also attach custom SIP headers that every call through the termination carries, for routing hints or tenant identification on your PBX.
 
 The SIP endpoint to point your trunk at:
 
@@ -154,7 +156,53 @@ The number object reports this as `supports_outbound`. Place calls with the same
 }
 ```
 
-The headers ride along on outbound calls and on warm-transfer consult legs, since both dial through the termination. Cold transfers hand the call off on the inbound leg and do not carry them. Only `X-` names are accepted, so the request's own fields (`From`, `To`, `Via`) cannot be overridden, and `X-Fish-` is reserved for headers the platform sets itself. Header names are case-insensitive; a map with two spellings of the same name is rejected.
+The headers ride along on outbound calls and on warm-transfer consult legs, since both dial through the termination. Cold transfers hand the call off on the inbound leg and do not carry them. Names must be `X-` tokens or `User-to-User`, so the request's own fields (`From`, `To`, `Via`) cannot be overridden, and `X-Fish-` is reserved for headers the platform sets itself. Values are 1 to 1024 printable ASCII characters (128 for `User-to-User`). Header names are case-insensitive, so a map with two spellings of the same name is rejected.
+
+Values that change per call, such as a campaign or account id, go on the call instead: [`sip_headers`](/agents/telephony/outbound-calls#per-call-sip-headers) on the outbound call request is merged over these number-level headers. For matching calls to sessions you do not need a header of your own; see [Match calls with your SIP records](#match-calls-with-your-sip-records).
+
+## Match calls with your SIP records
+
+Your carrier, SBC or PBX keeps its own record of every call: a CDR, a log line, a recording file. Two identifiers let you line those records up with Fish Audio sessions, one in each direction, and neither needs any configuration.
+
+| Identifier          | What it is                                                                                                                           | Where you read it                                                                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sip_call_id`       | The SIP `Call-ID` of the call's INVITE, the value the SIP world uses as the identity of one call. Your SIP records carry it already. | On the session, from `GET /v1/agent/sessions/{session_id}`, as a filter on the sessions list (`?sip_call_id=`), and in the `session` object of every post-call webhook. |
+| `X-Fish-Session-Id` | The Fish Audio session id, sent as a header on every INVITE and REFER the platform places through your trunk.                        | In your own SIP records, if your SBC or PBX logs custom headers.                                                                                                        |
+
+Which one you use depends on where you start:
+
+- **From a Fish Audio webhook to your records**: read `sip_call_id` from the webhook's `session` object and look it up in your CDR. This works without any change on your side, because every SIP system already records `Call-ID`.
+- **From your records to Fish Audio**: take the `Call-ID` from your CDR and list sessions with `GET /v1/agent/sessions?sip_call_id=…`, which returns the matching session. If your SBC logs custom headers, `X-Fish-Session-Id` from the INVITE gives you the session id directly.
+
+When each identifier is present:
+
+| Call                          | `sip_call_id` on the session           | `X-Fish-Session-Id` in the INVITE   |
+| ----------------------------- | -------------------------------------- | ----------------------------------- |
+| Inbound call                  | Yes, from your carrier's INVITE        | Not applicable: the INVITE is yours |
+| Outbound call, answered       | Yes, from the INVITE the platform sent | Yes                                 |
+| Outbound call, not answered   | `null`: no call was completed          | Yes, on the INVITE that was refused |
+| Warm transfer consult leg     | Not exposed separately                 | Yes, on the consult INVITE          |
+| Cold transfer to a SIP target | Not applicable                         | Yes, as a header on the REFER       |
+
+The `X-Fish-Session-Id` header is only sent through your own trunk. Calls from platform-purchased numbers terminate on the platform's carrier and carry no such header, but `sip_call_id` is still exposed for them.
+
+For your own business keys, such as a campaign or tenant id, add [custom SIP headers](#custom-sip-headers) on the number or [per call](/agents/telephony/outbound-calls#per-call-sip-headers). They complement the two identifiers above rather than replace them: a business key tells you which campaign a call belonged to, the identifiers tell you which call it was.
+
+A `phone_call.dial_finished` payload carries everything needed for the webhook-to-CDR direction:
+
+```json
+{
+  "event": "phone_call.dial_finished",
+  "dial_status": "answered",
+  "session": {
+    "id": "5f3e…",
+    "caller_number": "+15551234567",
+    "dialed_number": "+14155550100",
+    "sip_call_id": "7f3a9c@sbc.example.com",
+    "metadata": { "lead_ref": "L-2041" }
+  }
+}
+```
 
 ## Update the configuration
 

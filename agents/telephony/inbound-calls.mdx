@@ -65,12 +65,13 @@ Point a phone number at an agent and it picks up every inbound call. Phone calls
 
 ## Phone sessions in history
 
-Every answered call becomes a session with `source: "phone"` and two attribution fields:
+Every answered call becomes a session with `source: "phone"` and these attribution fields:
 
 | Field           | Description                                                                 |
 | --------------- | --------------------------------------------------------------------------- |
 | `caller_number` | The caller's number, E.164. `null` for non-phone sessions.                  |
 | `dialed_number` | The workspace number that was called, E.164. `null` for non-phone sessions. |
+| `sip_call_id`   | The SIP `Call-ID` of the carrier's INVITE, for [matching your SIP records](/agents/telephony/byo-sip#match-calls-with-your-sip-records). |
 
 List calls with the standard sessions endpoint. The `caller_number` filter is an exact match; bare numbers are automatically prefixed with `+`, so `15551234567` matches `+15551234567`:
 

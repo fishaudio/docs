@@ -167,6 +167,9 @@ Every payload carries the `event` name and a `session` object with a fixed set o
     "direction": "outbound",
     "dial_status": "answered",
     "answered_by": "human",
+    "caller_number": "+15551234567",
+    "dialed_number": "+14155550100",
+    "sip_call_id": "7f3a9c@sbc.example.com",
     "batch_call_id": null,
     "conversation_started_at": "2026-07-23T12:01:12Z",
     "conversation_ended_at": null,
@@ -184,6 +187,8 @@ Every payload carries the `event` name and a `session` object with a fixed set o
 `ended_reason` is the same value as `session.end_reason` and uses the [sessions API vocabulary](/agents/monitor/conversation-history#status-and-end-reason): `user_hangup`, `agent_hangup`, `escalated`, `conversation_timeout`, `heartbeat_timeout`, `agent_join_timeout`, `internal_error`, or `llm_endpoint_failure`. `call.ended` is only sent for sessions in which a participant connected, so the never-connected reasons (`room_join_timeout`, `cancelled`, `dial_failed`) do not appear here; query the sessions API with `status=failed` for those. In the rare case the reason is not settled yet at delivery time, both fields are `null`. New values may be added; treat unrecognized values as informational rather than rejecting the event.
 
 `dial_status` is `answered`, `busy`, `no_answer`, or `failed`. `answered_by` is deprecated: answering-machine detection has been removed, so it is `unknown` once the call is answered and `null` before (older events may carry `human` or `voicemail`). Both facts also appear on the session, alongside `direction` (`inbound` or `outbound`) and `batch_call_id` (reserved, always `null` today); these session fields are present in every webhook payload, with the dial fields `null` on inbound sessions. The `phone_call.dial_finished` snapshot is taken when the dial resolves, so on an answered call `conversation_ended_at` and `duration_seconds` are still `null`. The final numbers arrive with `call.ended`.
+
+`caller_number`, `dialed_number` and `sip_call_id` carry the same values as on the [sessions API](/agents/monitor/conversation-history): the E.164 numbers of the call (person-centric on outbound calls, so `caller_number` is the party you dialed) and the SIP `Call-ID` of the call's INVITE. All three are empty strings on web sessions, and `sip_call_id` is also empty on an unanswered outbound dial. How to use it against your carrier's records: [Match calls with your SIP records](/agents/telephony/byo-sip#match-calls-with-your-sip-records).
 
 `end_user_id` and `metadata` are echoed exactly as you set them when creating the session. Use them to correlate the event with records in your own system. `branch_id` is an internal configuration-lineage identifier and is safe to ignore. What lands in `summary`, `data`, and `criteria_results` is defined by your [analysis configuration](/agents/monitor/post-call-analysis).
 
