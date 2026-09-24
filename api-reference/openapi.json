@@ -503,7 +503,7 @@
     "/v1/agent/sessions": {
       "get": {
         "summary": "List Agent Sessions",
-        "description": "List your team's sessions, newest first. Filter by agent, status, end\nreason, caller number, or creation time. Paginate with `cursor` (recommended; follow\n`next_cursor` while `has_more` is true) or with `page` for offset pagination\nwith a `total` count — the two are mutually exclusive.",
+        "description": "List your team's sessions, newest first. Filter by agent, status, end\nreason, caller number, SIP Call-ID, or creation time. Paginate with `cursor` (recommended; follow\n`next_cursor` while `has_more` is true) or with `page` for offset pagination\nwith a `total` count — the two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -602,6 +602,25 @@
               ],
               "default": null,
               "title": "Caller Number"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "sip_call_id",
+            "description": "Exact-match SIP Call-ID of the call's INVITE, for looking up the session behind a carrier CDR entry (phone sessions only).",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Sip Call Id"
             },
             "deprecated": false
           },
@@ -1478,6 +1497,18 @@
                       ],
                       "default": null,
                       "title": "Dialed Number"
+                    },
+                    "sip_call_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Sip Call Id"
                     },
                     "timezone": {
                       "anyOf": [
@@ -3748,7 +3779,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` opts into richer expressive\n\ndelivery (emotion steering, laughter and sounds, pauses); off keeps the\nstandard delivery. `voice.keyterms` is a speech-recognition vocabulary of\nup to 50 plain terms (brand names, product terms, personal names), each at\nmost 100 characters with no commas or semicolons; `[]` clears it and 20-50\nfocused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. `voice.keyterms` is a speech-recognition vocabulary of\nup to 50 plain terms (brand names, product terms, personal names), each at\nmost 100 characters with no commas or semicolons; `[]` clears it and 20-50\nfocused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
         "security": [
           {
             "BearerAuth": []
@@ -8686,6 +8717,14 @@
                       "description": "Imported `sip` numbers: the termination digest username. Passwords are never echoed.",
                       "title": "Termination Auth Username"
                     },
+                    "termination_headers": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "Imported `sip` numbers: custom SIP headers added to every outbound INVITE through the termination.",
+                      "title": "Termination Headers",
+                      "type": "object"
+                    },
                     "created_at": {
                       "format": "date-time",
                       "title": "Created At",
@@ -9209,6 +9248,14 @@
                       "description": "Imported `sip` numbers: the termination digest username. Passwords are never echoed.",
                       "title": "Termination Auth Username"
                     },
+                    "termination_headers": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "Imported `sip` numbers: custom SIP headers added to every outbound INVITE through the termination.",
+                      "title": "Termination Headers",
+                      "type": "object"
+                    },
                     "created_at": {
                       "format": "date-time",
                       "title": "Created At",
@@ -9554,6 +9601,14 @@
                       "default": null,
                       "description": "Imported `sip` numbers: the termination digest username. Passwords are never echoed.",
                       "title": "Termination Auth Username"
+                    },
+                    "termination_headers": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "Imported `sip` numbers: custom SIP headers added to every outbound INVITE through the termination.",
+                      "title": "Termination Headers",
+                      "type": "object"
                     },
                     "created_at": {
                       "format": "date-time",
@@ -9917,7 +9972,7 @@
     "/v1/agent/phone-calls": {
       "post": {
         "summary": "Create Phone Call",
-        "description": "Place an outbound call from one of your Twilio phone numbers to a US,\nCanada or Japan destination. A domestic trunk 0 after +81 (e.g.\n+81080...) is accepted and normalized to E.164 (+8180...). Returns\nimmediately with the session queued for\ndialing; subscribe to the `phone_call.dial_finished` webhook or poll\n`GET /v1/agent/sessions/{session_id}` for the dial outcome. Ringing is\nnever billed — metering starts when the callee answers.\n\nErrors carry a machine-readable `reason` (e.g. `destination_not_allowed`,\n`insufficient_credit`, `daily_limit_exceeded`,\n`concurrency_limit_exceeded`).",
+        "description": "Place an outbound call from one of your phone numbers. Platform numbers\ndial US, Canada or Japan destinations, and a domestic trunk 0 after +81\n(e.g. +81080...) is accepted and normalized to E.164 (+8180...).\nImported SIP numbers dial through their own termination and may attach\ncustom INVITE headers with `sip_headers`. Returns immediately with the\nsession queued for dialing. Subscribe to the `phone_call.dial_finished`\nwebhook or poll `GET /v1/agent/sessions/{session_id}` for the dial\noutcome and the leg's `sip_call_id`. Ringing is never billed: metering\nstarts when the callee answers.\n\nErrors carry a machine-readable `reason` (e.g. `destination_not_allowed`,\n`insufficient_credit`, `concurrency_limit_exceeded`).",
         "security": [
           {
             "BearerAuth": []
@@ -14466,6 +14521,18 @@
             "default": null,
             "title": "Dialed Number"
           },
+          "sip_call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sip Call Id"
+          },
           "timezone": {
             "anyOf": [
               {
@@ -14569,6 +14636,7 @@
               }
             ],
             "default": null,
+            "description": "IANA timezone (like `Asia/Tokyo`) for the agent's sense of local date and time in this session. Overrides the agent's configured timezone, which defaults to UTC. Invalid names are rejected with 422.",
             "title": "Timezone"
           },
           "client_timezone": {
@@ -14582,6 +14650,7 @@
               }
             ],
             "default": null,
+            "description": "The end user's device timezone as an IANA name (like `Asia/Tokyo`), used as a fallback hint: it applies only when neither `timezone` nor the agent's configured timezone is set, and invalid values are ignored rather than rejected. The Web SDK fills it automatically from the browser for public agents. When your backend creates the session, forward the value from your client.",
             "title": "Client Timezone"
           },
           "world_context": {
@@ -15722,9 +15791,33 @@
             "default": "",
             "title": "Warm Briefing Instructions",
             "type": "string"
+          },
+          "on_failure": {
+            "$ref": "#/components/schemas/AgentTransferOnFailurePatch"
           }
         },
         "title": "AgentTransferDestinationPatch",
+        "type": "object"
+      },
+      "AgentTransferOnFailurePatch": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "default": "return_to_agent",
+            "enum": [
+              "return_to_agent",
+              "end_call"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "message": {
+            "default": "",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "AgentTransferOnFailurePatch",
         "type": "object"
       },
       "PublicAgentAnalysisCriterion": {
@@ -17108,7 +17201,7 @@
       "AgentLLMConfigRedacted": {
         "properties": {
           "model": {
-            "default": "google/gemini-3.5-flash-lite",
+            "default": "google/gemini-3.6-flash",
             "enum": [
               "google/gemini-3.5-flash-lite",
               "google/gemini-3.6-flash",
@@ -17319,15 +17412,38 @@
             "default": "",
             "title": "Warm Briefing Instructions",
             "type": "string"
+          },
+          "on_failure": {
+            "$ref": "#/components/schemas/AgentTransferOnFailure"
           }
         },
         "title": "AgentTransferDestination",
         "type": "object"
       },
+      "AgentTransferOnFailure": {
+        "properties": {
+          "action": {
+            "default": "return_to_agent",
+            "enum": [
+              "return_to_agent",
+              "end_call"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "message": {
+            "default": "",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "AgentTransferOnFailure",
+        "type": "object"
+      },
       "AgentVoiceConfig": {
         "properties": {
           "voice_id": {
-            "default": "4501d82f5de3467ebf4d7ef095a2deee",
+            "default": "b347db033a6549378b48d00acb0d06cd",
             "title": "Voice Id",
             "type": "string"
           },
@@ -18383,6 +18499,14 @@
             "description": "Imported `sip` numbers: the termination digest username. Passwords are never echoed.",
             "title": "Termination Auth Username"
           },
+          "termination_headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Imported `sip` numbers: custom SIP headers added to every outbound INVITE through the termination.",
+            "title": "Termination Headers",
+            "type": "object"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -18450,7 +18574,7 @@
       },
       "PublicSipNumberImportPayload": {
         "additionalProperties": false,
-        "description": "The `sip` variant of POST /v1/agent/phone-numbers: import a number that\nstays at your carrier. Point your trunk's origination at our SIP host,\ngive inbound at least one authentication factor (digest and/or source\nCIDRs), and optionally a termination host + credentials so the number can\nplace calls. Nothing is rented: carrier charges stay on your account, and\nimported numbers carry no telephony charges at all: no monthly fee, no\nphone surcharge, no transfer fees; you pay agent minutes only.",
+        "description": "The `sip` variant of POST /v1/agent/phone-numbers: import a number that\nstays at your carrier. Point your trunk's origination at our SIP host,\ngive inbound at least one authentication factor (digest and/or source\nCIDRs), and optionally a termination host + credentials (plus custom\n`X-` headers for every outbound INVITE) so the number can place calls.\nNothing is rented: carrier charges stay on your account, and\nimported numbers carry no telephony charges at all: no monthly fee, no\nphone surcharge, no transfer fees; you pay agent minutes only.",
         "properties": {
           "inbound_auth_username": {
             "default": "",
@@ -18499,6 +18623,13 @@
             "maxLength": 128,
             "title": "Termination Auth Password",
             "type": "string"
+          },
+          "termination_headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Termination Headers",
+            "type": "object"
           },
           "phone_number": {
             "title": "Phone Number",
@@ -18674,6 +18805,22 @@
             ],
             "default": null,
             "title": "Llm Extra Body"
+          },
+          "sip_headers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Custom SIP headers for this call's INVITE, imported SIP numbers only. X- names or User-to-User, printable ASCII values, merged over the number's termination_headers.",
+            "title": "Sip Headers"
           }
         },
         "required": [
