@@ -135,7 +135,7 @@ Speech recognition applies to spoken sessions (voice calls and phone). As with e
 
 **Multilingual recognition** lets the agent understand callers who switch to another language partway through a conversation. With it off, speech recognition listens only for the speaking language. That is more accurate when every caller speaks the same language, and it keeps short or accented phrases from being transcribed as another language.
 
-New agents start with it off. Agents created before the setting existed keep it on, so their behavior does not change. Toggle it with the **Multilingual recognition** switch in the Builder's voice section, or via the API (`voice.multilingual_asr`):
+It is off by default. Toggle it with the **Multilingual recognition** switch in the Builder's voice section, or via the API (`voice.multilingual_asr`, default `false`):
 
 <CodeGroup>
 ```bash API (curl)
