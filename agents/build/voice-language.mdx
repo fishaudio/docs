@@ -104,6 +104,56 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 
 Both settings can also be replaced for a single session: send `overrides.voice_id` or `overrides.language` on the session request. See [Overrides](/agents/deploy/authenticated-sessions#overrides).
 
+## Speech recognition model
+
+**Speech recognition** picks the model that transcribes what callers say (`voice.asr_model` on the wire). Three models are available:
+
+| Value | Model | Notes |
+|---|---|---|
+| `deepgram:nova-3` | Deepgram Nova-3 | The default. Lowest latency. Mid-conversation language switching covers English, Spanish, French, German, Hindi, Russian, Portuguese, Japanese, Italian, and Dutch. |
+| `elevenlabs:scribe_v2_realtime` | ElevenLabs Scribe v2 Realtime | Broadest language coverage, with language switching across all of its languages. Its transcripts arrive later, so the agent waits about half a second longer before replying. Keyterms longer than 20 characters are ignored by this model. |
+| `elevenlabs:scribe_v2_medical` | ElevenLabs Scribe v2 Medical | Tuned for clinical speech: medication names, anatomy, and pathology terms. It transcribes each utterance only after the caller stops, so the agent waits about a second longer than with Deepgram before replying. Keyterms longer than 50 characters are ignored by this model. |
+
+Choose it with the **Speech recognition** selector in the Builder's voice section, or via the API:
+
+<CodeGroup>
+```bash API (curl)
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "voice": {
+      "asr_model": "elevenlabs:scribe_v2_realtime"
+    }
+  }'
+```
+</CodeGroup>
+
+Speech recognition applies to spoken sessions (voice calls and phone). As with every voice setting, the change lands in the draft: publish to roll it out.
+
+## Multilingual recognition
+
+**Multilingual recognition** lets the agent understand callers who switch to another language partway through a conversation. With it off, speech recognition listens only for the speaking language. That is more accurate when every caller speaks the same language, and it keeps short or accented phrases from being transcribed as another language.
+
+New agents start with it off. Agents created before the setting existed keep it on, so their behavior does not change. Toggle it with the **Multilingual recognition** switch in the Builder's voice section, or via the API (`voice.multilingual_asr`):
+
+<CodeGroup>
+```bash API (curl)
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "voice": {
+      "multilingual_asr": true
+    }
+  }'
+```
+</CodeGroup>
+
+<Note>
+  Which languages a caller can switch between depends on the [speech recognition model](#speech-recognition-model). With Deepgram Nova-3, a speaking language outside its switching set stays locked even with the setting on. With ElevenLabs Scribe v2, turning the setting off steers recognition toward the speaking language rather than locking it.
+</Note>
+
 ## Speaking speed
 
 **Speaking speed** sets how fast the agent talks, as a multiplier from `0.5` (half speed) to `2.0` (double speed). The default is `1.0`. Many English-language agents sound more natural at a slightly faster rate, such as `1.2`.
