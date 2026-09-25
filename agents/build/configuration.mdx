@@ -41,19 +41,26 @@ The Voice panel selects the voice your agent speaks with (`voice_id`), its speak
 
 ### Turn-taking
 
-`conversation.eagerness` controls how quickly the agent starts talking after the caller stops:
+`conversation.response_wait_ms` (300–2000, default `550`) is how long the agent waits after the caller pauses before it starts talking. In the Builder this is the **Response wait** slider, with Fast (0.45 s), Balanced (0.55 s), and Patient (0.9 s) shortcuts.
 
-- `relaxed`: Waits longer, never talks over the caller.
-- `balanced` (default): Waits for a natural pause.
-- `eager`: Jumps in quickly.
+When the agent thinks the caller is mid-sentence it waits longer, up to `conversation.response_max_wait_ms` (600–4000). Leave it `null` (the default) to follow the response wait plus 0.5 s; send `0` to clear an explicit value back to automatic. A max wait below the response wait is rejected with `422`.
+
+`conversation.eagerness` is the same setting as a preset and still works: writing `relaxed`, `balanced`, or `eager` sets the response wait to 900, 550, or 450 ms, and reads report the preset that matches the current wait.
+
+<Note>
+A short answer such as "yes" normally lands on the fast path. When the agent asks for digits or a spelled-out name, the wait is widened automatically so the caller can pause between groups.
+</Note>
+
+`conversation.speculative_response` (default `true`) lets the agent start preparing its reply while the caller may still be speaking; the draft is discarded if they continue, and tools never run before the caller's turn is confirmed. Turn it off if your [custom LLM](/agents/build/custom-llm) bills per token and you would rather not pay for discarded drafts. With it off, the response wait is added directly to every reply.
 
 ### Interruptions
 
 - `conversation.interruptible` (default `true`): Whether the caller can barge in while the agent is speaking.
 - `conversation.interruption_sensitivity` sets how much caller speech counts as an interruption:
-  - `low`: The agent stops less readily, talking through background noise and short acknowledgements.
+  - `low` (**Hard to interrupt** in the Builder): The agent stops only for a firm, worded interjection, talking through background noise and short acknowledgements.
   - `balanced` (default): Interrupts on normal speech.
-  - `high`: The agent stops more readily when the caller speaks, even on brief utterances.
+  - `high` (**Easy to interrupt**): The agent stops on the caller's first word.
+- `conversation.interruption_ignore_phrases` (up to 50 entries of 40 characters): Backchannels such as `"uh-huh"` or `"okay"` that never interrupt the agent when the caller says only them. Matching ignores case and punctuation. Send `[]` to clear the list.
 
 ### Call duration
 
@@ -102,9 +109,13 @@ curl --request GET "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   },
   "conversation": {
     "max_duration_seconds": 1800,
+    "response_wait_ms": 550,
+    "response_max_wait_ms": null,
     "eagerness": "balanced",
     "interruptible": true,
     "interruption_sensitivity": "balanced",
+    "interruption_ignore_phrases": [],
+    "speculative_response": true,
     "timezone": ""
   }
 }
@@ -122,7 +133,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   --header "Content-Type: application/json" \
   --data '{
     "prompt": { "system_prompt": "You are Aria, a concise support agent for Acme." },
-    "conversation": { "eagerness": "relaxed" }
+    "conversation": { "response_wait_ms": 900 }
   }'
 ```
 
