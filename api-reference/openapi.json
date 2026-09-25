@@ -16145,6 +16145,20 @@
             "default": null,
             "title": "Max Duration Seconds"
           },
+          "response_wait_ms": {
+            "anyOf": [
+              {
+                "maximum": 2000,
+                "minimum": 300,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Response Wait Ms"
+          },
           "eagerness": {
             "anyOf": [
               {
@@ -16161,6 +16175,20 @@
             ],
             "default": null,
             "title": "Eagerness"
+          },
+          "response_max_wait_ms": {
+            "anyOf": [
+              {
+                "maximum": 4000,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Response Max Wait Ms"
           },
           "interruptible": {
             "anyOf": [
@@ -16190,6 +16218,34 @@
             ],
             "default": null,
             "title": "Interruption Sensitivity"
+          },
+          "interruption_ignore_phrases": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Interruption Ignore Phrases"
+          },
+          "speculative_response": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Speculative Response"
           },
           "reengage_enabled": {
             "anyOf": [
@@ -17109,6 +17165,11 @@
             "title": "Max Duration Seconds",
             "type": "integer"
           },
+          "response_wait_ms": {
+            "default": 550,
+            "title": "Response Wait Ms",
+            "type": "integer"
+          },
           "eagerness": {
             "default": "balanced",
             "enum": [
@@ -17118,6 +17179,18 @@
             ],
             "title": "Eagerness",
             "type": "string"
+          },
+          "response_max_wait_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Response Max Wait Ms"
           },
           "interruptible": {
             "default": true,
@@ -17133,6 +17206,19 @@
             ],
             "title": "Interruption Sensitivity",
             "type": "string"
+          },
+          "interruption_ignore_phrases": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Interruption Ignore Phrases",
+            "type": "array"
+          },
+          "speculative_response": {
+            "default": true,
+            "title": "Speculative Response",
+            "type": "boolean"
           },
           "reengage_enabled": {
             "default": false,
