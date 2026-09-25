@@ -106,13 +106,13 @@ Both settings can also be replaced for a single session: send `overrides.voice_i
 
 ## Speech recognition model
 
-**Speech recognition** picks the model that transcribes what callers say (`voice.asr_model` on the wire). Three models are available:
+**Speech recognition** picks the model that transcribes what callers say (`voice.asr_model` on the wire). Latency is the typical wait from the caller's last word to the transcript. The agent starts its reply after that.
 
-| Value | Model | Notes |
-|---|---|---|
-| `deepgram:nova-3` | Deepgram Nova-3 | The default. Lowest latency. Mid-conversation language switching covers English, Spanish, French, German, Hindi, Russian, Portuguese, Japanese, Italian, and Dutch. |
-| `elevenlabs:scribe_v2_realtime` | ElevenLabs Scribe v2 Realtime | Broadest language coverage, with language switching across all of its languages. Its transcripts arrive later, so the agent waits about half a second longer before replying. Keyterms longer than 20 characters are ignored by this model. |
-| `elevenlabs:scribe_v2_medical` | ElevenLabs Scribe v2 Medical | Tuned for clinical speech: medication names, anatomy, and pathology terms. It transcribes each utterance only after the caller stops, so the agent waits about a second longer than with Deepgram before replying. Keyterms longer than 50 characters are ignored by this model. |
+| Value | Model | Latency | Notes |
+|---|---|---|---|
+| `deepgram:nova-3` | Deepgram Nova-3 | ≈0.4 s | Default. Mid-call language switching covers English, Spanish, French, German, Hindi, Russian, Portuguese, Japanese, Italian, and Dutch. |
+| `elevenlabs:scribe_v2_realtime` | ElevenLabs Scribe v2 Realtime | ≈0.9 s | 90+ languages. Keyterms longer than 20 characters are ignored. |
+| `elevenlabs:scribe_v2_medical` | ElevenLabs Scribe v2 Medical | ≈1.5 s | Tuned for clinical speech: medication names, anatomy, and pathology terms. Keyterms longer than 50 characters are ignored. |
 
 Choose it with the **Speech recognition** selector in the Builder's voice section, or via the API:
 
