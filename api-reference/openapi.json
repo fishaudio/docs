@@ -3779,7 +3779,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. `voice.keyterms` is a speech-recognition vocabulary of\nup to 50 plain terms (brand names, product terms, personal names), each at\nmost 100 characters with no commas or semicolons; `[]` clears it and 20-50\nfocused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. `voice.keyterms` is a speech-recognition vocabulary of\nup to 50 plain terms (brand names, product terms, personal names), each at\nmost 100 characters with no commas or semicolons; `[]` clears it and 20-50\nfocused terms work best. `voice.multilingual_asr` (default `false`) lets\nspeech recognition follow callers who switch language mid-call, off\nrecognizes only `voice.speaking_language`. `voice.asr_model` picks the\nspeech recognition model: `deepgram:nova-3` (default),\n`elevenlabs:scribe_v2_realtime`, or `elevenlabs:scribe_v2_medical`. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
         "security": [
           {
             "BearerAuth": []
@@ -16725,6 +16725,35 @@
             "default": null,
             "title": "Expressive"
           },
+          "multilingual_asr": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Multilingual Asr"
+          },
+          "asr_model": {
+            "anyOf": [
+              {
+                "enum": [
+                  "deepgram:nova-3",
+                  "elevenlabs:scribe_v2_realtime",
+                  "elevenlabs:scribe_v2_medical"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Asr Model"
+          },
           "keyterms": {
             "anyOf": [
               {
@@ -17604,6 +17633,21 @@
             "maxItems": 50,
             "title": "Keyterms",
             "type": "array"
+          },
+          "multilingual_asr": {
+            "default": true,
+            "title": "Multilingual Asr",
+            "type": "boolean"
+          },
+          "asr_model": {
+            "default": "deepgram:nova-3",
+            "enum": [
+              "deepgram:nova-3",
+              "elevenlabs:scribe_v2_realtime",
+              "elevenlabs:scribe_v2_medical"
+            ],
+            "title": "Asr Model",
+            "type": "string"
           },
           "speed": {
             "default": 1,
