@@ -15,8 +15,8 @@ A **Single Turn** test hands your agent a scripted conversation and asks it to p
 3. An LLM judge scores the reply against your **Expectation**, optionally calibrated by success and failure examples, and returns a verdict with its reasoning.
 
 <Note>
-  Tests run as text (no audio is synthesized), but the agent uses its full
-  draft configuration: the [knowledge base](/agents/build/knowledge-base) is
+  Tests run as text (no audio is synthesized), but the agent uses its full draft
+  configuration: the [knowledge base](/agents/build/knowledge-base) is
   consulted, and the agent can invoke its attached tools while generating the
   reply. [Webhook tools](/agents/build/webhook-tools) send real HTTP requests
   during a test, so point them at a staging endpoint. For end-to-end
@@ -48,9 +48,9 @@ Tests are workspace-level resources, managed under **Library → Tests** in the 
 </Steps>
 
 <Note>
-  The type picker also offers **Tool** tests, available today, which check
-  whether the agent called a specific tool. **Multi Turn** tests are coming
-  soon.
+  The type picker also offers **Tool** tests, which check whether the agent
+  called a specific tool, and **Multi Turn** tests, which run a whole simulated
+  conversation. See [Simulation tests](#simulation-tests) below.
 </Note>
 
 ## Attach tests to agents
@@ -79,6 +79,67 @@ If the run can't complete, the verdict shows **Error** with the error message in
 
 On the agent's **Tests** page in the Builder, click **Run all**. Each row moves through **queued → running → Pass/Fail** (or **Error** if a run can't complete), and the page header summarizes the latest batch, for example `4 passed, 1 failed on last run`. Use the row menu to re-run a single test, edit it, or remove it from the agent.
 
+## Simulation tests
+
+A **Multi Turn** test does not script the user. Instead, a simulated user plays a role you describe, talks to your agent for up to a set number of turns, and an LLM judge scores the finished conversation against your success conditions. Use it for flows that only show up over several exchanges: collecting details step by step, handling objections, or deciding when to hand off.
+
+### Write the scenario
+
+The scenario is the simulated user's brief. Click **Insert template** to start from the four sections the simulator expects:
+
+| Section     | What to write                                                                                |
+| ----------- | -------------------------------------------------------------------------------------------- |
+| **PERSONA** | Who the user is and how they talk, for example an impatient customer on a lunch break.       |
+| **GOAL**    | What they want out of the conversation.                                                      |
+| **FACTS**   | Details the agent may ask for, such as an order number or a date. Reveal one fact at a time. |
+| **ENDING**  | When the user hangs up: satisfied, out of patience, or after a fixed number of tries.        |
+
+Two rules make scenarios reliable. Reveal one fact at a time, so the agent has to ask for what it needs instead of receiving everything in the first message. And give an explicit ending, otherwise the conversation runs until the turn limit and the judge has to guess whether the user was done.
+
+A **Conversation** script is optional here. Any messages you add are replayed first, then the simulated user takes over from the last message.
+
+### Success conditions
+
+Add one to ten **Success conditions**, each a plain sentence describing something that must happen in the conversation, for example `The agent confirms the refund amount before closing`. Give each a short name or leave it blank and the first words of the description become the name.
+
+The judge reads the whole transcript and marks every condition **Success**, **Failure**, or **Unknown**. A run passes only when every condition succeeds. An **Unknown** verdict means the transcript did not contain enough evidence either way, and the run is flagged **Needs review** so you read the transcript before trusting the result. Success and failure examples, when you add them, calibrate the judge across all conditions.
+
+### Tool mocks
+
+Simulated users usually run many times, so by default tool calls never reach your real endpoints:
+
+| Strategy          | Behaviour                                                                                                               |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Mock all**      | Every tool answers from a mock. Tools without their own entry use their default mock response. This is the default.     |
+| **Mock selected** | Only the tools you list answer from a mock. Choose whether the rest return an error or call their real endpoint.        |
+| **Mock none**     | Every tool calls its real endpoint. Webhooks may create real side effects, so reserve this for a safe test environment. |
+
+A mock entry is the tool, the result it returns (JSON or plain text), an optional HTTP status for webhook tools, and optional parameter conditions so the mock only applies when the agent calls the tool with matching arguments (exact match, regular expression, or any value).
+
+### Assertions
+
+Under **Advanced**, add deterministic checks that run alongside the judge:
+
+- **Required tool calls**: the agent must call the tool, optionally with parameters that match.
+- **Forbidden tools**: the agent must not call the tool.
+- **Ended by**: who ended the conversation, the agent, the user, a transfer, or any of them.
+- **Final node**: the workflow node the conversation must end on.
+
+A failed assertion fails the run regardless of the judge's verdict. Each assertion shows **Passed** or **Failed** with a short detail in the result.
+
+### Repeat count and pass rate
+
+Set **Repeat** to run the same scenario up to ten times in a batch. Simulated conversations vary from run to run, so repeats surface flaky behaviour that a single run would miss. The row shows how many repeats passed, for example `2 / 3 passed`, and the page header shows the batch **pass rate**: green at 100%, amber from 80%, red below.
+
+### Read the result
+
+A simulation runs in the background and can take a few minutes. The sheet shows **Queued**, then **Running**, then the result:
+
+- The **Transcript** with every user and agent turn, and each tool call marked **Mock** when it was answered from a mock.
+- Every **Success condition** with its verdict and the judge's rationale, plus the judge's summary.
+- Every **Assertion** with its outcome.
+- Who ended the conversation, how many turns were used, and token usage for the agent, the simulated user, and the judge.
+
 ## Tests run against the draft
 
 Tests always exercise the agent's latest **draft** configuration, including unpublished changes to the system prompt. That makes the loop fast:
@@ -98,12 +159,17 @@ Tests always exercise the agent's latest **draft** configuration, including unpu
 
 ## Limits
 
-| Field                     | Limit                                       |
-| ------------------------- | ------------------------------------------- |
-| Test name                 | 200 characters                              |
-| Conversation message      | 2,000 characters each, at least one message |
-| Expectation               | 400 characters                              |
-| Success / failure example | 400 characters each                         |
+| Field                           | Limit                                                                 |
+| ------------------------------- | --------------------------------------------------------------------- |
+| Test name                       | 200 characters                                                        |
+| Conversation message            | 2,000 characters each, at least one message (optional for Multi Turn) |
+| Expectation                     | 400 characters                                                        |
+| Success / failure example       | 400 characters each                                                   |
+| Scenario (Multi Turn)           | 6,000 characters                                                      |
+| Success conditions (Multi Turn) | 1 to 10, description 500 characters each                              |
+| Max turns (Multi Turn)          | 30                                                                    |
+| Repeat count (Multi Turn)       | 10                                                                    |
+| Dynamic variables               | 50 per test                                                           |
 
 ## Going further
 
