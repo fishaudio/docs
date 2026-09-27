@@ -132,7 +132,7 @@ The verdict card shows **Pass** or **Fail** with the time the run took, followed
 | **Tool**        | Which tool the agent called, if any, against what the test expected.                                                                                                                                                                                                                                                                                   |
 | **Multi Turn**  | The judge's summary, every success condition with its verdict and rationale, every assertion with its outcome, who ended the conversation and after how many turns, the LLM cost of the agent, the simulated user, and the judge with their token breakdown, and the full transcript with each tool call marked **Mock** when it answered from a mock. |
 
-A Multi Turn run with an **Unknown** condition shows **Needs review** instead of a verdict. If a run can't complete, the card shows **Error** with the error message.
+A Multi Turn run with an **Unknown** condition shows **Needs review** instead of a verdict. If a run can't complete, the card shows **Error** with the error message. When the conversation finished but could not be judged, the transcript is still shown below the error.
 
 ## Run every test for an agent
 
