@@ -1,26 +1,27 @@
 ---
 title: "Agent Tests"
-description: "Script conversations and let an LLM judge score your agent's replies to catch regressions before you publish"
+description: "Script a conversation or simulate a user, then let an LLM judge score your agent to catch regressions before you publish"
 icon: "vial"
 ---
 
-Write a conversation once, run it against any agent, and get a **Pass** or **Fail** verdict with the judge's reasoning. Tests live in a shared workspace library, run against your agent's current draft, and never touch what's published, so you can iterate on a prompt and re-run in seconds.
+Write a test once, run it against any agent, and get a **Pass** or **Fail** verdict with the judge's reasoning. Tests live in a shared workspace library, run against your agent's current draft, and never touch what's published, so you can iterate on a prompt and re-run in seconds.
 
-## How a test works
+## Test types
 
-A **Single Turn** test hands your agent a scripted conversation and asks it to produce the next reply:
-
-1. You script a conversation history of agent and user messages.
-2. The agent generates the next reply using its current **draft** configuration and the same language model that answers in live conversations.
-3. An LLM judge scores the reply against your **Expectation**, optionally calibrated by success and failure examples, and returns a verdict with its reasoning.
+| Type            | What it checks                                                                                                                                    | Use it for                                                               |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Single Turn** | The next reply to a scripted conversation, scored by an LLM judge against your expectation.                                                       | Wording, tone, and one specific answer.                                  |
+| **Tool**        | Whether the next reply calls a given tool (or no tool at all), optionally with matching parameters.                                               | Routing decisions and argument extraction.                               |
+| **Multi Turn**  | A whole conversation driven by a simulated user, scored by the judge against your success conditions, plus deterministic checks on what happened. | Flows that only show up over several exchanges, such as taking an order. |
 
 <Note>
   Tests run as text (no audio is synthesized), but the agent uses its full draft
   configuration: the [knowledge base](/agents/build/knowledge-base) is
-  consulted, and the agent can invoke its attached tools while generating the
-  reply. [Webhook tools](/agents/build/webhook-tools) send real HTTP requests
-  during a test, so point them at a staging endpoint. For end-to-end
-  verification with voice, use [preview calls](/agents/test/preview-calls).
+  consulted, and the agent can invoke its attached tools. In Single Turn and
+  Tool tests, [webhook tools](/agents/build/webhook-tools) send real HTTP
+  requests, so point them at a staging endpoint. Multi Turn tests mock tools by
+  default. For end-to-end verification with voice, use [preview
+  calls](/agents/test/preview-calls).
 </Note>
 
 ## Create a test
@@ -29,59 +30,38 @@ Tests are workspace-level resources, managed under **Library → Tests** in the 
 
 <Steps>
   <Step title="Start a new test">
-    Open **Library → Tests** and click **New test**. Give it a name and keep the
-    type as **Single Turn**.
+    Open **Library → Tests** and click **New test**. Give it a name and pick a
+    **Type**.
   </Step>
-  <Step title="Script the conversation">
-    Under **Conversation**, click **Add message** to build the history the agent
-    sees. Each message is either an **Agent** or **User** turn. When the test
-    runs, the agent generates the reply that comes next.
-  </Step>
-  <Step title="Define the judging criteria">
-    Under **Judging**, write the **Expectation**: what a correct reply must do.
-    Optionally click **Add example** to provide success and failure examples;
-    they calibrate the judge but aren't required.
+  <Step title="Describe what to check">
+    Fill in the fields for that type. They are described in the sections below:
+    [Single Turn](#single-turn-tests), [Tool](#tool-tests), and [Multi
+    Turn](#multi-turn-tests).
   </Step>
   <Step title="Save">
     Click **Save**. The test is now in your library, ready to attach to agents.
   </Step>
 </Steps>
 
-<Note>
-  The type picker also offers **Tool** tests, which check whether the agent
-  called a specific tool, and **Multi Turn** tests, which run a whole simulated
-  conversation. See [Simulation tests](#simulation-tests) below.
-</Note>
+## Single Turn tests
 
-## Attach tests to agents
+A Single Turn test hands your agent a scripted conversation and asks it to produce the next reply:
 
-A test only runs against agents it's attached to. Attach from either side:
+1. You script a conversation history of agent and user messages.
+2. The agent generates the next reply using its current **draft** configuration and the same language model that answers in live conversations.
+3. An LLM judge scores the reply against your **Expectation**, optionally calibrated by success and failure examples, and returns a verdict with its reasoning.
 
-- **From the library**: open the test's **Access** tab and toggle it on for each agent.
-- **From the Builder**: on the agent's **Tests** page, click **Add tests** and pick from the library.
+Under **Conversation**, click **Add message** to build the history the agent sees. Each message is either an **Agent** or **User** turn, and at least one must be a user turn. Under **Judging**, write the **Expectation**: what a correct reply must do. Optionally click **Add example** to provide success and failure examples. They calibrate the judge but aren't required.
 
-One test can be attached to many agents, and each agent keeps its own last result. **Remove from agent** detaches the test from that agent only; **Delete** in the library removes the test from all agents.
+## Tool tests
 
-## Run a single test
+A Tool test scripts the conversation the same way, but instead of judging the reply it checks which tool the agent called while producing it.
 
-Open the test and switch to its **Run** tab. Pick an agent that has access, then click **Run test**. The verdict card shows:
+Under **Require tool execution**, pick a tool from the library and choose **Should have been called** or **Should not be called**. Leave the tool empty to check that the agent called no tool at all. Under **Tool parameters**, optionally add the parameter values the call must carry, typed as string, number, or boolean. The result names the tool the agent actually called.
 
-| Result          | What you see                                       |
-| --------------- | -------------------------------------------------- |
-| Verdict         | **Pass** (green) or **Fail** (red)                 |
-| Latency         | Time to generate and judge the reply, e.g. `1.8 s` |
-| Agent reply     | The full reply the agent generated                 |
-| Judge reasoning | Why the judge passed or failed the reply           |
+## Multi Turn tests
 
-If the run can't complete, the verdict shows **Error** with the error message in place of the reply and reasoning.
-
-## Run every test for an agent
-
-On the agent's **Tests** page in the Builder, click **Run all**. Each row moves through **queued → running → Pass/Fail** (or **Error** if a run can't complete), and the page header summarizes the latest batch, for example `4 passed, 1 failed on last run`. Use the row menu to re-run a single test, edit it, or remove it from the agent.
-
-## Simulation tests
-
-A **Multi Turn** test does not script the user. Instead, a simulated user plays a role you describe, talks to your agent for up to a set number of turns, and an LLM judge scores the finished conversation against your success conditions. Use it for flows that only show up over several exchanges: collecting details step by step, handling objections, or deciding when to hand off.
+A Multi Turn test does not script the user. Instead, a simulated user plays a role you describe, talks to your agent for up to a set number of turns, and an LLM judge scores the finished conversation against your success conditions.
 
 ### Write the scenario
 
@@ -96,17 +76,17 @@ The scenario is the simulated user's brief. Click **Insert template** to start f
 
 Two rules make scenarios reliable. Reveal one fact at a time, so the agent has to ask for what it needs instead of receiving everything in the first message. And give an explicit ending, otherwise the conversation runs until the turn limit and the judge has to guess whether the user was done.
 
-A **Conversation** script is optional here. Any messages you add are replayed first, then the simulated user takes over from the last message.
+**Max turns** caps how many user turns the simulation runs. A **Conversation** script is optional here. Any messages you add are replayed first, then the simulated user takes over from the last message.
 
 ### Success conditions
 
-Add one to ten **Success conditions**, each a plain sentence describing something that must happen in the conversation, for example `The agent confirms the refund amount before closing`. Give each a short name or leave it blank and the first words of the description become the name.
+Add one to ten **Success conditions**, each a plain sentence describing something that must happen in the conversation, for example `The agent confirms the refund amount before closing`. Give each a short name, or leave it blank and the first words of the description become the name.
 
 The judge reads the whole transcript and marks every condition **Success**, **Failure**, or **Unknown**. A run passes only when every condition succeeds. An **Unknown** verdict means the transcript did not contain enough evidence either way, and the run is flagged **Needs review** so you read the transcript before trusting the result. Success and failure examples, when you add them, calibrate the judge across all conditions.
 
 ### Tool mocks
 
-Simulated users usually run many times, so by default tool calls never reach your real endpoints:
+Simulated conversations usually run many times, so by default tool calls never reach your real endpoints:
 
 | Strategy          | Behaviour                                                                                                               |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
@@ -127,18 +107,36 @@ Under **Advanced**, add deterministic checks that run alongside the judge:
 
 A failed assertion fails the run regardless of the judge's verdict. Each assertion shows **Passed** or **Failed** with a short detail in the result.
 
-### Repeat count and pass rate
+### Repeat count
 
-Set **Repeat** to run the same scenario up to ten times in a batch. Simulated conversations vary from run to run, so repeats surface flaky behaviour that a single run would miss. The row shows how many repeats passed, for example `2 / 3 passed`, and the page header shows the batch **pass rate**: green at 100%, amber from 80%, red below.
+Set **Repeat** to run the same scenario up to ten times in a batch. Simulated conversations vary from run to run, so repeats surface flaky behaviour that a single run would miss. The agent's Tests page shows how many repeats passed, for example `2 / 3 passed`.
 
-### Read the result
+## Attach tests to agents
 
-A simulation runs in the background and can take a few minutes. The sheet shows **Queued**, then **Running**, then the result:
+A test only runs against agents it's attached to. Attach from either side:
 
-- The **Transcript** with every user and agent turn, and each tool call marked **Mock** when it was answered from a mock.
-- Every **Success condition** with its verdict and the judge's rationale, plus the judge's summary.
-- Every **Assertion** with its outcome.
-- Who ended the conversation, how many turns were used, and token usage for the agent, the simulated user, and the judge.
+- **From the library**: open the test's **Access** tab and toggle it on for each agent.
+- **From the Builder**: on the agent's **Tests** page, click **Add tests** and pick from the library.
+
+One test can be attached to many agents, and each agent keeps its own last result. **Remove from agent** detaches the test from that agent only. **Delete** in the library removes the test from all agents.
+
+## Run a single test
+
+Open the test and switch to its **Run** tab. Pick an agent that has access, then click **Run test**. Single Turn and Tool tests answer within seconds. A Multi Turn test runs in the background, shows **Queued** and then **Running**, and can take a few minutes.
+
+The verdict card shows **Pass** or **Fail** with the time the run took, followed by details for the test type:
+
+| Type            | What you see                                                                                                                                                                                                                                                               |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Single Turn** | The full reply the agent generated and why the judge passed or failed it.                                                                                                                                                                                                  |
+| **Tool**        | Which tool the agent called, if any, against what the test expected.                                                                                                                                                                                                       |
+| **Multi Turn**  | The judge's summary, every success condition with its verdict and rationale, every assertion with its outcome, who ended the conversation and after how many turns, token usage, and the full transcript with each tool call marked **Mock** when it answered from a mock. |
+
+A Multi Turn run with an **Unknown** condition shows **Needs review** instead of a verdict. If a run can't complete, the card shows **Error** with the error message.
+
+## Run every test for an agent
+
+On the agent's **Tests** page in the Builder, click **Run all**. Each row moves through **queued → running → Pass/Fail** (or **Error** if a run can't complete). Multi Turn tests run once per repeat and the row shows how many repeats passed. The page header summarizes the latest batch, for example `4 passed, 1 failed on last run`, with the batch **pass rate**: green at 100%, amber from 80%, red below. Use the row menu to re-run a single test, edit it, or remove it from the agent.
 
 ## Tests run against the draft
 
