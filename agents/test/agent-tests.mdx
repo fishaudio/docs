@@ -30,7 +30,7 @@ Tests are workspace-level resources, managed under **Library → Tests** in the 
 
 <Steps>
   <Step title="Start a new test">
-    Open **Library → Tests** and click **New test**. Give it a name and pick a
+    Open **Library → Tests** and click **Add test**. Give it a name and pick a
     **Type**.
   </Step>
   <Step title="Describe what to check">
@@ -39,7 +39,8 @@ Tests are workspace-level resources, managed under **Library → Tests** in the 
     Turn](#multi-turn-tests).
   </Step>
   <Step title="Save">
-    Click **Save**. The test is now in your library, ready to attach to agents.
+    Click **Create Test**. The test is now in your library, ready to attach to
+    agents.
   </Step>
 </Steps>
 
@@ -78,6 +79,10 @@ Two rules make scenarios reliable. Reveal one fact at a time, so the agent has t
 
 **Max turns** caps how many user turns the simulation runs. A **Conversation** script is optional here. Any messages you add are replayed first, then the simulated user takes over from the last message.
 
+### Channel
+
+**Channel** sets the register the agent speaks in during the simulation, the same one it uses on that channel in production: **Web voice**, **Phone inbound**, or **Phone outbound**. A phone agent, for example, keeps replies short and reads numbers back digit by digit. **Auto**, the default, uses Phone inbound when the agent answers a phone number and Web voice otherwise. `{{system.channel}}` in the agent's prompt and in the scenario takes the same value.
+
 ### Success conditions
 
 Add one to ten **Success conditions**, each a plain sentence describing something that must happen in the conversation, for example `The agent confirms the refund amount before closing`. Give each a short name, or leave it blank and the first words of the description become the name.
@@ -90,17 +95,21 @@ Simulated conversations usually run many times, so by default tool calls never r
 
 | Strategy          | Behaviour                                                                                                               |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Mock all**      | Every tool answers from a mock. Tools without their own entry use their default mock response. This is the default.     |
+| **Mock all**      | Every tool answers from a mock. This is the default. See below for tools without an entry.                              |
 | **Mock selected** | Only the tools you list answer from a mock. Choose whether the rest return an error or call their real endpoint.        |
 | **Mock none**     | Every tool calls its real endpoint. Webhooks may create real side effects, so reserve this for a safe test environment. |
 
-A mock entry is the tool, the result it returns (JSON or plain text), an optional HTTP status for webhook tools, and optional parameter conditions so the mock only applies when the agent calls the tool with matching arguments (exact match, regular expression, or any value).
+A mock entry is the tool, the result it returns (JSON or plain text), an optional HTTP status for webhook tools, and optional parameter conditions so the mock only applies when the agent calls the tool with matching arguments (exact match, regular expression, or any value). Regular expressions in mock conditions use JavaScript syntax, so Python forms such as `(?i)` or `(?P<name>...)` are refused when you save.
+
+Under **Mock all**, a tool without an entry in the test answers with its own first mock response, and a tool with neither, integrations included, returns an empty success result. The agent then carries on as if the call worked, so add an entry wherever the conversation depends on what the tool returns.
+
+Mocks and assertions apply to the tools attached to the agent under test. A tool the agent does not have is never mocked, and an assertion on it fails with _This tool is not on the agent_.
 
 ### Assertions
 
 Under **Advanced**, add deterministic checks that run alongside the judge:
 
-- **Required tool calls**: the agent must call the tool, optionally with parameters that match.
+- **Required tool calls**: the agent must call the tool, optionally with parameters that match, between a minimum and a maximum number of matching calls. The default is at least once. Set the maximum to 1 to catch a duplicate booking, or to 0 to forbid calls with those arguments.
 - **Forbidden tools**: the agent must not call the tool.
 - **Ended by**: who ended the conversation, the agent, the user, a transfer, or any of them.
 
@@ -108,7 +117,9 @@ A failed assertion fails the run regardless of the judge's verdict. Each asserti
 
 ### Repeat count
 
-Set **Repeat** to run the same scenario up to 20 times in a batch. Simulated conversations vary from run to run, so repeats surface flaky behaviour that a single run would miss. The agent's Tests page shows how many repeats passed, for example `2 / 3 passed`.
+Set **Repeat** to run the same scenario up to 20 times in a batch. Simulated conversations vary from run to run, so repeats surface flaky behaviour that a single run would miss. The agent's Tests page shows how many repeats passed, for example `2 / 3 passed`, and the test's result lets you switch between repeats to read each conversation.
+
+Repeats only apply to **Run all**. Running the test from its **Run** tab, or re-running one test from the row menu, runs the conversation once.
 
 ## Attach tests to agents
 
@@ -131,7 +142,7 @@ The verdict card shows **Pass** or **Fail** with the time the run took, followed
 | **Tool**        | Which tool the agent called, if any, against what the test expected.                                                                                                                                                                                                                                                                                   |
 | **Multi Turn**  | The judge's summary, every success condition with its verdict and rationale, every assertion with its outcome, who ended the conversation and after how many turns, the LLM cost of the agent, the simulated user, and the judge with their token breakdown, and the full transcript with each tool call marked **Mock** when it answered from a mock. |
 
-A Multi Turn run with an **Unknown** condition shows **Needs review** instead of a verdict. If a run can't complete, the card shows **Error** with the error message. When the conversation finished but could not be judged, the transcript is still shown below the error.
+A Multi Turn run with an **Unknown** condition fails and carries a **Needs review** badge. If a run can't complete, the card shows **Error** with the error message. A conversation that broke off or hit its time limit is never judged, so it can't pass by accident. The transcript is still shown below the error, as it is when the conversation finished but could not be judged.
 
 ## Run every test for an agent
 
@@ -160,6 +171,7 @@ Tests always exercise the agent's latest **draft** configuration, including unpu
 | ------------------------------- | --------------------------------------------------------------------- |
 | Test name                       | 200 characters                                                        |
 | Conversation message            | 2,000 characters each, at least one message (optional for Multi Turn) |
+| Conversation (Multi Turn)       | 50 messages                                                           |
 | Expectation                     | 400 characters                                                        |
 | Success / failure example       | 400 characters each                                                   |
 | Scenario (Multi Turn)           | 10,000 characters                                                     |
