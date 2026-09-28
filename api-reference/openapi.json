@@ -3613,7 +3613,10 @@
                       "$ref": "#/components/schemas/AgentPromptConfig"
                     },
                     "voice": {
-                      "$ref": "#/components/schemas/AgentVoiceConfig"
+                      "$ref": "#/components/schemas/AgentVoiceConfigView"
+                    },
+                    "asr": {
+                      "$ref": "#/components/schemas/AgentAsrConfig"
                     },
                     "conversation": {
                       "$ref": "#/components/schemas/AgentConversationConfig"
@@ -3647,6 +3650,7 @@
                     "config_hash",
                     "prompt",
                     "voice",
+                    "asr",
                     "conversation",
                     "tools",
                     "webhooks",
@@ -3779,7 +3783,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. `voice.keyterms` is a speech-recognition vocabulary of\nup to 50 plain terms (brand names, product terms, personal names), each at\nmost 100 characters with no commas or semicolons; `[]` clears it and 20-50\nfocused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default),\n`elevenlabs:scribe_v2_realtime`, or `elevenlabs:scribe_v2_medical`.\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
         "security": [
           {
             "BearerAuth": []
@@ -3829,7 +3833,10 @@
                       "$ref": "#/components/schemas/AgentPromptConfig"
                     },
                     "voice": {
-                      "$ref": "#/components/schemas/AgentVoiceConfig"
+                      "$ref": "#/components/schemas/AgentVoiceConfigView"
+                    },
+                    "asr": {
+                      "$ref": "#/components/schemas/AgentAsrConfig"
                     },
                     "conversation": {
                       "$ref": "#/components/schemas/AgentConversationConfig"
@@ -3863,6 +3870,7 @@
                     "config_hash",
                     "prompt",
                     "voice",
+                    "asr",
                     "conversation",
                     "tools",
                     "webhooks",
@@ -16022,6 +16030,71 @@
         "title": "PublicAgentAnalysisSummaryPatch",
         "type": "object"
       },
+      "PublicAgentAsrPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "enum": [
+                  "deepgram:nova-3",
+                  "elevenlabs:scribe_v2_realtime",
+                  "elevenlabs:scribe_v2_medical"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Model"
+          },
+          "multilingual": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Multilingual"
+          },
+          "strict_language": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Enforces voice.speaking_language whatever multilingual says: speech recognized as another language reaches the agent as [unintelligible speech]. Language is detected per utterance, so a short or heavily accented phrase in the speaking language can occasionally be detected as another language and replaced too. With deepgram:nova-3, speech in another language is usually not transcribed at all. Only enable it when you explicitly need to stop the agent from understanding other languages.",
+            "title": "Strict Language"
+          },
+          "keyterms": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Keyterms"
+          }
+        },
+        "title": "PublicAgentAsrPatch",
+        "type": "object"
+      },
       "PublicAgentConfigPatchPayload": {
         "additionalProperties": false,
         "properties": {
@@ -16040,6 +16113,17 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/PublicAgentVoicePatch"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "asr": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentAsrPatch"
               },
               {
                 "type": "null"
@@ -16725,22 +16809,6 @@
             "default": null,
             "title": "Expressive"
           },
-          "keyterms": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "maxItems": 50,
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Keyterms"
-          },
           "speed": {
             "anyOf": [
               {
@@ -17158,6 +17226,41 @@
         "title": "AgentAnalysisSummaryConfig",
         "type": "object"
       },
+      "AgentAsrConfig": {
+        "properties": {
+          "model": {
+            "default": "deepgram:nova-3",
+            "enum": [
+              "deepgram:nova-3",
+              "elevenlabs:scribe_v2_realtime",
+              "elevenlabs:scribe_v2_medical"
+            ],
+            "title": "Model",
+            "type": "string"
+          },
+          "multilingual": {
+            "default": false,
+            "title": "Multilingual",
+            "type": "boolean"
+          },
+          "strict_language": {
+            "default": false,
+            "description": "Enforces voice.speaking_language whatever multilingual says: speech recognized as another language reaches the agent as [unintelligible speech]. Language is detected per utterance, so a short or heavily accented phrase in the speaking language can occasionally be detected as another language and replaced too. With deepgram:nova-3, speech in another language is usually not transcribed at all. Only enable it when you explicitly need to stop the agent from understanding other languages.",
+            "title": "Strict Language",
+            "type": "boolean"
+          },
+          "keyterms": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Keyterms",
+            "type": "array"
+          }
+        },
+        "title": "AgentAsrConfig",
+        "type": "object"
+      },
       "AgentConversationConfig": {
         "properties": {
           "max_duration_seconds": {
@@ -17526,7 +17629,8 @@
         "title": "AgentTransferOnFailure",
         "type": "object"
       },
-      "AgentVoiceConfig": {
+      "AgentVoiceConfigView": {
+        "description": "Read shape of the voice section. The ASR fields that moved to the asr\nsection stay mirrored here, deprecated, so clients written before the split\nkeep reading them.",
         "properties": {
           "voice_id": {
             "default": "b347db033a6549378b48d00acb0d06cd",
@@ -17597,14 +17701,6 @@
             "title": "Expressive",
             "type": "boolean"
           },
-          "keyterms": {
-            "items": {
-              "type": "string"
-            },
-            "maxItems": 50,
-            "title": "Keyterms",
-            "type": "array"
-          },
           "speed": {
             "default": 1,
             "maximum": 2,
@@ -17613,7 +17709,7 @@
             "type": "number"
           }
         },
-        "title": "AgentVoiceConfig",
+        "title": "AgentVoiceConfigView",
         "type": "object"
       },
       "PublicAgentKnowledgeBaseConfig": {
@@ -17785,7 +17881,10 @@
             "$ref": "#/components/schemas/AgentPromptConfig"
           },
           "voice": {
-            "$ref": "#/components/schemas/AgentVoiceConfig"
+            "$ref": "#/components/schemas/AgentVoiceConfigView"
+          },
+          "asr": {
+            "$ref": "#/components/schemas/AgentAsrConfig"
           },
           "conversation": {
             "$ref": "#/components/schemas/AgentConversationConfig"
@@ -17819,6 +17918,7 @@
           "config_hash",
           "prompt",
           "voice",
+          "asr",
           "conversation",
           "tools",
           "webhooks",
