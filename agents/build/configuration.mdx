@@ -34,7 +34,7 @@ Choose how the agent opens each conversation:
 
 ## Voice
 
-The Voice panel selects the voice your agent speaks with (`voice_id`) and its speaking language (`speaking_language`, one of the [52 supported languages](/agents/build/voice-language#speaking-language)). It also holds the speech recognition model (`asr_model`), the multilingual recognition switch (`multilingual_asr`), and expressive delivery (`expressive`). See [Voice & language](/agents/build/voice-language) for all of them.
+The Voice panel selects the voice your agent speaks with (`voice_id`) and its speaking language (`speaking_language`, one of the [52 supported languages](/agents/build/voice-language#speaking-language)). It also holds expressive delivery (`expressive`) and the speech recognition settings, which the API keeps in their own `asr` section: the recognition model (`asr.model`) and the multilingual recognition switch (`asr.multilingual`). See [Voice & language](/agents/build/voice-language) for all of them.
 
 ## Conversation settings
 
@@ -106,6 +106,12 @@ curl --request GET "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
     "voice_id": "802e3bc2b27e49c2995d23ef70e6ac89",
     "speaking_language": "en"
   },
+  "asr": {
+    "model": "deepgram:nova-3",
+    "multilingual": false,
+    "strict_language": false,
+    "keyterms": []
+  },
   "conversation": {
     "max_duration_seconds": 1800,
     "response_wait_ms": 550,
@@ -144,6 +150,7 @@ The response includes the draft's new `config_hash`. Values outside the document
 |---|---|---|
 | `prompt` | System prompt and first-message settings | This page |
 | `voice` | Voice profile, speaking language, and expressive mode | [Voice & language](/agents/build/voice-language) |
+| `asr` | Speech recognition model, multilingual recognition, strict language, and recognition keyterms | [Voice & language](/agents/build/voice-language#speech-recognition-model) |
 | `conversation` | Call duration, turn-taking, interruption behavior, timezone, and storage | This page; storage in [Conversation history](/agents/monitor/conversation-history#what-gets-stored) |
 | `tools` | Attached webhook tools and system tool switches | [Tools](/agents/build/tools) |
 | `knowledge_base` | Attached knowledge sources | [Knowledge base](/agents/build/knowledge-base) |
