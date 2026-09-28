@@ -12,14 +12,14 @@ Write a test once, run it against any agent, and get a **Pass** or **Fail** verd
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | **Single Turn** | The next reply to a scripted conversation, scored by an LLM judge against your expectation.                                                       | Wording, tone, and one specific answer.                                  |
 | **Tool**        | Whether the next reply calls a given tool (or no tool at all), optionally with matching parameters.                                               | Routing decisions and argument extraction.                               |
-| **Multi Turn**  | A whole conversation driven by a simulated user, scored by the judge against your success conditions, plus deterministic checks on what happened. | Flows that only show up over several exchanges, such as taking an order. |
+| **Simulation**  | A whole conversation driven by a simulated user, scored by the judge against your success conditions, plus deterministic checks on what happened. | Flows that only show up over several exchanges, such as taking an order. |
 
 <Note>
   Tests run as text (no audio is synthesized), but the agent uses its full draft
   configuration: the [knowledge base](/agents/build/knowledge-base) is
   consulted, and the agent can invoke its attached tools. In Single Turn and
   Tool tests, [webhook tools](/agents/build/webhook-tools) send real HTTP
-  requests, so point them at a staging endpoint. Multi Turn tests mock tools by
+  requests, so point them at a staging endpoint. Simulation tests mock tools by
   default. For end-to-end verification with voice, use [preview
   calls](/agents/test/preview-calls).
 </Note>
@@ -35,8 +35,8 @@ Tests are workspace-level resources, managed under **Library → Tests** in the 
   </Step>
   <Step title="Describe what to check">
     Fill in the fields for that type. They are described in the sections below:
-    [Single Turn](#single-turn-tests), [Tool](#tool-tests), and [Multi
-    Turn](#multi-turn-tests).
+    [Single Turn](#single-turn-tests), [Tool](#tool-tests), and
+    [Simulation](#simulation-tests).
   </Step>
   <Step title="Save">
     Click **Create Test**. The test is now in your library, ready to attach to
@@ -58,11 +58,11 @@ Under **Conversation**, click **Add message** to build the history the agent see
 
 A Tool test scripts the conversation the same way, but instead of judging the reply it checks which tool the agent called while producing it.
 
-Under **Require tool execution**, pick a tool from the library and choose **Should have been called** or **Should not be called**. Leave the tool empty to check that the agent called no tool at all. Integration tools, such as calendar tools, can only be checked in a Multi Turn test. Under **Tool parameters**, optionally add the parameter values the call must carry, typed as string, number, or boolean. The result names the tool the agent actually called.
+Under **Require tool execution**, pick a tool from the library and choose **Should have been called** or **Should not be called**. Leave the tool empty to check that the agent called no tool at all. Integration tools, such as calendar tools, can only be checked in a Simulation test. Under **Tool parameters**, optionally add the parameter values the call must carry, typed as string, number, or boolean. The result names the tool the agent actually called.
 
-## Multi Turn tests
+## Simulation tests
 
-A Multi Turn test does not script the user. Instead, a simulated user plays a role you describe, talks to your agent for up to a set number of turns, and an LLM judge scores the finished conversation against your success conditions.
+A Simulation test does not script the user. Instead, a simulated user plays a role you describe, talks to your agent for up to a set number of turns, and an LLM judge scores the finished conversation against your success conditions.
 
 ### Write the scenario
 
@@ -136,7 +136,7 @@ One test can be attached to many agents, and each agent keeps its own last resul
 
 ## Run a single test
 
-Open the test and switch to its **Run** tab. Pick an agent that has access, then click **Run test**. Single Turn and Tool tests answer within seconds. A Multi Turn test runs in the background, shows **Queued** and then **Running**, and can take a few minutes.
+Open the test and switch to its **Run** tab. Pick an agent that has access, then click **Run test**. Single Turn and Tool tests answer within seconds. A Simulation test runs in the background, shows **Queued** and then **Running**, and can take a few minutes.
 
 The verdict card shows **Pass** or **Fail** with the time the run took, followed by details for the test type:
 
@@ -144,13 +144,13 @@ The verdict card shows **Pass** or **Fail** with the time the run took, followed
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Single Turn** | The full reply the agent generated and why the judge passed or failed it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | **Tool**        | Which tool the agent called, if any, against what the test expected.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| **Multi Turn**  | The judge's summary, every success condition with its verdict and rationale, every assertion with its outcome, who ended the conversation, after how many turns and on which channel, the LLM cost of the agent, the simulated user, and the judge with their token breakdown, and the full transcript with each tool call marked by where its answer came from: **Mock** for an entry in the test, **Tool mock** for the tool's own mock response, **Real** when it reached the real endpoint, **No mock** or **No matching mock** when it failed for lack of one. |
+| **Simulation**  | The judge's summary, every success condition with its verdict and rationale, every assertion with its outcome, who ended the conversation, after how many turns and on which channel, the LLM cost of the agent, the simulated user, and the judge with their token breakdown, and the full transcript with each tool call marked by where its answer came from: **Mock** for an entry in the test, **Tool mock** for the tool's own mock response, **Real** when it reached the real endpoint, **No mock** or **No matching mock** when it failed for lack of one. |
 
-A Multi Turn run with an **Unknown** condition fails and carries a **Needs review** badge. If a run can't complete, the card shows **Error** with a message that says whether the agent caused it, for example its custom LLM endpoint stopped responding, or the platform did, for example our language model did not answer. A conversation that broke off or hit its time limit is never judged, so it can't pass by accident. The transcript is still shown below the error, as it is when the conversation finished but could not be judged.
+A Simulation run with an **Unknown** condition fails and carries a **Needs review** badge. If a run can't complete, the card shows **Error** with a message that says whether the agent caused it, for example its custom LLM endpoint stopped responding, or the platform did, for example our language model did not answer. A conversation that broke off or hit its time limit is never judged, so it can't pass by accident. The transcript is still shown below the error, as it is when the conversation finished but could not be judged.
 
 ## Run every test for an agent
 
-On the agent's **Tests** page in the Builder, click **Run all**. Each row moves through **queued → running → Pass/Fail** (or **Error** if a run can't complete). Multi Turn tests run once per repeat and the row shows how many repeats passed. The page header summarizes the latest batch, for example `4 passed, 1 failed on last run`, with the batch **pass rate**: green at 100%, amber from 80%, red below. The pass rate counts passed runs out of passed and failed ones, so a run that ended in **Error** does not lower it. Use the row menu to re-run a single test, edit it, or remove it from the agent.
+On the agent's **Tests** page in the Builder, click **Run all**. Each row moves through **queued → running → Pass/Fail** (or **Error** if a run can't complete). Simulation tests run once per repeat and the row shows how many repeats passed. The page header summarizes the latest batch, for example `4 passed, 1 failed on last run`, with the batch **pass rate**: green at 100%, amber from 80%, red below. The pass rate counts passed runs out of passed and failed ones, so a run that ended in **Error** does not lower it. Use the row menu to re-run a single test, edit it, or remove it from the agent.
 
 ## Tests run against the draft
 
@@ -174,14 +174,14 @@ Tests always exercise the agent's latest **draft** configuration, including unpu
 | Field                           | Limit                                                                 |
 | ------------------------------- | --------------------------------------------------------------------- |
 | Test name                       | 200 characters                                                        |
-| Conversation message            | 2,000 characters each, at least one message (optional for Multi Turn) |
-| Conversation (Multi Turn)       | 50 messages                                                           |
+| Conversation message            | 2,000 characters each, at least one message (optional for Simulation) |
+| Conversation (Simulation)       | 50 messages                                                           |
 | Expectation                     | 400 characters                                                        |
 | Success / failure example       | 400 characters each                                                   |
-| Scenario (Multi Turn)           | 10,000 characters                                                     |
-| Success conditions (Multi Turn) | 1 to 10, description 500 characters each                              |
-| Max turns (Multi Turn)          | 50                                                                    |
-| Repeat count (Multi Turn)       | 20                                                                    |
+| Scenario (Simulation)           | 10,000 characters                                                     |
+| Success conditions (Simulation) | 1 to 10, description 500 characters each                              |
+| Max turns (Simulation)          | 50                                                                    |
+| Repeat count (Simulation)       | 20                                                                    |
 | Dynamic variables               | 50 per test                                                           |
 
 ## Going further
