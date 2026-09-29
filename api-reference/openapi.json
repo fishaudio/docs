@@ -1562,6 +1562,42 @@
                       "default": null,
                       "title": "Duration Seconds"
                     },
+                    "participant_identity": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Participant Identity"
+                    },
+                    "agent_participant_identity": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Agent Participant Identity"
+                    },
+                    "agent_joined_at": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Agent Joined At"
+                    },
                     "metadata": {
                       "additionalProperties": {
                         "$ref": "#/components/schemas/JsonValue"
@@ -4887,6 +4923,1359 @@
         ]
       }
     },
+    "/v1/agent/agents/{agent_id}/tests/{test_id}": {
+      "put": {
+        "summary": "Attach Test",
+        "description": "Attach a test to an agent so the agent's test runs include it. Attaching\nan attached test does nothing. The agent and the test must be in the same\nworkspace.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Agent Id",
+              "type": "string"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "path",
+            "name": "test_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Test Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Request fulfilled, nothing follows",
+            "headers": {}
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
+        ]
+      },
+      "delete": {
+        "summary": "Detach Test",
+        "description": "Detach a test from an agent. The test itself stays in your library.\nDetaching a test that is not attached does nothing.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Agent Id",
+              "type": "string"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "path",
+            "name": "test_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Test Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Request fulfilled, nothing follows",
+            "headers": {}
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
+        ]
+      }
+    },
+    "/v1/agent/agents/{agent_id}/tests/run": {
+      "post": {
+        "summary": "Run Tests",
+        "description": "Start a batch that runs the agent's attached tests against its current\ndraft, one run per test and repeat. A simulation test repeats\n`simulation.repeat_count` times, and a `repeat_count` in the body repeats\nevery selected test that many times instead. A batch starts at most 1000\nruns. Runs are queued and finish in the background, simulations take\nminutes. Poll `GET /v1/agent/agents/{agent_id}/test-batches/{batch_id}`\nuntil `completed` is true, then gate on `pass_rate`, which leaves out\n`error` runs.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Agent Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Request accepted, processing continues off-line",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "batch_id": {
+                      "title": "Batch Id",
+                      "type": "string"
+                    },
+                    "agent_id": {
+                      "title": "Agent Id",
+                      "type": "string"
+                    },
+                    "status": {
+                      "description": "running until every run has finished.",
+                      "enum": [
+                        "running",
+                        "completed"
+                      ],
+                      "title": "Status",
+                      "type": "string"
+                    },
+                    "completed": {
+                      "title": "Completed",
+                      "type": "boolean"
+                    },
+                    "passed": {
+                      "title": "Passed",
+                      "type": "integer"
+                    },
+                    "failed": {
+                      "title": "Failed",
+                      "type": "integer"
+                    },
+                    "errors": {
+                      "title": "Errors",
+                      "type": "integer"
+                    },
+                    "pass_rate": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "passed / (passed + failed), null until a run passed or failed. Error runs never judged the agent and are left out.",
+                      "title": "Pass Rate"
+                    },
+                    "runs": {
+                      "items": {
+                        "$ref": "#/components/schemas/PublicAgentTestRun"
+                      },
+                      "title": "Runs",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "batch_id",
+                    "agent_id",
+                    "status",
+                    "completed",
+                    "passed",
+                    "failed",
+                    "errors",
+                    "runs"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "Run Tests",
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/agent/agents/<agent-id>/tests/run \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --data '{}'"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "test_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "description": "Attached tests to run. Omit to run every test attached to the agent."
+                  },
+                  "repeat_count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20,
+                    "description": "Run every selected test this many times in this batch, in place of each test's own repeat count."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agent/agents/{agent_id}/test-tools": {
+      "get": {
+        "summary": "List Test Tools",
+        "description": "The tools a test can reference for this agent, exactly what a\nconversation on its draft offers. Use these ids in a test's tool mocks,\nassertions and `referenced_tool`, including integration tools such as\n`google_calendar:create_event`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Agent Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "tools": {
+                      "items": {
+                        "$ref": "#/components/schemas/PublicAgentTestTool"
+                      },
+                      "title": "Tools",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "tools"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
+        ]
+      }
+    },
+    "/v1/agent/agents/{agent_id}/test-batches": {
+      "get": {
+        "summary": "List Test Batches",
+        "description": "The agent's test batches, newest first, with their pass, fail and error\ncounts. Paginate with `cursor`, following `next_cursor` while `has_more` is\ntrue.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Agent Id",
+              "type": "string"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "description": "",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Cursor"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "description": "",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "batches": {
+                      "items": {
+                        "$ref": "#/components/schemas/PublicAgentTestBatchSummary"
+                      },
+                      "title": "Batches",
+                      "type": "array"
+                    },
+                    "has_more": {
+                      "title": "Has More",
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Next Cursor"
+                    }
+                  },
+                  "required": [
+                    "batches",
+                    "has_more"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
+        ]
+      }
+    },
+    "/v1/agent/agents/{agent_id}/test-batches/{batch_id}": {
+      "get": {
+        "summary": "Get Test Batch",
+        "description": "The runs of one batch with their pass, fail and error counts. `status` is\n`running` until every run has finished, then `completed`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Agent Id",
+              "type": "string"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "path",
+            "name": "batch_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "batch_id": {
+                      "title": "Batch Id",
+                      "type": "string"
+                    },
+                    "agent_id": {
+                      "title": "Agent Id",
+                      "type": "string"
+                    },
+                    "status": {
+                      "description": "running until every run has finished.",
+                      "enum": [
+                        "running",
+                        "completed"
+                      ],
+                      "title": "Status",
+                      "type": "string"
+                    },
+                    "completed": {
+                      "title": "Completed",
+                      "type": "boolean"
+                    },
+                    "passed": {
+                      "title": "Passed",
+                      "type": "integer"
+                    },
+                    "failed": {
+                      "title": "Failed",
+                      "type": "integer"
+                    },
+                    "errors": {
+                      "title": "Errors",
+                      "type": "integer"
+                    },
+                    "pass_rate": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "passed / (passed + failed), null until a run passed or failed. Error runs never judged the agent and are left out.",
+                      "title": "Pass Rate"
+                    },
+                    "runs": {
+                      "items": {
+                        "$ref": "#/components/schemas/PublicAgentTestRun"
+                      },
+                      "title": "Runs",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "batch_id",
+                    "agent_id",
+                    "status",
+                    "completed",
+                    "passed",
+                    "failed",
+                    "errors",
+                    "runs"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "Poll Test Batch",
+            "source": "curl --request GET \\\n  --url https://api.fish.audio/v1/agent/agents/<agent-id>/test-batches/<batch-id> \\\n  --header 'Authorization: Bearer <token>'"
+          }
+        ]
+      }
+    },
     "/v1/agent/available-phone-numbers": {
       "get": {
         "summary": "Search Available Phone Numbers",
@@ -8204,6 +9593,2145 @@
         },
         "tags": [
           "Agent Tools"
+        ]
+      }
+    },
+    "/v1/agent/tests": {
+      "get": {
+        "summary": "List Tests",
+        "description": "List your team's tests, newest first. Filter with `agent_id` to see the\ntests attached to one agent. Paginate with `cursor` (follow `next_cursor`\nwhile `has_more` is true) or with `page` for offset pagination with a\n`total` count. The two are mutually exclusive.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "description": "Case-insensitive match on name.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Search"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "agent_id",
+            "description": "Only tests attached to this agent.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Agent Id"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "test_type",
+            "description": "",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "next_reply",
+                    "tool",
+                    "simulation"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Test Type"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "description": "",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Cursor"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "description": "1-based page number, mutually exclusive with cursor.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Page"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "include_total",
+            "description": "",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Total",
+              "type": "boolean"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "description": "",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "tests": {
+                      "items": {
+                        "$ref": "#/components/schemas/PublicAgentTestSummary"
+                      },
+                      "title": "Tests",
+                      "type": "array"
+                    },
+                    "has_more": {
+                      "title": "Has More",
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Next Cursor"
+                    },
+                    "total": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Total"
+                    }
+                  },
+                  "required": [
+                    "tests",
+                    "has_more"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
+        ]
+      },
+      "post": {
+        "summary": "Create Test",
+        "description": "Create a test: `next_reply` judges the agent's next reply against an\nexpectation, `tool` checks the tool the agent calls next, and `simulation`\nlets a simulated user hold a whole conversation that is scored against\nsuccess conditions. Pass `agent_ids` to attach the test right away.\n\nThe body of `GET /v1/agent/tests/{test_id}` posts back as is, so tests can\nbe exported and imported. Tool references use your workspace's tool ids\n(list them with `GET /v1/agent/agents/{agent_id}/test-tools`), so an export\nimports cleanly within the same team and needs its tool ids remapped\nelsewhere.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicAgentTestCreatePayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Document created, URL follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "test_id": {
+                      "title": "Test Id",
+                      "type": "string"
+                    },
+                    "workspace_id": {
+                      "title": "Workspace Id",
+                      "type": "string"
+                    },
+                    "name": {
+                      "title": "Name",
+                      "type": "string"
+                    },
+                    "test_type": {
+                      "enum": [
+                        "next_reply",
+                        "tool",
+                        "simulation"
+                      ],
+                      "title": "Test Type",
+                      "type": "string"
+                    },
+                    "agent_ids": {
+                      "description": "Agents this test is attached to.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "Agent Ids",
+                      "type": "array"
+                    },
+                    "created_at": {
+                      "format": "date-time",
+                      "title": "Created At",
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "format": "date-time",
+                      "title": "Updated At",
+                      "type": "string"
+                    },
+                    "conversation": {
+                      "items": {
+                        "$ref": "#/components/schemas/PublicAgentTestMessage"
+                      },
+                      "title": "Conversation",
+                      "type": "array"
+                    },
+                    "expectation": {
+                      "default": "",
+                      "title": "Expectation",
+                      "type": "string"
+                    },
+                    "success_examples": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "Success Examples",
+                      "type": "array"
+                    },
+                    "failure_examples": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "Failure Examples",
+                      "type": "array"
+                    },
+                    "referenced_tool": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentTestReferencedTool"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
+                    "tool_parameters": {
+                      "items": {
+                        "$ref": "#/components/schemas/AgentTestToolParameter"
+                      },
+                      "title": "Tool Parameters",
+                      "type": "array"
+                    },
+                    "verify_absence": {
+                      "default": false,
+                      "title": "Verify Absence",
+                      "type": "boolean"
+                    },
+                    "simulation": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentTestSimulationConfig"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
+                    "dynamic_variables": {
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "boolean"
+                          }
+                        ]
+                      },
+                      "title": "Dynamic Variables",
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "test_id",
+                    "workspace_id",
+                    "name",
+                    "test_type",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "Create Simulation Test",
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/agent/tests \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --data '{\n    \"name\": \"Reschedules an appointment\",\n    \"test_type\": \"simulation\",\n    \"agent_ids\": [\"<agent-id>\"],\n    \"simulation\": {\n      \"scenario\": \"You are Jane. Move your Tuesday cleaning to Thursday afternoon.\",\n      \"max_turns\": 10,\n      \"success_conditions\": [\n        {\"name\": \"rescheduled\", \"description\": \"The agent confirms the new Thursday slot.\"}\n      ],\n      \"tool_mocks\": {\n        \"strategy\": \"all\",\n        \"tools\": [\n          {\n            \"tool\": {\"id\": \"<tool-id>\", \"name\": \"Book appointment\", \"type\": \"webhook\"},\n            \"result\": {\"status\": \"confirmed\"}\n          }\n        ]\n      }\n    }\n  }'"
+          }
+        ]
+      }
+    },
+    "/v1/agent/tests/{test_id}": {
+      "get": {
+        "summary": "Get Test",
+        "description": "Fetch one test's full definition. The body is also the export format: post\nit to `POST /v1/agent/tests` to create a copy.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "test_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Test Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "test_id": {
+                      "title": "Test Id",
+                      "type": "string"
+                    },
+                    "workspace_id": {
+                      "title": "Workspace Id",
+                      "type": "string"
+                    },
+                    "name": {
+                      "title": "Name",
+                      "type": "string"
+                    },
+                    "test_type": {
+                      "enum": [
+                        "next_reply",
+                        "tool",
+                        "simulation"
+                      ],
+                      "title": "Test Type",
+                      "type": "string"
+                    },
+                    "agent_ids": {
+                      "description": "Agents this test is attached to.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "Agent Ids",
+                      "type": "array"
+                    },
+                    "created_at": {
+                      "format": "date-time",
+                      "title": "Created At",
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "format": "date-time",
+                      "title": "Updated At",
+                      "type": "string"
+                    },
+                    "conversation": {
+                      "items": {
+                        "$ref": "#/components/schemas/PublicAgentTestMessage"
+                      },
+                      "title": "Conversation",
+                      "type": "array"
+                    },
+                    "expectation": {
+                      "default": "",
+                      "title": "Expectation",
+                      "type": "string"
+                    },
+                    "success_examples": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "Success Examples",
+                      "type": "array"
+                    },
+                    "failure_examples": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "Failure Examples",
+                      "type": "array"
+                    },
+                    "referenced_tool": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentTestReferencedTool"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
+                    "tool_parameters": {
+                      "items": {
+                        "$ref": "#/components/schemas/AgentTestToolParameter"
+                      },
+                      "title": "Tool Parameters",
+                      "type": "array"
+                    },
+                    "verify_absence": {
+                      "default": false,
+                      "title": "Verify Absence",
+                      "type": "boolean"
+                    },
+                    "simulation": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentTestSimulationConfig"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
+                    "dynamic_variables": {
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "boolean"
+                          }
+                        ]
+                      },
+                      "title": "Dynamic Variables",
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "test_id",
+                    "workspace_id",
+                    "name",
+                    "test_type",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
+        ]
+      },
+      "patch": {
+        "summary": "Update Test",
+        "description": "Patch test fields. Omitted fields keep their value and null is rejected,\nexcept `referenced_tool: null`, which turns a `tool` test into a check that\nthe agent calls no tool at all. Attach and detach agents with\n`PUT` and `DELETE /v1/agent/agents/{agent_id}/tests/{test_id}`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "test_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Test Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicAgentTestUpdatePayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "test_id": {
+                      "title": "Test Id",
+                      "type": "string"
+                    },
+                    "workspace_id": {
+                      "title": "Workspace Id",
+                      "type": "string"
+                    },
+                    "name": {
+                      "title": "Name",
+                      "type": "string"
+                    },
+                    "test_type": {
+                      "enum": [
+                        "next_reply",
+                        "tool",
+                        "simulation"
+                      ],
+                      "title": "Test Type",
+                      "type": "string"
+                    },
+                    "agent_ids": {
+                      "description": "Agents this test is attached to.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "Agent Ids",
+                      "type": "array"
+                    },
+                    "created_at": {
+                      "format": "date-time",
+                      "title": "Created At",
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "format": "date-time",
+                      "title": "Updated At",
+                      "type": "string"
+                    },
+                    "conversation": {
+                      "items": {
+                        "$ref": "#/components/schemas/PublicAgentTestMessage"
+                      },
+                      "title": "Conversation",
+                      "type": "array"
+                    },
+                    "expectation": {
+                      "default": "",
+                      "title": "Expectation",
+                      "type": "string"
+                    },
+                    "success_examples": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "Success Examples",
+                      "type": "array"
+                    },
+                    "failure_examples": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "Failure Examples",
+                      "type": "array"
+                    },
+                    "referenced_tool": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentTestReferencedTool"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
+                    "tool_parameters": {
+                      "items": {
+                        "$ref": "#/components/schemas/AgentTestToolParameter"
+                      },
+                      "title": "Tool Parameters",
+                      "type": "array"
+                    },
+                    "verify_absence": {
+                      "default": false,
+                      "title": "Verify Absence",
+                      "type": "boolean"
+                    },
+                    "simulation": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentTestSimulationConfig"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
+                    "dynamic_variables": {
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "boolean"
+                          }
+                        ]
+                      },
+                      "title": "Dynamic Variables",
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "test_id",
+                    "workspace_id",
+                    "name",
+                    "test_type",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
+        ]
+      },
+      "delete": {
+        "summary": "Delete Test",
+        "description": "Delete a test and detach it from every agent. Its past runs stay readable.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "test_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Test Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Request fulfilled, nothing follows",
+            "headers": {}
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
+        ]
+      }
+    },
+    "/v1/agent/test-runs": {
+      "get": {
+        "summary": "List Test Runs",
+        "description": "Your team's test runs, newest first, filtered by agent, test, batch,\nstatus or test type. Items leave out the conversation and the judge's\noutput. Fetch one run with `GET /v1/agent/test-runs/{run_id}` for those.\nPaginate with `cursor` (follow `next_cursor` while `has_more` is true) or\nwith `page` for offset pagination with a `total` count. The two are\nmutually exclusive.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "agent_id",
+            "description": "",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Agent Id"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "test_id",
+            "description": "",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Test Id"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "batch_id",
+            "description": "",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Batch Id"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "description": "",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "queued",
+                    "running",
+                    "passed",
+                    "failed",
+                    "error"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Status"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "test_type",
+            "description": "",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "next_reply",
+                    "tool",
+                    "simulation"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Test Type"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "description": "",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Cursor"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "description": "1-based page number, mutually exclusive with cursor.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Page"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "include_total",
+            "description": "",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Total",
+              "type": "boolean"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "description": "",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "runs": {
+                      "items": {
+                        "$ref": "#/components/schemas/PublicAgentTestRunSummary"
+                      },
+                      "title": "Runs",
+                      "type": "array"
+                    },
+                    "has_more": {
+                      "title": "Has More",
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Next Cursor"
+                    },
+                    "total": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Total"
+                    }
+                  },
+                  "required": [
+                    "runs",
+                    "has_more"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
+        ]
+      }
+    },
+    "/v1/agent/test-runs/{run_id}": {
+      "get": {
+        "summary": "Get Test Run",
+        "description": "Fetch one test run. Runs start `queued` and end `passed`, `failed` or\n`error`. A simulation run takes minutes, so poll until it finishes.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "run_id": {
+                      "title": "Run Id",
+                      "type": "string"
+                    },
+                    "test_id": {
+                      "title": "Test Id",
+                      "type": "string"
+                    },
+                    "agent_id": {
+                      "title": "Agent Id",
+                      "type": "string"
+                    },
+                    "batch_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Batch Id"
+                    },
+                    "test_type": {
+                      "enum": [
+                        "next_reply",
+                        "tool",
+                        "simulation"
+                      ],
+                      "title": "Test Type",
+                      "type": "string"
+                    },
+                    "repeat_index": {
+                      "default": 0,
+                      "description": "Which repeat of the test in its batch this run is.",
+                      "title": "Repeat Index",
+                      "type": "integer"
+                    },
+                    "status": {
+                      "enum": [
+                        "queued",
+                        "running",
+                        "passed",
+                        "failed",
+                        "error"
+                      ],
+                      "title": "Status",
+                      "type": "string"
+                    },
+                    "needs_review": {
+                      "default": false,
+                      "description": "The judge could not decide, or a tool call had no mock answer.",
+                      "title": "Needs Review",
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "default": "",
+                      "title": "Error",
+                      "type": "string"
+                    },
+                    "usage": {
+                      "$ref": "#/components/schemas/PublicAgentTestRunUsage"
+                    },
+                    "created_at": {
+                      "format": "date-time",
+                      "title": "Created At",
+                      "type": "string"
+                    },
+                    "started_at": {
+                      "anyOf": [
+                        {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Started At"
+                    },
+                    "finished_at": {
+                      "anyOf": [
+                        {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Finished At"
+                    },
+                    "agent_reply": {
+                      "default": "",
+                      "description": "The reply a scripted test judged.",
+                      "title": "Agent Reply",
+                      "type": "string"
+                    },
+                    "judge_reasoning": {
+                      "default": "",
+                      "title": "Judge Reasoning",
+                      "type": "string"
+                    },
+                    "config_hash": {
+                      "default": "",
+                      "description": "The agent draft's config hash the run tested.",
+                      "title": "Config Hash",
+                      "type": "string"
+                    },
+                    "latency_ms": {
+                      "default": 0,
+                      "title": "Latency Ms",
+                      "type": "integer"
+                    },
+                    "simulation_result": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentTestSimulationResult"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
+                    "channel": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "web_voice",
+                            "phone_inbound",
+                            "phone_outbound"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Channel"
+                    },
+                    "turns_used": {
+                      "default": 0,
+                      "title": "Turns Used",
+                      "type": "integer"
+                    },
+                    "ended_by": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "agent",
+                            "user",
+                            "transfer",
+                            "max_turns",
+                            "timeout",
+                            "error"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Ended By"
+                    },
+                    "mock_gaps": {
+                      "items": {
+                        "$ref": "#/components/schemas/AgentTestMockGap"
+                      },
+                      "title": "Mock Gaps",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "run_id",
+                    "test_id",
+                    "agent_id",
+                    "test_type",
+                    "status",
+                    "created_at"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
         ]
       }
     },
@@ -14593,6 +18121,42 @@
             "default": null,
             "title": "Duration Seconds"
           },
+          "participant_identity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Participant Identity"
+          },
+          "agent_participant_identity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Agent Participant Identity"
+          },
+          "agent_joined_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Agent Joined At"
+          },
           "metadata": {
             "additionalProperties": {
               "$ref": "#/components/schemas/JsonValue"
@@ -17931,6 +21495,774 @@
         "title": "PublicAgentConfigEntity",
         "type": "object"
       },
+      "AgentTestAssertionResult": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "tool_call",
+              "forbidden_tool",
+              "ended_by"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          },
+          "tool_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tool Id"
+          },
+          "tool_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "webhook",
+                  "client",
+                  "integration"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tool Type"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "passed"
+        ],
+        "title": "AgentTestAssertionResult",
+        "type": "object"
+      },
+      "AgentTestConditionResult": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "result": {
+            "enum": [
+              "success",
+              "failure",
+              "unknown"
+            ],
+            "title": "Result",
+            "type": "string"
+          },
+          "rationale": {
+            "default": "",
+            "title": "Rationale",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "result"
+        ],
+        "title": "AgentTestConditionResult",
+        "type": "object"
+      },
+      "AgentTestMockGap": {
+        "description": "Calls of one tool the test prepared no answer for. A run with a\ngap never passes cleanly: it fails with needs_review.",
+        "properties": {
+          "tool_name": {
+            "title": "Tool Name",
+            "type": "string"
+          },
+          "tool_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tool Id"
+          },
+          "tool_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "webhook",
+                  "client",
+                  "integration"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tool Type"
+          },
+          "source": {
+            "enum": [
+              "missing",
+              "unmatched"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "calls": {
+            "default": 0,
+            "title": "Calls",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tool_name",
+          "source"
+        ],
+        "title": "AgentTestMockGap",
+        "type": "object"
+      },
+      "AgentTestSimulationResult": {
+        "description": "The simulation run's result: what was said, what the agent called,\nthe deterministic assertions and the judge's per-condition verdicts.",
+        "properties": {
+          "transcript": {
+            "items": {
+              "$ref": "#/components/schemas/AgentTestTranscriptMessage"
+            },
+            "title": "Transcript",
+            "type": "array"
+          },
+          "tool_calls": {
+            "items": {
+              "$ref": "#/components/schemas/AgentTestToolCallRecord"
+            },
+            "title": "Tool Calls",
+            "type": "array"
+          },
+          "assertions": {
+            "items": {
+              "$ref": "#/components/schemas/AgentTestAssertionResult"
+            },
+            "title": "Assertions",
+            "type": "array"
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/AgentTestConditionResult"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "summary": {
+            "default": "",
+            "title": "Summary",
+            "type": "string"
+          },
+          "passed": {
+            "default": false,
+            "title": "Passed",
+            "type": "boolean"
+          }
+        },
+        "title": "AgentTestSimulationResult",
+        "type": "object"
+      },
+      "AgentTestToolCallRecord": {
+        "description": "One tool the agent invoked during the simulation, as the runtime ledger recorded it.",
+        "properties": {
+          "id": {
+            "default": "",
+            "title": "Id",
+            "type": "string"
+          },
+          "tool_name": {
+            "default": "",
+            "title": "Tool Name",
+            "type": "string"
+          },
+          "tool_source": {
+            "default": "",
+            "title": "Tool Source",
+            "type": "string"
+          },
+          "input": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Input",
+            "type": "object"
+          },
+          "status": {
+            "default": "",
+            "title": "Status",
+            "type": "string"
+          },
+          "output": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Output"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          },
+          "mocked": {
+            "default": false,
+            "title": "Mocked",
+            "type": "boolean"
+          },
+          "mock_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "test",
+                  "tool",
+                  "missing",
+                  "unmatched",
+                  "real"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mock Source"
+          },
+          "node_id": {
+            "default": "",
+            "title": "Node Id",
+            "type": "string"
+          },
+          "turn_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Turn Id"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Created At"
+          },
+          "seq": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Seq"
+          }
+        },
+        "title": "AgentTestToolCallRecord",
+        "type": "object"
+      },
+      "AgentTestTranscriptMessage": {
+        "properties": {
+          "role": {
+            "enum": [
+              "user",
+              "agent"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "text": {
+            "default": "",
+            "title": "Text",
+            "type": "string"
+          },
+          "turn_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Turn Id"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Node Id"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Created At"
+          },
+          "seq": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Seq"
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "title": "AgentTestTranscriptMessage",
+        "type": "object"
+      },
+      "PublicAgentTestRun": {
+        "properties": {
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "test_id": {
+            "title": "Test Id",
+            "type": "string"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "batch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Batch Id"
+          },
+          "test_type": {
+            "enum": [
+              "next_reply",
+              "tool",
+              "simulation"
+            ],
+            "title": "Test Type",
+            "type": "string"
+          },
+          "repeat_index": {
+            "default": 0,
+            "description": "Which repeat of the test in its batch this run is.",
+            "title": "Repeat Index",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "passed",
+              "failed",
+              "error"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "needs_review": {
+            "default": false,
+            "description": "The judge could not decide, or a tool call had no mock answer.",
+            "title": "Needs Review",
+            "type": "boolean"
+          },
+          "error": {
+            "default": "",
+            "title": "Error",
+            "type": "string"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/PublicAgentTestRunUsage"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Finished At"
+          },
+          "agent_reply": {
+            "default": "",
+            "description": "The reply a scripted test judged.",
+            "title": "Agent Reply",
+            "type": "string"
+          },
+          "judge_reasoning": {
+            "default": "",
+            "title": "Judge Reasoning",
+            "type": "string"
+          },
+          "config_hash": {
+            "default": "",
+            "description": "The agent draft's config hash the run tested.",
+            "title": "Config Hash",
+            "type": "string"
+          },
+          "latency_ms": {
+            "default": 0,
+            "title": "Latency Ms",
+            "type": "integer"
+          },
+          "simulation_result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTestSimulationResult"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "enum": [
+                  "web_voice",
+                  "phone_inbound",
+                  "phone_outbound"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Channel"
+          },
+          "turns_used": {
+            "default": 0,
+            "title": "Turns Used",
+            "type": "integer"
+          },
+          "ended_by": {
+            "anyOf": [
+              {
+                "enum": [
+                  "agent",
+                  "user",
+                  "transfer",
+                  "max_turns",
+                  "timeout",
+                  "error"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ended By"
+          },
+          "mock_gaps": {
+            "items": {
+              "$ref": "#/components/schemas/AgentTestMockGap"
+            },
+            "title": "Mock Gaps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "run_id",
+          "test_id",
+          "agent_id",
+          "test_type",
+          "status",
+          "created_at"
+        ],
+        "title": "PublicAgentTestRun",
+        "type": "object"
+      },
+      "PublicAgentTestRunUsage": {
+        "properties": {
+          "agent_replies": {
+            "default": 0,
+            "title": "Agent Replies",
+            "type": "integer"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "LLM cost of the run in USD, null while any part is unpriced.",
+            "title": "Cost Usd"
+          }
+        },
+        "title": "PublicAgentTestRunUsage",
+        "type": "object"
+      },
+      "PublicAgentTestTool": {
+        "properties": {
+          "id": {
+            "description": "The id to reference in tests. Webhook and client tools use their tool id, integration tools use <provider_key>:<tool_name>.",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "webhook",
+              "client",
+              "integration"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "provider_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The integration provider, integration tools only.",
+            "title": "Provider Key"
+          },
+          "writes": {
+            "default": false,
+            "description": "An integration tool that changes data. It cannot run for real in a test.",
+            "title": "Writes",
+            "type": "boolean"
+          },
+          "has_own_mock": {
+            "default": false,
+            "description": "The tool answers from its own mock when a simulation mocks every tool and the test has no entry for it.",
+            "title": "Has Own Mock",
+            "type": "boolean"
+          },
+          "expects_response": {
+            "default": true,
+            "description": "False for a client tool that does not wait for an answer, which cannot be mocked.",
+            "title": "Expects Response",
+            "type": "boolean"
+          },
+          "available_on_phone": {
+            "default": true,
+            "description": "False for client tools, which need a client and never run on phone calls.",
+            "title": "Available On Phone",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type"
+        ],
+        "title": "PublicAgentTestTool",
+        "type": "object"
+      },
+      "PublicAgentTestBatchSummary": {
+        "properties": {
+          "batch_id": {
+            "title": "Batch Id",
+            "type": "string"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "status": {
+            "description": "running until every run has finished.",
+            "enum": [
+              "running",
+              "completed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "completed": {
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "integer"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "errors": {
+            "title": "Errors",
+            "type": "integer"
+          },
+          "pass_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "passed / (passed + failed), null until a run passed or failed. Error runs never judged the agent and are left out.",
+            "title": "Pass Rate"
+          },
+          "run_count": {
+            "title": "Run Count",
+            "type": "integer"
+          },
+          "trigger_source": {
+            "description": "Where the batch was started: the console or the API.",
+            "enum": [
+              "console",
+              "api"
+            ],
+            "title": "Trigger Source",
+            "type": "string"
+          },
+          "created_at": {
+            "description": "When the first run was created.",
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "When the last run finished, null until the batch completed.",
+            "title": "Finished At"
+          }
+        },
+        "required": [
+          "batch_id",
+          "agent_id",
+          "status",
+          "completed",
+          "passed",
+          "failed",
+          "errors",
+          "run_count",
+          "trigger_source",
+          "created_at"
+        ],
+        "title": "PublicAgentTestBatchSummary",
+        "type": "object"
+      },
       "PublicKnowledgeSourceSummary": {
         "properties": {
           "knowledge_source_id": {
@@ -18516,6 +22848,903 @@
           }
         },
         "title": "PublicAgentToolUpdatePayload",
+        "type": "object"
+      },
+      "PublicAgentTestSummary": {
+        "properties": {
+          "test_id": {
+            "title": "Test Id",
+            "type": "string"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "test_type": {
+            "enum": [
+              "next_reply",
+              "tool",
+              "simulation"
+            ],
+            "title": "Test Type",
+            "type": "string"
+          },
+          "agent_ids": {
+            "description": "Agents this test is attached to.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Agent Ids",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "test_id",
+          "workspace_id",
+          "name",
+          "test_type",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PublicAgentTestSummary",
+        "type": "object"
+      },
+      "AgentTestMessagePayload": {
+        "properties": {
+          "role": {
+            "enum": [
+              "agent",
+              "user"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "text"
+        ],
+        "title": "AgentTestMessagePayload",
+        "type": "object"
+      },
+      "AgentTestParamMatcher": {
+        "additionalProperties": false,
+        "description": "How one tool argument is compared: exact string equality, a regular\nexpression searched in the value, or mere presence. Regexes are\nJavaScript without flags, mock conditions run in the runtime as written\nand assertions are translated to Python for scoring.",
+        "properties": {
+          "type": {
+            "default": "exact",
+            "enum": [
+              "exact",
+              "regex",
+              "any"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Value"
+          }
+        },
+        "title": "AgentTestParamMatcher",
+        "type": "object"
+      },
+      "AgentTestReferencedTool": {
+        "additionalProperties": false,
+        "description": "Tool the runner should (or should not) observe on the next turn. A\nwebhook or client tool is referenced by its library id, an integration\ntool by \"<provider_key>:<tool_name>\" (for example\n\"google_calendar:create_event\").",
+        "properties": {
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "default": "webhook",
+            "enum": [
+              "webhook",
+              "client",
+              "integration"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Description",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "AgentTestReferencedTool",
+        "type": "object"
+      },
+      "AgentTestSimulationAssertions": {
+        "additionalProperties": false,
+        "description": "Deterministic checks run before the judge, no LLM involved.",
+        "properties": {
+          "tool_calls": {
+            "items": {
+              "$ref": "#/components/schemas/AgentTestToolCallAssertion"
+            },
+            "maxItems": 100,
+            "title": "Tool Calls",
+            "type": "array"
+          },
+          "forbidden_tools": {
+            "items": {
+              "$ref": "#/components/schemas/AgentTestReferencedTool"
+            },
+            "maxItems": 100,
+            "title": "Forbidden Tools",
+            "type": "array"
+          },
+          "ended_by": {
+            "anyOf": [
+              {
+                "enum": [
+                  "agent",
+                  "user",
+                  "transfer",
+                  "any"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ended By"
+          }
+        },
+        "title": "AgentTestSimulationAssertions",
+        "type": "object"
+      },
+      "AgentTestSimulationConfig": {
+        "additionalProperties": false,
+        "properties": {
+          "scenario": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Scenario",
+            "type": "string"
+          },
+          "max_turns": {
+            "default": 10,
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Max Turns",
+            "type": "integer"
+          },
+          "success_conditions": {
+            "items": {
+              "$ref": "#/components/schemas/AgentTestSuccessCondition"
+            },
+            "maxItems": 10,
+            "minItems": 1,
+            "title": "Success Conditions",
+            "type": "array"
+          },
+          "assertions": {
+            "$ref": "#/components/schemas/AgentTestSimulationAssertions"
+          },
+          "tool_mocks": {
+            "$ref": "#/components/schemas/AgentTestToolMocks"
+          },
+          "simulated_user_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Simulated User Model"
+          },
+          "repeat_count": {
+            "default": 1,
+            "maximum": 20,
+            "minimum": 1,
+            "title": "Repeat Count",
+            "type": "integer"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "enum": [
+                  "web_voice",
+                  "phone_inbound",
+                  "phone_outbound"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Channel"
+          }
+        },
+        "required": [
+          "scenario",
+          "success_conditions"
+        ],
+        "title": "AgentTestSimulationConfig",
+        "type": "object"
+      },
+      "AgentTestSuccessCondition": {
+        "additionalProperties": false,
+        "description": "One natural-language criterion the judge scores on the whole conversation.",
+        "properties": {
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "description"
+        ],
+        "title": "AgentTestSuccessCondition",
+        "type": "object"
+      },
+      "AgentTestToolCallAssertion": {
+        "additionalProperties": false,
+        "description": "The agent must have called this library tool, optionally with matching\narguments, between min_calls and max_calls times (calls that match).",
+        "properties": {
+          "tool": {
+            "$ref": "#/components/schemas/AgentTestReferencedTool"
+          },
+          "params": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AgentTestParamMatcher"
+            },
+            "title": "Params",
+            "type": "object"
+          },
+          "min_calls": {
+            "default": 1,
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Min Calls",
+            "type": "integer"
+          },
+          "max_calls": {
+            "anyOf": [
+              {
+                "maximum": 100,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Max Calls"
+          }
+        },
+        "required": [
+          "tool"
+        ],
+        "title": "AgentTestToolCallAssertion",
+        "type": "object"
+      },
+      "AgentTestToolMock": {
+        "additionalProperties": false,
+        "description": "A canned result for one library tool, optionally gated on the call arguments.",
+        "properties": {
+          "tool": {
+            "$ref": "#/components/schemas/AgentTestReferencedTool"
+          },
+          "result": {
+            "$ref": "#/components/schemas/JsonValue",
+            "default": null
+          },
+          "status": {
+            "anyOf": [
+              {
+                "maximum": 599,
+                "minimum": 100,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "when": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/AgentTestParamMatcher"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "When"
+          },
+          "error": {
+            "default": false,
+            "title": "Error",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "tool"
+        ],
+        "title": "AgentTestToolMock",
+        "type": "object"
+      },
+      "AgentTestToolMocks": {
+        "additionalProperties": false,
+        "description": "all: every tool answers from a mock, except real_tools, which run for\nreal. selected: only the listed tools do, the rest follow fallback.\nnone: every tool hits its real endpoint.",
+        "properties": {
+          "strategy": {
+            "default": "all",
+            "enum": [
+              "all",
+              "selected",
+              "none"
+            ],
+            "title": "Strategy",
+            "type": "string"
+          },
+          "fallback": {
+            "default": "error",
+            "enum": [
+              "error",
+              "real"
+            ],
+            "title": "Fallback",
+            "type": "string"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/AgentTestToolMock"
+            },
+            "maxItems": 50,
+            "title": "Tools",
+            "type": "array"
+          },
+          "real_tools": {
+            "items": {
+              "$ref": "#/components/schemas/AgentTestReferencedTool"
+            },
+            "maxItems": 50,
+            "title": "Real Tools",
+            "type": "array"
+          }
+        },
+        "title": "AgentTestToolMocks",
+        "type": "object"
+      },
+      "AgentTestToolParameter": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "title": "Value"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "string",
+                  "number",
+                  "boolean"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Type"
+          }
+        },
+        "required": [
+          "name",
+          "value"
+        ],
+        "title": "AgentTestToolParameter",
+        "type": "object"
+      },
+      "PublicAgentTestCreatePayload": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "test_type": {
+            "default": "next_reply",
+            "enum": [
+              "next_reply",
+              "tool",
+              "simulation"
+            ],
+            "title": "Test Type",
+            "type": "string"
+          },
+          "conversation": {
+            "items": {
+              "$ref": "#/components/schemas/AgentTestMessagePayload"
+            },
+            "title": "Conversation",
+            "type": "array"
+          },
+          "expectation": {
+            "default": "",
+            "maxLength": 400,
+            "title": "Expectation",
+            "type": "string"
+          },
+          "success_examples": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Success Examples",
+            "type": "array"
+          },
+          "failure_examples": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Failure Examples",
+            "type": "array"
+          },
+          "referenced_tool": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTestReferencedTool"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "tool_parameters": {
+            "items": {
+              "$ref": "#/components/schemas/AgentTestToolParameter"
+            },
+            "title": "Tool Parameters",
+            "type": "array"
+          },
+          "verify_absence": {
+            "default": false,
+            "title": "Verify Absence",
+            "type": "boolean"
+          },
+          "simulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTestSimulationConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "dynamic_variables": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "title": "Dynamic Variables",
+            "type": "object"
+          },
+          "agent_ids": {
+            "description": "Agents to attach the test to. They must all be in one workspace, and the test is created there. Without agents the test goes into the API key owner's default workspace.",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Agent Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "PublicAgentTestCreatePayload",
+        "type": "object"
+      },
+      "PublicAgentTestMessage": {
+        "properties": {
+          "role": {
+            "enum": [
+              "agent",
+              "user"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "text"
+        ],
+        "title": "PublicAgentTestMessage",
+        "type": "object"
+      },
+      "PublicAgentTestUpdatePayload": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Name"
+          },
+          "test_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "next_reply",
+                  "tool",
+                  "simulation"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Test Type"
+          },
+          "conversation": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AgentTestMessagePayload"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Conversation"
+          },
+          "expectation": {
+            "anyOf": [
+              {
+                "maxLength": 400,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expectation"
+          },
+          "success_examples": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Success Examples"
+          },
+          "failure_examples": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Failure Examples"
+          },
+          "referenced_tool": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTestReferencedTool"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "tool_parameters": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AgentTestToolParameter"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tool Parameters"
+          },
+          "verify_absence": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Verify Absence"
+          },
+          "simulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTestSimulationConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "dynamic_variables": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Dynamic Variables"
+          }
+        },
+        "title": "PublicAgentTestUpdatePayload",
+        "type": "object"
+      },
+      "PublicAgentTestRunSummary": {
+        "properties": {
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "test_id": {
+            "title": "Test Id",
+            "type": "string"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "batch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Batch Id"
+          },
+          "test_type": {
+            "enum": [
+              "next_reply",
+              "tool",
+              "simulation"
+            ],
+            "title": "Test Type",
+            "type": "string"
+          },
+          "repeat_index": {
+            "default": 0,
+            "description": "Which repeat of the test in its batch this run is.",
+            "title": "Repeat Index",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "passed",
+              "failed",
+              "error"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "needs_review": {
+            "default": false,
+            "description": "The judge could not decide, or a tool call had no mock answer.",
+            "title": "Needs Review",
+            "type": "boolean"
+          },
+          "error": {
+            "default": "",
+            "title": "Error",
+            "type": "string"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/PublicAgentTestRunUsage"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Finished At"
+          }
+        },
+        "required": [
+          "run_id",
+          "test_id",
+          "agent_id",
+          "test_type",
+          "status",
+          "created_at"
+        ],
+        "title": "PublicAgentTestRunSummary",
         "type": "object"
       },
       "PublicPhoneNumberEntity": {

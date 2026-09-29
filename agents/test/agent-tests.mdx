@@ -169,6 +169,52 @@ Tests always exercise the agent's latest **draft** configuration, including unpu
   </Step>
 </Steps>
 
+## Run tests from the API and CI
+
+Everything on this page is also available over the REST API with an [API key](/developer-guide/getting-started/api-key), so you can keep tests next to your agent configuration and gate releases on them. See the [Tests API reference](/api-reference/endpoint/agent/list-tests) for every endpoint.
+
+- **Export and import.** [Get Test](/api-reference/endpoint/agent/get-test) returns a test's full definition. Post that body to [Create Test](/api-reference/endpoint/agent/create-test) as is to recreate it, for example from JSON files kept in your repository. Read-only fields such as `test_id` and `created_at` are ignored. Tool references use your workspace's tool ids, so an export imports as is within the same team. [List Test Tools](/api-reference/endpoint/agent/list-test-tools) returns the ids a test can reference for an agent, including integration tools.
+- **Attach.** Pass `agent_ids` when you create a test, or attach it later with [Attach Test](/api-reference/endpoint/agent/attach-test).
+- **Run and wait.** [Run Tests](/api-reference/endpoint/agent/run-tests) starts a batch with every attached test, or only the `test_ids` you pass, and `repeat_count` overrides each test's repeat count for that batch. Poll [Get Test Batch](/api-reference/endpoint/agent/get-test-batch) until `completed` is `true`, then check `passed`, `failed`, `errors`, and `pass_rate`. `pass_rate` leaves out runs that ended in **Error**, so decide in your pipeline whether an error should fail the build or be retried.
+- **History.** [List Test Batches](/api-reference/endpoint/agent/list-test-batches) and [List Test Runs](/api-reference/endpoint/agent/list-test-runs) return past results, filterable by test, batch, and status.
+
+Runs always use the agent's current draft. A pipeline that changes the agent should update the draft first ([Configure through the API](/agents/build/configuration#configure-through-the-api)), run the tests, and publish only when they pass.
+
+This GitHub Actions workflow runs every test attached to an agent and fails the build if any run fails or errors:
+
+```yaml .github/workflows/agent-tests.yml
+name: Agent tests
+on: [pull_request]
+
+jobs:
+  agent-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Run the agent's tests
+        env:
+          FISH_API_KEY: ${{ secrets.FISH_API_KEY }}
+          AGENT_ID: ${{ vars.AGENT_ID }}
+        run: |
+          set -euo pipefail
+          api=https://api.fish.audio/v1/agent
+          auth="Authorization: Bearer $FISH_API_KEY"
+
+          batch=$(curl -sf -X POST "$api/agents/$AGENT_ID/tests/run" \
+            -H "$auth" -H "Content-Type: application/json" -d '{}' | jq -r .batch_id)
+
+          while true; do
+            result=$(curl -sf "$api/agents/$AGENT_ID/test-batches/$batch" -H "$auth")
+            [ "$(jq -r .completed <<<"$result")" = "true" ] && break
+            sleep 15
+          done
+
+          jq '{passed, failed, errors, pass_rate}' <<<"$result"
+          jq -e '.failed == 0 and .errors == 0' <<<"$result" > /dev/null
+```
+
+Simulation tests take minutes, so give the job a timeout that covers your longest scenarios. To tolerate occasional failures of repeated Simulation tests, gate on `pass_rate` instead, for example `jq -e '.pass_rate >= 0.8'`.
+
 ## Limits
 
 | Field                           | Limit                                                                 |
@@ -182,6 +228,7 @@ Tests always exercise the agent's latest **draft** configuration, including unpu
 | Success conditions (Simulation) | 1 to 10, description 500 characters each                              |
 | Max turns (Simulation)          | 50                                                                    |
 | Repeat count (Simulation)       | 20                                                                    |
+| Runs per API batch              | 1,000 (tests times repeats)                                           |
 | Dynamic variables               | 50 per test                                                           |
 
 ## Going further
