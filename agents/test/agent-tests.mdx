@@ -14,6 +14,8 @@ Write a test once, run it against any agent, and get a **Pass** or **Fail** verd
 | **Tool**        | Whether the next reply calls a given tool (or no tool at all), optionally with matching parameters.                                               | Routing decisions and argument extraction.                               |
 | **Simulation**  | A whole conversation driven by a simulated user, scored by the judge against your success conditions, plus deterministic checks on what happened. | Flows that only show up over several exchanges, such as taking an order. |
 
+Over the API, the type is the `test_type` field: `next_reply` for Single Turn, `tool`, or `simulation`. Each type's section below ends with its request body for [Create Test](/api-reference/endpoint/agent/create-test).
+
 <Note>
   Tests run as text (no audio is synthesized), but the agent uses its full draft
   configuration: the [knowledge base](/agents/build/knowledge-base) is
@@ -44,6 +46,8 @@ Tests are workspace-level resources, managed under **Library → Tests** in the 
   </Step>
 </Steps>
 
+To create tests from your own systems, send the same fields to [Create Test](/api-reference/endpoint/agent/create-test) with an [API key](/developer-guide/getting-started/api-key). For a complete Simulation test built step by step, follow the [rescheduling tutorial](/agents/test/simulation-tutorial).
+
 ## Single Turn tests
 
 A Single Turn test hands your agent a scripted conversation and asks it to produce the next reply:
@@ -54,11 +58,76 @@ A Single Turn test hands your agent a scripted conversation and asks it to produ
 
 Under **Conversation**, click **Add message** to build the history the agent sees. Each message is either an **Agent** or **User** turn, and at least one must be a user turn. Under **Judging**, write the **Expectation**: what a correct reply must do. Optionally click **Add example** to provide success and failure examples. They calibrate the judge but aren't required.
 
+### Single Turn over the API
+
+| Console                      | API field                                                           |
+| ---------------------------- | ------------------------------------------------------------------- |
+| Conversation                 | `conversation`: messages with `role` (`agent` or `user`) and `text` |
+| Expectation                  | `expectation`, required                                             |
+| Success and failure examples | `success_examples` and `failure_examples`, lists of strings         |
+
+```json
+{
+  "name": "Quotes the late cancellation fee",
+  "test_type": "next_reply",
+  "agent_ids": ["<agent-id>"],
+  "conversation": [
+    {
+      "role": "agent",
+      "text": "Thanks for calling Bright Smile Dental. How can I help?"
+    },
+    {
+      "role": "user",
+      "text": "What happens if I cancel less than a day before my appointment?"
+    }
+  ],
+  "expectation": "States the $50 late cancellation fee and offers to reschedule instead.",
+  "success_examples": [
+    "Cancelling within 24 hours costs $50. Would you like to move the appointment instead?"
+  ],
+  "failure_examples": ["There is no fee for cancelling."]
+}
+```
+
 ## Tool tests
 
 A Tool test scripts the conversation the same way, but instead of judging the reply it checks which tool the agent called while producing it.
 
 Under **Require tool execution**, pick a tool from the library and choose **Should have been called** or **Should not be called**. Leave the tool empty to check that the agent called no tool at all. Integration tools, such as calendar tools, can only be checked in a Simulation test. Under **Tool parameters**, optionally add the parameter values the call must carry, typed as string, number, or boolean. The result names the tool the agent actually called.
+
+### Tool over the API
+
+| Console                                        | API field                                                                                                    |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Conversation                                   | `conversation`, as in Single Turn                                                                            |
+| Tool                                           | `referenced_tool`: `id`, `name`, and `type` (`webhook` or `client`). Omit it to check that no tool is called |
+| Should have been called / Should not be called | `verify_absence`: `false` or `true`                                                                          |
+| Tool parameters                                | `tool_parameters`: `name`, `value`, and `type` (`string`, `number`, or `boolean`)                            |
+
+[List Test Tools](/api-reference/endpoint/agent/list-test-tools) returns the tool ids an agent's tests can reference.
+
+```json
+{
+  "name": "Checks availability for the requested date",
+  "test_type": "tool",
+  "agent_ids": ["<agent-id>"],
+  "conversation": [
+    {
+      "role": "user",
+      "text": "Do you have anything open on Thursday, October 8?"
+    }
+  ],
+  "referenced_tool": {
+    "id": "<tool-id>",
+    "name": "check_availability",
+    "type": "webhook"
+  },
+  "tool_parameters": [
+    { "name": "date", "value": "2026-10-08", "type": "string" }
+  ],
+  "verify_absence": false
+}
+```
 
 ## Simulation tests
 
@@ -124,6 +193,74 @@ A failed assertion fails the run regardless of the judge's verdict. Each asserti
 Set **Repeat** to run the same scenario up to 20 times in a batch. Simulated conversations vary from run to run, so repeats surface flaky behaviour that a single run would miss. The agent's Tests page shows how many repeats passed out of those that reached a verdict, for example `2 / 3 passed`, or `2 / 2 passed · 1 error` when one repeat ended in **Error**. While repeats are still running, the row counts them instead, for example `1 passed · 2 running`. Opening the test from that page lets you switch between the finished repeats of the latest batch to read each conversation. The test opens on the first failed repeat.
 
 Repeats only apply to **Run all**. Running the test from its **Run** tab, or re-running one test from the row menu, runs the conversation once.
+
+### Simulation over the API
+
+Every Simulation field lives under `simulation`. An optional `conversation`, up to 50 messages, is replayed before the simulated user takes over.
+
+| Console                           | API field under `simulation`                                                             |
+| --------------------------------- | ---------------------------------------------------------------------------------------- |
+| Scenario                          | `scenario`                                                                               |
+| Max turns                         | `max_turns`, 1 to 50, default 10                                                         |
+| Channel                           | `channel`: `web_voice`, `phone_inbound`, or `phone_outbound`. Omit it for **Auto**       |
+| Success conditions                | `success_conditions`: `name` and `description`                                           |
+| Tool mocks strategy               | `tool_mocks.strategy`: `all`, `selected`, or `none`                                      |
+| The rest, under **Mock selected** | `tool_mocks.fallback`: `error` or `real`                                                 |
+| Mock entries                      | `tool_mocks.tools`: `tool`, `result`, and optionally `status`, `when`, and `error: true` |
+| Call the real endpoint            | `tool_mocks.real_tools`                                                                  |
+| Required tool calls               | `assertions.tool_calls`: `tool`, `params`, `min_calls`, `max_calls`                      |
+| Forbidden tools                   | `assertions.forbidden_tools`                                                             |
+| Ended by                          | `assertions.ended_by`: `agent`, `user`, `transfer`, or `any`                             |
+| Repeat                            | `repeat_count`, 1 to 20                                                                  |
+
+Tools are referenced by `id`, `name`, and `type`, as in Tool tests, and integration tools use the `<provider_key>:<tool_name>` ids that [List Test Tools](/api-reference/endpoint/agent/list-test-tools) returns. Parameter conditions (`when` on a mock entry, `params` on a required call) map a parameter name to `{"type": "exact" | "regex" | "any", "value": "..."}`.
+
+```json
+{
+  "name": "Takes a pickup order",
+  "test_type": "simulation",
+  "agent_ids": ["<agent-id>"],
+  "simulation": {
+    "scenario": "PERSONA: Luca, a regular customer, brief and friendly.\nGOAL: Order one Margherita and one Diavola for pickup.\nFACTS: Name Luca, phone 555-0192. Give the phone number only when asked.\nENDING: Once the agent confirms the order number and pickup time, thank them and hang up.",
+    "max_turns": 10,
+    "success_conditions": [
+      {
+        "name": "Order confirmed",
+        "description": "The agent confirmed both pizzas and told the caller when to pick them up."
+      }
+    ],
+    "assertions": {
+      "tool_calls": [
+        {
+          "tool": {
+            "id": "<tool-id>",
+            "name": "submit_order",
+            "type": "webhook"
+          },
+          "params": { "phone": { "type": "regex", "value": "555-?0192" } },
+          "min_calls": 1,
+          "max_calls": 1
+        }
+      ]
+    },
+    "tool_mocks": {
+      "strategy": "all",
+      "tools": [
+        {
+          "tool": {
+            "id": "<tool-id>",
+            "name": "submit_order",
+            "type": "webhook"
+          },
+          "result": { "ok": true, "order_id": "A17", "ready_in_minutes": 20 }
+        }
+      ]
+    }
+  }
+}
+```
+
+The [rescheduling tutorial](/agents/test/simulation-tutorial) walks through a larger example with conditional mocks, an injected error, and forbidden tools.
 
 ## Attach tests to agents
 
