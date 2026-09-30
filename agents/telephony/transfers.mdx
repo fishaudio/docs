@@ -17,7 +17,7 @@ Two modes decide what the handoff feels like:
 ## Prerequisites
 
 - A phone number bound to your agent, answering inbound calls. See [Inbound calls](/agents/telephony/inbound-calls).
-- The number must support transfers. Numbers purchased from the platform inventory (`provider: "twilio"`) do; see [Phone numbers](/agents/telephony/phone-numbers). [Imported SIP numbers](/agents/telephony/byo-sip) support cold transfers when the carrier honors SIP REFER, and warm transfers when a termination is configured.
+- The number must support transfers. Numbers purchased from the platform inventory (`provider: "twilio"`) do; see [Phone numbers](/agents/telephony/phone-numbers). [Imported SIP numbers](/agents/telephony/byo-sip) support cold transfers when the carrier honors SIP REFER to the destination (on Twilio, enable Call Transfer and allow PSTN transfers on the trunk), and warm transfers when a termination is configured.
 
 ## Configure destinations
 
@@ -185,7 +185,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 ## Limitations
 
 - **Phone calls only**: web and SDK sessions have no phone leg to hand off, so the `transfer_call` tool never ships for them.
-- **Transfer-capable numbers**: the number the caller dialed must be a `twilio`-provider number.
+- **Transfer-capable numbers**: the number on the call must support transfers, as described in [Prerequisites](#prerequisites).
 - **Supported countries**: destination numbers are limited to an allowlist of country codes.
 
 ## Billing

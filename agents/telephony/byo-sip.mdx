@@ -122,7 +122,9 @@ Set both when your carrier supports it.
   </Step>
   <Step title="Allow transfers (optional)">
     For [cold transfers](/agents/telephony/transfers), enable **Call Transfer
-    (SIP REFER)** in the trunk's settings so Twilio honors the handoff.
+    (SIP REFER)** in the trunk's settings and also allow transfers to the PSTN.
+    If transfers are limited to SIP destinations, Twilio rejects every transfer
+    to a phone number, and the caller stays with the agent.
   </Step>
 </Steps>
 
