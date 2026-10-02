@@ -1,32 +1,64 @@
 ---
 openapi: post /v1/asr
 title: "Speech to Text"
-description: "Transcribe audio with transcribe-1 or transcribe-1-pro, with optional timestamps and emotion cues"
+description: "Transcribe audio with transcribe-1 or transcribe-1-pro: request and response fields, speaker turns, limits, formats, and errors"
 icon: "microphone"
 iconType: "solid"
 ---
 
 <Warning>
-  This BETA endpoint accepts audio only as `multipart/form-data` (a file upload)
-  or `application/msgpack`. JSON with base64-encoded audio is not supported.
+  This BETA endpoint transcribes one audio file per request. Send the audio as
+  `multipart/form-data` (a file upload) or `application/msgpack`. Base64-encoded
+  audio in a JSON body is not supported.
 </Warning>
 
 ## Select a model
 
-Send `POST https://api.fish.audio/v1/asr` with `Authorization: Bearer <API_KEY>` and an optional **`model` HTTP header**:
+Send `POST https://api.fish.audio/v1/asr` with `Authorization: Bearer <API_KEY>` and an optional **`model` HTTP header**. The request is synchronous: the response arrives when the whole file has been transcribed.
 
-| Header value       | Behavior                                                                                           |
-| ------------------ | -------------------------------------------------------------------------------------------------- |
-| `transcribe-1`     | General transcription; the default if the header is omitted.                                       |
-| `transcribe-1-pro` | Transcription of multi-speaker conversations, preserving emotion and vocal-event cues in the text. |
+| Header value       | Use it for                                                                                                                                          |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `transcribe-1`     | General transcription of short recordings. Default when the `model` header is omitted.                                                              |
+| `transcribe-1-pro` | Multi-speaker conversations and long recordings (up to 60 minutes): speaker markers and speaker turns, with emotion and vocal-event cues preserved. |
 
-The model belongs in the header for both multipart and MessagePack requests. The request body contains:
+Write the header value exactly, in lowercase. If the header is missing, or its value is not an exact match (for example `Transcribe-1-Pro` or `transcribe-1pro`), the request is served and billed as `transcribe-1`, and no error is returned. If you expected `transcribe-1-pro` but the transcript has no speaker markers, check the header.
 
-| Field               | Required | Default | Description                                                                               |
-| ------------------- | -------- | ------- | ----------------------------------------------------------------------------------------- |
-| `audio`             | Yes      | —       | Audio file upload for multipart, or raw audio bytes for MessagePack.                      |
-| `language`          | No       | Unset   | Optional language hint, such as `en`, `zh`, or `ja`. The language is still auto-detected. |
-| `ignore_timestamps` | No       | `true`  | Set to `false` to request timestamped segments. Alignment adds processing time.           |
+The model belongs in the header for both multipart and MessagePack requests; a `model` field in the request body is ignored. `transcribe-1` accepts up to 50 MiB per request and is designed for short recordings. `transcribe-1-pro` accepts recordings up to 60 minutes long. See [Limits](#limits).
+
+To link the request to your own distributed trace, also send a W3C `traceparent` header. See [Tracing & Performance Analysis](/api-reference/observability).
+
+## Request fields
+
+Multipart and MessagePack bodies use the same field names. Multipart values are text; MessagePack values are typed.
+
+| Field               | Required | Default | Description                                                                                                                                                                                                                  |
+| ------------------- | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `audio`             | Yes      | —       | Exactly one audio file per request: a file upload for multipart, or binary bytes for MessagePack. The format is detected from the file contents, not the file name. See [Supported audio formats](#supported-audio-formats). |
+| `language`          | No       | Unset   | Optional language hint, as a lowercase ISO 639-1 code such as `en`, `zh`, or `ja`. The language is detected automatically either way. An empty multipart value counts as unset. See [Language](#language).                   |
+| `ignore_timestamps` | No       | `true`  | Default `true` (no timestamps). Set to `false` to get word-level `segments` and, on `transcribe-1-pro`, `speaker_turns`. Timestamps add processing time.                                                                     |
+
+In multipart forms, send `true` or `false` for `ignore_timestamps`. Any value other than `true` (case-insensitive), including `1` or an empty value, is read as `false` and turns timestamps on. In MessagePack, send a boolean; a string or `nil` returns 400.
+
+### `transcribe-1-pro` fields
+
+These fields apply to `transcribe-1-pro`. Send them only with `model: transcribe-1-pro`.
+
+| Field                          | Default | Description                                                                                                                                                                                              |
+| ------------------------------ | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tag_audio_events`             | `true`  | `true`: bracketed emotion and vocal-event cues such as `[laughter]` or `[高兴]` stay in `text` and in `speaker_turns`. `false`: the cues are removed. Timestamps, `duration`, and billing do not change. |
+| `diarize`                      | `auto`  | `auto` or `true`: return `speaker_turns` when timestamps are requested. `false`: omit `speaker_turns`. `false` does not change the transcript, and the speaker markers stay in `text`.                   |
+| `num_speakers`                 | Unset   | The expected number of speakers, an integer of 1 or more. Cannot be combined with `min_speakers` or `max_speakers`.                                                                                      |
+| `min_speakers`, `max_speakers` | Unset   | Lower and upper bounds on the number of speakers, integers of 1 or more. `min_speakers` must not exceed `max_speakers`.                                                                                  |
+
+Speaker-count hints are applied on a best-effort basis: they guide speaker identification on longer recordings and may have no effect on short ones. They cannot be sent with `diarize=false`.
+
+These fields are validated strictly:
+
+- In multipart forms, `tag_audio_events` takes `true` or `false`, and `diarize` takes `auto`, `true`, or `false`, in any letter case. Speaker counts take digits only. Send each field at most once.
+- In MessagePack, send `tag_audio_events` as a boolean, `diarize` as a boolean or one of the lowercase strings `auto`, `true`, or `false`, and speaker counts as integers, not floats or strings. `nil` means the default.
+- Any other value, a repeated multipart field, or a conflicting combination returns 400 with code `invalid_parameter`.
+
+### Examples
 
 ```bash
 curl --request POST https://api.fish.audio/v1/asr \
@@ -36,38 +68,197 @@ curl --request POST https://api.fish.audio/v1/asr \
   --form ignore_timestamps=false
 ```
 
+This request returns word-level `segments` and `speaker_turns`. For a two-person interview, you can add a speaker-count hint, and remove emotion and vocal-event cues from the transcript:
+
+```bash
+curl --request POST https://api.fish.audio/v1/asr \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "model: transcribe-1-pro" \
+  --form audio=@interview.mp3 \
+  --form ignore_timestamps=false \
+  --form num_speakers=2 \
+  --form tag_audio_events=false
+```
+
 Let your HTTP client set the multipart `Content-Type` and boundary. For MessagePack, set `Content-Type: application/msgpack` and encode `audio` as binary bytes. See the [Speech to Text guide](/features/speech-to-text#direct-api-messagepack) for an example.
 
 ## Read the response
 
-| Field           | Description                                                                                                                                                                                           |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `text`          | Full transcript. Pro includes inline speaker markers such as `<\|speaker:0\|>` and can include emotion and vocal-event cues such as `[高兴]` (happy) or `[laughter]`.                                 |
-| `duration`      | Audio duration in seconds.                                                                                                                                                                            |
-| `segments`      | Array of `{ "text": string, "start": number, "end": number }`, with timestamps in seconds. Empty when timestamps are skipped; can also be empty if alignment is unavailable or no speech is detected. |
-| `language_code` | Detected language code, such as `en` or `ja`, when available. Use this field in application logic.                                                                                                    |
-| `language`      | Detected language name, such as `English`, when available. Intended for display.                                                                                                                      |
+A successful response (HTTP 200) is a JSON object:
+
+| Field           | Returned by        | Description                                                                                                                                                                                                                                       |
+| --------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `text`          | Both models        | The full transcript. On `transcribe-1-pro`, it contains inline speaker markers such as `<\|speaker:0\|>` and, unless `tag_audio_events=false`, bracketed emotion and vocal-event cues such as `[高兴]` (happy) or `[laughter]`.                   |
+| `duration`      | Both models        | Length of the audio in seconds, including silence.                                                                                                                                                                                                |
+| `segments`      | Both models        | Word-level timestamps: an array of `{ "text", "start", "end" }`, with times in seconds. Empty (`[]`) when `ignore_timestamps=true` (the default), when no speech was found, or when timing is temporarily unavailable. See [Segments](#segments). |
+| `language`      | Both models        | The detected language's English name, such as `English` or `Chinese`. Omitted when it cannot be determined. Intended for display.                                                                                                                 |
+| `language_code` | Both models        | Two-letter ISO 639-1 code for the language, such as `en`. Omitted when unknown. If the language cannot be determined and you sent a `language` hint, this reports your hint. See [Language](#language).                                           |
+| `request_id`    | `transcribe-1-pro` | A unique ID for this request, also present in `transcribe-1-pro` error bodies and in the `x-request-id` response header. Platform and network-edge errors do not carry it. Include it when you contact support.                                   |
+| `speaker_turns` | `transcribe-1-pro` | The transcript as timed speaker turns. Returned when `ignore_timestamps=false` and `diarize` is not `false`; otherwise absent. See [Speaker turns](#speaker-turns).                                                                               |
+
+A field that is not returned is absent from the JSON, never `null`. Do not depend on the order of keys in the JSON.
+
+<Note>
+  The Python SDK currently returns only `text`, `duration`, and `segments`, and
+  neither SDK can send the `transcribe-1-pro` fields. To use them, call the API
+  directly, as in the examples above. The JavaScript SDK returns the whole
+  response body, but its `STTResponse` type declares only `text`, `duration`,
+  and `segments`.
+</Note>
+
+### Segments
+
+A segment is usually one word; in Chinese and Japanese it is usually one character, or a few. Segment text has no punctuation and no speaker markers or cues, and can be normalized (for example `35` for `3.5`), so it does not always match `text` character for character. A segment can have `start` equal to `end`. Segments are not speaker turns and carry no speaker ID.
+
+### Language
+
+- `language` is optional. The language is detected automatically whether or not you send a hint, and a hint does not force the transcript into that language.
+- Use a lowercase ISO 639-1 code such as `en`, `zh`, or `ja`. Other forms, such as `en-US` or `English`, may be rejected with 400.
+- If the language cannot be determined (for example, very short audio), `language_code` reports your hint, which is not checked against the audio, and `language` may be absent.
+- Responses report one language. For recordings that switch languages, `language` and `language_code` do not list every language spoken.
 
 ### Multi-speaker response format
 
-Pro returns speaker turns **inside the `text` string**, using `<|speaker:N|>` markers. The numeric label `N` identifies the speaker for the text that follows, up to the next marker. A repeated label means that speaker is speaking again. Labels apply within the recording; they are not names or identities shared across requests.
+`transcribe-1-pro` marks speaker changes **inside the `text` string** with `<|speaker:N|>` markers. The label `N` identifies the speaker for the text that follows, up to the next marker. A repeated label means that speaker is speaking again.
 
-This illustrative response has two speakers and three turns. With `ignore_timestamps=true`, timestamps are skipped:
+- Markers usually have a space on each side (`<|speaker:0|> 你好。 <|speaker:1|> ...`). Do not depend on exact spacing.
+- Any text before the first marker belongs to the first turn.
+- A transcript with no marker comes from a single speaker; treat it as speaker 0.
+- Labels identify speakers within one response only. They are not names, and the same label in two requests is not the same person. Send a whole conversation as one file.
+
+This illustrative response has two speakers and three turns. With `ignore_timestamps=true` (the default), timestamps are skipped and `speaker_turns` is absent:
 
 ```json
 {
-  "text": "<|speaker:0|>你好。<|speaker:1|>[高兴]很开心认识你。<|speaker:0|>我也是。",
+  "text": "<|speaker:0|> 你好。 <|speaker:1|> [高兴]很开心认识你。 <|speaker:0|> 我也是。",
   "duration": 6.4,
   "segments": [],
   "language_code": "zh",
-  "language": "Chinese"
+  "language": "Chinese",
+  "request_id": "5f0c7e2a-9b1d-4c3e-8f6a-2d4b7c9e1a03"
 }
 ```
 
-Read this as speaker 0 saying `你好。`, speaker 1 saying `[高兴]很开心认识你。`, and speaker 0 saying `我也是。`. The `[高兴]` cue describes the delivery of speaker 1's speech.
+Read this as speaker 0 saying `你好。`, speaker 1 saying `[高兴]很开心认识你。`, and speaker 0 saying `我也是。`. The `[高兴]` cue describes the delivery of speaker 1's speech. There is no separate emotion field; the cues are part of the text.
 
-With `ignore_timestamps=false` (as in the curl example above), the same markers remain in `text`. The `segments` array contains timed speech with `text`, `start`, and `end`; alignment excludes speaker, emotion, and event markers. Segments are not speaker turns and do not contain a `speaker_id` field.
+### Speaker turns
 
-The API returns no separate speaker list or emotion field. Parse the inline markers in `text` when your application needs speaker turns or emotion cues. See the [speaker parsing example](/features/speech-to-text#multi-speaker-conversations).
+With `ignore_timestamps=false`, `transcribe-1-pro` also returns the turns as a structured `speaker_turns` array, unless you send `diarize=false`. When you request timestamps, prefer `speaker_turns` over parsing `text`.
 
-See the [model capabilities and SDK examples](/features/speech-to-text) for more detail.
+- `speaker_turns` lists the turns in the order they occur, and is `[]` when no speech was found. Each turn is `{ "speaker": "speaker:N", "text": "...", "start": <seconds>, "end": <seconds> }`.
+- `speaker` is the string `speaker:N`, where `N` matches the `<|speaker:N|>` marker in `text`. Like the markers, labels identify speakers within one response only.
+- `text` is that turn's speech without speaker markers. It keeps emotion and vocal-event cues unless `tag_audio_events=false`.
+- `start` and `end` come from the word timestamps. If word timing is unavailable (`segments` is empty), turn times are approximate and can cover the whole recording.
+- Consecutive turns can have the same speaker. Do not assume turns are contiguous or non-overlapping.
+
+Speaker identification is a `transcribe-1-pro` feature. This illustrative response is the same conversation with `ignore_timestamps=false`:
+
+```json
+{
+  "text": "<|speaker:0|> 你好。 <|speaker:1|> [高兴]很开心认识你。 <|speaker:0|> 我也是。",
+  "duration": 6.4,
+  "segments": [
+    { "text": "你", "start": 0.24, "end": 0.52 },
+    { "text": "好", "start": 0.52, "end": 0.8 },
+    { "text": "很", "start": 1.6, "end": 1.84 },
+    { "text": "开", "start": 1.84, "end": 2.1 },
+    { "text": "心", "start": 2.1, "end": 2.36 },
+    { "text": "认", "start": 2.36, "end": 2.7 },
+    { "text": "识", "start": 2.7, "end": 2.98 },
+    { "text": "你", "start": 2.98, "end": 3.3 },
+    { "text": "我", "start": 4.5, "end": 4.78 },
+    { "text": "也", "start": 4.78, "end": 5.02 },
+    { "text": "是", "start": 5.02, "end": 5.4 }
+  ],
+  "speaker_turns": [
+    { "speaker": "speaker:0", "text": "你好。", "start": 0.24, "end": 0.8 },
+    {
+      "speaker": "speaker:1",
+      "text": "[高兴]很开心认识你。",
+      "start": 1.6,
+      "end": 3.3
+    },
+    { "speaker": "speaker:0", "text": "我也是。", "start": 4.5, "end": 5.4 }
+  ],
+  "language_code": "zh",
+  "language": "Chinese",
+  "request_id": "5f0c7e2a-9b1d-4c3e-8f6a-2d4b7c9e1a03"
+}
+```
+
+See the [Speech to Text guide](/features/speech-to-text#multi-speaker-conversations) for parsing examples.
+
+## Limits
+
+| Limit        | `transcribe-1`                                                                                   | `transcribe-1-pro`                                                     |
+| ------------ | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| Request size | Up to 50 MiB per request. Keep MP3 and Opus files under 25 MiB.                                  | Send compressed audio for long recordings (see below).                 |
+| Audio length | Designed for short recordings. For recordings longer than a few minutes, use `transcribe-1-pro`. | Up to 60 minutes. Longer audio returns 400 with code `audio_too_long`. |
+
+- **`transcribe-1`:** A request that exceeds the size limit returns 413 or 400. A long request can fail with 503 if it exceeds the processing-time limit. Retry, and if it keeps failing, use `transcribe-1-pro` or split the audio.
+- **`transcribe-1-pro`:** Send the whole recording, up to 60 minutes, in one request. Timestamps and speaker labels then cover the whole recording; do not split a conversation, because labels are consistent only within one response. For long recordings, send compressed audio such as MP3, Opus, or AAC. An hour of 128 kbps MP3 is about 55 MiB. A request that is too large returns 413.
+
+### Processing time and timeouts
+
+- Processing time grows with the length of the recording. Long `transcribe-1-pro` recordings can take several minutes.
+- Set your HTTP client's timeout accordingly. Both official SDKs default to 240 seconds; many HTTP libraries default to much less (httpx defaults to 5 seconds). For long recordings, use a generous timeout, for example 15 minutes: `httpx.Timeout(900.0, connect=10.0)` with httpx, `RequestOptions(timeout=900)` with the Python SDK, or `{ timeoutInSeconds: 900 }` with the JavaScript SDK.
+- In Node.js, the built-in `fetch`, which the JavaScript SDK uses, also stops waiting for a response after 5 minutes, even if you set a longer timeout. To wait longer, call `setGlobalDispatcher(new Agent({ headersTimeout: 900_000, bodyTimeout: 900_000 }))` from the `undici` package once at startup. See [Processing time and timeouts](/features/speech-to-text#processing-time-and-timeouts).
+- If a long request fails with a 5xx error or the connection drops, retry it.
+- Each request holds one of your account's [concurrent request slots](/developer-guide/models-pricing/pricing-and-rate-limits#concurrent-request-limits) until its response is returned.
+
+## Supported audio formats
+
+- Both models accept WAV, MP3, AAC (including M4A/MP4), FLAC, and Ogg (Opus or Vorbis). Send the original file bytes; no conversion is needed.
+- `transcribe-1-pro` also accepts WebM/Matroska and MOV, including browser recordings, and uses the first audio track of a video file.
+- Browser WebM recordings (for example, from `MediaRecorder`) may not be accepted by `transcribe-1`. Convert them to Ogg/Opus, MP3, or WAV first, or use `transcribe-1-pro`.
+- Not supported: AIFF, CAF, WMA, AMR, AC-3, and raw (headerless) PCM. These return 400.
+
+## Errors
+
+Error responses have one of these shapes:
+
+- **`transcribe-1-pro` errors** are JSON with `status`, `message`, `code`, and `request_id`. Branch on `code`, not on `message`.
+- **`transcribe-1` errors** are JSON with `status` and `message`. Rely only on these two fields.
+- **Platform errors**, such as authentication, credit, and concurrency errors, are returned before the request reaches a model. They are JSON with exactly `status` and `message`.
+- **Errors from the network edge** in front of the API, such as some 413 and 5xx responses, may not have a JSON body. Handle them by HTTP status.
+
+This illustrative `transcribe-1-pro` error body shows the shape:
+
+```json
+{
+  "status": 400,
+  "message": "A human-readable description of the problem.",
+  "code": "invalid_parameter",
+  "request_id": "5f0c7e2a-9b1d-4c3e-8f6a-2d4b7c9e1a03"
+}
+```
+
+| Status              | `code`                         | Meaning                                                                                                 | Retry?            |
+| ------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------- | ----------------- |
+| 400                 | `invalid_request`              | Malformed request: the body could not be parsed, `audio` is missing, or more than one `audio` was sent. | No                |
+| 400                 | `invalid_parameter`            | A parameter has a value it does not accept, or parameters conflict.                                     | No                |
+| 400                 | `invalid_audio`                | The audio could not be decoded, or the format is not supported.                                         | No                |
+| 400                 | `audio_too_long`               | The audio is longer than 60 minutes.                                                                    | No                |
+| 400                 | `audio_too_short`              | The audio is too short to transcribe (under about 0.08 seconds).                                        | No                |
+| 400                 | —                              | The request body could not be read.                                                                     | No                |
+| 401                 | —                              | Missing or invalid API key.                                                                             | No                |
+| 402                 | —                              | Insufficient API credit.                                                                                | No                |
+| 413                 | `request_too_large`            | The request is too large. It may come from the network edge without a JSON body.                        | No                |
+| 415                 | `unsupported_media_type`       | Unsupported `Content-Type`.                                                                             | No                |
+| 429                 | — (rarely `upstream_rejected`) | Usually your account is at its concurrency limit. No `Retry-After` header is sent.                      | Yes, with backoff |
+| Other 4xx (not 429) | `upstream_rejected`            | Rare: the request was rejected during transcription.                                                    | No                |
+| 500                 | `internal_error`               | Internal error.                                                                                         | Yes, with backoff |
+| 502                 | —                              | The service could not be reached.                                                                       | Yes, with backoff |
+| 503                 | `upstream_unavailable`         | The transcription service is temporarily unavailable.                                                   | Yes, with backoff |
+| 503                 | `upstream_timeout`             | Processing took too long.                                                                               | Yes, with backoff |
+| 503                 | `excessive_repetition`         | The transcription produced unusable repeated output.                                                    | Yes, with backoff |
+| 503                 | `diarization_failed`           | Speaker identification failed for this recording.                                                       | Yes, with backoff |
+| 504                 | —                              | Timed out connecting to the service.                                                                    | Yes, with backoff |
+
+- `code` values come from `transcribe-1-pro`. A dash means the error has no `code`; a 503 without a `code` also means the service is temporarily unavailable. For `transcribe-1`, rely on the HTTP status.
+- New `code` values may be added; handle unknown codes by HTTP status.
+- Retry 429 and 5xx responses with exponential backoff. Do not retry other 4xx responses; change the request first.
+- Requests that return an error response are not billed.
+- With the Python SDK, the raw error body is in the exception's `body` attribute; parse it with `json.loads` to read `code` and `request_id`.
+
+See [Errors](/api-reference/errors) for retry and SDK exception examples.

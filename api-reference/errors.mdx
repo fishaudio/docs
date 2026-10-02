@@ -4,13 +4,15 @@ description: "HTTP status codes, the error response shape, and how to handle the
 icon: "triangle-exclamation"
 ---
 
-Every Fish Audio error comes back as JSON with a `message` and a `status`:
+Fish Audio errors come back as JSON with a `message` and a `status`:
 
 ```json
 { "message": "Invalid Token", "status": 401 }
 ```
 
 (A request whose body can't be parsed returns a plain-text parse error instead.)
+
+Some endpoints add fields. For example, `transcribe-1-pro` speech-to-text errors also include `code` and `request_id`; see [Speech to Text errors](/api-reference/endpoint/openapi-v1/speech-to-text#errors). Errors returned by the network edge in front of the API, such as some `413` or `5xx` responses, may not be JSON.
 
 ## Status codes
 
@@ -21,7 +23,7 @@ Every Fish Audio error comes back as JSON with a `message` and a `status`:
 | `402` | Insufficient credits | Top up on [API Billing](https://fish.audio/app/developers/billing/). |
 | `403` | Not permitted for this key/resource | Check the key's scope and the resource owner. |
 | `404` | Model or voice not found | Verify the `model_id` / `reference_id`. |
-| `429` | Rate limit exceeded | Back off and retry (see below). |
+| `429` | Too many requests, for example when your account is at its [concurrency limit](/developer-guide/models-pricing/pricing-and-rate-limits#concurrent-request-limits) | Back off and retry (see below). |
 | `5xx` | Server error | Retry with backoff; if it persists, contact support. |
 
 ## Retries
