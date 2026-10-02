@@ -143,9 +143,18 @@ audio = client.tts.stream(text="Hello!").collect()
 ### Speech-to-Text
 
 ```python
-# Transcribe audio
+from fishaudio.core import RequestOptions
+
+# Transcribe audio with transcribe-1-pro (recommended).
+# Without the model header, the request runs on transcribe-1.
 with open("audio.wav", "rb") as f:
-    result = client.asr.transcribe(audio=f.read(), language="en")
+    result = client.asr.transcribe(
+        audio=f.read(),
+        language="en",
+        request_options=RequestOptions(
+            additional_headers={"model": "transcribe-1-pro"}
+        ),
+    )
 
 print(result.text)
 

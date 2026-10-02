@@ -35,12 +35,12 @@ TTS pricing is based on the size of input text, measured in millions of UTF-8 by
 
 ### Automatic Speech Recognition (ASR) Models
 
-| Model Name         | Price (USD)        |
-| ------------------ | ------------------ |
-| `transcribe-1`     | $0.36 / audio hour |
-| `transcribe-1-pro` | $0.36 / audio hour |
+| Model Name                       | Price (USD)        |
+| -------------------------------- | ------------------ |
+| `transcribe-1-pro` (recommended) | $0.36 / audio hour |
+| `transcribe-1`                   | $0.36 / audio hour |
 
-Both models use the [Speech to Text API](/api-reference/endpoint/openapi-v1/speech-to-text). Select `transcribe-1-pro` with the `model` HTTP header for multi-speaker conversations (speaker markers and speaker turns), long recordings, and inline emotion cues. A missing or unrecognized `model` header is served and billed as `transcribe-1`. See the [model comparison](/features/speech-to-text#choose-an-asr-model).
+We recommend `transcribe-1-pro`, which handles multi-speaker conversations (speaker markers and speaker turns), long recordings, and inline emotion cues. Both models cost the same and use the [Speech to Text API](/api-reference/endpoint/openapi-v1/speech-to-text). Send the `model: transcribe-1-pro` HTTP header to select Pro; a request whose `model` header is missing or not an exact match is served and billed as `transcribe-1`. See the [model comparison](/features/speech-to-text#choose-an-asr-model).
 
 **How ASR billing works:**
 

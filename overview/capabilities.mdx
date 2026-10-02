@@ -15,7 +15,7 @@ Fish Audio is a voice AI platform. Every core feature is available three ways: i
   </Card>
 
   <Card title="Speech to Text" icon="waveform" href="/features/speech-to-text">
-    Transcribe audio with optional timestamps. Use `transcribe-1-pro` for multi-speaker conversations, long recordings, and emotion cues.
+    Transcribe audio with `transcribe-1-pro`: multi-speaker conversations, long recordings, emotion cues, and optional timestamps.
   </Card>
 
   <Card title="Voice Cloning" icon="clone" href="/features/voice-cloning">
@@ -62,7 +62,10 @@ These text-to-speech models power most capabilities:
 - **`s2-pro`**: the previous-generation S2 model, with multi-speaker and natural-language expression control.
 - **`s1`**: the previous generation, with `(parenthesis)` emotion tags.
 
-For speech to text, use **`transcribe-1`** for general transcription of short recordings or **`transcribe-1-pro`** for multi-speaker conversations (speaker markers and speaker turns), long recordings, and inline emotion cues. Select either model with the `model` header on `POST /v1/asr`.
+For speech to text, select the model with the `model` header on `POST /v1/asr`:
+
+- **`transcribe-1-pro`**: the recommended model, for everything from short clips to multi-speaker conversations (speaker markers and speaker turns) and long recordings, with inline emotion cues. Send `model: transcribe-1-pro` explicitly.
+- **`transcribe-1`**: general transcription of short recordings. A request whose `model` header is missing or not an exact match is served by this model.
 
 See [Models Overview](/developer-guide/models-pricing/models-overview) and [Choosing a Model](/developer-guide/models-pricing/choosing-a-model) for the full lineup and languages, and [Speech to Text](/features/speech-to-text#input-audio) for transcription formats and limits.
 

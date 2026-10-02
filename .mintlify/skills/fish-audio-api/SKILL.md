@@ -201,34 +201,35 @@ await pipeline(Readable.fromWeb(res.body), createWriteStream("out.mp3"));
 
 Synchronous: one audio file per request, and the JSON response arrives when the whole file has been transcribed.
 
+Use `transcribe-1-pro`, the recommended model, and select it with the `model` header on every request. This section describes `transcribe-1-pro`; for the differences on `transcribe-1`, see "If you use `transcribe-1`" at the end of this section.
+
 Guide: `https://docs.fish.audio/features/speech-to-text`. The `/v1/asr` entry in `openapi.json` currently does not list the `transcribe-1-pro` fields, `request_id`, `speaker_turns`, or the error `code`; where it is less complete or disagrees, follow this section.
 
 Headers:
 
 - `Authorization: Bearer <FISH_API_KEY>` (required).
-- `model` (optional): `transcribe-1` (default) or `transcribe-1-pro` (multi-speaker conversations with speaker markers and `speaker_turns`, recordings up to 60 minutes, emotion and vocal-event cues). Write the value exactly, in lowercase. A missing or unrecognized value (for example `Transcribe-1-Pro` or `transcribe-1pro`) is served and billed as `transcribe-1`, and no error is returned; if you expected Pro but `text` has no speaker markers, check the header. `model` is a header only; a `model` form field is ignored.
+- `model: transcribe-1-pro` (recommended): recordings up to 60 minutes, including multi-speaker conversations, with speaker markers, `speaker_turns`, and emotion and vocal-event cues. Write the value exactly, in lowercase. The header is optional, but a missing or unrecognized value (for example `Transcribe-1-Pro` or `transcribe-1pro`) is served and billed as `transcribe-1`, and no error is returned; if you expected Pro but `text` has no speaker markers, check the header. `model` is a header only; a `model` form field is ignored.
 - Body encoding: `multipart/form-data` (let the HTTP client set `Content-Type` and the boundary) or `Content-Type: application/msgpack`. Base64-encoded audio in a JSON body is not supported.
 
 Request fields (the same names in multipart and MessagePack):
 
-| Field                          | Model | Default      | Notes                                                                                                                                                                                                                           |
-| ------------------------------ | ----- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `audio`                        | both  | — (required) | Exactly one audio file: a multipart file part, or MessagePack `bin`. The format is read from the bytes, not the file name.                                                                                                      |
-| `language`                     | both  | unset        | Optional hint, a lowercase ISO 639-1 code such as `en`, `zh`, or `ja`. Detection still runs, and the hint does not force the transcript language. Other forms, such as `en-US` or `English`, may be rejected with 400.          |
-| `ignore_timestamps`            | both  | `true`       | `false` returns word-level `segments` (and `speaker_turns` on Pro) and adds processing time. Multipart: any value other than `true` (case-insensitive), including `1` or an empty value, means `false`. MessagePack: a boolean. |
-| `tag_audio_events`             | Pro   | `true`       | `false` removes bracketed cues such as `[laughter]` or `[高兴]` from `text` and `speaker_turns`. Timestamps, `duration`, and billing do not change.                                                                             |
-| `diarize`                      | Pro   | `auto`       | `auto` or `true`: return `speaker_turns` when timestamps are requested. `false`: omit `speaker_turns`; the transcript and its speaker markers do not change.                                                                    |
-| `num_speakers`                 | Pro   | unset        | Expected number of speakers, an integer ≥ 1. A best-effort hint that may have no effect on short recordings. Cannot be combined with `min_speakers` or `max_speakers`.                                                          |
-| `min_speakers`, `max_speakers` | Pro   | unset        | Bounds on the number of speakers, integers ≥ 1, with `min_speakers` ≤ `max_speakers`. Same best-effort rule.                                                                                                                    |
+| Field                          | Default      | Notes                                                                                                                                                                                                                                           |
+| ------------------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `audio`                        | — (required) | Exactly one audio file: a multipart file part, or MessagePack `bin`. The format is read from the bytes, not the file name.                                                                                                                      |
+| `language`                     | unset        | Optional hint, a lowercase ISO 639-1 code such as `en`, `zh`, or `ja`. Detection still runs, and the hint does not force the transcript language. Other forms, such as `en-US` or `English`, may be rejected with 400.                          |
+| `ignore_timestamps`            | `true`       | `false` returns word-level `segments` and, unless `diarize=false`, `speaker_turns`; it adds processing time. Multipart: any value other than `true` (case-insensitive), including `1` or an empty value, means `false`. MessagePack: a boolean. |
+| `tag_audio_events`             | `true`       | `false` removes bracketed cues such as `[laughter]` or `[高兴]` from `text` and `speaker_turns`. Timestamps, `duration`, and billing do not change.                                                                                             |
+| `diarize`                      | `auto`       | `auto` or `true`: return `speaker_turns` when timestamps are requested. `false`: omit `speaker_turns`; the transcript and its speaker markers do not change.                                                                                    |
+| `num_speakers`                 | unset        | Expected number of speakers, an integer ≥ 1. A best-effort hint that may have no effect on short recordings. Cannot be combined with `min_speakers` or `max_speakers`.                                                                          |
+| `min_speakers`, `max_speakers` | unset        | Bounds on the number of speakers, integers ≥ 1, with `min_speakers` ≤ `max_speakers`. Same best-effort rule.                                                                                                                                    |
 
-Send the Pro fields only with `model: transcribe-1-pro`. Multipart values: `tag_audio_events` is `true` or `false` and `diarize` is `auto`, `true`, or `false` (both case-insensitive); speaker counts are digits. MessagePack values: `tag_audio_events` is a boolean, `diarize` is a boolean or `"auto"`/`"true"`/`"false"`, and speaker counts are integers. An invalid value, a Pro field sent twice in a multipart form, or a speaker count with `diarize=false` returns 400 `invalid_parameter`.
+Multipart values: `tag_audio_events` is `true` or `false` and `diarize` is `auto`, `true`, or `false` (both case-insensitive); speaker counts are digits. MessagePack values: `tag_audio_events` is a boolean, `diarize` is a boolean or `"auto"`/`"true"`/`"false"`, and speaker counts are integers. An invalid value, `tag_audio_events`, `diarize`, or a speaker count sent twice in a multipart form, or a speaker count with `diarize=false` returns 400 `invalid_parameter`.
 
 Limits and formats:
 
-- `transcribe-1` is designed for short recordings: up to 50 MiB per request, and keep MP3 and Opus files under 25 MiB. A request over the size limit returns 413 or 400. A long request can fail with 503 when it exceeds the processing-time limit; retry, and if it keeps failing, use `transcribe-1-pro` or split the audio.
 - `transcribe-1-pro` accepts recordings up to 60 minutes; longer audio returns 400 `audio_too_long`. Send long recordings as compressed audio (MP3, Opus, or AAC); an hour of 128 kbps MP3 is about 55 MiB. A request that is too large returns 413. Send a whole conversation as one file: speaker labels are consistent within one response, not across requests.
 - Processing time grows with the length of the recording, and long `transcribe-1-pro` requests can take several minutes. Set a generous client timeout (the examples use 15 minutes); many HTTP libraries default to much less (httpx: 5 s). If a long request fails with a 5xx error or the connection drops, retry it.
-- Both models accept WAV, MP3, AAC (including M4A/MP4), FLAC, and Ogg (Opus or Vorbis); send the original file bytes. `transcribe-1-pro` also accepts WebM/Matroska and MOV, including browser recordings, and uses the first audio track of a video file. Browser WebM recordings may not be accepted by `transcribe-1`; convert them to Ogg/Opus, MP3, or WAV, or use `transcribe-1-pro`. AIFF, CAF, WMA, AMR, AC-3, and raw (headerless) PCM return 400.
+- `transcribe-1-pro` accepts WAV, MP3, AAC (including M4A/MP4), FLAC, Ogg (Opus or Vorbis), WebM/Matroska, and MOV, including browser recordings, and uses the first audio track of a video file; send the original file bytes. AIFF, CAF, WMA, AMR, AC-3, and raw (headerless) PCM return 400.
 
 Response (200), an illustrative `transcribe-1-pro` response with `ignore_timestamps=false`:
 
@@ -265,15 +266,15 @@ Response (200), an illustrative `transcribe-1-pro` response with `ignore_timesta
 }
 ```
 
-Response fields (all models unless marked Pro):
+Response fields:
 
-- `text`: The full transcript. Pro: inline `<|speaker:N|>` markers, usually with a space on each side, and, unless `tag_audio_events=false`, bracketed cues. Text before the first marker belongs to the first turn; a transcript with no marker is a single speaker (speaker 0).
+- `text`: The full transcript, with inline `<|speaker:N|>` markers, usually with a space on each side, and, unless `tag_audio_events=false`, bracketed cues. Text before the first marker belongs to the first turn; a transcript with no marker is a single speaker (speaker 0).
 - `duration`: Audio length in seconds, including silence.
 - `segments`: Word-level timestamps `{ text, start, end }` in seconds. Usually one word (one or a few characters in Chinese and Japanese), with no punctuation, markers, or cues; it can be normalized (`35` for `3.5`), so it does not always match `text`. `start` can equal `end`. `[]` (never omitted) when `ignore_timestamps=true`, when no speech was found, or when timing is temporarily unavailable. Segments are not speaker turns.
 - `language`: The detected language's English name, such as `English` or `Chinese`. Omitted when it cannot be determined.
 - `language_code`: ISO 639-1 code for `language`, such as `en`. Omitted when unknown. If the language cannot be determined and you sent a `language` hint, it reports your hint, unchecked. Responses report one language, even for recordings that switch languages.
-- `request_id` (Pro): Unique ID for the request, also in error bodies and in the `x-request-id` response header. Include it when you contact support.
-- `speaker_turns` (Pro): Present only when `ignore_timestamps=false` and `diarize` is not `false`. Turns in the order they occur (`[]` when no speech was found), each `{ speaker: "speaker:N", text, start, end }`. `N` matches the `<|speaker:N|>` marker in `text`; labels identify speakers within one response only. Turn `text` has no markers and keeps cues unless `tag_audio_events=false`. If `segments` is empty, turn times are approximate and can cover the whole recording. Consecutive turns can have the same speaker; do not assume turns are contiguous or non-overlapping. Prefer `speaker_turns` over parsing `text`.
+- `request_id`: Unique ID for the request, also in error bodies and in the `x-request-id` response header. Include it when you contact support.
+- `speaker_turns`: Present only when `ignore_timestamps=false` and `diarize` is not `false`. Turns in the order they occur (`[]` when no speech was found), each `{ speaker: "speaker:N", text, start, end }`. `N` matches the `<|speaker:N|>` marker in `text`; labels identify speakers within one response only. Turn `text` has no markers and keeps cues unless `tag_audio_events=false`. If `segments` is empty, turn times are approximate and can cover the whole recording. Consecutive turns can have the same speaker; do not assume turns are contiguous or non-overlapping. Prefer `speaker_turns` over parsing `text`.
 
 `language` and `language_code` are omitted, never `null`. Do not depend on the order of keys in the JSON.
 
@@ -349,7 +350,17 @@ for (const turn of result.speaker_turns ?? []) {
 }
 ```
 
-MessagePack instead of multipart: send `msgpack.packb({"audio": audio_bytes, "ignore_timestamps": False}, use_bin_type=True)` with `Content-Type: application/msgpack`; values are typed (booleans, integers), and `audio` must be raw bytes (`bin`).
+MessagePack instead of multipart: send `msgpack.packb({"audio": audio_bytes, "ignore_timestamps": False}, use_bin_type=True)` with `Content-Type: application/msgpack` and the same `model: transcribe-1-pro` header; values are typed (booleans, integers), and `audio` must be raw bytes (`bin`).
+
+### If you use `transcribe-1`
+
+`transcribe-1` is for general transcription of short recordings, and it serves every request whose `model` header is missing or not an exact match. It differs from `transcribe-1-pro` as follows:
+
+- Fields: send only `audio`, `language`, and `ignore_timestamps`. The other fields apply to `transcribe-1-pro`; send them only with `model: transcribe-1-pro`.
+- Response: `text`, `duration`, `segments`, and, when the language is known, `language` and `language_code`. Speaker markers, `speaker_turns`, and `request_id` are `transcribe-1-pro` features.
+- Errors: rely only on `status` and `message`.
+- Limits: up to 50 MiB per request; keep MP3 and Opus files under 25 MiB. A request over the size limit returns 413 or 400. For recordings longer than a few minutes, use `transcribe-1-pro`. A long request can fail with 503 when it exceeds the processing-time limit; retry, and if it keeps failing, use `transcribe-1-pro` or split the audio.
+- Formats: WAV, MP3, AAC (including M4A/MP4), FLAC, and Ogg (Opus or Vorbis). Convert WebM recordings (for example, from a browser's MediaRecorder) to Ogg/Opus, MP3, or WAV first, or use `transcribe-1-pro`.
 
 ## Voice Design: `POST /v1/voice-design`
 
@@ -616,13 +627,13 @@ The S1 model uses `(parenthesis)` tags inside `text`, e.g. `(happy) What a day!`
   - Numeric param out of range (`temperature`, `top_p`, `chunk_length`, `min_chunk_length`, `prosody.speed`, `early_stop_threshold`).
   - `mp3_bitrate` / `opus_bitrate` set without matching `format`.
 - WebSocket: a `finish` event with `reason: "error"` means the server failed mid-stream. Surface the message and reconnect rather than retrying on the same socket.
-- `POST /v1/asr`: branch on the HTTP status and, on `transcribe-1-pro`, on `code` (never on `message`). New `code` values may be added; handle unknown codes by HTTP status.
-  - 400 → fix the request; do not retry. Pro codes: `invalid_request` (unreadable body, missing or repeated `audio`), `invalid_parameter` (bad or conflicting field values), `invalid_audio` (undecodable or unsupported format), `audio_too_long` (over 60 minutes), `audio_too_short` (under about 0.08 s).
+- `POST /v1/asr` (`transcribe-1-pro`): branch on the HTTP status and on `code`, never on `message`. New `code` values may be added; handle unknown codes by HTTP status. With `transcribe-1`, rely only on `status` and `message`.
+  - 400 → fix the request; do not retry. Codes: `invalid_request` (unreadable body, missing or repeated `audio`), `invalid_parameter` (bad or conflicting field values), `invalid_audio` (undecodable or unsupported format), `audio_too_long` (over 60 minutes), `audio_too_short` (under about 0.08 s).
   - 413 → request too large (`request_too_large`). It may come from the network edge without a JSON body. Send compressed audio.
   - 415 → unsupported `Content-Type` (`unsupported_media_type`). Use `multipart/form-data` or `application/msgpack`.
   - 429 → usually your account is at its concurrency limit, shared by all its API keys; each `/v1/asr` request holds a slot until its response returns. No `Retry-After` header is sent; retry with exponential backoff.
   - 500 (`internal_error`), 502, 503 (`upstream_unavailable`, `upstream_timeout`, `excessive_repetition`, `diarization_failed`), 504 → temporary; retry with exponential backoff.
-  - Any other 4xx (Pro `upstream_rejected`, rare) → do not retry.
+  - Any other 4xx (`upstream_rejected`, rare) → do not retry.
 
 ## Decision shortcuts
 
@@ -631,4 +642,4 @@ The S1 model uses `(parenthesis)` tags inside `text`, e.g. `(happy) What a day!`
 - User wants dialogue between multiple speakers → `POST /v1/tts` on `s2.1-pro` with `reference_id` array and `<|speaker:N|>` tags.
 - User is streaming tokens from an LLM and wants speech to play as it arrives → WebSocket `/v1/tts/live`.
 - User wants a persistent custom voice they can reuse → `POST /model` first, then reuse the returned `_id` as `reference_id`.
-- User wants a transcript → `POST /v1/asr`; speaker turns or recordings longer than a few minutes → add `model: transcribe-1-pro`.
+- User wants a transcript → `POST /v1/asr` with the `model: transcribe-1-pro` header (send it on every request; without it, the request runs on `transcribe-1`).

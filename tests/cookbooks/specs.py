@@ -47,6 +47,7 @@ SPECS = [
         ],
     },
     # ---- recipes authored by the cookbook workflow (one live-tested primary block each) ----
+    # The speech-to-text recipes select transcribe-1-pro with the `model` header.
     {
         "slug": "transcribe-to-captions",
         "path": f"{COOKBOOK}/transcribe-to-captions.mdx",
@@ -114,8 +115,10 @@ SPECS = [
         "slug": "voice-agent-loop",
         "path": f"{COOKBOOK}/voice-agent-loop.mdx",
         "cases": [
+            # The recipe strips transcribe-1-pro speaker markers before the LLM call.
             {"name": "asr -> reply -> tts (sync)", "block": 0, "file": ("reply.mp3", "mp3"),
-             "subs": {'"<voice-id>"': f'"{PUBLIC_VOICE}"'}},
+             "subs": {'"<voice-id>"': f'"{PUBLIC_VOICE}"'},
+             "postamble": "assert '<|speaker' not in reply, reply"},
             {"name": "asr -> reply -> tts (async)", "block": 1, "file": ("reply.mp3", "mp3"),
              "subs": {'"<voice-id>"': f'"{PUBLIC_VOICE}"'}},
         ],

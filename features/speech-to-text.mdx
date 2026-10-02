@@ -1,10 +1,10 @@
 ---
 title: "Speech to Text"
-description: "Transcribe audio with transcribe-1 or transcribe-1-pro, including word-level timestamps, speaker turns for multi-speaker conversations, long recordings, and emotion cues"
+description: "Transcribe audio with transcribe-1-pro, including word-level timestamps, speaker turns for multi-speaker conversations, long recordings, and emotion cues"
 icon: "waveform"
 ---
 
-Turn spoken audio into text using Fish Audio's automatic speech recognition (ASR) models. Send an audio file to `POST /v1/asr` to receive a transcript, its duration, and optional word-level timestamps. Use `transcribe-1-pro` for multi-speaker conversations and long recordings: it marks speakers inline in the transcript, returns a structured list of speaker turns when you request timestamps, and keeps emotion and vocal-event cues.
+Turn spoken audio into text with `transcribe-1-pro`, Fish Audio's recommended automatic speech recognition (ASR) model. Send an audio file to `POST /v1/asr` with the header `model: transcribe-1-pro` to receive a transcript, its duration, and optional word-level timestamps. Pro handles multi-speaker conversations and recordings up to 60 minutes: it marks speakers inline in the transcript, returns a structured list of speaker turns when you request timestamps, and keeps emotion and vocal-event cues.
 
 <CardGroup cols={3}>
   <Card
@@ -32,23 +32,25 @@ Turn spoken audio into text using Fish Audio's automatic speech recognition (ASR
 
 ## Choose an ASR model
 
-| Model              | Use it for                                                                                                                                          |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `transcribe-1`     | General transcription of short recordings. This is the default when the `model` header is omitted.                                                  |
-| `transcribe-1-pro` | Multi-speaker conversations and long recordings (up to 60 minutes): speaker markers and speaker turns, with emotion and vocal-event cues preserved. |
+| Model                            | Use it for                                                                                                                                                        |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `transcribe-1-pro` (recommended) | Short clips, multi-speaker conversations, and long recordings (up to 60 minutes). Speaker markers and speaker turns, with emotion and vocal-event cues preserved. |
+| `transcribe-1`                   | General transcription of short recordings. Also used when the `model` header is missing or does not match.                                                        |
 
-Select the model with the **`model` HTTP header**; `model` is not a form or body field. Write the value exactly, in lowercase. If the header is missing, or its value is not an exact match (for example `Transcribe-1-Pro` or `transcribe-1pro`), the request is served and billed as `transcribe-1`, and no error is returned. If you expected `transcribe-1-pro` but the transcript has no speaker markers, check the header. See [ASR pricing](/developer-guide/models-pricing/pricing-and-rate-limits#automatic-speech-recognition-asr-models) for usage costs.
+Select the model with the **`model` HTTP header**, and send `model: transcribe-1-pro` with every request; `model` is not a form or body field. Write the value exactly, in lowercase. If the header is missing, or its value is not an exact match (for example `Transcribe-1-Pro` or `transcribe-1pro`), the request is served and billed as `transcribe-1`, and no error is returned. If you expected `transcribe-1-pro` but the transcript has no speaker markers, check the header. See [ASR pricing](/developer-guide/models-pricing/pricing-and-rate-limits#automatic-speech-recognition-asr-models) for usage costs.
 
-Both models use the same endpoint and the fields `audio`, `language`, and `ignore_timestamps`. `transcribe-1-pro` also accepts `tag_audio_events`, `diarize`, and speaker-count hints; send these only with Pro.
+`transcribe-1-pro` accepts these fields:
 
-| Field                                          | Models             | Purpose                                                                                                                                   |
-| ---------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `audio`                                        | Both               | Required. Exactly one audio file per request. See [Input audio](#input-audio).                                                            |
-| `language`                                     | Both               | Optional language hint. See [Language](#language).                                                                                        |
-| `ignore_timestamps`                            | Both               | Default `true`. Set to `false` for word-level timestamps. See [Read the timestamps](#read-the-timestamps).                                |
-| `tag_audio_events`                             | `transcribe-1-pro` | Default `true`. Set to `false` to remove emotion and vocal-event cues. See [Emotion and vocal-event cues](#emotion-and-vocal-event-cues). |
-| `diarize`                                      | `transcribe-1-pro` | `auto` (default), `true`, or `false`. Set to `false` to omit `speaker_turns`. See [Speaker options](#speaker-options).                    |
-| `num_speakers`, `min_speakers`, `max_speakers` | `transcribe-1-pro` | Speaker-count hints, applied on a best-effort basis. See [Speaker options](#speaker-options).                                             |
+| Field                                          | Purpose                                                                                                                                   |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `audio`                                        | Required. Exactly one audio file per request. See [Input audio](#input-audio).                                                            |
+| `language`                                     | Optional language hint. See [Language](#language).                                                                                        |
+| `ignore_timestamps`                            | Default `true`. Set to `false` for word-level timestamps and speaker turns. See [Read the timestamps](#read-the-timestamps).              |
+| `tag_audio_events`                             | Default `true`. Set to `false` to remove emotion and vocal-event cues. See [Emotion and vocal-event cues](#emotion-and-vocal-event-cues). |
+| `diarize`                                      | `auto` (default), `true`, or `false`. Set to `false` to omit `speaker_turns`. See [Speaker options](#speaker-options).                    |
+| `num_speakers`, `min_speakers`, `max_speakers` | Speaker-count hints, applied on a best-effort basis. See [Speaker options](#speaker-options).                                             |
+
+If you use `transcribe-1`, select it with `model: transcribe-1` and send only `audio`, `language`, and `ignore_timestamps`. The other fields apply to `transcribe-1-pro` only.
 
 ## When to use it
 
@@ -75,7 +77,7 @@ Both models use the same endpoint and the fields `audio`, `language`, and `ignor
 
 Create an [API key](/developer-guide/getting-started/api-key) and set `FISH_API_KEY` in your environment. For the Python examples, [install the Fish Audio SDK](/developer-guide/sdk-guide/quickstart).
 
-The examples below select `transcribe-1-pro` and request timestamps. Set the header to `transcribe-1` to use the standard model.
+Every example on this page selects `transcribe-1-pro`. The examples below also request timestamps.
 
 <CodeGroup>
 
@@ -130,7 +132,7 @@ console.log(result.text);
 
 </CodeGroup>
 
-The response contains `text`, `duration` (seconds), and `segments`, plus `language_code` and `language` when the language is known. `transcribe-1-pro` also returns `request_id`, and [`speaker_turns`](#speaker-turns) when timestamps are requested. Do not depend on the order of keys in the JSON.
+The response contains `text`, `duration` (seconds), `segments`, and `request_id`, plus [`speaker_turns`](#speaker-turns) when timestamps are requested, and `language_code` and `language` when the language is known. Do not depend on the order of keys in the JSON. If you use `transcribe-1`, rely on `text`, `duration`, `segments`, and the language fields.
 
 The Python SDK currently returns only `text`, `duration`, and `segments`. To read the other fields, call the API directly (see [Direct API](#direct-api-messagepack)).
 
@@ -366,11 +368,15 @@ If the language cannot be determined (for example, very short audio), `language_
 <CodeGroup>
 
 ```python Python
+pro = RequestOptions(additional_headers={"model": "transcribe-1-pro"})
+
 # Auto-detect
-result = client.asr.transcribe(audio=audio_bytes)
+result = client.asr.transcribe(audio=audio_bytes, request_options=pro)
 
 # Provide a language hint
-result = client.asr.transcribe(audio=audio_bytes, language="zh")
+result = client.asr.transcribe(
+    audio=audio_bytes, language="zh", request_options=pro
+)
 
 ```
 
@@ -378,6 +384,7 @@ result = client.asr.transcribe(audio=audio_bytes, language="zh")
 # Omit the form field to auto-detect, or set it explicitly:
 curl --request POST https://api.fish.audio/v1/asr \
   --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "model: transcribe-1-pro" \
   --form audio=@speech.wav \
   --form language=zh
 ```
@@ -386,39 +393,35 @@ curl --request POST https://api.fish.audio/v1/asr \
 
 ### Input audio
 
-Both models accept WAV, MP3, AAC (including M4A/MP4), FLAC, and Ogg (Opus or Vorbis). Send the original file bytes; no conversion is needed.
-
-`transcribe-1-pro` also accepts WebM/Matroska and MOV, including browser recordings, and uses the first audio track of a video file. For `transcribe-1`, convert WebM recordings (for example, from a browser's MediaRecorder) to Ogg/Opus, MP3, or WAV first, or use `transcribe-1-pro`.
+`transcribe-1-pro` accepts WAV, MP3, AAC (including M4A/MP4), FLAC, Ogg (Opus or Vorbis), WebM/Matroska, and MOV, including browser recordings, and uses the first audio track of a video file. Send the original file bytes; no conversion is needed.
 
 Not supported: AIFF, CAF, WMA, AMR, AC-3, and raw (headerless) PCM. These return 400.
 
 Send audio as `multipart/form-data` (a file upload, shown above) or `application/msgpack` (see [Direct API](#direct-api-messagepack)). Base64-encoded audio in a JSON body is not supported.
 
+If you use `transcribe-1`, send WAV, MP3, AAC (including M4A/MP4), FLAC, or Ogg (Opus or Vorbis), and convert WebM recordings (for example, from a browser's MediaRecorder) to Ogg/Opus, MP3, or WAV first, or use `transcribe-1-pro`.
+
 ### Limits
 
-**`transcribe-1-pro`**
+These limits apply to `transcribe-1-pro`:
 
 - Recordings up to 60 minutes long. Longer audio returns 400 `audio_too_long`.
 - For long recordings, send compressed audio such as MP3, Opus, or AAC. An hour of 128 kbps MP3 is about 55 MiB. A request that is too large returns 413.
 - Very short clips (under about 0.08 seconds) return 400 `audio_too_short`.
 
-**`transcribe-1`**
-
-- Up to 50 MiB per request. Keep MP3 and Opus files under 25 MiB. A request that exceeds the size limit returns 413 or 400.
-- `transcribe-1` is designed for short recordings. For recordings longer than a few minutes, use `transcribe-1-pro`.
-- A long request can fail with 503 if it exceeds the processing-time limit. Retry, and if it keeps failing, use `transcribe-1-pro` or split the audio.
+If you use `transcribe-1`, send up to 50 MiB per request and keep MP3 and Opus files under 25 MiB; a request that exceeds the size limit returns 413 or 400. `transcribe-1` is designed for short recordings; for recordings longer than a few minutes, use `transcribe-1-pro`. A long request can fail with 503 if it exceeds the processing-time limit. Retry, and if it keeps failing, use `transcribe-1-pro` or split the audio.
 
 ### Long recordings
 
 With `transcribe-1-pro`, send the whole recording, up to 60 minutes, in one request. Timestamps and speaker labels cover the whole recording. Do not split conversations: speaker labels are consistent only within one response. Long recordings can take several minutes, so raise your [client timeout](#processing-time-and-timeouts) and retry on 5xx errors. You are billed for the full duration of the recording once.
 
-With `transcribe-1`, keep each request short. For a long recording, use `transcribe-1-pro`, or split the audio into shorter clips and transcribe each, then offset each clip's `start`/`end` by where it began in the full recording. Check that each response covers the complete clip before combining transcripts.
+If you use `transcribe-1`, keep each request short. For a long recording, use `transcribe-1-pro`, or split the audio into shorter clips, transcribe each, and offset each clip's `start`/`end` by where it began in the full recording. Check that each response covers the complete clip before combining transcripts.
 
 ### Processing time and timeouts
 
 Each request returns only when the whole file has been transcribed. Processing time grows with the length of the recording, and timestamps add to it. Long `transcribe-1-pro` recordings can take several minutes.
 
-Set your HTTP client's timeout accordingly. Both official SDKs default to 240 seconds; many HTTP libraries default to much less. To wait up to 15 minutes, as several examples on this page do:
+Set your HTTP client's timeout accordingly. The official SDKs' default timeout can be too short for long recordings, and many HTTP libraries default to even less. To wait up to 15 minutes, as several examples on this page do:
 
 - Python SDK: `RequestOptions(timeout=900)` for one request, or `FishAudio(timeout=900)` for the client.
 - httpx: `timeout=httpx.Timeout(900.0, connect=10.0)`. Without it, httpx waits only 5 seconds.
@@ -465,11 +468,10 @@ These values are examples, not a server guarantee. If a long request fails with 
 The error body depends on where the error comes from:
 
 - `transcribe-1-pro` errors are JSON with `status`, `message`, `code`, and `request_id`. Branch on `code`, not on `message`.
-- `transcribe-1` errors are JSON with `status` and `message`. Rely only on these two fields.
 - Platform errors, such as a missing or invalid API key (401), insufficient API credit (402), or the concurrency limit (429), are JSON with `status` and `message`.
 - Errors from the network edge in front of the API, such as some 413 and 5xx responses, may not have a JSON body.
 
-| Status | `code` (`transcribe-1-pro`)                                                  | What to do                                                                      |
+| Status | `code`                                                                       | What to do                                                                      |
 | ------ | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | 400    | `invalid_request`, `invalid_parameter`                                       | Fix the request or the parameter value.                                         |
 | 400    | `invalid_audio`                                                              | Convert the audio to a [supported format](#input-audio).                        |
@@ -504,6 +506,8 @@ except APIError as e:
     raise
 ```
 
+If you use `transcribe-1`, its errors are JSON with `status` and `message`; rely only on these two fields.
+
 ### Async transcription
 
 The Python SDK ships an async client with the same surface, useful when you're transcribing many files concurrently or already running inside an event loop. Use `AsyncFishAudio` and `await` the call:
@@ -533,12 +537,16 @@ To run several files in parallel, gather the coroutines:
 ```python
 import asyncio
 from fishaudio import AsyncFishAudio
+from fishaudio.core import RequestOptions
 
 async def transcribe_all(paths):
     client = AsyncFishAudio()
+    pro = RequestOptions(
+        timeout=900, additional_headers={"model": "transcribe-1-pro"}
+    )
     clips = [open(p, "rb").read() for p in paths]
     return await asyncio.gather(*[
-        client.asr.transcribe(audio=clip, language="en") for clip in clips
+        client.asr.transcribe(audio=clip, request_options=pro) for clip in clips
     ])
 
 for result in asyncio.run(transcribe_all(["speech.wav"])):
@@ -578,7 +586,7 @@ for turn in result.get("speaker_turns", []):
     print(turn["speaker"], turn["start"], turn["end"], turn["text"])
 ```
 
-The response is the same as for multipart: `text`, `duration` (seconds), `segments`, `language_code` and `language` when the language is known, and, on `transcribe-1-pro`, `request_id` plus `speaker_turns` when timestamps are requested. Model selection stays in the HTTP header for both formats. MessagePack values are typed: send booleans for `ignore_timestamps` and `tag_audio_events`, integers for speaker counts, and a boolean or `"auto"` for `diarize`.
+The response is the same as for multipart: `text`, `duration` (seconds), `segments`, and `request_id`, plus `speaker_turns` when timestamps are requested, and `language_code` and `language` when the language is known. Model selection stays in the HTTP header for both formats. MessagePack values are typed: send booleans for `ignore_timestamps` and `tag_audio_events`, integers for speaker counts, and a boolean or `"auto"` for `diarize`.
 
 ## Going further
 

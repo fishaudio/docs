@@ -135,7 +135,7 @@ Not a coding agent installing a skill, but an autonomous agent, RAG pipeline, or
     - Base API URL: `https://api.fish.audio`
     - Authentication: `Authorization: Bearer <FISH_API_KEY>`
     - TTS model selection: optional `model` header (`s1`, `s2-pro`, `s2.1-pro`, `s2.1-pro-free`). Recommended: `s2.1-pro` for production, `s2.1-pro-free` for the free developer tier. If omitted, the server uses `s2.1-pro`
-    - ASR model selection: optional `model` header on `POST /v1/asr` (`transcribe-1` default; `transcribe-1-pro` for speaker turns, long recordings, and emotion cues). A missing or unrecognized value is served by `transcribe-1`. The `/v1/asr` entry in `openapi.json` does not yet list the `transcribe-1-pro` fields, `request_id`, `speaker_turns`, or the error `code`; for those, follow the [Speech to Text API reference](https://docs.fish.audio/api-reference/endpoint/openapi-v1/speech-to-text.md)
+    - ASR model selection: `model` header on `POST /v1/asr` (`transcribe-1-pro`, `transcribe-1`). Recommended: `transcribe-1-pro` (speaker turns, long recordings, emotion cues); send it explicitly. If the header is missing or not an exact match, the request is served and billed as `transcribe-1`. The `/v1/asr` entry in `openapi.json` does not yet list the `transcribe-1-pro` fields, `request_id`, `speaker_turns`, or the error `code`; for those, follow the [Speech to Text API reference](https://docs.fish.audio/api-reference/endpoint/openapi-v1/speech-to-text.md)
     - Main REST endpoints:
       - `POST /v1/tts`
       - `POST /v1/asr`
@@ -195,11 +195,11 @@ Not a coding agent installing a skill, but an autonomous agent, RAG pipeline, or
 
 <Accordion title="Task routing">
   - **Generate speech** → Quick Start, the Text to Speech guide, and `POST
-  /v1/tts`. - **Transcribe audio** → the Speech to Text guide and `POST
-  /v1/asr`. - **Clone or manage voices** → Creating Voice Models and the
-  `/model` endpoints. - **Stream audio in real time** → AsyncAPI, WebSocket TTS
-  Streaming, and the realtime guides. - **Pick a model or estimate cost** →
-  Models Overview and Pricing & Rate Limits.
+  /v1/tts`. - **Transcribe audio** → the Speech to Text guide and `POST /v1/asr`
+  with `model: transcribe-1-pro`. - **Clone or manage voices** → Creating Voice
+  Models and the `/model` endpoints. - **Stream audio in real time** → AsyncAPI,
+  WebSocket TTS Streaming, and the realtime guides. - **Pick a model or estimate
+  cost** → Models Overview and Pricing & Rate Limits.
 </Accordion>
 
   <Accordion title="Notes for agents">

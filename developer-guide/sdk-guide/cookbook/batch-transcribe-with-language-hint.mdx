@@ -12,6 +12,8 @@ import Prerequisites from "/snippets/prerequisites.mdx";
 
 ## Recipe
 
+This recipe uses `transcribe-1-pro`, which handles recordings up to 60 minutes long. Every tab selects it with the `model` request header; without that header, the request is served and billed as `transcribe-1`.
+
 Read each file's bytes from disk and pass them to [`asr.transcribe()`](/api-reference/sdk/python/resources#transcribe) with `language` set to a lowercase ISO 639-1 code such as `en`, `zh`, or `ja`. Other forms, such as `en-US` or `English`, may be rejected with 400. Pass `language` when you know the source language. Detection still runs, and the hint does not force the transcript into that language; the hint is reported as `language_code` when the language cannot be determined. See [Language](/features/speech-to-text#language) for details.
 
 Collect one result row per file as you go. If a file cannot be read, its request fails with a network error such as a timeout, or the API returns an error for it, record the error in that file's row and move on to the next file.
@@ -21,12 +23,17 @@ Collect one result row per file as you go. If a file cannot be read, its request
 ```python Synchronous
 import httpx
 from fishaudio import FishAudio
+from fishaudio.core import RequestOptions
 from fishaudio.exceptions import APIError
 
 client = FishAudio()
 
 paths = ["speech.wav"]  # add more file paths here
 language = "en"
+options = RequestOptions(
+    timeout=900,  # long recordings can take several minutes
+    additional_headers={"model": "transcribe-1-pro"},
+)
 
 results = []
 for path in paths:
@@ -34,7 +41,10 @@ for path in paths:
         with open(path, "rb") as f:
             audio = f.read()
         transcript = client.asr.transcribe(
-            audio=audio, language=language, include_timestamps=False
+            audio=audio,
+            language=language,
+            include_timestamps=False,
+            request_options=options,
         )
     except (OSError, httpx.HTTPError, APIError) as e:
         # Record the failure and continue with the next file.
@@ -62,12 +72,17 @@ import asyncio
 
 import httpx
 from fishaudio import AsyncFishAudio
+from fishaudio.core import RequestOptions
 from fishaudio.exceptions import APIError
 
 async def main():
     async with AsyncFishAudio() as client:
         paths = ["speech.wav"]  # add more file paths here
         language = "en"
+        options = RequestOptions(
+            timeout=900,  # long recordings can take several minutes
+            additional_headers={"model": "transcribe-1-pro"},
+        )
 
         results = []
         for path in paths:
@@ -75,7 +90,10 @@ async def main():
                 with open(path, "rb") as f:
                     audio = f.read()
                 transcript = await client.asr.transcribe(
-                    audio=audio, language=language, include_timestamps=False
+                    audio=audio,
+                    language=language,
+                    include_timestamps=False,
+                    request_options=options,
                 )
             except (OSError, httpx.HTTPError, APIError) as e:
                 # Record the failure and continue with the next file.
@@ -109,12 +127,19 @@ const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 
 const paths = ["speech.wav"]; // add more file paths here
 const language = "en";
+const options = {
+  headers: { model: "transcribe-1-pro" },
+  timeoutInSeconds: 900, // long recordings can take several minutes
+};
 
 const results = [];
 for (const path of paths) {
   try {
     const audio = new File([await readFile(path)], path);
-    const transcript = await client.speechToText.convert({ audio, language });
+    const transcript = await client.speechToText.convert(
+      { audio, language },
+      options
+    );
     results.push({
       file: path,
       text: transcript.text,
@@ -140,15 +165,27 @@ for (const row of results) {
 
 if (failed.length > 0) {
   console.error(`${failed.length} of ${results.length} files failed`);
-  process.exitCode = 1;
+  // Exit now: a request that failed with a network error can leave its timeout running.
+  process.exit(1);
 }
 ```
 
 </CodeGroup>
 
-Each call returns an [`ASRResponse`](/api-reference/sdk/python/types#asrresponse-objects) with `.text` and `.duration` (seconds). This recipe skips timestamps; pass `include_timestamps=True` (Python) or `ignore_timestamps: false` (JavaScript) for word-level `.segments`. The Python SDK currently returns only `text`, `duration`, and `segments`; to read `language_code`, call the API directly (see [Direct API](/features/speech-to-text#direct-api-messagepack)).
+Each call returns an [`ASRResponse`](/api-reference/sdk/python/types#asrresponse-objects) with `.text` and `.duration` (seconds). With `transcribe-1-pro`, `text` can contain inline speaker markers such as `<|speaker:0|>` and cues such as `[laughter]`; see [Speaker markers](/features/speech-to-text#speaker-markers) to split it into turns. This recipe skips timestamps; pass `include_timestamps=True` (Python) or `ignore_timestamps: false` (JavaScript) for word-level `.segments`. The Python SDK currently returns only `text`, `duration`, and `segments`; to read `language_code`, call the API directly (see [Direct API](/features/speech-to-text#direct-api-messagepack)).
 
 A file that fails is recorded with its error, and the loop continues. After the summary, the script exits with a non-zero status if any file failed, so a scheduled job does not report success. A file that failed with 429, a 5xx status, or a network error such as a timeout is worth retrying later with backoff; for other 4xx errors, fix the file or the request first.
+
+Long recordings can take several minutes to transcribe, so every tab sets a 15-minute request timeout, longer than the SDKs' default; in Node.js, also see the note below.
+
+<Note>
+  In Node.js, the built-in `fetch` that the JavaScript SDK uses stops waiting
+  for a response after 5 minutes, even with a longer `timeoutInSeconds`. To
+  wait longer, install `undici@7` and, once at startup, call its
+  `setGlobalDispatcher(new Agent({ headersTimeout: 900_000, bodyTimeout: 900_000 }))`.
+  See [Processing time and
+  timeouts](/features/speech-to-text#processing-time-and-timeouts).
+</Note>
 
 <Tip>
   Use one `language` per batch; split mixed-language files into separate lists.

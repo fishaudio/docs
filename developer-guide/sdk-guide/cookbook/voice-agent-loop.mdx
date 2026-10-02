@@ -14,9 +14,15 @@ import Prerequisites from "/snippets/prerequisites.mdx";
 
 A voice agent is three stages chained together: [`asr.transcribe()`](/api-reference/sdk/python/resources#transcribe) turns the caller's audio into text, your own LLM turns that text into a reply, and [`tts.stream()`](/api-reference/sdk/python/resources#stream) turns the reply back into speech. The transcript and the reply are just strings, so the only Fish Audio-specific parts are the first and last calls. Streaming the reply lets you start writing (or forwarding) audio before the whole sentence is synthesized.
 
+The recipe transcribes with `transcribe-1-pro`. Every tab selects it with the `model` request header; without that header, the request is served and billed as `transcribe-1`.
+
 <CodeGroup>
+
 ```python Synchronous
+import re
+
 from fishaudio import FishAudio
+from fishaudio.core import RequestOptions
 from fishaudio.utils import save
 
 client = FishAudio()
@@ -29,9 +35,17 @@ def reply_from_llm(text: str) -> str:
 
 def voice_agent_turn(audio_path: str, out_path: str) -> str:
     with open(audio_path, "rb") as f:
-        heard = client.asr.transcribe(audio=f.read(), include_timestamps=False)
+        heard = client.asr.transcribe(
+            audio=f.read(),
+            include_timestamps=False,
+            request_options=RequestOptions(
+                additional_headers={"model": "transcribe-1-pro"}
+            ),
+        )
 
-    reply = reply_from_llm(heard.text)
+    # Drop speaker markers such as <|speaker:0|>; keep cues such as [laughter].
+    said = re.sub(r"\s*<\|speaker:\d+\|>\s*", " ", heard.text).strip()
+    reply = reply_from_llm(said)
 
     audio_stream = client.tts.stream(text=reply, reference_id="<voice-id>")
     save(audio_stream, out_path)  # writes chunks as they arrive
@@ -43,7 +57,10 @@ print("Agent:", reply)
 
 ```python Asynchronous
 import asyncio
+import re
+
 from fishaudio import AsyncFishAudio
+from fishaudio.core import RequestOptions
 from fishaudio.utils import save
 
 def reply_from_llm(text: str) -> str:
@@ -55,10 +72,16 @@ async def main():
     async with AsyncFishAudio() as client:
         with open("speech.wav", "rb") as f:
             heard = await client.asr.transcribe(
-                audio=f.read(), include_timestamps=False
+                audio=f.read(),
+                include_timestamps=False,
+                request_options=RequestOptions(
+                    additional_headers={"model": "transcribe-1-pro"}
+                ),
             )
 
-        reply = reply_from_llm(heard.text)
+        # Drop speaker markers such as <|speaker:0|>; keep cues such as [laughter].
+        said = re.sub(r"\s*<\|speaker:\d+\|>\s*", " ", heard.text).strip()
+        reply = reply_from_llm(said)
 
         audio_stream = await client.tts.stream(text=reply, reference_id="<voice-id>")
         with open("reply.mp3", "wb") as out:
@@ -83,12 +106,17 @@ function replyFromLlm(text) {
 }
 
 async function voiceAgentTurn(audioPath, outPath) {
-  const heard = await client.speechToText.convert({
-    audio: new File([await readFile(audioPath)], audioPath),
-    language: "en",
-  });
+  const heard = await client.speechToText.convert(
+    {
+      audio: new File([await readFile(audioPath)], audioPath),
+      language: "en",
+    },
+    { headers: { model: "transcribe-1-pro" } }
+  );
 
-  const reply = replyFromLlm(heard.text);
+  // Drop speaker markers such as <|speaker:0|>; keep cues such as [laughter].
+  const said = heard.text.replace(/\s*<\|speaker:\d+\|>\s*/g, " ").trim();
+  const reply = replyFromLlm(said);
 
   const stream = await client.textToSpeech.convert(
     { text: reply, reference_id: "<voice-id>", format: "mp3" },
@@ -103,15 +131,16 @@ async function voiceAgentTurn(audioPath, outPath) {
 const reply = await voiceAgentTurn("speech.wav", "reply.mp3");
 console.log("Agent:", reply);
 ```
+
 </CodeGroup>
 
-`heard` is an [`ASRResponse`](/api-reference/sdk/python/types#asrresponse-objects): `heard.text` is the full transcript and `heard.duration` is the clip length in seconds. The Python calls pass `include_timestamps=False` because the loop needs only the text, and word timestamps add processing time. Pass `language="en"` as a hint when you know the caller's language; see [Language](/features/speech-to-text#language).
+`heard` is an [`ASRResponse`](/api-reference/sdk/python/types#asrresponse-objects): `heard.text` is the full transcript and `heard.duration` is the clip length in seconds. With `transcribe-1-pro`, `heard.text` can contain inline speaker markers such as `<|speaker:0|>` and cues such as `[laughter]`. The recipe removes the speaker markers before it calls your LLM and keeps the cues as context; see [Speaker markers](/features/speech-to-text#speaker-markers). The Python calls pass `include_timestamps=False` because the loop needs only the text, and word timestamps add processing time. Pass `language="en"` as a hint when you know the caller's language; see [Language](/features/speech-to-text#language).
 
 <Tip>
   For the lowest latency, feed your LLM's token stream straight into
   [`stream_websocket()`](/api-reference/sdk/python/resources#stream_websocket)
-  instead of waiting for the full reply string. See
-  [Realtime: LLM tokens → speech](/developer-guide/sdk-guide/cookbook/realtime-llm-to-speech).
+  instead of waiting for the full reply string. See [Realtime: LLM tokens →
+  speech](/developer-guide/sdk-guide/cookbook/realtime-llm-to-speech).
 </Tip>
 
 ## Reply in the caller's voice

@@ -188,6 +188,10 @@ Transcription model names carry over the same way: `whisper-1`,
 `gpt-4o-transcribe`, and `gpt-4o-mini-transcribe` are accepted as aliases for
 `fish-audio/transcribe-1`; an unrecognized name is refused with the same 400.
 
+For speaker turns, long recordings, and inline emotion cues, use
+`transcribe-1-pro` on the native
+[Speech to Text API](/features/speech-to-text) instead.
+
 <Note>
   In `verbose_json`, the Whisper-engine internals (`avg_logprob`,
   `no_speech_prob`, `compression_ratio`, `temperature`) are neutral constants;

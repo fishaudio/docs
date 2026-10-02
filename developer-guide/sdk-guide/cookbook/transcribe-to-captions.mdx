@@ -12,6 +12,8 @@ import Prerequisites from "/snippets/prerequisites.mdx";
 
 ## Recipe
 
+This recipe uses `transcribe-1-pro`, which handles recordings up to 60 minutes long. Both tabs select it with the `model` request header; without that header, the request is served and billed as `transcribe-1`.
+
 Call [`asr.transcribe()`](/api-reference/sdk/python/resources#transcribe) with `include_timestamps=True` (in JavaScript, `ignore_timestamps: false`) to get timed segments ([`ASRSegment`](/api-reference/sdk/python/types#asrsegment-objects)). Segments are word-level (one character, or a few, in Chinese and Japanese) and carry no punctuation, so group consecutive segments into caption-sized cues before you format them. Segment `start` / `end` are in **seconds**; SRT wants `HH:MM:SS,mmm` (comma), WebVTT wants `HH:MM:SS.mmm` (dot).
 
 The recipe starts a new cue after a pause longer than 0.6 seconds, or when the cue would grow past 42 characters or 6 seconds. It joins words with a space, except between Chinese or Japanese characters, which are written without spaces. A segment can have `start` equal to `end`, so a cue with no duration gets a short one that ends no later than the next cue starts. Every cue therefore ends after it starts, as SRT and WebVTT players expect.
@@ -22,6 +24,7 @@ The recipe starts a new cue after a pause longer than 0.6 seconds, or when the c
 import re
 
 from fishaudio import FishAudio
+from fishaudio.core import RequestOptions
 
 client = FishAudio()
 
@@ -80,7 +83,14 @@ def format_timestamp(ms: int, separator: str) -> str:
 
 
 with open("speech.wav", "rb") as f:
-    result = client.asr.transcribe(audio=f.read(), include_timestamps=True)
+    result = client.asr.transcribe(
+        audio=f.read(),
+        include_timestamps=True,
+        request_options=RequestOptions(
+            timeout=900,  # long recordings can take several minutes
+            additional_headers={"model": "transcribe-1-pro"},
+        ),
+    )
 
 cues = group_cues(result.segments)
 
@@ -169,10 +179,16 @@ function formatTimestamp(ms, separator) {
   return `${pad(hours, 2)}:${pad(minutes, 2)}:${pad(seconds, 2)}${separator}${pad(millis, 3)}`;
 }
 
-const result = await client.speechToText.convert({
-  audio: new File([await readFile("speech.wav")], "speech.wav"),
-  ignore_timestamps: false,
-});
+const result = await client.speechToText.convert(
+  {
+    audio: new File([await readFile("speech.wav")], "speech.wav"),
+    ignore_timestamps: false,
+  },
+  {
+    headers: { model: "transcribe-1-pro" },
+    timeoutInSeconds: 900, // long recordings can take several minutes
+  }
+);
 
 const cues = groupCues(result.segments);
 const timing = (cue, separator) =>
@@ -193,15 +209,25 @@ console.log(`Wrote ${cues.length} cues to captions.srt and captions.vtt`);
 
 </CodeGroup>
 
-Both tabs send the same request and write the same `captions.srt` and `captions.vtt`. Tune `MAX_CHARS`, `MAX_MS`, and `MAX_GAP_MS` for your player and audience. `segments` is empty when no speech was found or word timing was temporarily unavailable, and the files then contain no cues, so check the cue count before you publish them.
+Both tabs send the same request and write the same `captions.srt` and `captions.vtt`. Long recordings can take several minutes to transcribe, so both tabs set a 15-minute request timeout, longer than the SDKs' default; in Node.js, also see the note below. Tune `MAX_CHARS`, `MAX_MS`, and `MAX_GAP_MS` for your player and audience. `segments` is empty when no speech was found or word timing was temporarily unavailable, and the files then contain no cues, so check the cue count before you publish them.
+
+<Note>
+  In Node.js, the built-in `fetch` that the JavaScript SDK uses stops waiting
+  for a response after 5 minutes, even with a longer `timeoutInSeconds`. To
+  wait longer, install `undici@7` and, once at startup, call its
+  `setGlobalDispatcher(new Agent({ headersTimeout: 900_000, bodyTimeout: 900_000 }))`.
+  See [Processing time and
+  timeouts](/features/speech-to-text#processing-time-and-timeouts).
+</Note>
 
 <Tip>
-  Captions built from `segments` have no punctuation. With `transcribe-1-pro`
-  and timestamps on, the response also includes `speaker_turns`, with each
-  turn's punctuated text and its start and end time. To keep speakers in
-  separate cues, start a new cue at each turn boundary. The Python SDK does not
-  return `speaker_turns`; to read it from the API, see [Speaker
-  turns](/features/speech-to-text#speaker-turns).
+  Captions built from `segments` have no punctuation. Because this recipe
+  requests timestamps from `transcribe-1-pro`, the response also includes
+  `speaker_turns`, with each turn's punctuated text and its start and end time.
+  To keep speakers in separate cues, start a new cue at each turn boundary. In
+  JavaScript, read `result.speaker_turns`; it is not in the SDK's TypeScript
+  type. The Python SDK does not return `speaker_turns`; to read it from the API,
+  see [Speaker turns](/features/speech-to-text#speaker-turns).
 </Tip>
 
 ## Related

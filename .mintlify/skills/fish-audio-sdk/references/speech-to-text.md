@@ -1,11 +1,11 @@
 # Speech-to-Text (ASR)
 
-Both SDKs wrap `POST /v1/asr`: one audio file per request, and the response arrives when the whole file has been transcribed. Neither SDK has a `model` argument for ASR; you select the model with the `model` HTTP header. Full guide: `https://docs.fish.audio/features/speech-to-text`.
+Both SDKs wrap `POST /v1/asr`: one audio file per request, and the response arrives when the whole file has been transcribed. Use `transcribe-1-pro`, the recommended model. Neither SDK has a `model` argument for ASR, so select it with the `model` HTTP header on every request. Full guide: `https://docs.fish.audio/features/speech-to-text`.
 
 ## Choose a model
 
-- `transcribe-1`: general transcription of short recordings. The default when the `model` header is missing.
-- `transcribe-1-pro`: multi-speaker conversations and long recordings (up to 60 minutes). `text` contains inline `<|speaker:N|>` markers and bracketed emotion or vocal-event cues such as `[laughter]` or `[高兴]`.
+- `transcribe-1-pro` (recommended): recordings up to 60 minutes, including multi-speaker conversations. `text` contains inline `<|speaker:N|>` markers and bracketed emotion or vocal-event cues such as `[laughter]` or `[高兴]`, and the API returns structured `speaker_turns` when you request timestamps.
+- `transcribe-1`: general transcription of short recordings. It serves every request whose `model` header is missing or not an exact match.
 
 Select `transcribe-1-pro` with the `model` header:
 
@@ -26,7 +26,7 @@ with open("audio.wav", "rb") as f:
         audio=f.read(),
         language="en",  # optional hint; omit to auto-detect
         request_options=RequestOptions(
-            additional_headers={"model": "transcribe-1-pro"},  # omit for transcribe-1
+            additional_headers={"model": "transcribe-1-pro"},  # without this header: transcribe-1
             timeout=900,  # long Pro recordings can take several minutes
         ),
     )
@@ -66,9 +66,9 @@ Segment text has no punctuation, speaker markers, or cues, and can be normalized
 
 In `fish-audio-sdk` 1.3.0, `ASRResponse` keeps only `text`, `duration`, and `segments`. It silently drops these response fields:
 
-- `language` (English name, such as `English`) and `language_code` (ISO 639-1, such as `en`), returned when the language is known;
+- `speaker_turns` (`transcribe-1-pro`, when timestamps are requested);
 - `request_id` (`transcribe-1-pro`), also sent as the `x-request-id` header;
-- `speaker_turns` (`transcribe-1-pro`, when timestamps are requested).
+- `language` (English name, such as `English`) and `language_code` (ISO 639-1, such as `en`), returned when the language is known.
 
 `asr.transcribe()` also cannot send the `transcribe-1-pro` fields `tag_audio_events`, `diarize`, `num_speakers`, `min_speakers`, or `max_speakers`. For any of these, call the API directly. Field semantics are in the `fish-audio-api` skill (`POST /v1/asr`).
 
@@ -97,14 +97,20 @@ for turn in result.get("speaker_turns", []):
 
 ### Errors (Python)
 
-`asr.transcribe()` raises `APIError` (`RateLimitError` for 429, `ServerError` for 5xx) with `.status`, `.message`, and `.body` (the raw response text). `transcribe-1-pro` error bodies also carry `code` and `request_id`:
+`asr.transcribe()` raises `APIError` (`RateLimitError` for 429, `ServerError` for 5xx) with `.status`, `.message`, and `.body` (the raw response text). On `transcribe-1-pro`, error bodies also carry `code` and `request_id`:
 
 ```python
 import json
+from fishaudio.core import RequestOptions
 from fishaudio.exceptions import APIError
 
 try:
-    result = client.asr.transcribe(audio=audio_bytes)
+    result = client.asr.transcribe(
+        audio=audio_bytes,
+        request_options=RequestOptions(
+            additional_headers={"model": "transcribe-1-pro"}
+        ),
+    )
 except APIError as e:
     try:
         err = json.loads(e.body or "{}")
@@ -114,7 +120,7 @@ except APIError as e:
     raise
 ```
 
-Branch on `code` or the HTTP status, never on `message`. Retry 429 and 5xx with exponential backoff (the Python SDK does not retry); do not retry other 4xx responses. See the `fish-audio-api` skill for the status and `code` list.
+Branch on `code` or the HTTP status, never on `message`. Retry 429 and 5xx with exponential backoff (the Python SDK does not retry); do not retry other 4xx responses. See the `fish-audio-api` skill for the status and `code` list. If you use `transcribe-1`, rely only on `status` and `message`.
 
 ## JavaScript: `client.speechToText.convert`
 
@@ -176,7 +182,7 @@ The JS SDK cannot send `tag_audio_events`, `diarize`, or the speaker counts; use
 
 ## Limits and formats (both SDKs)
 
-- `transcribe-1` is designed for short recordings: up to 50 MiB per request, and keep MP3 and Opus files under 25 MiB. For recordings longer than a few minutes, use `transcribe-1-pro`.
 - `transcribe-1-pro` accepts recordings up to 60 minutes (longer returns 400 `audio_too_long`). Send long recordings as compressed audio (MP3, Opus, or AAC); a request that is too large returns 413. Send a whole conversation as one file: speaker labels are consistent within one response, not across requests.
-- Processing time grows with the length of the recording, and long `transcribe-1-pro` requests can take several minutes. Both SDKs default to a 240 s timeout; raise it for long recordings (the examples use 900 s), and in Node.js also raise the `fetch` header limit shown above.
-- Both models accept WAV, MP3, AAC (including M4A/MP4), FLAC, and Ogg (Opus or Vorbis). `transcribe-1-pro` also accepts WebM/Matroska and MOV, including browser recordings. Browser WebM recordings may not be accepted by `transcribe-1`; convert them to Ogg/Opus, MP3, or WAV, or use `transcribe-1-pro`. AIFF, CAF, WMA, AMR, AC-3, and raw (headerless) PCM return 400.
+- Processing time grows with the length of the recording, and long `transcribe-1-pro` requests can take several minutes. Raise the SDK timeout for long recordings (the examples use 900 s; the defaults are in [errors](errors.md)), and in Node.js also raise the `fetch` header limit shown above.
+- `transcribe-1-pro` accepts WAV, MP3, AAC (including M4A/MP4), FLAC, Ogg (Opus or Vorbis), WebM/Matroska, and MOV, including browser recordings, and uses the first audio track of a video file. AIFF, CAF, WMA, AMR, AC-3, and raw (headerless) PCM return 400.
+- If you use `transcribe-1`: it is designed for short recordings, up to 50 MiB per request; keep MP3 and Opus files under 25 MiB. For recordings longer than a few minutes, use `transcribe-1-pro`. It accepts WAV, MP3, AAC (including M4A/MP4), FLAC, and Ogg (Opus or Vorbis); convert browser WebM recordings to Ogg/Opus, MP3, or WAV first, or use `transcribe-1-pro`.

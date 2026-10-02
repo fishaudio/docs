@@ -43,12 +43,17 @@ Returns: `RealtimeConnection` (`EventEmitter`-like connection) emitting `Realtim
 Transcribe audio to text.
 
 ```typescript
-const res = await fishAudio.speechToText.convert({ audio: myAudio });
+const res = await fishAudio.speechToText.convert(
+  { audio: myAudio },
+  { headers: { model: "transcribe-1-pro" } }
+);
 console.log(res.text);
 ```
 
-Parameters: `request` (STTRequest) <br />
+Parameters: `request` (STTRequest), `requestOptions?` (for example `headers` and `timeoutInSeconds`) <br />
 Returns: `STTResponse`
+
+Select the model with the `model` header in `requestOptions.headers`. Without it, the request is served and billed as `transcribe-1`. See [Speech to Text](/features/speech-to-text).
 
 ## Voices
 
