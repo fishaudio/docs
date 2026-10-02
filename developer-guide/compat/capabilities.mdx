@@ -97,6 +97,11 @@ in-band error event):
 | OpenAI chat             | `n ≠ 1`; audio input combined with audio output in one call                                                                                                                                      |
 | OpenAI Realtime         | `audio/pcmu`, `audio/pcma`; any `turn_detection` with a type (`server_vad`, `semantic_vad`, anything else; only `null` and `"none"` pass); `output_modalities` that omits `"audio"`; a second concurrent response (`response_already_active`) |
 
+ElevenLabs STT refuses `diarize` and `tag_audio_events`. For speaker turns and
+event tags, use the native
+[Speech to Text API](/features/speech-to-text#multi-speaker-conversations) with
+`transcribe-1-pro`.
+
 On OpenAI transcription, `languages`, `keywords`, `prompt`, and `temperature`
 are in the [ignored tier](#how-parameters-are-handled).
 

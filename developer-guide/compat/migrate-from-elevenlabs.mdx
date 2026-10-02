@@ -256,18 +256,22 @@ rather than silently ignored:
 
 | Option                             | Why it's refused                            |
 | ---------------------------------- | ------------------------------------------- |
-| `diarize`                          | speaker attribution is not available        |
+| `diarize`                          | speaker attribution is not available here   |
 | `use_multi_channel`                | per-channel transcription is not available  |
 | `entity_detection`                 | entities would be missing from the response |
 | `entity_redaction`                 | text would come back unredacted             |
 | `entity_redaction_mode`            | same                                        |
 | `no_verbatim`                      | the transcript would still be verbatim      |
-| `tag_audio_events`                 | the transcript would carry no event tags    |
+| `tag_audio_events`                 | event tags are not available here           |
 | `additional_formats`               | the extra formats would be absent           |
 | `timestamps_granularity=character` | only word granularity exists                |
 | `webhook`, `webhook_id`            | there is no delivery callback               |
 | `source_url`, `cloud_storage_url`  | remote audio would not be fetched           |
 | `enable_logging=false`             | zero-retention mode cannot be honored       |
+
+For speaker turns and event tags, use the native
+[Speech to Text API](/features/speech-to-text#multi-speaker-conversations) with
+`transcribe-1-pro` instead.
 
 <Warning>
   **`tag_audio_events` is the one that bites on migration.** ElevenLabs defaults

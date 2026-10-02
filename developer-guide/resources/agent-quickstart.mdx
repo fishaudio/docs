@@ -135,6 +135,7 @@ Not a coding agent installing a skill, but an autonomous agent, RAG pipeline, or
     - Base API URL: `https://api.fish.audio`
     - Authentication: `Authorization: Bearer <FISH_API_KEY>`
     - TTS model selection: optional `model` header (`s1`, `s2-pro`, `s2.1-pro`, `s2.1-pro-free`). Recommended: `s2.1-pro` for production, `s2.1-pro-free` for the free developer tier. If omitted, the server uses `s2.1-pro`
+    - ASR model selection: optional `model` header on `POST /v1/asr` (`transcribe-1` default; `transcribe-1-pro` for speaker turns, long recordings, and emotion cues). A missing or unrecognized value is served by `transcribe-1`. The `/v1/asr` entry in `openapi.json` does not yet list the `transcribe-1-pro` fields, `request_id`, `speaker_turns`, or the error `code`; for those, follow the [Speech to Text API reference](https://docs.fish.audio/api-reference/endpoint/openapi-v1/speech-to-text.md)
     - Main REST endpoints:
       - `POST /v1/tts`
       - `POST /v1/asr`
@@ -202,7 +203,7 @@ Not a coding agent installing a skill, but an autonomous agent, RAG pipeline, or
 </Accordion>
 
   <Accordion title="Notes for agents">
-    - Prefer `openapi.json` and `asyncapi.yml` for machine-readable schemas.
+    - Prefer `openapi.json` and `asyncapi.yml` for machine-readable schemas, except for the `/v1/asr` gaps listed under Canonical API facts.
     - Append `.md` to any page URL to fetch the human-authored page as plain Markdown.
     - Some richer pages use interactive MDX widgets. If a fetched page contains UI or component noise, fall back to `llms.txt`, `llms-full.txt`, or the API spec files.
   </Accordion>

@@ -40,12 +40,14 @@ TTS pricing is based on the size of input text, measured in millions of UTF-8 by
 | `transcribe-1`     | $0.36 / audio hour |
 | `transcribe-1-pro` | $0.36 / audio hour |
 
-Both models use the [Speech to Text API](/api-reference/endpoint/openapi-v1/speech-to-text). Select `transcribe-1-pro` with the `model` HTTP header for multi-speaker conversation transcription and inline emotion cues. See the [model comparison](/features/speech-to-text#choose-an-asr-model).
+Both models use the [Speech to Text API](/api-reference/endpoint/openapi-v1/speech-to-text). Select `transcribe-1-pro` with the `model` HTTP header for multi-speaker conversations (speaker markers and speaker turns), long recordings, and inline emotion cues. A missing or unrecognized `model` header is served and billed as `transcribe-1`. See the [model comparison](/features/speech-to-text#choose-an-asr-model).
 
 **How ASR billing works:**
 
 - Charges are based on the duration of audio processed
 - Duration is rounded up to the nearest second
+- The full duration of the recording is billed, including silence, once per successful request
+- Requests that return an error response are not billed
 
 ### Voice Design
 
@@ -78,6 +80,15 @@ These limits help us ensure fair usage and maintain service quality for all user
   needs a higher concurrency tier, you can top up in advance to unlock the next
   tier immediately.
 </Tip>
+
+Speech-to-text requests count against the same concurrency limit as your other
+API requests, shared by all API keys on your account. Each `/v1/asr` request
+holds one slot until its response is returned, which for long
+`transcribe-1-pro` recordings can be several minutes.
+
+When you are at the limit, the [native API](/api-reference/introduction),
+including `POST /v1/asr`, returns 429 without a `Retry-After` header. Retry
+with exponential backoff.
 
 ### Convert Concurrency to QPS or QPM
 
