@@ -7,7 +7,7 @@ export const SPECS = [
   { slug: "realtime-streaming", mdx: "features/realtime-streaming.mdx", cases: [{ name: "primary", block: 0, file: ["out.mp3", "mp3"] }] },
   { slug: "streaming-to-file", mdx: "developer-guide/sdk-guide/cookbook/streaming-to-file.mdx", cases: [{ name: "primary", block: 0, file: ["output.mp3", "mp3"] }] },
   { slug: "instant-voice-cloning", mdx: "developer-guide/sdk-guide/cookbook/instant-voice-cloning.mdx", cases: [{ name: "primary", block: 0, file: ["cloned.mp3", "mp3"] }] },
-  { slug: "transcribe-to-captions", mdx: "developer-guide/sdk-guide/cookbook/transcribe-to-captions.mdx", cases: [{ name: "primary", block: 0, file: ["captions.srt", "srt"] }] },
+  { slug: "transcribe-to-captions", mdx: "developer-guide/sdk-guide/cookbook/transcribe-to-captions.mdx", cases: [{ name: "primary", block: 0, file: ["captions.srt", "srt"] }, { name: "vtt", block: 0, file: ["captions.vtt", "srt"] }] },
   { slug: "batch-transcribe-with-language-hint", mdx: "developer-guide/sdk-guide/cookbook/batch-transcribe-with-language-hint.mdx", cases: [{ name: "primary", block: 0 }] },
   { slug: "telephony-8khz-audio", mdx: "developer-guide/sdk-guide/cookbook/telephony-8khz-audio.mdx", cases: [{ name: "primary", block: 0, file: ["out.wav", "wav"] }] },
   { slug: "developer-guide/sdk-guide/cookbook/clone-and-wait-until-ready", mdx: "developer-guide/sdk-guide/cookbook/clone-and-wait-until-ready.mdx", cases: [{ name: "primary", block: 0, file: ["out.mp3", "mp3"] }] },

@@ -29,7 +29,7 @@ def reply_from_llm(text: str) -> str:
 
 def voice_agent_turn(audio_path: str, out_path: str) -> str:
     with open(audio_path, "rb") as f:
-        heard = client.asr.transcribe(audio=f.read())
+        heard = client.asr.transcribe(audio=f.read(), include_timestamps=False)
 
     reply = reply_from_llm(heard.text)
 
@@ -54,7 +54,9 @@ def reply_from_llm(text: str) -> str:
 async def main():
     async with AsyncFishAudio() as client:
         with open("speech.wav", "rb") as f:
-            heard = await client.asr.transcribe(audio=f.read())
+            heard = await client.asr.transcribe(
+                audio=f.read(), include_timestamps=False
+            )
 
         reply = reply_from_llm(heard.text)
 
@@ -103,7 +105,7 @@ console.log("Agent:", reply);
 ```
 </CodeGroup>
 
-`heard` is an [`ASRResponse`](/api-reference/sdk/python/types#asrresponse-objects): `heard.text` is the full transcript and `heard.duration` is the clip length in seconds. Pass `language="en"` to `transcribe()` to skip auto-detection when you already know the input language.
+`heard` is an [`ASRResponse`](/api-reference/sdk/python/types#asrresponse-objects): `heard.text` is the full transcript and `heard.duration` is the clip length in seconds. The Python calls pass `include_timestamps=False` because the loop needs only the text, and word timestamps add processing time. Pass `language="en"` as a hint when you know the caller's language; see [Language](/features/speech-to-text#language).
 
 <Tip>
   For the lowest latency, feed your LLM's token stream straight into

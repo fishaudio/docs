@@ -1,6 +1,6 @@
 ---
 title: "Transcribe audio to SRT/VTT captions"
-description: "Transcribe audio with timestamps and write valid SRT and WebVTT caption files from the segments"
+description: "Transcribe audio with word-level timestamps, group the words into caption cues, and write valid SRT and WebVTT files"
 icon: "closed-captioning"
 ---
 
@@ -12,43 +12,94 @@ import Prerequisites from "/snippets/prerequisites.mdx";
 
 ## Recipe
 
-Call [`asr.transcribe()`](/api-reference/sdk/python/resources#transcribe) with `include_timestamps=True`, then turn each [`ASRSegment`](/api-reference/sdk/python/types#asrsegment-objects) into a numbered cue. Segment `start` / `end` are in **seconds**, so the only real work is formatting them: SRT wants `HH:MM:SS,mmm` (comma), WebVTT wants `HH:MM:SS.mmm` (dot).
+Call [`asr.transcribe()`](/api-reference/sdk/python/resources#transcribe) with `include_timestamps=True` (in JavaScript, `ignore_timestamps: false`) to get timed segments ([`ASRSegment`](/api-reference/sdk/python/types#asrsegment-objects)). Segments are word-level (one character, or a few, in Chinese and Japanese) and carry no punctuation, so group consecutive segments into caption-sized cues before you format them. Segment `start` / `end` are in **seconds**; SRT wants `HH:MM:SS,mmm` (comma), WebVTT wants `HH:MM:SS.mmm` (dot).
+
+The recipe starts a new cue after a pause longer than 0.6 seconds, or when the cue would grow past 42 characters or 6 seconds. It joins words with a space, except between Chinese or Japanese characters, which are written without spaces. A segment can have `start` equal to `end`, so a cue with no duration gets a short one that ends no later than the next cue starts. Every cue therefore ends after it starts, as SRT and WebVTT players expect.
 
 <CodeGroup>
+
 ```python Python
+import re
+
 from fishaudio import FishAudio
 
 client = FishAudio()
 
+MAX_CHARS = 42  # longest cue text, in characters
+MAX_MS = 6000  # longest cue, in milliseconds
+MAX_GAP_MS = 600  # a longer pause between words starts a new cue
+MIN_MS = 500  # display time for a cue whose words have no duration
 
-def to_srt_timestamp(seconds: float) -> str:
-    """Format a time in seconds as an SRT timestamp: HH:MM:SS,mmm."""
-    millis = round(seconds * 1000)
-    hours, millis = divmod(millis, 3_600_000)
-    minutes, millis = divmod(millis, 60_000)
-    secs, millis = divmod(millis, 1000)
-    return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
+# Chinese and Japanese are written without spaces between words.
+NO_SPACE = re.compile(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]")
+
+
+def join_words(left: str, right: str) -> str:
+    if NO_SPACE.match(left[-1]) and NO_SPACE.match(right[0]):
+        return left + right
+    return f"{left} {right}"
+
+
+def group_cues(segments) -> list[dict]:
+    """Group word-level segments into cues, with start and end in milliseconds."""
+    cues = []
+    for segment in segments:
+        word = segment.text.strip()
+        if not word:
+            continue
+        start, end = round(segment.start * 1000), round(segment.end * 1000)
+        if cues:
+            cue = cues[-1]
+            text = join_words(cue["text"], word)
+            if (
+                start - cue["end"] <= MAX_GAP_MS
+                and len(text) <= MAX_CHARS
+                and end - cue["start"] <= MAX_MS
+            ):
+                cue["text"], cue["end"] = text, max(cue["end"], end)
+                continue
+        cues.append({"start": start, "end": end, "text": word})
+
+    # A segment can have start == end. Give a cue with no duration a short one,
+    # ending no later than the next cue starts, so every cue ends after it starts.
+    for i, cue in enumerate(cues):
+        if cue["end"] <= cue["start"]:
+            end = cue["start"] + MIN_MS
+            if i + 1 < len(cues):
+                end = min(end, cues[i + 1]["start"])
+            cue["end"] = max(end, cue["start"] + 1)
+    return cues
+
+
+def format_timestamp(ms: int, separator: str) -> str:
+    """HH:MM:SS,mmm for SRT (separator ","), HH:MM:SS.mmm for WebVTT (".")."""
+    hours, ms = divmod(ms, 3_600_000)
+    minutes, ms = divmod(ms, 60_000)
+    seconds, ms = divmod(ms, 1000)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}{separator}{ms:03d}"
 
 
 with open("speech.wav", "rb") as f:
     result = client.asr.transcribe(audio=f.read(), include_timestamps=True)
 
+cues = group_cues(result.segments)
+
 # SRT: 1-based index, comma decimal separator, blank line between cues.
 with open("captions.srt", "w", encoding="utf-8") as srt:
-    for i, segment in enumerate(result.segments, start=1):
-        start = to_srt_timestamp(segment.start)
-        end = to_srt_timestamp(segment.end)
-        srt.write(f"{i}\n{start} --> {end}\n{segment.text.strip()}\n\n")
+    for i, cue in enumerate(cues, start=1):
+        start = format_timestamp(cue["start"], ",")
+        end = format_timestamp(cue["end"], ",")
+        srt.write(f"{i}\n{start} --> {end}\n{cue['text']}\n\n")
 
 # WebVTT: same cues, "WEBVTT" header, dot decimal separator.
 with open("captions.vtt", "w", encoding="utf-8") as vtt:
     vtt.write("WEBVTT\n\n")
-    for segment in result.segments:
-        start = to_srt_timestamp(segment.start).replace(",", ".")
-        end = to_srt_timestamp(segment.end).replace(",", ".")
-        vtt.write(f"{start} --> {end}\n{segment.text.strip()}\n\n")
+    for cue in cues:
+        start = format_timestamp(cue["start"], ".")
+        end = format_timestamp(cue["end"], ".")
+        vtt.write(f"{start} --> {end}\n{cue['text']}\n\n")
 
-print(f"Wrote {len(result.segments)} cues to captions.srt and captions.vtt")
+print(f"Wrote {len(cues)} cues to captions.srt and captions.vtt")
 ```
 
 ```javascript JavaScript
@@ -57,46 +108,103 @@ import { readFile, writeFile } from "fs/promises";
 
 const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 
-// Format a time in seconds as an SRT timestamp: HH:MM:SS,mmm.
-function toSrtTimestamp(seconds) {
-  let millis = Math.round(seconds * 1000);
-  const hours = Math.floor(millis / 3_600_000);
-  millis -= hours * 3_600_000;
-  const minutes = Math.floor(millis / 60_000);
-  millis -= minutes * 60_000;
-  const secs = Math.floor(millis / 1000);
-  millis -= secs * 1000;
+const MAX_CHARS = 42; // longest cue text, in characters
+const MAX_MS = 6000; // longest cue, in milliseconds
+const MAX_GAP_MS = 600; // a longer pause between words starts a new cue
+const MIN_MS = 500; // display time for a cue whose words have no duration
+
+// Chinese and Japanese are written without spaces between words.
+const NO_SPACE = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/;
+
+function joinWords(left, right) {
+  if (NO_SPACE.test(left.at(-1)) && NO_SPACE.test(right[0])) {
+    return left + right;
+  }
+  return `${left} ${right}`;
+}
+
+// Group word-level segments into cues, with start and end in milliseconds.
+function groupCues(segments) {
+  const cues = [];
+  for (const segment of segments) {
+    const word = segment.text.trim();
+    if (!word) continue;
+    const start = Math.round(segment.start * 1000);
+    const end = Math.round(segment.end * 1000);
+    const cue = cues.at(-1);
+    if (cue) {
+      const text = joinWords(cue.text, word);
+      if (
+        start - cue.end <= MAX_GAP_MS &&
+        text.length <= MAX_CHARS &&
+        end - cue.start <= MAX_MS
+      ) {
+        cue.text = text;
+        cue.end = Math.max(cue.end, end);
+        continue;
+      }
+    }
+    cues.push({ start, end, text: word });
+  }
+
+  // A segment can have start == end. Give a cue with no duration a short one,
+  // ending no later than the next cue starts, so every cue ends after it starts.
+  cues.forEach((cue, i) => {
+    if (cue.end <= cue.start) {
+      let end = cue.start + MIN_MS;
+      if (i + 1 < cues.length) end = Math.min(end, cues[i + 1].start);
+      cue.end = Math.max(end, cue.start + 1);
+    }
+  });
+  return cues;
+}
+
+// HH:MM:SS,mmm for SRT (separator ","), HH:MM:SS.mmm for WebVTT (".").
+function formatTimestamp(ms, separator) {
   const pad = (n, width) => String(n).padStart(width, "0");
-  return `${pad(hours, 2)}:${pad(minutes, 2)}:${pad(secs, 2)},${pad(millis, 3)}`;
+  const hours = Math.floor(ms / 3_600_000);
+  const minutes = Math.floor((ms % 3_600_000) / 60_000);
+  const seconds = Math.floor((ms % 60_000) / 1000);
+  const millis = ms % 1000;
+  return `${pad(hours, 2)}:${pad(minutes, 2)}:${pad(seconds, 2)}${separator}${pad(millis, 3)}`;
 }
 
 const result = await client.speechToText.convert({
   audio: new File([await readFile("speech.wav")], "speech.wav"),
-  language: "en",
   ignore_timestamps: false,
 });
 
-// SRT: 1-based index, comma decimal separator, blank line between cues.
-const cues = result.segments.map((segment, i) => {
-  const start = toSrtTimestamp(segment.start);
-  const end = toSrtTimestamp(segment.end);
-  return `${i + 1}\n${start} --> ${end}\n${segment.text.trim()}\n`;
-});
-await writeFile("captions.srt", cues.join("\n"), "utf-8");
+const cues = groupCues(result.segments);
+const timing = (cue, separator) =>
+  `${formatTimestamp(cue.start, separator)} --> ${formatTimestamp(cue.end, separator)}`;
 
-console.log(`Wrote ${result.segments.length} cues to captions.srt`);
+// SRT: 1-based index, comma decimal separator, blank line between cues.
+const srt = cues.map(
+  (cue, i) => `${i + 1}\n${timing(cue, ",")}\n${cue.text}\n\n`
+);
+await writeFile("captions.srt", srt.join(""), "utf-8");
+
+// WebVTT: same cues, "WEBVTT" header, dot decimal separator.
+const vtt = cues.map(cue => `${timing(cue, ".")}\n${cue.text}\n\n`);
+await writeFile("captions.vtt", "WEBVTT\n\n" + vtt.join(""), "utf-8");
+
+console.log(`Wrote ${cues.length} cues to captions.srt and captions.vtt`);
 ```
+
 </CodeGroup>
 
-Both files share one timestamp helper; WebVTT just swaps `,` for `.`.
+Both tabs send the same request and write the same `captions.srt` and `captions.vtt`. Tune `MAX_CHARS`, `MAX_MS`, and `MAX_GAP_MS` for your player and audience. `segments` is empty when no speech was found or word timing was temporarily unavailable, and the files then contain no cues, so check the cue count before you publish them.
 
 <Tip>
-  Pass `language=` (for example `"en"` or `"zh"`) when you know it. Explicit
-  language selection sharpens segment boundaries, which keeps your cue timing
-  tight.
+  Captions built from `segments` have no punctuation. With `transcribe-1-pro`
+  and timestamps on, the response also includes `speaker_turns`, with each
+  turn's punctuated text and its start and end time. To keep speakers in
+  separate cues, start a new cue at each turn boundary. The Python SDK does not
+  return `speaker_turns`; to read it from the API, see [Speaker
+  turns](/features/speech-to-text#speaker-turns).
 </Tip>
 
 ## Related
 
 - [Speech-to-Text guide](/features/speech-to-text)
-- [ASR Types Reference](/api-reference/sdk/python/types#asr)
+- [ASR Types Reference](/api-reference/sdk/python/types#fishaudio.types.asr)
