@@ -125,8 +125,10 @@ If the handoff is refused (the destination is unreachable, or the number doesn't
   </Step>
   <Step title="The platform dials your human agent">
     A separate, private consult call rings the destination for up to 30 seconds.
-    It presents the number the caller originally dialed as caller ID, so your
-    team sees a number they recognize.
+    By default it presents the number the caller dialed as caller ID, so your
+    team sees a number they recognize. A purchased number can present the
+    caller's own number instead, see [Caller ID on
+    transfers](#caller-id-on-transfers).
   </Step>
   <Step title="The agent briefs the human">
     The agent greets the human, reads out the caller's number digit by digit
@@ -181,6 +183,42 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   }'
 ```
 </CodeGroup>
+
+## Caller ID on transfers
+
+Whoever answers a transfer sees one of two numbers as caller ID: the number the caller dialed (the default), or the caller's own number. Showing the caller's number lets your team see who is calling before they pick up, and call them back later.
+
+The choice is a setting on the phone number, not on a destination. It covers every destination of the agent bound to the number, for cold and warm transfers alike, and only [purchased numbers](/agents/telephony/phone-numbers) have it.
+
+- **Warm transfers** follow a change from the next call. When the caller withholds their number, or the carrier refuses it on the consult call, the consult call presents the number the caller dialed instead.
+- **Cold transfers** follow it once the carrier has applied it, which the number reports as `caller_id_sync_status: "synced"`.
+
+### In the console
+
+On the agent's **Phone** page, the **Call transfer** section has a caller ID switch that sets every purchased number bound to the agent at once. To set a single number, open its menu on the **Phone numbers** page and choose **Transfer caller ID**. Team owners and admins can change it, and it applies to new calls without publishing the agent.
+
+### Through the API
+
+Set `cold_transfer_use_original_caller` on the number. Despite the name, it covers warm transfers too.
+
+```bash Request
+curl --request PATCH https://api.fish.audio/v1/agent/phone-numbers/$PHONE_NUMBER_ID \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "cold_transfer_use_original_caller": true }'
+```
+
+The response is the updated number object, with these fields:
+
+| Field                                         | Description                                                                                                                   |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `cold_transfer_use_original_caller`           | `true` shows the caller's own number, `false` shows the number the caller dialed.                                             |
+| `cold_transfer_use_original_caller_effective` | The setting the carrier has confirmed for cold transfers. `null` while unknown.                                               |
+| `caller_id_sync_status`                       | `synced` once the carrier has applied the setting, `pending` while it is being applied, `error` when the last attempt failed. |
+
+When the status is `error`, send `{ "retry_caller_id_sync": true }` to apply the setting again. A number that is not `active` yet returns `409 Conflict`.
+
+[Imported SIP numbers](/agents/telephony/byo-sip#caller-id-on-transfers) don't take this setting: the API returns `409 Conflict` and `caller_id_sync_status` reads `carrier_managed`.
 
 ## Limitations
 
