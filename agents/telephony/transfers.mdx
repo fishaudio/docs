@@ -23,7 +23,7 @@ Two modes decide what the handoff feels like:
 
 ### In the console
 
-On the agent's **Phone** page, under **Inbound calls**, turn on **Call transfer**. Give the destination a name, enter its phone number, describe when the agent should transfer there, and pick the transfer mode. Choosing **Warm** adds a handoff choice (ask the human to accept first, or connect immediately after the briefing). **Add destination** adds another card; with more than one, every destination needs a distinct name. Like every config edit, the change lands in the agent's draft and takes effect on live calls after you [publish](/agents/deploy/versions-publishing).
+On the agent's **Phone** page, under **Inbound calls**, turn on **Call transfer**. Give the destination a name, enter its phone number, describe when the agent should transfer there, choose its [announcement](#the-transfer-announcement), and pick the transfer mode. Choosing **Warm** adds a handoff choice (ask the human to accept first, or connect immediately after the briefing). **Add destination** adds another card; with more than one, every destination needs a distinct name. Like every config edit, the change lands in the agent's draft and takes effect on live calls after you [publish](/agents/deploy/versions-publishing).
 
 ### Through the API
 
@@ -82,14 +82,16 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 
 </CodeGroup>
 
-| Field          | Description                                                                                                                                                                         |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `type`         | Destination type; `phone` is the only value today and the default.                                                                                                                  |
-| `label`        | Name for the destination, shown in the Builder and used by the agent to pick one. At most 64 characters. Required, and unique (case-insensitive), once there is more than one entry. |
-| `description`  | When to transfer here, in plain language ("Invoices, payments, account balance"). The agent reads it when choosing between destinations. At most 500 characters.                     |
-| `phone_number` | The destination in E.164 format, for example `+14155550123`.                                                                                                                        |
-| `mode`         | `cold` (default) or `warm`; see the comparison above.                                                                                                                               |
-| `warm_connect` | Warm only: `confirm` (default) waits for the human's go-ahead before connecting; `direct` connects right after the briefing.                                                        |
+| Field                        | Description                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`                       | Destination type; `phone` is the only value today and the default.                                                                                                                                                                                                                                                                                      |
+| `label`                      | Name for the destination, shown in the Builder and used by the agent to pick one. At most 64 characters. Required, and unique (case-insensitive), once there is more than one entry.                                                                                                                                                                    |
+| `description`                | When to transfer here, in plain language ("Invoices, payments, account balance"). The agent reads it when choosing between destinations. At most 500 characters.                                                                                                                                                                                        |
+| `phone_number`               | The destination in E.164 format, for example `+14155550123`.                                                                                                                                                                                                                                                                                            |
+| `mode`                       | `cold` (default) or `warm`; see the comparison above.                                                                                                                                                                                                                                                                                                   |
+| `warm_connect`               | Warm only: `confirm` (default) waits for the human's go-ahead before connecting; `direct` connects right after the briefing.                                                                                                                                                                                                                            |
+| `announcement_mode`          | The sentence the agent says right before transferring, cold or warm: `generated` (default) words it itself, `fixed` says `announcement_message`, `off` adds none. See [The transfer announcement](#the-transfer-announcement).                                                                                                                          |
+| `announcement_message`       | The line `fixed` says, at most 500 characters. [Dynamic variables](/agents/build/dynamic-variables) are filled in per call. It is kept when you switch modes, and an empty message falls back to `generated`.                                                                                                                                           |
 | `warm_briefing_instructions` | Warm only: what the agent says to your team member before asking them to take the call, replacing the default introduction. Notes from the conversation are always added after it, and [dynamic variables](/agents/build/dynamic-variables) are filled in per call. At most 1000 characters. See [Customizing the briefing](#customizing-the-briefing). |
 
 Destination numbers must be E.164 and are limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list. A missing label, or two labels that differ only in case, is rejected the same way. There is no cap on the number of destinations, but every description is part of the agent's tool instructions on every turn, so keep the list to what a receptionist could hold in their head.
@@ -109,9 +111,27 @@ With several destinations, the tool gains a `destination` argument listing every
   how the agent chooses between its tools.
 </Tip>
 
+## The transfer announcement
+
+Right before a call is transferred, the agent says one short sentence so the caller knows what is happening, for example "One moment, I'm connecting you to billing." The **Transfer announcement** setting on each destination chooses where that sentence comes from.
+
+| Option                               | What the agent says before transferring                                                                                                      | Use it when                                                        |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| **Generated** (`generated`, default) | A short sentence in its own words, in the caller's language. If your system prompt says what to say when transferring, it says that instead. | You want a natural line, or your system prompt already scripts it. |
+| **Fixed message** (`fixed`)          | The text in `announcement_message`, word for word.                                                                                           | Every caller should hear the same line.                            |
+| **Off** (`off`)                      | No extra sentence. The transfer starts as soon as the agent finishes its current reply.                                                      | You don't want transfers announced.                                |
+
+These apply to every option:
+
+- The sentence is said only once. If the agent already spoke in the same reply as the transfer, nothing is added. For example, if your system prompt has the agent say "Thanks, connecting you now." itself, the caller hears that line and the fixed message is skipped. With **Fixed message** or **Off**, remove any instruction in your system prompt about what to say when transferring.
+- The caller cannot interrupt the sentence.
+- Once the transfer starts, the caller can no longer answer, so the agent asks its questions before transferring. Don't put a question in a fixed message either.
+
+In the console, the control sits on each destination card, above the transfer mode. **Fixed message** shows a field for the line.
+
 ## What happens on a cold transfer
 
-The agent says its handoff line and, once that finishes playing, the call is handed to the carrier. By default the line is one short sentence telling the caller they are being transferred; the system prompt can script it ("Say: One moment, connecting you to billing.") or drop it ("Transfer silently, without announcing it."). The caller hears a dial tone while the destination rings; the agent drops out and its session ends at the handoff.
+The agent says its [announcement](#the-transfer-announcement) and, once that finishes playing, the call is handed to the carrier. The caller hears a dial tone while the destination rings; the agent drops out and its session ends at the handoff.
 
 If the handoff is refused (the destination is unreachable, or the number doesn't support transfers), the agent stays on the line, apologizes, and keeps helping. It can attempt the transfer again later.
 
@@ -119,9 +139,9 @@ If the handoff is refused (the destination is unreachable, or the number doesn't
 
 <Steps>
   <Step title="The caller goes on hold">
-    The agent asks the caller to hold for a moment, in the session's language,
-    and hold music starts. As with a cold transfer, the system prompt can
-    script this line or ask for silence; hold music starts either way.
+    The agent says its [announcement](#the-transfer-announcement), then hold
+    music starts. With `off`, hold music starts as soon as the agent finishes
+    its current reply.
   </Step>
   <Step title="The platform dials your human agent">
     A separate, private consult call rings the destination for up to 30 seconds.
