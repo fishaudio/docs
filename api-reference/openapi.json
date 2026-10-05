@@ -1605,6 +1605,18 @@
                       "title": "Metadata",
                       "type": "object"
                     },
+                    "content_purged_at": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Content Purged At"
+                    },
                     "unattributed_llm_usage": {
                       "items": {
                         "$ref": "#/components/schemas/LLMMessageUsage"
@@ -1952,6 +1964,43 @@
           },
           "404": {
             "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "URI no longer exists and has been permanently removed",
             "headers": {},
             "content": {
               "application/json": {
@@ -18163,6 +18212,18 @@
             },
             "title": "Metadata",
             "type": "object"
+          },
+          "content_purged_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Content Purged At"
           }
         },
         "required": [
@@ -19364,6 +19425,16 @@
             "title": "Warm Briefing Instructions",
             "type": "string"
           },
+          "warm_ring_timeout_seconds": {
+            "default": 30,
+            "title": "Warm Ring Timeout Seconds",
+            "type": "integer"
+          },
+          "warm_confirm_timeout_seconds": {
+            "default": 60,
+            "title": "Warm Confirm Timeout Seconds",
+            "type": "integer"
+          },
           "on_failure": {
             "$ref": "#/components/schemas/AgentTransferOnFailurePatch"
           }
@@ -20386,6 +20457,22 @@
             ],
             "default": null,
             "title": "Speed"
+          },
+          "pronunciation_dictionary_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 3,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pronunciation Dictionary Ids"
           }
         },
         "title": "PublicAgentVoicePatch",
@@ -20509,6 +20596,36 @@
             ],
             "default": null,
             "title": "Hang Up Call"
+          },
+          "hang_up_call_farewell_mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "generated",
+                  "fixed",
+                  "off"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Hang Up Call Farewell Mode"
+          },
+          "hang_up_call_farewell_message": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Hang Up Call Farewell Message"
           }
         },
         "title": "PublicSystemToolsPatch",
@@ -21092,6 +21209,21 @@
             "default": false,
             "title": "Hang Up Call",
             "type": "boolean"
+          },
+          "hang_up_call_farewell_mode": {
+            "default": "generated",
+            "enum": [
+              "generated",
+              "fixed",
+              "off"
+            ],
+            "title": "Hang Up Call Farewell Mode",
+            "type": "string"
+          },
+          "hang_up_call_farewell_message": {
+            "default": "",
+            "title": "Hang Up Call Farewell Message",
+            "type": "string"
           }
         },
         "title": "AgentSystemToolsConfig",
@@ -21165,6 +21297,16 @@
             "default": "",
             "title": "Warm Briefing Instructions",
             "type": "string"
+          },
+          "warm_ring_timeout_seconds": {
+            "default": 30,
+            "title": "Warm Ring Timeout Seconds",
+            "type": "integer"
+          },
+          "warm_confirm_timeout_seconds": {
+            "default": 60,
+            "title": "Warm Confirm Timeout Seconds",
+            "type": "integer"
           },
           "on_failure": {
             "$ref": "#/components/schemas/AgentTransferOnFailure"
@@ -21271,6 +21413,13 @@
             "minimum": 0.5,
             "title": "Speed",
             "type": "number"
+          },
+          "pronunciation_dictionary_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Pronunciation Dictionary Ids",
+            "type": "array"
           }
         },
         "title": "AgentVoiceConfigView",
@@ -24234,7 +24383,7 @@
               }
             ],
             "default": null,
-            "description": "Custom SIP headers for this call's INVITE, imported SIP numbers only. X- names or User-to-User, printable ASCII values, merged over the number's termination_headers.",
+            "description": "Custom SIP headers for this call's INVITE, imported SIP numbers only. Same rules as the number's termination_headers, and merged over them.",
             "title": "Sip Headers"
           }
         },
