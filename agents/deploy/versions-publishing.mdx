@@ -43,6 +43,8 @@ Every agent has one **draft** and a linear history of **published versions**. Ed
   session creation returns `409` until the first publish.
 </Note>
 
+Phone number settings are not part of the agent, so they are not versioned. Which agent a number is bound to, its [transfer caller ID](/agents/telephony/transfers#caller-id-on-transfers), and an [imported number's SIP configuration](/agents/telephony/byo-sip#update-the-configuration) live on the number. Changes to them apply from the next call without publishing, and publishing or rolling back the agent never changes them.
+
 ## Publish from the Builder
 
 <Steps>
@@ -138,7 +140,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   --data '{ "prompt": { "system_prompt": "<system prompt from the snapshot>" } }'
 ```
 
-Patching updates the draft. It does **not** publish. Review or [preview](/agents/test/preview-calls) the restored draft, then publish it as a new version; the rollback becomes part of the linear history, so the audit trail stays intact. Because snapshots never echo secrets (see above), credential fields keep their current draft values unless you set them again explicitly.
+Patching updates the draft. It does **not** publish. Review or [preview](/agents/test/preview-calls) the restored draft, then publish it as a new version; the rollback becomes part of the linear history, so the audit trail stays intact. Because snapshots never echo secrets (see above), credential fields keep their current draft values unless you set them again explicitly. Phone number settings, such as the transfer caller ID, stay as they are.
 
 ## Clone an agent
 

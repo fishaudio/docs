@@ -214,7 +214,9 @@ curl --request PATCH https://api.fish.audio/v1/agent/phone-numbers/$PHONE_NUMBER
   --data '{ "transfer_caller_id": "original_caller" }'
 ```
 
-The response is the updated number, with `caller_id_sync_status` normally `synced`. If it reads `pending` or `error`, the change has not reached the phone carrier yet and cold transfers still use the previous choice. Send `{ "retry_caller_id_sync": true }` to try again.
+The caller ID is a setting on the number, not part of the agent, so it needs no publish and rolling back the agent leaves it as it is. Warm transfers use a new choice from the next call.
+
+The response is the updated number, with `caller_id_sync_status` normally `synced`, which means cold transfers use the new choice too. If it reads `pending` or `error`, the change has not reached the phone carrier yet and cold transfers still use the previous choice. Send `{ "retry_caller_id_sync": true }` to try again.
 
 The older boolean `cold_transfer_use_original_caller` still works, but it is deprecated. Use `transfer_caller_id` instead.
 
