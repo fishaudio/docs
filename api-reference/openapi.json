@@ -13023,7 +13023,7 @@
       },
       "patch": {
         "summary": "Update Phone Number",
-        "description": "Change the label and/or repoint the number at another agent — the\ndeployment-pipeline move (rebind from the staging agent to the production\none). Send `agent_id: null` to unbind; unbound numbers ring busy. The\nagent must live in the number's workspace. Rebinding is a routing-table\nupdate resolved on the next inbound call; nothing about the number itself\nis reprovisioned.\n\nManaged `twilio` numbers also accept `transfer_caller_id`, which picks\nthe number a transfer target sees (cold and warm alike), and\n`retry_caller_id_sync` to re-apply it after a failed synchronization. Read\n`caller_id_sync_status` on the response. Imported `sip` numbers return 409\nfor either field because their carrier owns the setting.",
+        "description": "Change the label and/or repoint the number at another agent — the\ndeployment-pipeline move (rebind from the staging agent to the production\none). Send `agent_id: null` to unbind; unbound numbers ring busy. The\nagent must live in the number's workspace. Rebinding is a routing-table\nupdate resolved on the next inbound call; nothing about the number itself\nis reprovisioned.\n\nManaged `twilio` numbers also accept `transfer_caller_id`, which picks\nthe number a transfer target sees (cold and warm alike), and\n`retry_caller_id_sync` to re-apply it after a failed synchronization. Read\n`caller_id_sync_status` on the response. Imported `sip` numbers return 409\nfor either field because their carrier owns the setting.\n\nEvery field here is a number setting, not agent config: changes apply\nfrom the next call without publishing, and publishing or rolling back the\nagent never changes them. Cold-transfer caller ID applies once\n`caller_id_sync_status` is `synced`.",
         "security": [
           {
             "BearerAuth": []
@@ -19494,6 +19494,21 @@
           },
           "on_failure": {
             "$ref": "#/components/schemas/AgentTransferOnFailurePatch"
+          },
+          "announcement_mode": {
+            "default": "generated",
+            "enum": [
+              "generated",
+              "fixed",
+              "off"
+            ],
+            "title": "Announcement Mode",
+            "type": "string"
+          },
+          "announcement_message": {
+            "default": "",
+            "title": "Announcement Message",
+            "type": "string"
           }
         },
         "title": "AgentTransferDestinationPatch",
@@ -21367,6 +21382,21 @@
           },
           "on_failure": {
             "$ref": "#/components/schemas/AgentTransferOnFailure"
+          },
+          "announcement_mode": {
+            "default": "generated",
+            "enum": [
+              "generated",
+              "fixed",
+              "off"
+            ],
+            "title": "Announcement Mode",
+            "type": "string"
+          },
+          "announcement_message": {
+            "default": "",
+            "title": "Announcement Message",
+            "type": "string"
           }
         },
         "title": "AgentTransferDestination",
@@ -24321,7 +24351,7 @@
               }
             ],
             "default": null,
-            "description": "Managed `twilio` numbers only: the caller ID a transfer target sees, `agent_number` (this number) or `original_caller` (the caller's own number). Applies to cold and warm transfers. The deprecated boolean `cold_transfer_use_original_caller` is still accepted in its place.",
+            "description": "Managed `twilio` numbers only: the caller ID a transfer target sees, `agent_number` (this number) or `original_caller` (the caller's own number). Applies to cold and warm transfers. It is a number setting, not agent config: no publish is needed and agent rollbacks leave it alone. Warm transfers follow it from the next call, cold transfers once `caller_id_sync_status` is `synced`. The deprecated boolean `cold_transfer_use_original_caller` is still accepted in its place.",
             "title": "Transfer Caller Id"
           },
           "retry_caller_id_sync": {
