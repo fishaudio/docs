@@ -194,10 +194,7 @@ When the agent transfers a call, your team member's phone shows a caller ID. You
 
 The choice is set on each phone number, and applies to every transfer on that number, cold and warm. It is available on numbers you bought on Fish Audio. For imported numbers, see [Imported SIP numbers](/agents/telephony/byo-sip#caller-id-on-transfers).
 
-A few details:
-
-- If the caller hides their number, a warm transfer shows the agent's number instead.
-- Warm transfers use a new choice from the next call. Cold transfers may take a little longer, because the change first has to reach the phone carrier.
+If the caller hides their number, a warm transfer shows the agent's number instead.
 
 ### In the console
 
@@ -217,11 +214,7 @@ curl --request PATCH https://api.fish.audio/v1/agent/phone-numbers/$PHONE_NUMBER
   --data '{ "cold_transfer_use_original_caller": true }'
 ```
 
-The response is the updated number. Its `caller_id_sync_status` tells you whether the change is done:
-
-- `synced`: done.
-- `pending`: still being applied.
-- `error`: it failed. Send `{ "retry_caller_id_sync": true }` to try again.
+The response is the updated number, with `caller_id_sync_status` normally `synced`. If it reads `pending` or `error`, the change has not reached the phone carrier yet and cold transfers still use the previous choice. Send `{ "retry_caller_id_sync": true }` to try again.
 
 ## Limitations
 
