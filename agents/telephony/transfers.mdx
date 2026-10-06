@@ -125,8 +125,9 @@ If the handoff is refused (the destination is unreachable, or the number doesn't
   </Step>
   <Step title="The platform dials your human agent">
     A separate, private consult call rings the destination for up to 30 seconds.
-    It presents the number the caller originally dialed as caller ID, so your
-    team sees a number they recognize.
+    By default your team sees your agent's phone number as caller ID. You can
+    show the caller's own number instead, see [Caller ID on
+    transfers](#caller-id-on-transfers).
   </Step>
   <Step title="The agent briefs the human">
     The agent greets the human, reads out the caller's number digit by digit
@@ -181,6 +182,39 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   }'
 ```
 </CodeGroup>
+
+## Caller ID on transfers
+
+When the agent transfers a call, your team member's phone shows a caller ID. You choose which number it shows:
+
+| Option                       | Your team sees                                          | Good for                                             |
+| ---------------------------- | ------------------------------------------------------- | ---------------------------------------------------- |
+| **Agent's number** (default) | The number the caller dialed, such as your support line | Recognizing that the call comes from the agent       |
+| **Caller's number**          | The caller's own phone number                           | Seeing who is calling before answering, calling back |
+
+The choice is set on each phone number, and applies to every transfer on that number, cold and warm. It is available on numbers you bought on Fish Audio. For imported numbers, see [Imported SIP numbers](/agents/telephony/byo-sip#caller-id-on-transfers).
+
+If the caller hides their number, a warm transfer shows the agent's number instead.
+
+### In the console
+
+- **For all numbers of an agent**: open the agent's **Phone** page and use the caller ID switch in the **Call transfer** section.
+- **For one number**: on the **Phone numbers** page, open the number's menu and choose **Transfer caller ID**.
+
+Only team owners and admins can change it. You don't need to publish the agent.
+
+### Through the API
+
+Set `cold_transfer_use_original_caller` on the number: `true` shows the caller's number, `false` shows the agent's number. The name says "cold", but it applies to warm transfers too.
+
+```bash Request
+curl --request PATCH https://api.fish.audio/v1/agent/phone-numbers/$PHONE_NUMBER_ID \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "cold_transfer_use_original_caller": true }'
+```
+
+The response is the updated number, with `caller_id_sync_status` normally `synced`. If it reads `pending` or `error`, the change has not reached the phone carrier yet and cold transfers still use the previous choice. Send `{ "retry_caller_id_sync": true }` to try again.
 
 ## Limitations
 

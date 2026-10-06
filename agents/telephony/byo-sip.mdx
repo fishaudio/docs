@@ -124,7 +124,10 @@ Set both when your carrier supports it.
     For [cold transfers](/agents/telephony/transfers), enable **Call Transfer
     (SIP REFER)** in the trunk's settings and also allow transfers to the PSTN.
     If transfers are limited to SIP destinations, Twilio rejects every transfer
-    to a phone number, so transfers to phone numbers won't work.
+    to a phone number, so transfers to phone numbers won't work. To choose the
+    caller ID your team sees on a cold transfer, set **Caller ID for Transfer
+    Target**: **Transferee** shows the caller's number, **Transferor** shows
+    your imported number.
   </Step>
 </Steps>
 
@@ -146,6 +149,13 @@ What an imported number can do depends on whether you configured a termination:
 | **Outbound calls** | No                                      | Yes; caller ID is the imported number         |
 
 The number object reports this as `supports_outbound`. Place calls with the same API as purchased numbers; see [Outbound calls](/agents/telephony/outbound-calls).
+
+### Caller ID on transfers
+
+Imported numbers don't have the [caller ID choice](/agents/telephony/transfers#caller-id-on-transfers) that bought numbers have. Instead:
+
+- **Cold transfers** show whatever your carrier sends. On Twilio, you set this on the trunk with **Caller ID for Transfer Target** (see the [Twilio steps](#twilio-elastic-sip-trunking) above).
+- **Warm transfers** always show your imported number.
 
 ### Custom SIP headers
 
