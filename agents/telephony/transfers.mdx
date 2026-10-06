@@ -198,23 +198,27 @@ If the caller hides their number, a warm transfer shows the agent's number inste
 
 ### In the console
 
-- **For all numbers of an agent**: open the agent's **Phone** page and use the caller ID switch in the **Call transfer** section.
+- **For all numbers of an agent**: open the agent's **Phone** page and use the **Show the caller's number on transfers** switch in the **Call transfer** section.
 - **For one number**: on the **Phone numbers** page, open the number's menu and choose **Transfer caller ID**.
 
 Only team owners and admins can change it. You don't need to publish the agent.
 
 ### Through the API
 
-Set `cold_transfer_use_original_caller` on the number: `true` shows the caller's number, `false` shows the agent's number. The name says "cold", but it applies to warm transfers too.
+Set `transfer_caller_id` on the number: `original_caller` shows the caller's number, `agent_number` shows the agent's number.
 
 ```bash Request
 curl --request PATCH https://api.fish.audio/v1/agent/phone-numbers/$PHONE_NUMBER_ID \
   --header "Authorization: Bearer $FISH_API_KEY" \
   --header "Content-Type: application/json" \
-  --data '{ "cold_transfer_use_original_caller": true }'
+  --data '{ "transfer_caller_id": "original_caller" }'
 ```
 
-The response is the updated number, with `caller_id_sync_status` normally `synced`. If it reads `pending` or `error`, the change has not reached the phone carrier yet and cold transfers still use the previous choice. Send `{ "retry_caller_id_sync": true }` to try again.
+The caller ID is a setting on the number, not part of the agent, so it needs no publish and rolling back the agent leaves it as it is. Warm transfers use a new choice from the next call.
+
+The response is the updated number, with `caller_id_sync_status` normally `synced`, which means cold transfers use the new choice too. If it reads `pending` or `error`, the change has not reached the phone carrier yet and cold transfers still use the previous choice. Send `{ "retry_caller_id_sync": true }` to try again.
+
+The older boolean `cold_transfer_use_original_caller` still works, but it is deprecated. Use `transfer_caller_id` instead.
 
 ## Limitations
 
