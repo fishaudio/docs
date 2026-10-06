@@ -127,7 +127,55 @@ These apply to every option:
 - The caller cannot interrupt the sentence.
 - Once the transfer starts, the caller can no longer answer, so the agent asks its questions before transferring. Don't put a question in a fixed message either.
 
-In the console, the control sits on each destination card, above the transfer mode. **Fixed message** shows a field for the line.
+### In the console
+
+On each destination card, the **Transfer announcement** control sits above the transfer mode. Choosing **Fixed message** shows a field for the line.
+
+### Through the API
+
+Set `announcement_mode` on the destination, plus `announcement_message` for `fixed`. The message can use [dynamic variables](/agents/build/dynamic-variables), filled in when the session starts. Since the destination list is replaced as a whole on every write, send every destination you want to keep, not just the one you are changing.
+
+<CodeGroup>
+```bash Fixed message
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "conversation": {
+      "transfer_destinations": [
+        {
+          "label": "Billing",
+          "phone_number": "+14155550100",
+          "mode": "cold",
+          "announcement_mode": "fixed",
+          "announcement_message": "Thanks for waiting. I am connecting you to our billing team now."
+        }
+      ]
+    }
+  }'
+```
+
+```bash Off
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "conversation": {
+      "transfer_destinations": [
+        {
+          "label": "Billing",
+          "phone_number": "+14155550100",
+          "mode": "cold",
+          "announcement_mode": "off"
+        }
+      ]
+    }
+  }'
+```
+
+</CodeGroup>
+
+To return to the default, set `announcement_mode` to `generated` or leave it out. As with every config edit, the change takes effect on live calls after you [publish](/agents/deploy/versions-publishing).
 
 ## What happens on a cold transfer
 
