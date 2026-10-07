@@ -345,7 +345,7 @@ The platform sends one `POST` with a JSON body:
 
 ### Response
 
-Respond with a `2xx` status and a JSON object whose `dynamic_variables` follow the same rules as on session creation: names match `[A-Za-z][A-Za-z0-9_]*`, values are strings (up to 1,000 characters), numbers, or booleans, and at most 50 entries are read.
+Respond with a `2xx` status and a JSON object whose `dynamic_variables` follow the same rules as on session creation: names match `[A-Za-z][A-Za-z0-9_]*`, values are strings (up to 100,000 characters), numbers, or booleans, and at most 500 entries totaling 1 MiB are read.
 
 ```json Response
 {
