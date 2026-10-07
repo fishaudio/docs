@@ -125,7 +125,7 @@ These apply to every option:
 
 - The sentence is said only once. If the agent already spoke in the same reply as the transfer, nothing is added. For example, if your system prompt has the agent say "Thanks, connecting you now." itself, the caller hears that line and the fixed message is skipped. With **Fixed message** or **Off**, remove any instruction in your system prompt about what to say when transferring.
 - The caller cannot interrupt the sentence.
-- Once the transfer starts, the caller can no longer answer, so the agent asks its questions before transferring. Don't put a question in a fixed message either.
+- Once the transfer starts, the caller can no longer answer, so the agent asks its questions before transferring (see [Questions before transferring](#questions-before-transferring)). Don't put a question in a fixed message either.
 
 ### In the console
 
@@ -176,6 +176,19 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 </CodeGroup>
 
 To return to the default, set `announcement_mode` to `generated` or leave it out. As with every config edit, the change takes effect on live calls after you [publish](/agents/deploy/versions-publishing).
+
+### Questions before transferring
+
+If the agent tries to transfer while its announcement asks the caller something, for example "Before I connect you, what is your account number?", the transfer is held back. The agent asks the question in its reply, waits for the answer, and transfers after that. This applies to every announcement option, since a question means the agent has not asked it yet.
+
+This is on by default. To let the agent transfer with a question, turn off **Don't transfer on a question** on the **Call transfer** card, or set `conversation.transfer_refuse_questions` to `false`. It is one setting for the whole agent, not part of the destination list, so you can change it without resending your destinations.
+
+```bash
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "conversation": { "transfer_refuse_questions": false } }'
+```
 
 ## What happens on a cold transfer
 
