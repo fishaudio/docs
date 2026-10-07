@@ -33,7 +33,7 @@ You are a support agent for {{company}}. The caller's name is {{customer_name}}
 and they are on the {{plan}} plan. Greet them by name.
 ```
 
-Pass values as a flat object of strings, numbers, or booleans. Variable names must match `[A-Za-z][A-Za-z0-9_]*` (no hyphens or dots; the dotted `system.*` names are reserved for [system variables](#system-variables)), string values are capped at 1,000 characters, and a request can carry at most 50 variables. Violations reject session creation with `422`:
+Pass values as a flat object of strings, numbers, or booleans. Variable names must match `[A-Za-z][A-Za-z0-9_]*` (no hyphens or dots; the dotted `system.*` names are reserved for [system variables](#system-variables)), string values are capped at 100,000 characters, and a request can carry at most 500 variables totaling 1 MiB as UTF-8 JSON. Violations reject session creation with `422`:
 
 <CodeGroup>
 ```bash API (curl)
