@@ -20116,6 +20116,18 @@
             "default": null,
             "title": "Transfer Destinations"
           },
+          "transfer_refuse_questions": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Transfer Refuse Questions"
+          },
           "outbound": {
             "anyOf": [
               {
@@ -20698,6 +20710,18 @@
             ],
             "default": null,
             "title": "Hang Up Call Farewell Message"
+          },
+          "hang_up_call_refuse_questions": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Hang Up Call Refuse Questions"
           }
         },
         "title": "PublicSystemToolsPatch",
@@ -21109,6 +21133,11 @@
             "title": "Transfer Destinations",
             "type": "array"
           },
+          "transfer_refuse_questions": {
+            "default": true,
+            "title": "Transfer Refuse Questions",
+            "type": "boolean"
+          },
           "outbound": {
             "anyOf": [
               {
@@ -21296,6 +21325,11 @@
             "default": "",
             "title": "Hang Up Call Farewell Message",
             "type": "string"
+          },
+          "hang_up_call_refuse_questions": {
+            "default": false,
+            "title": "Hang Up Call Refuse Questions",
+            "type": "boolean"
           }
         },
         "title": "AgentSystemToolsConfig",
