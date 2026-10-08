@@ -45,7 +45,7 @@ from livekit.plugins.fishaudio import TTS
 
 tts = TTS(
     reference_id="your_voice_model_id",  # Optional: use a specific voice
-    model="s1",
+    model="s2.1-pro",
     sample_rate=24000,
     latency_mode="balanced"
 )
@@ -56,7 +56,7 @@ tts = TTS(
 | Parameter | Description |
 |-----------|-------------|
 | `api_key` | Your Fish Audio API key (or use `FISH_API_KEY` env var) |
-| `model` | TTS model/backend to use (default: `s1`) |
+| `model` | TTS model/backend to use (default: `s2.1-pro`) |
 | `reference_id` | Voice model ID from the [Fish Audio library](https://fish.audio/discover) |
 | `output_format` | Audio format: `pcm`, `mp3`, `wav`, or `opus` (default: `pcm`) |
 | `sample_rate` | Audio sample rate in Hz (default: `24000`) |

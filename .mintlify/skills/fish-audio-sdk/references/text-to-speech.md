@@ -21,7 +21,7 @@ audio = client.tts.convert(
 )
 
 # Pick a model and adjust speed
-audio = client.tts.convert(text="Speaking faster.", model="s1", speed=1.5)
+audio = client.tts.convert(text="Speaking faster.", model="s2-pro", speed=1.5)
 ```
 
 ### `tts.convert` parameters
@@ -37,7 +37,7 @@ All keyword-only:
 | `latency`         | `"normal" \| "balanced"`            | `"balanced"`  | `normal` = higher quality, `balanced` = faster. (No `"low"`.)    |
 | `speed`           | `float`                             | —             | Shortcut for prosody speed (0.5–2.0).                            |
 | `config`          | `TTSConfig`                         | `TTSConfig()` | Reusable bundle of the settings below.                           |
-| `model`           | `"s2-pro" \| "s1"`                  | `"s2-pro"`    | Synthesis model per current SDK typing. The API also accepts `"s2.1-pro"` / `"s2.1-pro-free"`, forwarded fine at runtime, but add `# type: ignore` for static checkers. `speech-1.5` / `speech-1.6` are deprecated. |
+| `model`           | `"s2-pro" \| "s1"`                  | `"s2-pro"`    | Synthesis model per current SDK typing. The API also accepts `"s2.1-pro"` / `"s2.1-pro-free"`, forwarded fine at runtime, but add `# type: ignore` for static checkers. `s1` is deprecated and will be retired on December 31, 2026; after that date, requests that specify `s1` are served by `s2.1-pro`. `speech-1.5` / `speech-1.6` are deprecated. |
 | `request_options` | `RequestOptions \| None`            | `None`        | Per-request timeout / headers; see [errors.md](errors.md).      |
 
 Direct params (`reference_id`, `format`, `latency`, `speed`) override the matching field on `config` when set.
@@ -78,17 +78,20 @@ Async: every method mirrors onto `AsyncFishAudio`; `await client.tts.convert(...
 
 ## JavaScript: `client.textToSpeech`
 
-`convert(request, backend?, requestOptions?)` resolves to a `ReadableStream<Uint8Array>` you can `play()` or pipe to a file. `backend` is the **second positional** argument (default `"s2-pro"`), **not** a named option.
+`convert(request, backend?, requestOptions?)` resolves to a `ReadableStream<Uint8Array>` you can `play()` or pipe to a file. `backend` is the **second positional** argument, **not** a named option. Always pass it: the npm release (`fish-audio` 0.1.0) defaults it to the deprecated `"s1"` at runtime, although its README says `"s2-pro"`.
 
 ```ts
-import { FishAudioClient, play } from "fish-audio";
+import { FishAudioClient, play, type Backends } from "fish-audio";
 import { createWriteStream } from "node:fs";
 import { Readable } from "node:stream";
 
 const client = new FishAudioClient();
 
-// default model (s2-pro)
-const audio = await client.textToSpeech.convert({ text: "Hello, world!" });
+// model only (the cast is needed: the npm 0.1.0 `Backends` type omits "s2.1-pro")
+const audio = await client.textToSpeech.convert(
+  { text: "Hello, world!" },
+  "s2.1-pro" as Backends
+);
 await play(audio);
 
 // specific voice + model
@@ -97,7 +100,7 @@ const audio2 = await client.textToSpeech.convert(
     text: "Using a saved voice.",
     reference_id: "9a9cf47702da476aa4629e2506d4a857",
   },
-  "s1" // <-- positional backend, not { backend: "s1" }
+  "s2.1-pro" as Backends // <-- positional backend, not { backend: "s2.1-pro" }
 );
 
 // pipe to a file instead of playing
@@ -111,9 +114,9 @@ await new Promise((resolve, reject) =>
 
 `TTSRequest` (the first argument) fields: `text` (required), `reference_id?`, `references?`, `format?`, `latency?`, `prosody?: { speed?; volume? }`, `temperature?`, `top_p?`, `chunk_length?`, `mp3_bitrate?`, `opus_bitrate?`, `sample_rate?`, `normalize?`, plus the advanced generation knobs (`max_new_tokens`, `repetition_penalty`, etc.). Field names are `snake_case`, matching the API.
 
-> JS `backend` accepts the full union `'s1' | 's1-mini' | 's2-pro' | 'speech-1.5' | 'speech-1.6' | 'agent-x0'`. Prefer `s2-pro` (default) or `s1`.
+> The npm 0.1.0 JS `Backends` type is `'speech-1.5' | 'speech-1.6' | 'agent-x0' | 's1' | 's1-mini'`; the API also accepts `s2-pro`, `s2.1-pro`, and `s2.1-pro-free`, so pass those with an `as Backends` cast. Prefer `s2.1-pro` for production. Do not choose `s1` or `s1-mini`.
 
 ## Model & expression notes
 
-- `s2-pro` is the default and highest quality; `s1` is the previous generation.
-- Emotion/expression is controlled inline in `text` (S1 uses `(parenthesis)` tags, S2-Pro uses free-form `[bracket]` tags); there is no separate SDK parameter. Full tag list: `https://docs.fish.audio/api-reference/emotion-reference`.
+- `s2.1-pro` is recommended for production; `s2-pro` is the Python SDK default. `s1` is the previous generation: S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro`. Migration: `https://docs.fish.audio/developer-guide/models-pricing/migrate-from-s1`.
+- Emotion/expression is controlled inline in `text` (S2-Pro uses free-form `[bracket]` tags; the deprecated S1 uses legacy `(parenthesis)` tags, and the API does not convert between them); there is no separate SDK parameter. Full tag list: `https://docs.fish.audio/api-reference/emotion-reference`.

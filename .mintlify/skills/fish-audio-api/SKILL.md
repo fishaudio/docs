@@ -47,7 +47,7 @@ Required headers:
 
 Optional headers:
 
-- `model`: values `s1`, `s2-pro`, `s2.1-pro`, `s2.1-pro-free`, `drama-3-preview`. If omitted or unrecognized, the server falls back to `s2.1-pro` (paid). Default to `s2.1-pro` for production; use `s2.1-pro-free` for free-tier evaluation and prototyping (same model, no TTFA/DPA guarantees). `drama-3-preview` is a preview model; its behavior and availability may change.
+- `model`: values `s1` (deprecated), `s2-pro`, `s2.1-pro`, `s2.1-pro-free`, `drama-3-preview`. If omitted or unrecognized, the server falls back to `s2.1-pro` (paid). Default to `s2.1-pro` for production; use `s2.1-pro-free` for free-tier evaluation and prototyping (same model, no TTFA/DPA guarantees). `drama-3-preview` is a preview model; its behavior and availability may change. Do not choose `s1` for new code: S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro`. Migration: `https://docs.fish.audio/developer-guide/models-pricing/migrate-from-s1`.
 
 Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set by `format`. Write to a file or pipe to a player. There is **no JSON wrapper** on success.
 
@@ -491,7 +491,7 @@ For low-latency / streaming TTS (e.g. LLM token stream → speech). All frames a
 ### Connection headers
 
 - `Authorization: Bearer <FISH_API_KEY>`
-- `model`: optional; values `s1`, `s2-pro`, `s2.1-pro`, `s2.1-pro-free` (falls back to `s2.1-pro` when omitted or unrecognized)
+- `model`: optional; values `s1` (deprecated, retires December 31, 2026, then served by `s2.1-pro`), `s2-pro`, `s2.1-pro`, `s2.1-pro-free` (falls back to `s2.1-pro` when omitted or unrecognized)
 
 ### Event sequence
 
@@ -607,7 +607,7 @@ ws.on("message", (buf) => {
 
 ## Emotion / expression control
 
-The S1 model uses `(parenthesis)` tags inside `text`, e.g. `(happy) What a day!`. S2-Pro uses free-form `[bracket]` natural-language tags, e.g. `[slightly sarcastic, rising tone]`. Either works through `text`; there is no separate parameter. Full list: `https://docs.fish.audio/api-reference/emotion-reference.md`.
+S2-Pro and the S2.1-Pro models use free-form `[bracket]` natural-language tags inside `text`, e.g. `[slightly sarcastic, rising tone]`; there is no separate parameter. The deprecated S1 model uses legacy `(parenthesis)` tags, e.g. `(happy) What a day!`. The API does not convert between the two, so write new code with `[bracket]` tags (S1 retires December 31, 2026). Full list: `https://docs.fish.audio/api-reference/emotion-reference.md`.
 
 ## Encoding and content-type rules
 

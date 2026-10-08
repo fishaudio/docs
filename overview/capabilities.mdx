@@ -11,7 +11,7 @@ Fish Audio is a voice AI platform. Every core feature is available three ways: i
 
 <CardGroup cols={2}>
   <Card title="Text to Speech" icon="microphone" href="/features/text-to-speech">
-    Convert text into lifelike speech with the `s2.1-pro`, `s2-pro`, and `s1` models.
+    Convert text into lifelike speech with the `s2.1-pro`, `s2-pro`, and deprecated `s1` models.
   </Card>
 
   <Card title="Speech to Text" icon="waveform" href="/features/speech-to-text">
@@ -60,7 +60,7 @@ These text-to-speech models power most capabilities:
 - **`s2.1-pro`**: the recommended production model, with improved quality, latency, and throughput over S2-Pro.
 - **`s2.1-pro-free`**: the same model at $0 for testing, prototyping, development, and smaller businesses, without TTFA or DPA guarantees.
 - **`s2-pro`**: the previous-generation S2 model, with multi-speaker and natural-language expression control.
-- **`s1`**: the previous generation, with `(parenthesis)` emotion tags.
+- **`s1`**: the previous generation, with `(parenthesis)` emotion tags. S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro`. See [Migrate from S1](/developer-guide/models-pricing/migrate-from-s1).
 
 For speech to text, select the model with the `model` header on `POST /v1/asr`:
 

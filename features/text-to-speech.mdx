@@ -5,7 +5,7 @@ description: "Turn text into lifelike speech"
 icon: "microphone"
 ---
 
-Generate natural speech from text with the `s2.1-pro`, `s2-pro`, and `s1` models, from the API directly, the Python library, or JavaScript.
+Generate natural speech from text with the `s2.1-pro`, `s2-pro`, and deprecated `s1` models, from the API directly, the Python library, or JavaScript.
 
 <CardGroup cols={3}>
   <Card title="Use it in the web app" icon="browser" href="https://fish.audio/app/text-to-speech">
@@ -65,7 +65,8 @@ import { writeFile } from "fs/promises";
 
 const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 
-// `s2-pro` is passed explicitly (the SDK default is `s1`).
+// Pass the model explicitly: the current npm release (`fish-audio` 0.1.0)
+// defaults to `s1`, which is deprecated and retires on December 31, 2026.
 const stream = await client.textToSpeech.convert(
   { text: "Hello from Fish Audio!" },
   "s2-pro",
@@ -110,7 +111,7 @@ curl --request POST https://api.fish.audio/v1/tts \
 - **`s2.1-pro`**: recommended for production, with improved quality, latency, and throughput over S2-Pro.
 - **`s2.1-pro-free`**: the same model at $0 for testing, prototyping, development, and smaller businesses, without TTFA or DPA guarantees.
 - **`s2-pro`**: previous-generation S2 model with multi-speaker and natural-language expression control.
-- **`s1`**: previous generation, `(parenthesis)` emotion tags.
+- **`s1`**: previous generation, `(parenthesis)` emotion tags. S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro`. See [Migrate from S1](/developer-guide/models-pricing/migrate-from-s1).
 
 In the API, select with the `model` request header; requests without it use `s2.1-pro`. The Python SDK always sends a model and defaults to `model="s2-pro"`. See [Choosing a Model](/developer-guide/models-pricing/choosing-a-model).
 

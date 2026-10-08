@@ -18,7 +18,7 @@ If the user wants raw `curl` / HTTP / WebSocket without installing an SDK, use t
 
 - **Auth:** both SDKs read the API key from the `FISH_API_KEY` environment variable automatically. Get keys at `https://fish.audio/app/api-keys`. Never hardcode a key.
 - **Base URL:** `https://api.fish.audio` (override with `base_url=` in Python / `baseUrl:` in JS).
-- **TTS models:** the API supports `s1`, `s2-pro`, `s2.1-pro` (recommended for production), and `s2.1-pro-free` (free tier), but the SDK type definitions currently list only `s1` and `s2-pro` (`s2-pro` = SDK default). Both SDKs forward the model value without runtime validation, so `"s2.1-pro"` works over the wire. Static type checkers will flag it, so add `# type: ignore` (Python) / an `as` cast (TS), or use the `fish-audio-api` skill for raw calls. `speech-1.5` / `speech-1.6` are **deprecated**. In Python pass `model="s2-pro"` (keyword); in JS pass the **positional** `backend` argument.
+- **TTS models:** the API supports `s1` (deprecated), `s2-pro`, `s2.1-pro` (recommended for production), and `s2.1-pro-free` (free tier). Do not choose `s1` for new code: S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro` (migration: `https://docs.fish.audio/developer-guide/models-pricing/migrate-from-s1`). However, the Python SDK types `model` as only `s1` and `s2-pro` (plus the deprecated `speech-1.x`), default `s2-pro`. The JS package on npm (`fish-audio` 0.1.0) types `backend` without `s2-pro` or `s2.1-pro` and defaults it to `"s1"` at runtime (its README says `"s2-pro"`), so in JS always pass `backend` explicitly. Both SDKs forward the model value without runtime validation, so `"s2.1-pro"` works over the wire. Static type checkers will flag it, so add `# type: ignore` (Python) / an `as` cast (TS), or use the `fish-audio-api` skill for raw calls. `speech-1.5` / `speech-1.6` are **deprecated**. In Python pass `model="s2-pro"` (keyword); in JS pass the **positional** `backend` argument.
 - **ASR models:** use `transcribe-1-pro` (recommended: speaker turns, long recordings, emotion cues). Neither SDK has an ASR `model` argument: send the `model: transcribe-1-pro` HTTP header on every request (Python `RequestOptions(additional_headers=...)`, JS `requestOptions.headers`). A request without it is served and billed as `transcribe-1`, the model for short recordings. See [references/speech-to-text.md](references/speech-to-text.md).
 - **Audio formats:** `mp3` (default), `wav`, `pcm`, `opus`.
 - **Playback in examples:** `play()` shells out to a system audio tool: Python uses **ffmpeg/ffplay** (or `mpv`), JS uses **ffplay**. It is for local/desktop use; in a server, `save()` to a file or stream the bytes instead. See [references/installation.md](references/installation.md).
@@ -63,14 +63,20 @@ const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 // convert() returns audio you can play or pipe to a file
 const audio = await client.textToSpeech.convert({
   text: "Hello from Fish Audio!",
-}); // defaults to model "s2-pro"
+}); // npm 0.1.0 defaults to the deprecated "s1"; pass a model as shown below
 await play(audio); // local playback (needs ffplay)
 ```
 
 To pick a model in JS, pass `backend` as the **positional** argument (not a named option):
 
 ```ts
-const audio = await client.textToSpeech.convert({ text: "Hi" }, "s1");
+import type { Backends } from "fish-audio";
+
+// The cast is needed because the npm 0.1.0 `Backends` type omits "s2.1-pro".
+const audio = await client.textToSpeech.convert(
+  { text: "Hi" },
+  "s2.1-pro" as Backends
+);
 ```
 
 ## Capabilities → references
