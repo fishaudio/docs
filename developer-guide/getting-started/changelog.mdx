@@ -4,6 +4,16 @@ description: "Complete release history and version updates for all Fish Audio pr
 icon: "clock-rotate-left"
 rss: true
 ---
+<Update label="Fish Audio S1 retirement" description="October 8, 2026" tags={["Fish Audio"]}>
+  ## Fish Audio S1 retirement
+
+  S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro` and billed as `s2.1-pro`, at the same price.
+
+  To migrate, switch the model ID to `s2.1-pro` and convert `(parenthesis)` emotion tags to `[bracket]` tags.
+
+  [Migrate from S1](/developer-guide/models-pricing/migrate-from-s1) | [Model deprecations](/developer-guide/models-pricing/deprecations)
+</Update>
+
 <Update label="Drama 3 Preview" description="September 23, 2026" tags={["Fish Audio"]}>
   ## Drama 3 Preview
 
@@ -41,7 +51,7 @@ rss: true
 
   S2 introduces `[bracket]` syntax for natural language control over emotion and paralinguistic cues (e.g., `[whisper]`, `[laugh]`, `[emphasis]`). Tags are treated as standard text rather than dedicated control tokens, so you are not limited to a fixed set of expressions. Built on the Qwen3-4B backbone and fully open-source.
 
-  Use model ID `s2-pro` in the API. S1 remains supported for existing integrations.
+  Use model ID `s2-pro` in the API. At launch, S1 remained supported for existing integrations; it is now deprecated and will be retired on December 31, 2026 (see [Migrate from S1](/developer-guide/models-pricing/migrate-from-s1)).
 
   [GitHub](https://github.com/fishaudio/fish-speech) | [HuggingFace](https://huggingface.co/fishaudio)
 </Update>

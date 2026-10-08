@@ -53,13 +53,17 @@ Fish Audio offers text-to-speech models for voice generation and ASR models for 
 </Card>
 
 <Note>
-We recommend using `s2.1-pro` for production projects. Use `s2.1-pro-free` when you want the same model for evaluation, prototyping, development, and smaller businesses without TTFA or DPA guarantees. S1 remains available for existing integrations.
+We recommend using `s2.1-pro` for production projects. Use `s2.1-pro-free` when you want the same model for evaluation, prototyping, development, and smaller businesses without TTFA or DPA guarantees.
 </Note>
 
-### Previous Model
+### Deprecated Model
+
+<Warning>
+S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro`. See [Migrate from S1](/developer-guide/models-pricing/migrate-from-s1).
+</Warning>
 
 <Card title="s1" icon="microchip">
-  **Fish Audio S1** - High-quality voice generation
+  **Fish Audio S1** (deprecated) - High-quality voice generation
   - 4 billion parameters
   - 0.008 WER (0.8% word error rate)
   - Full emotional control capabilities with `(parenthesis)` syntax
@@ -132,7 +136,7 @@ S2 cues can be placed anywhere in your text to control emotion at specific posit
 
 ### S1 Voice Styles and Emotions
 
-S1 supports 64+ emotional expressions using `(parenthesis)` syntax.
+S1 supports 64+ emotional expressions using `(parenthesis)` syntax. S2 does not interpret these tags, so convert them to `[bracket]` syntax when you [migrate from S1](/developer-guide/models-pricing/migrate-from-s1#convert-emotion-tags).
 
 ### Basic Emotions (24 expressions)
 ```
