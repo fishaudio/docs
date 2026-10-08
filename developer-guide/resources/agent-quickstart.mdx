@@ -134,7 +134,7 @@ Not a coding agent installing a skill, but an autonomous agent, RAG pipeline, or
   <Accordion title="Canonical API facts">
     - Base API URL: `https://api.fish.audio`
     - Authentication: `Authorization: Bearer <FISH_API_KEY>`
-    - TTS model selection: optional `model` header (`s1`, `s2-pro`, `s2.1-pro`, `s2.1-pro-free`). Recommended: `s2.1-pro` for production, `s2.1-pro-free` for the free developer tier. If omitted, the server uses `s2.1-pro`
+    - TTS model selection: optional `model` header (`s1` (deprecated), `s2-pro`, `s2.1-pro`, `s2.1-pro-free`). Recommended: `s2.1-pro` for production, `s2.1-pro-free` for the free developer tier. If omitted, the server uses `s2.1-pro`. S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro`
     - ASR model selection: `model` header on `POST /v1/asr` (`transcribe-1-pro`, `transcribe-1`). Recommended: `transcribe-1-pro` (speaker turns, long recordings, emotion cues); send it explicitly. If the header is missing or not an exact match, the request is served and billed as `transcribe-1`. The `/v1/asr` entry in `openapi.json` does not yet list the `transcribe-1-pro` fields, `request_id`, `speaker_turns`, or the error `code`; for those, follow the [Speech to Text API reference](https://docs.fish.audio/api-reference/endpoint/openapi-v1/speech-to-text.md)
     - Main REST endpoints:
       - `POST /v1/tts`

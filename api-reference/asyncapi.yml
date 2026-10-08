@@ -64,7 +64,7 @@ channels:
                 - s2-pro
                 - s2.1-pro
                 - s2.1-pro-free
-              description: TTS model to use for this session. If omitted or set to an unrecognized value, the session falls back to `s2.1-pro`. Use `s2-pro` or an S2.1-Pro model for multi-speaker dialogue synthesis.
+              description: TTS model to use for this session. If omitted or set to an unrecognized value, the session falls back to `s2.1-pro`. Use `s2-pro` or an S2.1-Pro model for multi-speaker dialogue synthesis. `s1` is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro`.
     description: |
       Real-time TTS streaming channel. Clients send text chunks and receive audio chunks concurrently.
 
@@ -102,7 +102,7 @@ channels:
                 - s2.1-pro
                 - s2.1-pro-free
                 - drama-3-preview
-              description: TTS model to use for this session. If omitted or set to an unrecognized value, the session falls back to `s2.1-pro`.
+              description: TTS model to use for this session. If omitted or set to an unrecognized value, the session falls back to `s2.1-pro`. `s1` is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro`.
     description: |
       Real-time TTS streaming channel with word-level timestamps. Clients send
       text chunks and receive audio chunks with alignment metadata concurrently.

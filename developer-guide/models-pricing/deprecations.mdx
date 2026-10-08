@@ -17,15 +17,17 @@ import { AudioTranscript } from '/snippets/audio-transcript.jsx';
 ## Available Models
 
 Currently available models:
-- **Fish Audio S2** (Recommended) - Latest generation with best performance
-- **Fish Audio S1** - Highly expressive and natural sounding
+- **Fish Audio S2** (Recommended: `s2.1-pro`) - Latest generation with best performance
 
 ## Deprecated Models
+- **s1** - S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro`. See [Migrate from S1](/developer-guide/models-pricing/migrate-from-s1).
 - **speech-1.6** - Fish Speech v1.6 has been deprecated on February, 28th, 2026
 - **speech-1.5** - Fish Speech v1.5 has been deprecated on February, 28th, 2026
 
 <Note>
-We strongly recommend using **Fish Audio S1** for all new projects to access the latest capabilities and performance improvements.
+  We recommend using **`s2.1-pro`** for all new projects. If you use `s1`,
+  follow [Migrate from S1](/developer-guide/models-pricing/migrate-from-s1)
+  before December 31, 2026.
 </Note>
 
 <Support />

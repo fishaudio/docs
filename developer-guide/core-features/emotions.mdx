@@ -32,9 +32,9 @@ import { AudioTranscript } from "/snippets/audio-transcript.jsx";
 Fish Audio models support 64+ emotional expressions and voice styles that can be controlled through text markers in your input. Add natural pauses, laughter, and other human-like elements to make speech more engaging and realistic.
 
 <Tip>
-  This page shows S2 usage with `[bracket]` cues. If you use the legacy S1 model,
-  wrap markers in parentheses instead; see [S1 (legacy) syntax](#s1-legacy-syntax)
-  below for the full list, or the [Models
+  This page shows S2 usage with `[bracket]` cues. If you use the deprecated S1
+  model, wrap markers in parentheses instead; see [S1 (legacy)
+  syntax](#s1-legacy-syntax) below for the full list, or the [Models
   Overview](/developer-guide/models-pricing/models-overview#s2-natural-language-control).
 </Tip>
 
@@ -258,6 +258,13 @@ All 13 supported languages can use emotion markers. For sentence-level control, 
 | Nervous Question | `[nervous][uncertain]`     | "Are you sure about this?"            |
 
 ## S1 (legacy) syntax
+
+<Warning>
+  S1 is deprecated and will be retired on December 31, 2026. After that date,
+  requests that specify `s1` are served by `s2.1-pro`. The API does not convert
+  `(parenthesis)` tags to `[bracket]` cues, so rewrite them in S2 syntax. See
+  [Migrate from S1](/developer-guide/models-pricing/migrate-from-s1).
+</Warning>
 
 The **S2-Pro** and **S2.1-Pro** family models use `[bracket]` cues with free-form natural language. The previous-generation **S1** model uses the same emotion names but requires `(parentheses)` and a fixed tag set:
 

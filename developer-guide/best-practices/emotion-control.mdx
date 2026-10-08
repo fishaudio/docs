@@ -15,9 +15,16 @@ import { AudioTranscript } from '/snippets/audio-transcript.jsx';
 
 Control how your AI voice expresses emotions, from happy and excited to sad and contemplative. Add natural pauses, laughter, and other human-like elements to make speech more engaging.
 
-<Tip>
-The `(parenthesis)` syntax on this page applies to the S1 model. S2 uses `[bracket]` syntax with natural language descriptions and is not limited to a fixed set of tags. See the [Models Overview](/developer-guide/models-pricing/models-overview#s2-natural-language-control) for details.
-</Tip>
+<Warning>
+  The `(parenthesis)` syntax on this page is the legacy syntax for the S1 model.
+  S1 is deprecated and will be retired on December 31, 2026. After that date,
+  requests that specify `s1` are served by `s2.1-pro`. S2 uses `[bracket]`
+  syntax with natural language descriptions and is not limited to a fixed set of
+  tags. The API does not convert `(parenthesis)` tags to `[bracket]` cues, so
+  rewrite them in S2 syntax. See [Migrate from
+  S1](/developer-guide/models-pricing/migrate-from-s1) and the [S2 emotion
+  guide](/developer-guide/core-features/emotions).
+</Warning>
 
 ## How to Use
 

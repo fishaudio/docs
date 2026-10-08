@@ -46,7 +46,7 @@ from pipecat.services.fish import FishAudioTTSService
 tts = FishAudioTTSService(
     api_key=os.getenv("FISH_API_KEY"),
     reference_id="your_voice_model_id",  # Optional: use a specific voice
-    model_id="s1",
+    model_id="s2.1-pro",
     params=FishAudioTTSService.InputParams(
         latency="normal",
         prosody_speed=1.0
@@ -60,7 +60,7 @@ tts = FishAudioTTSService(
 |-----------|-------------|
 | `api_key` | Your Fish Audio API key |
 | `reference_id` | Voice model ID from the [Fish Audio library](https://fish.audio/discover) |
-| `model_id` | TTS model version (default: `s1`) |
+| `model_id` | TTS model version (default: `s2.1-pro`) |
 | `output_format` | Audio format: `pcm`, `mp3`, `wav`, or `opus` |
 
 ### Prosody controls
