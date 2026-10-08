@@ -357,7 +357,7 @@ Respond with a `2xx` status and a JSON object whose `dynamic_variables` follow t
 }
 ```
 
-An entry that breaks a rule is dropped on its own; the call still connects with the rest. Other fields in the response are ignored, so the contract can grow without breaking deployed endpoints. Placeholders that receive no value stay in the text as written, as described under [dynamic variables](/agents/build/dynamic-variables#custom-variables).
+An entry that breaks a rule is dropped on its own; the call still connects with the rest. Other fields in the response are ignored, so the contract can grow without breaking deployed endpoints. A placeholder that receives no value takes the agent's configured [default value](/agents/build/dynamic-variables#default-values), and follows the agent's `on_missing` setting when there is none.
 
 ```text System prompt
 You are the support line for Acme. The caller is {{customer_name}} on the {{plan}} plan
@@ -366,14 +366,14 @@ with {{open_orders}} open orders. Greet them by name.
 
 ### Failure behavior
 
-The endpoint can personalize a call but never block one. The caller is waiting while the request runs, so keep the handler fast and the timeout short.
+The endpoint can personalize a call but never block one. The caller is waiting while the request runs, so keep the handler fast and the timeout short. Whenever the call connects without your variables, every placeholder falls back to its configured [default value](/agents/build/dynamic-variables#default-values), so give each one a default that reads well on its own.
 
 | Outcome                                  | Effect                                                        |
 | ---------------------------------------- | ------------------------------------------------------------- |
 | Response within the timeout              | Variables are rendered into the prompt, first message, and webhook tool requests |
-| Timeout                                  | The call connects without variables; the request is not retried |
-| Connection error or non-`2xx` response   | One immediate retry, then the call connects without variables |
-| Body is not a JSON object                | The call connects without variables                           |
+| Timeout                                  | The call connects on the defaults; the request is not retried |
+| Connection error or non-`2xx` response   | One immediate retry, then the call connects on the defaults   |
+| Body is not a JSON object                | The call connects on the defaults                             |
 
 ## Auto-ticket unresolved calls
 

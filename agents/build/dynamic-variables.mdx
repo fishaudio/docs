@@ -61,8 +61,34 @@ const session = await AgentSession.start({
 ```
 </CodeGroup>
 
+### Default values
+
+A placeholder is resolved in this order: the value supplied for the session, then the default configured on the agent. What happens when neither exists is set by `on_missing`:
+
+| `on_missing`       | A placeholder with no value                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| `keep` (default)   | Stays in the text as written, visible to the model and spoken on a fixed first message       |
+| `empty`            | Renders as empty text                                                                       |
+| `reject`           | Session creation fails with `422 Missing dynamic variables: ...` and an inbound call is not connected |
+
+Set both in the **Dynamic variables** sheet of the agent's Configuration page (the **Default values** link under the system prompt), or through the `variables` section of the config API. The defaults map replaces as a whole on every update, and names follow the same rules as `dynamic_variables`:
+
+```bash
+curl --request PATCH https://api.fish.audio/v1/agent/agents/YOUR_AGENT_ID/config \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "variables": {
+      "defaults": { "customer_name": "there", "plan": "Free" },
+      "on_missing": "empty"
+    }
+  }'
+```
+
+With these defaults, a session that sends only `{"plan": "Pro"}` renders the first message `Hi {{customer_name}}, welcome to the {{plan}} plan.` as `Hi there, welcome to the Pro plan.`
+
 <Warning>
-Placeholders with no matching variable are **not** removed: the literal `{{variable_name}}` text stays in the prompt, visible to the model. Make sure every placeholder in your configuration has a value at session creation.
+By default a placeholder with no session value and no default stays as written, so `Hi {{customer_name}}, welcome.` is spoken braces and all on a fixed first message. For text that is spoken word for word, give every placeholder that can go unfilled a default that reads well on its own, or set `on_missing` to `empty` (`Hi , welcome.`) or `reject`. A fixed first message that renders to nothing but whitespace is dropped and the agent opens with its generic greeting instead.
 </Warning>
 
 Variables fill placeholders in the configured text. To replace whole configuration fields for a session (the prompt itself, the opener, voice, language), use [overrides](/agents/deploy/authenticated-sessions#overrides) on the same request; `{{placeholders}}` render inside overridden text too.
