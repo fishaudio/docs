@@ -12,7 +12,7 @@ import Prerequisites from "/snippets/prerequisites.mdx";
 
 ## Recipe
 
-Phone networks carry narrowband audio at 8 kHz. Generating at a higher rate just forces the carrier to downsample on the way through — wasting bandwidth and often softening the result. Synthesize at 8 kHz directly and the bytes are ready to hand to your IVR or SIP stack.
+Phone networks carry narrowband audio at 8 kHz. Generating at a higher rate just forces the carrier to downsample on the way through, wasting bandwidth and often softening the result. Synthesize at 8 kHz directly and the bytes are ready to hand to your IVR or SIP stack.
 
 Set the sample rate on [`TTSConfig`](/api-reference/sdk/python/types#ttsconfig-objects) (it is not a top-level argument) and write the WAV to disk.
 
@@ -71,7 +71,7 @@ await writeFile("out.wav", Buffer.concat(chunks));
 ```
 </CodeGroup>
 
-The output is a mono 8 kHz WAV — the standard for G.711 PCM telephony. For a headerless stream to feed straight into a SIP or RTP pipeline, switch to raw PCM with `format="pcm"`; the sample rate stays on `TTSConfig`.
+The output is a mono 8 kHz WAV, the standard for G.711 PCM telephony. For a headerless stream to feed straight into a SIP or RTP pipeline, switch to raw PCM with `format="pcm"`; the sample rate stays on `TTSConfig`.
 
 ```python
 audio = client.tts.convert(

@@ -168,7 +168,8 @@ session = Session("your_api_key")
 with open("audio.mp3", "rb") as f:
     response = session.asr(ASRRequest(
         audio=f.read(),
-        language="en"
+        language="en",
+        ignore_timestamps=False
     ))
 
 print(response.text)
@@ -191,15 +192,11 @@ with open("audio.mp3", "rb") as f:
 
 print(result.text)
 
-# Timestamps in MILLISECONDS
+# Timestamps in SECONDS (unchanged)
 for segment in result.segments:
-    print(f"[{segment.start}ms - {segment.end}ms]")
+    print(f"[{segment.start}s - {segment.end}s]")
 ```
 </CodeGroup>
-
-<Warning>
-ASR timestamps changed from seconds to milliseconds. Divide by 1000 to convert: `seconds = segment.start / 1000`
-</Warning>
 
 ## WebSocket Streaming Migration
 
@@ -322,14 +319,6 @@ audio = client.tts.convert(text="...", format="mp3")
 Pass parameters directly to methods.
 </Accordion>
 
-<Accordion title="ASR timestamps changed from seconds to milliseconds">
-**Before:** `segment.start` in seconds (e.g., 1.5)
-
-**After:** `segment.start` in milliseconds (e.g., 1500)
-
-Convert: `seconds = segment.start / 1000`
-</Accordion>
-
 <Accordion title="Model terminology changed to Voice">
 - `session.create_model()` → `client.voices.create()`
 - `session.list_models()` → `client.voices.list()`
@@ -367,13 +356,6 @@ ws_session.tts(TTSRequest(text=""), text_stream())
 
 # After
 client.tts.stream_websocket(text_stream())
-```
-</Accordion>
-
-<Accordion title="ASR timestamps are off by 1000x">
-New SDK uses milliseconds instead of seconds:
-```python
-seconds = segment.start / 1000
 ```
 </Accordion>
 </AccordionGroup>

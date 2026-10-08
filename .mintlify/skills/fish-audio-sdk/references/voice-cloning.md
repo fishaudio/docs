@@ -2,8 +2,8 @@
 
 Two ways to use a custom voice:
 
-1. **Instant (zero-shot)** — pass reference audio inline on each `convert` call. Nothing is saved.
-2. **Persistent voice model** — create a model once, then reuse its `id` as `reference_id`.
+1. **Instant (zero-shot)**: pass reference audio inline on each `convert` call. Nothing is saved.
+2. **Persistent voice model**: create a model once, then reuse its `id` as `reference_id`.
 
 ## 1. Instant cloning (inline references)
 
@@ -51,7 +51,7 @@ In JS, `ReferenceAudio.audio` is a `File`.
 
 ## 2. Persistent voice models
 
-### Create — Python `voices.create`
+### Create: Python `voices.create`
 
 ```python
 with open("sample1.wav", "rb") as f1, open("sample2.wav", "rb") as f2:
@@ -69,7 +69,7 @@ print(voice.id, voice.state)  # state: created | training | trained | failed
 
 `voices.create` keyword params: `title` (required), `voices: list[bytes]` (required), `description`, `texts`, `tags`, `cover_image: bytes`, `visibility="private"`, `train_mode="fast"`, `enhance_audio_quality=True`.
 
-### Create — JavaScript `voices.ivc.create`
+### Create: JavaScript `voices.ivc.create`
 
 ```ts
 import { readFile } from "node:fs/promises";
@@ -108,6 +108,6 @@ const audio = await client.textToSpeech.convert({
 | Update | `client.voices.update(voice_id, title=..., visibility=...)`                            | `client.voices.update(voiceId, { title, visibility })`      |
 | Delete | `client.voices.delete(voice_id)`                                                       | `client.voices.delete(voiceId)`                             |
 
-Python `voices.list` is manually paged: `page_size` (default 10), `page_number` (default 1), plus filters `title`, `tags`, `self_only`, `author_id`, `language`, `title_language`, and `sort_by` (`"task_count"` default, or `"created_at"`). There is no auto-pager — loop `page_number` yourself.
+Python `voices.list` is manually paged: `page_size` (default 10), `page_number` (default 1), plus filters `title`, `tags`, `self_only`, `author_id`, `language`, `title_language`, and `sort_by` (`"task_count"` default, or `"created_at"`). There is no auto-pager; loop `page_number` yourself.
 
 A model is usable as a `reference_id` once its `state` is `"trained"`. States: `created → training → trained` (or `failed`).

@@ -1,0 +1,222 @@
+---
+title: "Tutorial: Simulate a Rescheduling Call"
+description: "Build a Simulation test step by step, from the scenario to tool mocks and assertions, and read what its results tell you"
+icon: "graduation-cap"
+---
+
+This tutorial builds one complete [Simulation test](/agents/test/agent-tests#simulation-tests) for a dental clinic agent that reschedules appointments. By the end, the test checks that the agent verifies the caller, handles a fully booked day, books exactly once, never cancels to rebook, and stays honest when a confirmation text fails.
+
+**Prerequisites**
+
+- An agent whose job includes rescheduling, with [webhook tools](/agents/build/webhook-tools) along these lines: `lookup_patient`, `check_availability` (takes a `date` as `YYYY-MM-DD`), `reschedule_appointment` (takes a `new_date`), `send_confirmation_sms`, and `cancel_appointment`. Your names and parameters will differ, so adapt the examples as you go.
+- For the API path: a Fish Audio [API key](/developer-guide/getting-started/api-key).
+
+## 1. Decide what can go wrong
+
+Start from the failures you care about, not from the happy path. For rescheduling, these are the ones that cost a real clinic money or trust:
+
+| Risk                                                | How the test catches it                        |
+| --------------------------------------------------- | ---------------------------------------------- |
+| Changes an appointment without verifying the caller | Success condition, judged from the transcript  |
+| Books a full day anyway, or invents a free slot     | A mock that returns no slots, plus a condition |
+| Books twice                                         | Assertion: reschedule called exactly once      |
+| Cancels the old appointment and books a new one     | Assertion: cancel is a forbidden tool          |
+| Claims a confirmation text was sent when it failed  | A mock that returns an error, plus a condition |
+
+Judge-scored conditions cover what the agent says. Assertions cover what the agent does, and they are checked exactly, with no LLM involved.
+
+## 2. Write the scenario
+
+The scenario is the simulated user's brief, in four sections:
+
+```text
+PERSONA: Dana Whitfield, a polite but busy patient calling from work. Short answers, slightly rushed.
+GOAL: Move her cleaning from Tuesday October 6 at 10:00 AM to Thursday October 8 in the afternoon. If Thursday is not possible, Friday October 9 in the afternoon also works.
+FACTS: Full name Dana Whitfield. Date of birth March 14, 1988. Only give the date of birth when asked. Do not mention Friday until the agent says Thursday is unavailable.
+ENDING: Once the agent confirms the new day and time, thank them and hang up. If the agent books a time you did not agree to, correct it once, then hang up.
+```
+
+Two lines do most of the work. "Only give the date of birth when asked" means a pass proves the agent asked for it. "Do not mention Friday until the agent says Thursday is unavailable" forces the agent to find the alternative itself instead of being handed it. The ending gives the conversation a clear finish, so it doesn't run to the turn limit.
+
+Set **Max turns** to 16, enough for verification, two availability checks, and a confirmation, with room to spare.
+
+## 3. Write the success conditions
+
+Each condition is one observable behaviour the judge checks against the whole transcript:
+
+| Name                   | Description                                                                                                                            |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Verified the patient   | Before changing the appointment, the agent confirmed the caller's identity with her name and date of birth.                            |
+| Handled the full day   | When Thursday had no free slot, the agent said so plainly and offered another day instead of booking Thursday anyway.                  |
+| Confirmed the new time | The agent read back the new appointment, Friday October 9 at 2:30 PM, and the caller agreed to it.                                     |
+| Honest about the text  | If sending the confirmation text failed, the agent did not claim a text was sent and made clear that the appointment itself is booked. |
+
+Write conditions the transcript can prove or disprove. "The agent was helpful" gives the judge nothing to check. If the transcript lacks evidence either way, the verdict is **Unknown** and the run is flagged **Needs review**.
+
+## 4. Mock the tools
+
+Keep the default strategy, **Mock all**, so no call reaches your real endpoints. Then add entries that steer the conversation:
+
+| Tool                     | Condition                             | Result                                                                                                 |
+| ------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `lookup_patient`         | none                                  | `{"patient_id": "pt_2291", "name": "Dana Whitfield", "next_appointment": "2026-10-06T10:00:00-07:00"}` |
+| `check_availability`     | `date` matches regex `^2026-10-08`    | `{"date": "2026-10-08", "slots": []}`                                                                  |
+| `check_availability`     | `date` matches regex `^2026-10-09`    | `{"date": "2026-10-09", "slots": ["10:00", "14:30"]}`                                                  |
+| `check_availability`     | none                                  | `{"slots": []}`                                                                                        |
+| `reschedule_appointment` | none                                  | `{"ok": true, "appointment_id": "apt_7731", "starts_at": "2026-10-09T14:30:00-07:00"}`                 |
+| `send_confirmation_sms`  | none, **Return an error**, status 503 | `{"error": "SMS provider unavailable"}`                                                                |
+
+- **Conditional entries** give the same tool different answers in one conversation: Thursday is full, Friday has two slots. Entries with conditions are checked first, in order.
+- **The unconditional `check_availability` entry** is the fallback for any other date, so an agent that checks Wednesday gets an answer instead of an unanswered call.
+- **The error entry** makes the text fail the way an outage would, which is what the last success condition checks.
+- `cancel_appointment` gets no mock on purpose. The test forbids it below, and a forbidden call is reported by its assertion.
+
+Under **Mock all**, a call that neither a test entry nor the tool's own mock response answers fails, and the run is marked **Needs review** with a **No mock** badge. That is intentional: a run that left the path you prepared never passes by accident.
+
+## 5. Add assertions
+
+Under **Advanced**, add checks on what the agent actually did:
+
+- **Required tool call** `reschedule_appointment`, with parameter `new_date` matching regex `^2026-10-09`, minimum 1, maximum 1. This catches both a wrong date and a double booking.
+- **Required tool call** `check_availability`, minimum 1, maximum 4. The agent must check before offering times, and a loop of lookups fails.
+- **Forbidden tool** `cancel_appointment`.
+
+Any failed assertion fails the run, whatever the judge decided.
+
+## 6. Pick the channel and the repeat count
+
+Set **Channel** to **Phone inbound**, so the agent speaks the way it does on real calls, for example repeating dates and times back. Set **Repeat** to 5. Simulated users vary from run to run, and five runs show whether a pass is reliable or lucky.
+
+## 7. Create the test
+
+<Tabs>
+  <Tab title="Dashboard">
+    Open **Library → Tests**, click **Add test**, pick the **Simulation** type, and fill in the fields from the steps above. Then open the test's **Access** tab and turn it on for your agent.
+  </Tab>
+  <Tab title="API">
+    Look up your tool ids with [List Test Tools](/api-reference/endpoint/agent/list-test-tools), replace the placeholders below, and send the body to [Create Test](/api-reference/endpoint/agent/create-test). `agent_ids` attaches the test in the same call.
+
+    ```bash
+    curl --request POST https://api.fish.audio/v1/agent/tests \
+      --header "Authorization: Bearer $FISH_API_KEY" \
+      --header "Content-Type: application/json" \
+      --data @reschedule-test.json
+    ```
+
+    ```json reschedule-test.json
+    {
+      "name": "Reschedule: Thursday is full, caller takes Friday",
+      "test_type": "simulation",
+      "agent_ids": ["<agent-id>"],
+      "simulation": {
+        "scenario": "PERSONA: Dana Whitfield, a polite but busy patient calling from work. Short answers, slightly rushed.\nGOAL: Move her cleaning from Tuesday October 6 at 10:00 AM to Thursday October 8 in the afternoon. If Thursday is not possible, Friday October 9 in the afternoon also works.\nFACTS: Full name Dana Whitfield. Date of birth March 14, 1988. Only give the date of birth when asked. Do not mention Friday until the agent says Thursday is unavailable.\nENDING: Once the agent confirms the new day and time, thank them and hang up. If the agent books a time you did not agree to, correct it once, then hang up.",
+        "max_turns": 16,
+        "channel": "phone_inbound",
+        "repeat_count": 5,
+        "success_conditions": [
+          {
+            "name": "Verified the patient",
+            "description": "Before changing the appointment, the agent confirmed the caller's identity with her name and date of birth."
+          },
+          {
+            "name": "Handled the full day",
+            "description": "When Thursday had no free slot, the agent said so plainly and offered another day instead of booking Thursday anyway."
+          },
+          {
+            "name": "Confirmed the new time",
+            "description": "The agent read back the new appointment, Friday October 9 at 2:30 PM, and the caller agreed to it."
+          },
+          {
+            "name": "Honest about the text",
+            "description": "If sending the confirmation text failed, the agent did not claim a text was sent and made clear that the appointment itself is booked."
+          }
+        ],
+        "assertions": {
+          "tool_calls": [
+            {
+              "tool": { "id": "<reschedule-tool-id>", "name": "reschedule_appointment", "type": "webhook" },
+              "params": { "new_date": { "type": "regex", "value": "^2026-10-09" } },
+              "min_calls": 1,
+              "max_calls": 1
+            },
+            {
+              "tool": { "id": "<availability-tool-id>", "name": "check_availability", "type": "webhook" },
+              "min_calls": 1,
+              "max_calls": 4
+            }
+          ],
+          "forbidden_tools": [
+            { "id": "<cancel-tool-id>", "name": "cancel_appointment", "type": "webhook" }
+          ]
+        },
+        "tool_mocks": {
+          "strategy": "all",
+          "tools": [
+            {
+              "tool": { "id": "<patient-tool-id>", "name": "lookup_patient", "type": "webhook" },
+              "result": { "patient_id": "pt_2291", "name": "Dana Whitfield", "next_appointment": "2026-10-06T10:00:00-07:00" }
+            },
+            {
+              "tool": { "id": "<availability-tool-id>", "name": "check_availability", "type": "webhook" },
+              "when": { "date": { "type": "regex", "value": "^2026-10-08" } },
+              "result": { "date": "2026-10-08", "slots": [] }
+            },
+            {
+              "tool": { "id": "<availability-tool-id>", "name": "check_availability", "type": "webhook" },
+              "when": { "date": { "type": "regex", "value": "^2026-10-09" } },
+              "result": { "date": "2026-10-09", "slots": ["10:00", "14:30"] }
+            },
+            {
+              "tool": { "id": "<availability-tool-id>", "name": "check_availability", "type": "webhook" },
+              "result": { "slots": [] }
+            },
+            {
+              "tool": { "id": "<reschedule-tool-id>", "name": "reschedule_appointment", "type": "webhook" },
+              "result": { "ok": true, "appointment_id": "apt_7731", "starts_at": "2026-10-09T14:30:00-07:00" }
+            },
+            {
+              "tool": { "id": "<sms-tool-id>", "name": "send_confirmation_sms", "type": "webhook" },
+              "error": true,
+              "status": 503,
+              "result": { "error": "SMS provider unavailable" }
+            }
+          ]
+        }
+      }
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+## 8. Run it and read the result
+
+On the agent's **Tests** page, click **Run all**. Over the API, start a batch with [Run Tests](/api-reference/endpoint/agent/run-tests) and poll [Get Test Batch](/api-reference/endpoint/agent/get-test-batch) until `completed` is `true`. Each run takes up to a few minutes.
+
+Every run shows each success condition with its verdict and the judge's reasoning, each assertion with **Passed** or **Failed**, and the transcript with every tool call marked by where its answer came from. Here is what common failures mean:
+
+| What you see                                       | What it usually means                                                                                              |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **Handled the full day** fails                     | The agent offered or booked Thursday without checking, or invented a slot. Tell it to check before offering times. |
+| `reschedule_appointment` assertion reports 2 calls | A double booking, often a retry after the caller repeated herself. Make the prompt confirm once, then book once.   |
+| `cancel_appointment` forbidden tool fails          | The agent treats rescheduling as cancel and rebook. Describe rescheduling as its own action in the prompt.         |
+| **No mock** on `check_availability`                | The agent passed a date in another format, such as `Oct 8`. Describe the format in the tool, or widen the pattern. |
+| **Unknown** and **Needs review**                   | The transcript didn't settle the condition. Read it, then make the condition more specific.                        |
+| `3 / 5 passed`                                     | The behaviour is unreliable. Open a failed repeat, fix the cause, and run again until all five pass.               |
+
+Once the test passes reliably, keep it attached. Every future prompt or tool change runs against it before you publish, and you can run it from CI as shown in [Run tests from the API and CI](/agents/test/agent-tests#run-tests-from-the-api-and-ci).
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Agent tests" icon="vial" href="/agents/test/agent-tests">
+    Every field of every test type, and how each maps to the API.
+  </Card>
+  <Card
+    title="Tests API"
+    icon="flask"
+    href="/api-reference/endpoint/agent/list-tests"
+  >
+    Create, run, and read tests over the REST API.
+  </Card>
+</CardGroup>

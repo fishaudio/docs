@@ -15,12 +15,16 @@ See our [Quick Start](/developer-guide/getting-started/quickstart) guide to gene
 
 ## Errors
 
-Every error returns a JSON body with a `message` and a `status`. See [Errors](/api-reference/errors) for the full status-code table, retry guidance, and SDK exception handling.
+Errors return a JSON body with a `message` and a `status`; some endpoints add fields. Errors from the network edge in front of the API, such as some `413` or `5xx` responses, may not have a JSON body. See [Errors](/api-reference/errors) for the full status-code table, retry guidance, and SDK exception handling.
 
 ## OpenAPI Schema
 
 Fish Audio publishes a canonical OpenAPI schema at [https://api.fish.audio/openapi.json](https://api.fish.audio/openapi.json).
 When working with AI coding agents or IDE assistants, mention this schema URL as part of your prompt or project context so the agent can understand Fish Audio's endpoints, request and response models, authentication requirements, and supported parameters directly from the machine-readable API contract.
+
+## Distributed Tracing
+
+Fish Audio inference APIs accept the W3C `traceparent` header so your business-side trace and Fish Audio's inference-side trace can share the same trace ID. See [Tracing & Performance Analysis](/api-reference/observability) for supported endpoints, examples, and enterprise performance analysis details.
 
 ## Create a Voice Clone
 
@@ -29,6 +33,10 @@ Use our [/model endpoint](/api-reference/endpoint/model/create-model) to create 
 ## Generate Speech
 
 Use our [/v1/tts endpoint](/api-reference/endpoint/openapi-v1/text-to-speech) to generate speech.
+
+## Design a Voice
+
+Use our [/v1/voice-design endpoint](/api-reference/endpoint/openapi-v1/voice-design) to generate candidate voices from a prompt.
 
 ## Real-time Streaming
 

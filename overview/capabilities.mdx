@@ -1,7 +1,7 @@
 ---
 title: "Overview"
 sidebarTitle: "Overview"
-description: "Everything Fish Audio can do — and how to build with it"
+description: "Everything Fish Audio can do, and how to build with it"
 icon: "house"
 ---
 
@@ -11,23 +11,19 @@ Fish Audio is a voice AI platform. Every core feature is available three ways: i
 
 <CardGroup cols={2}>
   <Card title="Text to Speech" icon="microphone" href="/features/text-to-speech">
-    Convert text into lifelike speech with the `s2-pro` and `s1` models.
+    Convert text into lifelike speech with the `s2.1-pro`, `s2-pro`, and `s1` models.
   </Card>
 
   <Card title="Speech to Text" icon="waveform" href="/features/speech-to-text">
-    Transcribe audio to text with per-segment timestamps.
+    Transcribe audio with `transcribe-1-pro`: multi-speaker conversations, long recordings, emotion cues, and optional timestamps.
   </Card>
 
   <Card title="Voice Cloning" icon="clone" href="/features/voice-cloning">
     Clone a voice instantly from a clip, or train a persistent model.
   </Card>
 
-  <Card title="Professional Voice Clone" icon="microphone-stand" href="/overview/platform/create-voice/professional-voice-clone">
-    Clone a real, verified voice at studio quality in the web app.
-  </Card>
-
   <Card title="Realtime Streaming" icon="bolt" href="/features/realtime-streaming">
-    Stream audio as it generates — for voice agents and live apps.
+    Stream audio as it generates, for voice agents and live apps.
   </Card>
 
   <Card title="Manage Voices" icon="sliders" href="/features/manage-voices">
@@ -37,11 +33,15 @@ Fish Audio is a voice AI platform. Every core feature is available three ways: i
 
 ## Also in the web app
 
-These run in the browser, no code required — see the [Platform guide](/overview/platform).
+These run in the browser, no code required. See the [Platform guide](/overview/platform).
 
 <CardGroup cols={2}>
+  <Card title="Professional Voice Clone" icon="microphone-stand" href="/overview/platform/create-voice/professional-voice-clone">
+    Clone a real, verified voice at studio quality, then release it.
+  </Card>
+
   <Card title="Voice Design" icon="wand-magic-sparkles" href="/overview/platform/create-voice/voice-design">
-    Design a voice from a plain-text description — best for original characters.
+    Design a voice from a plain-text description. Best for original characters.
   </Card>
 
   <Card title="Voice Changer" icon="wand-magic-sparkles" href="/overview/platform">
@@ -49,11 +49,11 @@ These run in the browser, no code required — see the [Platform guide](/overvie
   </Card>
 
   <Card title="Story Studio" icon="book-open" href="/overview/platform">
-    Produce multi-speaker, long-form audio — audiobooks and narration.
+    Produce multi-speaker, long-form audio: audiobooks and narration.
   </Card>
 
-  <Card title="Sound Effects" icon="volume-high" href="/overview/platform">
-    Generate cinematic sound effects from a text prompt.
+  <Card title="Music & Sound Effects" icon="music" href="/overview/platform">
+    Generate music and cinematic sound effects from a prompt.
   </Card>
 
   <Card title="Audio Separation" icon="scissors" href="/overview/platform">
@@ -63,18 +63,25 @@ These run in the browser, no code required — see the [Platform guide](/overvie
 
 ## Models
 
-Two text-to-speech models power most capabilities:
+These text-to-speech models power most capabilities:
 
-- **`s2-pro`** — the default, highest-quality model, with multi-speaker and natural-language expression control.
-- **`s1`** — the previous generation, with `(parenthesis)` emotion tags.
+- **`s2.1-pro`**: the recommended production model, with improved quality, latency, and throughput over S2-Pro.
+- **`s2.1-pro-free`**: the same model at $0 for testing, prototyping, development, and smaller businesses, without TTFA or DPA guarantees.
+- **`s2-pro`**: the previous-generation S2 model, with multi-speaker and natural-language expression control.
+- **`s1`**: the previous generation, with `(parenthesis)` emotion tags.
 
-See [Models Overview](/developer-guide/models-pricing/models-overview) and [Choosing a Model](/developer-guide/models-pricing/choosing-a-model) for the full lineup, languages, and limits.
+For speech to text, select the model with the `model` header on `POST /v1/asr`:
+
+- **`transcribe-1-pro`**: the recommended model, for everything from short clips to multi-speaker conversations (speaker markers and speaker turns) and long recordings, with inline emotion cues. Send `model: transcribe-1-pro` explicitly.
+- **`transcribe-1`**: general transcription of short recordings. A request whose `model` header is missing or not an exact match is served by this model.
+
+See [Models Overview](/developer-guide/models-pricing/models-overview) and [Choosing a Model](/developer-guide/models-pricing/choosing-a-model) for the full lineup and languages, and [Speech to Text](/features/speech-to-text#input-audio) for transcription formats and limits.
 
 ## Pick your path
 
 <CardGroup cols={2}>
   <Card title="Use the web app" icon="browser" href="/overview/platform">
-    No code — generate audio, clone voices, and produce projects in your browser.
+    No code: generate audio, clone voices, and produce projects in your browser.
   </Card>
 
   <Card title="Build with the SDK" icon="code" href="/developer-guide/sdk-guide/quickstart">

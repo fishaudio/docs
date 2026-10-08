@@ -47,17 +47,32 @@ SPECS = [
         ],
     },
     # ---- recipes authored by the cookbook workflow (one live-tested primary block each) ----
+    # The speech-to-text recipes select transcribe-1-pro with the `model` header.
     {
         "slug": "transcribe-to-captions",
         "path": f"{COOKBOOK}/transcribe-to-captions.mdx",
-        "cases": [{"name": "SRT/VTT captions", "block": 0, "file": ("captions.srt", "srt")}],
+        "cases": [
+            {
+                "name": "SRT/VTT captions",
+                "block": 0,
+                "file": ("captions.srt", "srt"),
+                # Cues are grouped words, each ending after it starts; the VTT file is written too.
+                "postamble": (
+                    "assert cues and all(c['end'] > c['start'] for c in cues), cues\n"
+                    "assert open('captions.vtt', encoding='utf-8').read().startswith('WEBVTT\\n')"
+                ),
+            }
+        ],
     },
     {
         "slug": "batch-transcribe-with-language-hint",
         "path": f"{COOKBOOK}/batch-transcribe-with-language-hint.mdx",
         "cases": [
-            {"name": "batch transcribe (sync)", "block": 0, "truthy": "results"},
-            {"name": "batch transcribe (async)", "block": 1},  # runs to completion = pass
+            # The recipes record per-file errors and exit non-zero; also fail on any recorded error.
+            {"name": "batch transcribe (sync)", "block": 0, "truthy": "results",
+             "postamble": "assert all('error' not in r for r in results), results"},
+            {"name": "batch transcribe (async)", "block": 1, "truthy": "results",
+             "postamble": "assert all('error' not in r for r in results), results"},
         ],
     },
     {
@@ -100,8 +115,10 @@ SPECS = [
         "slug": "voice-agent-loop",
         "path": f"{COOKBOOK}/voice-agent-loop.mdx",
         "cases": [
+            # The recipe strips transcribe-1-pro speaker markers before the LLM call.
             {"name": "asr -> reply -> tts (sync)", "block": 0, "file": ("reply.mp3", "mp3"),
-             "subs": {'"<voice-id>"': f'"{PUBLIC_VOICE}"'}},
+             "subs": {'"<voice-id>"': f'"{PUBLIC_VOICE}"'},
+             "postamble": "assert '<|speaker' not in reply, reply"},
             {"name": "asr -> reply -> tts (async)", "block": 1, "file": ("reply.mp3", "mp3"),
              "subs": {'"<voice-id>"': f'"{PUBLIC_VOICE}"'}},
         ],

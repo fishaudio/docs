@@ -17,11 +17,11 @@ pytest tests/cookbooks -v
 ```
 
 If no key is found (env var, `.env`, or local keyfile), the whole suite **skips** rather
-than fails — so it's safe in CI without secrets.
+than fails, so it's safe in CI without secrets.
 
 ## Add a recipe
 
-Append a spec to `specs.py` — no test code changes:
+Append a spec to `specs.py` (no test code changes):
 
 ```python
 {
@@ -34,17 +34,17 @@ Append a spec to `specs.py` — no test code changes:
 ```
 
 Per-case keys:
-- `block` — index of the `python` code block in the page (document order).
-- `subs` — `{placeholder: replacement}` string substitutions.
-- `file` — `(filename, format)` the recipe should write (validated by magic bytes).
-- `var` — `(variable, format)` an audio-bytes variable the recipe should define.
-- `consumed` — assert the injected `consume()` drained a non-empty stream.
-- `postamble` — extra code run after the block (e.g. to drive a generator the block defines).
+- `block`: index of the `python` code block in the page (document order).
+- `subs`: `{placeholder: replacement}` string substitutions.
+- `file`: `(filename, format)` the recipe should write (validated by magic bytes).
+- `var`: `(variable, format)` an audio-bytes variable the recipe should define.
+- `consumed`: assert the injected `consume()` drained a non-empty stream.
+- `postamble`: extra code run after the block (e.g. to drive a generator the block defines).
 
 ## Tiers
 
-- **T1 (here):** pure Fish Audio recipes — run fully live.
-- **T2:** integration seams (e.g. the `fish-tts` CLI, framework plugins) — test the
+- **T1 (here):** pure Fish Audio recipes, run fully live.
+- **T2:** integration seams (e.g. the `fish-tts` CLI, framework plugins): test the
   Fish-facing component live; the external framework is contract-checked.
-- **T3:** full external round-trips (Telegram/Discord/Twilio) — staging only; see each
+- **T3:** full external round-trips (Telegram/Discord/Twilio): staging only; see each
   tutorial's manual checklist and any credential-guarded integration test.

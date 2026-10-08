@@ -1,95 +1,78 @@
 ---
-title: "Voice Design"
+title: "Voice Design in the Web App"
+sidebarTitle: "Voice Design"
 description: "Generate a custom voice from a text description in the Fish Audio web app"
 icon: "wand-magic-sparkles"
 ---
 
-{/*
-  DRAFT NOTE (remove before publishing): screenshots are placeholders shown as italic lines.
-  Capture each on https://fish.audio/app (logged in), save to the path below, then replace the
-  italic line with a <Frame>, e.g.:
-    <Frame><img src="/images/platform/create-voice/vd-01-describe.png" alt="..." /></Frame>
-
-  SCREENSHOT MANIFEST — file (under images/platform/create-voice/) | where | what to show
-  - 01-hub.png         | DONE | the hub with its creation-method cards
-  - vd-01-describe.png | TODO /app/voice-design          | the description box, starter prompts, Generate button
-  - vd-02-pick.png     | TODO /app/voice-design (after generate) | the two sample cards, one Selected, Continue enabled
-  - vd-03-details.png  | TODO /app/voice-design (step 3) | the Voice Details form with visibility + confirmation
-*/}
-
-Voice Design turns a written description into an AI voice. You write a prompt, generate a
-couple of samples, pick your favorite, then add a few details and save. It is the fastest way
-to make an original voice — best for characters rather than cloning a real person.
+Voice Design turns a written description into an AI voice. You write a prompt, generate samples, pick your favorite, then add a few details and save. It is the fastest way to make an original voice, and it is best for characters rather than for cloning a real person.
 
 <Note>
-  To clone a real, verified voice at studio quality instead, see [Professional Voice
-  Clone](/overview/platform/create-voice/professional-voice-clone).
+  This page covers the web app. To generate voices from code, see [Voice Design](/features/voice-design) in the API guide. To clone a real, verified voice at studio quality, see [Professional Voice Clone](/overview/platform/create-voice/professional-voice-clone).
 </Note>
 
 ## Before you begin
 
 - **Sign in** at [fish.audio/app](https://fish.audio/app).
-- **Credits.** Each generation costs credits (or is free during a promotion — the cost is
-  shown next to the **Generate Samples** button).
+- **A paid plan.** Voice Design is not included in the Free plan. On the Free plan, you are asked to upgrade.
+- **Credits.** The cost of each generation is shown below the **Generate Samples** button.
 
 ## Open Voice Design
 
-Go to [fish.audio/app/create-voice](https://fish.audio/app/create-voice) and, under **Pick a
-method**, choose **Voice Design**.
-
-<Frame>
-  <img src="/images/platform/create-voice/01-hub.png" alt="The Create Voice hub with the Instant Voice Clone and Voice Design methods" />
-</Frame>
+Go to [fish.audio/app/create-voice](https://fish.audio/app/create-voice) and, under **Pick a method**, choose **Voice Design**.
 
 ## Create the voice
 
 <Steps>
   <Step title="Describe the voice">
-    Under **Describe the voice you want**, type one or two specific sentences — for example,
-    *"A warm, slightly raspy middle-aged narrator with a soft American accent. Calm, deliberate
-    pace, great for late-night audiobooks."* Your description must be between 20 and 1000
-    characters.
+    Under **Describe the voice you want**, type one or two specific sentences. For example: *"A warm, slightly raspy middle-aged narrator with a soft American accent. Calm, deliberate pace, great for late-night audiobooks."* Your description must be between 20 and 1000 characters.
 
-    To start faster, click a starter prompt such as **Warm late-night radio host**,
-    **Documentary narrator**, or **Children's storyteller**. To control exactly what the
-    samples say, click **Set preview text** and enter a short line (5–150 characters);
-    otherwise Fish Audio writes a sample for you.
+    To start faster, click a starter prompt such as **Warm late-night radio host**, **Documentary narrator**, or **Children's storyteller**.
 
-    Check the cost note (for example, **2000 credits per generation**, or **Free for a limited
-    time** during a promotion), then click **Generate Samples**.
+    To control what the samples say, click **Set preview text** and enter a short line (5 to 150 characters). If you leave it blank, Fish Audio writes a short sample for you.
 
-    _Screenshot: the description box, starter prompts, and the Generate button._
+    Click **Generate Samples**.
   </Step>
 
-  <Step title="Generate and pick a sample">
-    When generation finishes, the **Pick a voice** section shows two samples. Click **play** on
-    a card to listen, and click the **waveform** to jump to a spot. Not happy with either?
-    Click **Re-generate Samples** for a new pair.
+  <Step title="Pick a sample">
+    When generation finishes, the **Pick a voice** section shows two samples. Click **play** on a card to listen, and click the waveform to jump to a spot.
 
-    Click **Select** on the sample you want — it changes to **Selected** — then click
-    **Continue**.
+    Not happy with either? Click **Re-generate Samples** for a new pair. Your earlier pairs are kept: use the arrows next to the counter to go back to them.
 
-    _Screenshot: the two sample cards with one Selected and Continue enabled._
+    Click **Select** on the sample you want (it changes to **Selected**), then click **Continue**.
   </Step>
 
   <Step title="Add details and save">
-    On the **Voice Details** screen, a preview card updates as you fill in the form:
+    On the **Voice Details** screen, a preview card updates as you fill in the form. Fish Audio fills in some fields for you from your description and the selected sample. Check them and change them if necessary.
 
     - **Voice Name** (required).
-    - **Cover**, **Description**, **Use Cases**, and **Voice Style** (optional — some are
-      pre-filled from the sample).
-    - **Gender** (Female, Male, or Neutral) and **Age** (Young, Middle-Aged, or Elderly).
-    - **Type** — visibility: **Public** (shown in discovery), **Unlisted** (shareable by
-      link), or **Private** (only you). On the free tier, Unlisted and Private are locked with
-      an upgrade hint.
+    - **Gender** (Female, Male, or Neutral) and **Age** (Young, Middle-Aged, or Elderly) (required).
+    - **Cover**, **Description**, **Use Cases**, and **Voice Style** (optional).
+    - **Type**: **Public** (shown in discovery), **Unlisted** (shareable by link), or **Private** (only you).
 
-    Tick the confirmation box (*"I confirm this voice does not impersonate a real, identifiable
-    person and complies with Fish Audio's usage policy."*), then click **Create Voice**. Your
-    voice is saved and you land on **My Voices**.
-
-    _Screenshot: the Voice Details form with the visibility options and confirmation box._
+    Tick the confirmation box (*"I confirm this voice does not impersonate a real, identifiable person and complies with Fish Audio's usage policy."*), then click **Create Voice**. Your voice is saved and you land on **My Voices**.
   </Step>
 </Steps>
+
+## Leave and come back
+
+Fish Audio saves your progress in this browser: your description, your samples, the selected sample, and the details you entered. When you open Voice Design again, you continue where you stopped. The saved draft is cleared after you create the voice.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Voice Design is not included in the Free plan">
+    Voice Design needs a paid plan. Upgrade your plan to design voices from text.
+  </Accordion>
+
+  <Accordion title="Private Voice Limit Reached">
+    Some plans limit how many Private and Unlisted voices you can have. When you reach the limit, set the voice **Type** to **Public**, or upgrade your plan.
+  </Accordion>
+
+  <Accordion title="Create Voice shows errors">
+    Fill in every required field: **Voice Name**, **Gender**, **Age**, and the confirmation box. The page scrolls to the first field that needs attention.
+  </Accordion>
+</AccordionGroup>
 
 ## Next steps
 

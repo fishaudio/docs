@@ -1,6 +1,6 @@
 ---
 name: fish-audio-api
-description: Write direct HTTP / WebSocket calls to the Fish Audio platform (TTS, ASR, voice models, wallet, real-time TTS streaming) without depending on the Python or JavaScript SDK. Use when the user asks to call Fish Audio from curl, a language without an official SDK, an edge/runtime environment that cannot install the SDK, or when they explicitly want raw REST / WebSocket code. Covers authentication, endpoint URLs, required headers, request / response schemas, MessagePack vs JSON vs multipart encoding rules, multi-speaker dialogue, and the WebSocket streaming protocol.
+description: Write direct HTTP / WebSocket calls to the Fish Audio platform (TTS, ASR, voice design, voice models, wallet, real-time TTS streaming) without depending on the Python or JavaScript SDK. Use when the user asks to call Fish Audio from curl, a language without an official SDK, an edge/runtime environment that cannot install the SDK, or when they explicitly want raw REST / WebSocket code. Covers authentication, endpoint URLs, required headers, request / response schemas, MessagePack vs JSON vs multipart encoding rules, multi-speaker dialogue, voice-design candidate generation, and the WebSocket streaming protocol.
 ---
 
 # Fish Audio Raw API Skill
@@ -17,9 +17,10 @@ This file condenses those into rules an agent can apply directly.
 - Base URL: `https://api.fish.audio`
 - WebSocket base: `wss://api.fish.audio`
 - Auth (all endpoints): `Authorization: Bearer <FISH_API_KEY>`
+- Optional distributed tracing for inference APIs: see `https://docs.fish.audio/api-reference/observability`.
 - Get API keys: `https://fish.audio/app/api-keys`
-- Never hardcode keys — read from an env var like `FISH_API_KEY`.
-- Errors are JSON `{status, message}` for 401 / 402 / 404, and an array of `{loc, type, msg, ctx, in}` for 422 (validation).
+- Never hardcode keys. Read from an env var like `FISH_API_KEY`.
+- Errors are JSON with at least `{status, message}` (for example 401 / 402 / 404 / 429). Speech-to-text errors from `transcribe-1-pro` also carry `code` and `request_id`. Errors from the network edge in front of the API (some 413 and 5xx responses) may not be JSON. `422` validation errors, on the endpoints that return them, are an array of `{loc, type, msg, ctx, in}`.
 
 ## Endpoint map
 
@@ -27,6 +28,7 @@ This file condenses those into rules an agent can apply directly.
 | --- | --- | --- |
 | POST | `/v1/tts` | Text-to-Speech (streams audio bytes) |
 | POST | `/v1/asr` | Speech-to-Text (returns JSON transcript) |
+| POST | `/v1/voice-design` | Voice Design (returns generated voice candidates) |
 | GET | `/model` | List voice models |
 | POST | `/model` | Create voice model (voice cloning) |
 | GET | `/model/{id}` | Get voice model metadata |
@@ -36,13 +38,16 @@ This file condenses those into rules an agent can apply directly.
 | GET | `/wallet/{user_id}/api-credit` | API credit balance (`user_id` defaults to `self`) |
 | WSS | `/v1/tts/live` | Real-time TTS streaming (MessagePack frames) |
 
-## Text-to-Speech — `POST /v1/tts`
+## Text-to-Speech: `POST /v1/tts`
 
 Required headers:
 
 - `Authorization: Bearer <FISH_API_KEY>`
 - `Content-Type: application/json` **or** `application/msgpack`
-- `model: s2-pro` (required). Values: `s1`, `s2-pro`. Default to `s2-pro` unless the user explicitly asks otherwise.
+
+Optional headers:
+
+- `model`: values `s1`, `s2-pro`, `s2.1-pro`, `s2.1-pro-free`, `drama-3-preview`. If omitted or unrecognized, the server falls back to `s2.1-pro` (paid). Default to `s2.1-pro` for production; use `s2.1-pro-free` for free-tier evaluation and prototyping (same model, no TTFA/DPA guarantees). `drama-3-preview` is a preview model; its behavior and availability may change.
 
 Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set by `format`. Write to a file or pipe to a player. There is **no JSON wrapper** on success.
 
@@ -51,13 +56,13 @@ Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set
 | Field | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `text` | string | — (required) | The text to synthesize. Use speaker tags `<\|speaker:0\|>`, `<\|speaker:1\|>` for multi-speaker. |
-| `reference_id` | string \| string[] \| null | null | Voice model ID. Array = multi-speaker (S2-Pro only). |
+| `reference_id` | string \| string[] \| null | null | Voice model ID. Array = multi-speaker (`s2-pro`, the S2.1-Pro family, and `drama-3-preview`). |
 | `references` | ReferenceAudio[] \| ReferenceAudio[][] \| null | null | Inline zero-shot cloning samples. **Requires `application/msgpack`** because `audio` is raw bytes. 2D array for multi-speaker. |
 | `temperature` | number 0–1 | 0.7 | Expressiveness. |
 | `top_p` | number 0–1 | 0.7 | Nucleus sampling. |
 | `prosody.speed` | number 0.5–2 | 1 | Playback speed. |
 | `prosody.volume` | number (dB) | 0 | Loudness offset. |
-| `prosody.normalize_loudness` | bool | true | **S2-Pro only.** |
+| `prosody.normalize_loudness` | bool | true | **`s2-pro` and the S2.1-Pro family.** |
 | `chunk_length` | int 100–300 | 300 | Text segment size. |
 | `min_chunk_length` | int 0–100 | 50 | Min chars before a new chunk. |
 | `normalize` | bool | true | Normalize numbers/etc. for EN/ZH. |
@@ -77,7 +82,7 @@ Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set
 
 1. **Library / custom voice model** → set `reference_id` to the model `_id`. Simplest path.
 2. **Zero-shot from audio** → set `references` (array of `{audio, text}`) and use **MessagePack** body. JSON cannot carry raw audio bytes.
-3. **Multi-speaker dialogue (S2-Pro only)** → `reference_id: [id0, id1, ...]` and embed `<|speaker:0|>` / `<|speaker:1|>` markers inside `text`. For zero-shot multi-speaker, `references` is an array-of-arrays, one inner array per speaker.
+3. **Multi-speaker dialogue (`s2-pro`, the S2.1-Pro family, and `drama-3-preview`)** → `reference_id: [id0, id1, ...]` and embed `<|speaker:0|>` / `<|speaker:1|>` markers inside `text`. For zero-shot multi-speaker, `references` is an array-of-arrays, one inner array per speaker.
 
 ### Single-speaker curl
 
@@ -85,7 +90,7 @@ Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set
 curl --request POST https://api.fish.audio/v1/tts \
   --header "Authorization: Bearer $FISH_API_KEY" \
   --header "Content-Type: application/json" \
-  --header "model: s2-pro" \
+  --header "model: s2.1-pro" \
   --data '{
     "text": "Hello! Welcome to Fish Audio.",
     "reference_id": "<voice-model-id>",
@@ -96,13 +101,13 @@ curl --request POST https://api.fish.audio/v1/tts \
   --output out.mp3
 ```
 
-### Multi-speaker curl (S2-Pro)
+### Multi-speaker curl
 
 ```bash
 curl --request POST https://api.fish.audio/v1/tts \
   --header "Authorization: Bearer $FISH_API_KEY" \
   --header "Content-Type: application/json" \
-  --header "model: s2-pro" \
+  --header "model: s2.1-pro" \
   --data '{
     "text": "<|speaker:0|>Good morning!<|speaker:1|>Good morning! How are you?",
     "reference_id": ["<speaker-0-id>", "<speaker-1-id>"],
@@ -126,7 +131,7 @@ payload = {
 headers = {
     "Authorization": f"Bearer {os.environ['FISH_API_KEY']}",
     "Content-Type": "application/json",
-    "model": "s2-pro",
+    "model": "s2.1-pro",
 }
 
 with httpx.stream("POST", "https://api.fish.audio/v1/tts",
@@ -154,7 +159,7 @@ payload = {
 headers = {
     "Authorization": f"Bearer {os.environ['FISH_API_KEY']}",
     "Content-Type": "application/msgpack",
-    "model": "s2-pro",
+    "model": "s2.1-pro",
 }
 
 body = msgpack.packb(payload, use_bin_type=True)
@@ -178,7 +183,7 @@ const res = await fetch("https://api.fish.audio/v1/tts", {
   headers: {
     Authorization: `Bearer ${process.env.FISH_API_KEY}`,
     "Content-Type": "application/json",
-    model: "s2-pro",
+    model: "s2.1-pro",
   },
   body: JSON.stringify({
     text: "Hello from Fish Audio.",
@@ -192,33 +197,94 @@ if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
 await pipeline(Readable.fromWeb(res.body), createWriteStream("out.mp3"));
 ```
 
-## Speech-to-Text — `POST /v1/asr`
+## Speech-to-Text: `POST /v1/asr`
 
-Required headers: `Authorization`. Content type: `multipart/form-data` or `application/msgpack`.
+Synchronous: one audio file per request, and the JSON response arrives when the whole file has been transcribed.
 
-Form fields:
+Use `transcribe-1-pro`, the recommended model, and select it with the `model` header on every request. This section describes `transcribe-1-pro`; for the differences on `transcribe-1`, see "If you use `transcribe-1`" at the end of this section.
 
-- `audio` (binary, required)
-- `language` (string, optional; omit to auto-detect)
-- `ignore_timestamps` (bool, default `true`; set `false` to get per-segment timestamps — adds latency on clips < 30 s)
+Guide: `https://docs.fish.audio/features/speech-to-text`. The `/v1/asr` entry in `openapi.json` currently does not list the `transcribe-1-pro` fields, `request_id`, `speaker_turns`, or the error `code`; where it is less complete or disagrees, follow this section.
 
-Response (200):
+Headers:
+
+- `Authorization: Bearer <FISH_API_KEY>` (required).
+- `model: transcribe-1-pro` (recommended): recordings up to 60 minutes, including multi-speaker conversations, with speaker markers, `speaker_turns`, and emotion and vocal-event cues. Write the value exactly, in lowercase. The header is optional, but a missing or unrecognized value (for example `Transcribe-1-Pro` or `transcribe-1pro`) is served and billed as `transcribe-1`, and no error is returned; if you expected Pro but `text` has no speaker markers, check the header. `model` is a header only; a `model` form field is ignored.
+- Body encoding: `multipart/form-data` (let the HTTP client set `Content-Type` and the boundary) or `Content-Type: application/msgpack`. Base64-encoded audio in a JSON body is not supported.
+
+Request fields (the same names in multipart and MessagePack):
+
+| Field                          | Default      | Notes                                                                                                                                                                                                                                           |
+| ------------------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `audio`                        | — (required) | Exactly one audio file: a multipart file part, or MessagePack `bin`. The format is read from the bytes, not the file name.                                                                                                                      |
+| `language`                     | unset        | Optional hint, a lowercase ISO 639-1 code such as `en`, `zh`, or `ja`. Detection still runs, and the hint does not force the transcript language. Other forms, such as `en-US` or `English`, may be rejected with 400.                          |
+| `ignore_timestamps`            | `true`       | `false` returns word-level `segments` and, unless `diarize=false`, `speaker_turns`; it adds processing time. Multipart: any value other than `true` (case-insensitive), including `1` or an empty value, means `false`. MessagePack: a boolean. |
+| `tag_audio_events`             | `true`       | `false` removes bracketed cues such as `[laughter]` or `[高兴]` from `text` and `speaker_turns`. Timestamps, `duration`, and billing do not change.                                                                                             |
+| `diarize`                      | `auto`       | `auto` or `true`: return `speaker_turns` when timestamps are requested. `false`: omit `speaker_turns`; the transcript and its speaker markers do not change.                                                                                    |
+| `num_speakers`                 | unset        | Expected number of speakers, an integer ≥ 1. A best-effort hint that may have no effect on short recordings. Cannot be combined with `min_speakers` or `max_speakers`.                                                                          |
+| `min_speakers`, `max_speakers` | unset        | Bounds on the number of speakers, integers ≥ 1, with `min_speakers` ≤ `max_speakers`. Same best-effort rule.                                                                                                                                    |
+
+Multipart values: `tag_audio_events` is `true` or `false` and `diarize` is `auto`, `true`, or `false` (both case-insensitive); speaker counts are digits. MessagePack values: `tag_audio_events` is a boolean, `diarize` is a boolean or `"auto"`/`"true"`/`"false"`, and speaker counts are integers. An invalid value, `tag_audio_events`, `diarize`, or a speaker count sent twice in a multipart form, or a speaker count with `diarize=false` returns 400 `invalid_parameter`.
+
+Limits and formats:
+
+- `transcribe-1-pro` accepts recordings up to 60 minutes; longer audio returns 400 `audio_too_long`. Send long recordings as compressed audio (MP3, Opus, or AAC); an hour of 128 kbps MP3 is about 55 MiB. A request that is too large returns 413. Send a whole conversation as one file: speaker labels are consistent within one response, not across requests.
+- Processing time grows with the length of the recording, and long `transcribe-1-pro` requests can take several minutes. Set a generous client timeout (the examples use 15 minutes); many HTTP libraries default to much less (httpx: 5 s). If a long request fails with a 5xx error or the connection drops, retry it.
+- `transcribe-1-pro` accepts WAV, MP3, AAC (including M4A/MP4), FLAC, Ogg (Opus or Vorbis), WebM/Matroska, and MOV, including browser recordings, and uses the first audio track of a video file; send the original file bytes. AIFF, CAF, WMA, AMR, AC-3, and raw (headerless) PCM return 400.
+
+Response (200), an illustrative `transcribe-1-pro` response with `ignore_timestamps=false`:
 
 ```json
 {
-  "text": "full transcript",
-  "duration": 12.34,
-  "segments": [{"text": "...", "start": 0.0, "end": 1.23}]
+  "text": "<|speaker:0|> Thanks for joining. <|speaker:1|> [laughter] Happy to be here.",
+  "duration": 4.2,
+  "segments": [
+    { "text": "Thanks", "start": 0.16, "end": 0.48 },
+    { "text": "for", "start": 0.48, "end": 0.64 },
+    { "text": "joining", "start": 0.64, "end": 1.12 },
+    { "text": "Happy", "start": 2.24, "end": 2.56 },
+    { "text": "to", "start": 2.56, "end": 2.68 },
+    { "text": "be", "start": 2.68, "end": 2.8 },
+    { "text": "here", "start": 2.8, "end": 3.2 }
+  ],
+  "language": "English",
+  "language_code": "en",
+  "request_id": "3f6c2a1e-8b4d-4c7a-9e21-5d0b7f9a6c13",
+  "speaker_turns": [
+    {
+      "speaker": "speaker:0",
+      "text": "Thanks for joining.",
+      "start": 0.16,
+      "end": 1.12
+    },
+    {
+      "speaker": "speaker:1",
+      "text": "[laughter] Happy to be here.",
+      "start": 2.24,
+      "end": 3.2
+    }
+  ]
 }
 ```
+
+Response fields:
+
+- `text`: The full transcript, with inline `<|speaker:N|>` markers, usually with a space on each side, and, unless `tag_audio_events=false`, bracketed cues. Text before the first marker belongs to the first turn; a transcript with no marker is a single speaker (speaker 0).
+- `duration`: Audio length in seconds, including silence.
+- `segments`: Word-level timestamps `{ text, start, end }` in seconds. Usually one word (one or a few characters in Chinese and Japanese), with no punctuation, markers, or cues; it can be normalized (`35` for `3.5`), so it does not always match `text`. `start` can equal `end`. `[]` (never omitted) when `ignore_timestamps=true`, when no speech was found, or when timing is temporarily unavailable. Segments are not speaker turns.
+- `language`: The detected language's English name, such as `English` or `Chinese`. Omitted when it cannot be determined.
+- `language_code`: ISO 639-1 code for `language`, such as `en`. Omitted when unknown. If the language cannot be determined and you sent a `language` hint, it reports your hint, unchecked. Responses report one language, even for recordings that switch languages.
+- `request_id`: Unique ID for the request, also in error bodies and in the `x-request-id` response header. Include it when you contact support.
+- `speaker_turns`: Present only when `ignore_timestamps=false` and `diarize` is not `false`. Turns in the order they occur (`[]` when no speech was found), each `{ speaker: "speaker:N", text, start, end }`. `N` matches the `<|speaker:N|>` marker in `text`; labels identify speakers within one response only. Turn `text` has no markers and keeps cues unless `tag_audio_events=false`. If `segments` is empty, turn times are approximate and can cover the whole recording. Consecutive turns can have the same speaker; do not assume turns are contiguous or non-overlapping. Prefer `speaker_turns` over parsing `text`.
+
+`language` and `language_code` are omitted, never `null`. Do not depend on the order of keys in the JSON.
 
 ### curl
 
 ```bash
 curl --request POST https://api.fish.audio/v1/asr \
   --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "model: transcribe-1-pro" \
   --form "audio=@input.wav" \
-  --form "language=en" \
   --form "ignore_timestamps=false"
 ```
 
@@ -230,20 +296,148 @@ import os, httpx
 with open("input.wav", "rb") as f:
     r = httpx.post(
         "https://api.fish.audio/v1/asr",
-        headers={"Authorization": f"Bearer {os.environ['FISH_API_KEY']}"},
+        headers={
+            "Authorization": f"Bearer {os.environ['FISH_API_KEY']}",
+            "model": "transcribe-1-pro",
+        },
         files={"audio": f},
-        data={"language": "en", "ignore_timestamps": "false"},
-        timeout=120,
+        data={"ignore_timestamps": "false"},
+        # Long Pro recordings can take several minutes; httpx defaults to 5 s.
+        timeout=httpx.Timeout(900.0, connect=10.0),
     )
-r.raise_for_status()
-print(r.json()["text"])
+if r.is_error:
+    try:
+        err = r.json()  # {status, message}; transcribe-1-pro adds code, request_id
+    except ValueError:
+        err = {"status": r.status_code, "message": r.text}  # edge errors may not be JSON
+    raise RuntimeError(f"ASR failed: {err}")
+result = r.json()
+print(result["text"])
+for turn in result.get("speaker_turns", []):
+    print(f"{turn['speaker']} [{turn['start']:.2f}-{turn['end']:.2f}] {turn['text']}")
 ```
 
-## Voice models — `/model`
+### Node.js (fetch)
+
+```js
+import { readFile } from "node:fs/promises";
+// npm install undici@7 (Node.js 20.18.1+; undici 8 needs Node.js 22.19+)
+import { Agent, setGlobalDispatcher } from "undici";
+
+// Node's fetch waits only 300 s for response headers; long Pro requests can take longer.
+setGlobalDispatcher(
+  new Agent({ headersTimeout: 900_000, bodyTimeout: 900_000 })
+);
+
+const form = new FormData();
+form.append("audio", new Blob([await readFile("input.wav")]), "input.wav");
+form.append("ignore_timestamps", "false");
+
+const res = await fetch("https://api.fish.audio/v1/asr", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.FISH_API_KEY}`,
+    model: "transcribe-1-pro",
+  },
+  body: form,
+  signal: AbortSignal.timeout(900_000),
+});
+if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+const result = await res.json();
+console.log(result.text);
+for (const turn of result.speaker_turns ?? []) {
+  console.log(`${turn.speaker} [${turn.start}-${turn.end}] ${turn.text}`);
+}
+```
+
+MessagePack instead of multipart: send `msgpack.packb({"audio": audio_bytes, "ignore_timestamps": False}, use_bin_type=True)` with `Content-Type: application/msgpack` and the same `model: transcribe-1-pro` header; values are typed (booleans, integers), and `audio` must be raw bytes (`bin`).
+
+### If you use `transcribe-1`
+
+`transcribe-1` is for general transcription of short recordings, and it serves every request whose `model` header is missing or not an exact match. It differs from `transcribe-1-pro` as follows:
+
+- Fields: send only `audio`, `language`, and `ignore_timestamps`. The other fields apply to `transcribe-1-pro`; send them only with `model: transcribe-1-pro`.
+- Response: `text`, `duration`, `segments`, and, when the language is known, `language` and `language_code`. Speaker markers, `speaker_turns`, and `request_id` are `transcribe-1-pro` features.
+- Errors: rely only on `status` and `message`.
+- Limits: up to 50 MiB per request; keep MP3 and Opus files under 25 MiB. A request over the size limit returns 413 or 400. For recordings longer than a few minutes, use `transcribe-1-pro`. A long request can fail with 503 when it exceeds the processing-time limit; retry, and if it keeps failing, use `transcribe-1-pro` or split the audio.
+- Formats: WAV, MP3, AAC (including M4A/MP4), FLAC, and Ogg (Opus or Vorbis). Convert WebM recordings (for example, from a browser's MediaRecorder) to Ogg/Opus, MP3, or WAV first, or use `transcribe-1-pro`.
+
+## Voice Design: `POST /v1/voice-design`
+
+Required headers:
+
+- `Authorization: Bearer <FISH_API_KEY>`
+- `Content-Type: application/json`
+- `model: voice-design-1` (required; currently the only public Voice Design model)
+
+Response: JSON `{ candidates: VoiceDesignCandidate[] }`. Each candidate includes `audio_base64`; decode it to write the generated audio bytes to a file. The current candidate audio payload is WAV bytes encoded as base64.
+
+### Request body fields (VoiceDesignRequest)
+
+| Field                     | Type           | Default      | Notes                                                                       |
+| ------------------------- | -------------- | ------------ | --------------------------------------------------------------------------- |
+| `instruction`             | string         | — (required) | Voice design prompt. 1 to 2000 characters.                                  |
+| `reference_text`          | string \| null | null         | Optional preview text to read in the generated voice. Up to 150 characters. |
+| `language`                | string \| null | null         | Optional language hint such as `en`, `zh`, or `ja`.                         |
+| `n`                       | int            | 2            | Number of candidates. Range: 1 to 4.                                        |
+| `speed`                   | number         | 1.0          | Speaking speed multiplier. Must be greater than 0 and at most 3.             |
+| `num_step`                | int            | 32           | Diffusion steps. Range: 1 to 128.                                           |
+| `guidance_scale`          | number         | 2.0          | Prompt guidance. Must be at least 0.                                        |
+| `instruct_guidance_scale` | number         | 0.0          | Instruction guidance. Must be at least 0.                                   |
+| `seed`                    | int \| null    | null         | Optional deterministic seed for candidate generation.                       |
+
+Do **not** send MessagePack, multipart form data, inline reference audio, or service-internal fields such as `features`, `features_json_file`, or `include_audio_base64`.
+
+### curl
+
+```bash
+curl --request POST https://api.fish.audio/v1/voice-design \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --header "model: voice-design-1" \
+  --data '{
+    "instruction": "Warm, confident studio narrator with a natural tone",
+    "reference_text": "Welcome to Fish Audio.",
+    "language": "en",
+    "n": 2
+  }' | jq -r '.candidates[0].audio_base64' | base64 --decode > voice.wav
+```
+
+### Python
+
+```python
+import base64
+import os
+import httpx
+
+r = httpx.post(
+    "https://api.fish.audio/v1/voice-design",
+    headers={
+        "Authorization": f"Bearer {os.environ['FISH_API_KEY']}",
+        "Content-Type": "application/json",
+        "model": "voice-design-1",
+    },
+    json={
+        "instruction": "Warm, confident studio narrator with a natural tone",
+        "reference_text": "Welcome to Fish Audio.",
+        "language": "en",
+        "n": 2,
+    },
+    timeout=120,
+)
+r.raise_for_status()
+candidate = r.json()["candidates"][0]
+with open("voice.wav", "wb") as f:
+    f.write(base64.b64decode(candidate["audio_base64"]))
+```
+
+Billing: one successful generation request is charged once, even when it returns multiple candidates. Authentication, validation, balance, concurrency, and service errors are not billed.
+
+## Voice models: `/model`
 
 ### List: `GET /model`
 
-Query params: `page_size` (default 10), `page_number` (default 1), `title`, `tag` (string or array), `self` (bool — only your models), `author_id`, `language`, `title_language`, `sort_by` (`score` | `task_count` | `created_at`, default `score`).
+Query params: `page_size` (default 10), `page_number` (default 1), `title`, `tag` (string or array), `self` (bool; only your models), `author_id`, `language`, `title_language`, `sort_by` (`score` | `task_count` | `created_at`, default `score`).
 
 Returns `{total, items: ModelEntity[]}`.
 
@@ -273,7 +467,7 @@ Returns 201 with the full `ModelEntity` including `_id`, `state` (`created` | `t
 ### Get / Update / Delete
 
 - `GET /model/{id}` → `ModelEntity`
-- `PATCH /model/{id}` — JSON, form-urlencoded, multipart, or msgpack. Nullable fields: `title`, `description`, `cover_image` (binary), `visibility`, `tags`.
+- `PATCH /model/{id}`: JSON, form-urlencoded, multipart, or msgpack. Nullable fields: `title`, `description`, `cover_image` (binary), `visibility`, `tags`.
 - `DELETE /model/{id}` → 200 on success.
 
 ```bash
@@ -286,32 +480,32 @@ curl --request PATCH https://api.fish.audio/model/<id> \
 ## Wallet
 
 - `GET /wallet/self/package` → `{user_id, type, total, balance, created_at, updated_at, finished_at}`
-- `GET /wallet/self/api-credit` → `{_id, user_id, credit, created_at, updated_at, has_phone_sha256, has_free_credit}`. Pass `?check_free_credit=true` to also populate `has_free_credit` (default `false` — the field is `null` when not checked).
+- `GET /wallet/self/api-credit` → `{_id, user_id, credit, created_at, updated_at, has_phone_sha256, has_free_credit}`. Pass `?check_free_credit=true` to also populate `has_free_credit` (default `false`; the field is `null` when not checked).
 
 Replace `self` with a specific `user_id` if you have permission; otherwise always use `self`.
 
-## WebSocket TTS — `wss://api.fish.audio/v1/tts/live`
+## WebSocket TTS: `wss://api.fish.audio/v1/tts/live`
 
 For low-latency / streaming TTS (e.g. LLM token stream → speech). All frames are **MessagePack-encoded** binary messages.
 
 ### Connection headers
 
 - `Authorization: Bearer <FISH_API_KEY>`
-- `model: s2-pro` (or `s1`) — **required**
+- `model`: optional; values `s1`, `s2-pro`, `s2.1-pro`, `s2.1-pro-free` (falls back to `s2.1-pro` when omitted or unrecognized)
 
 ### Event sequence
 
 Client → server:
 
-1. `StartEvent` — once, first message: `{event: "start", request: <TTSRequest>}`. The `request` object is the same schema as `POST /v1/tts` above. Usually `request.text = ""` and the real text streams in `TextEvent`s.
-2. `TextEvent` — one per text chunk: `{event: "text", text: "..."}`. Send as many as needed.
-3. `FlushEvent` — optional: `{event: "flush"}`. Forces the server to synthesize buffered text immediately (use for turn-taking / low-latency flushes).
-4. `CloseEvent` — final: `{event: "stop"}`. **Note the literal is `stop`, not `close`.**
+1. `StartEvent` (once, first message): `{event: "start", request: <TTSRequest>}`. The `request` object is the same schema as `POST /v1/tts` above. Usually `request.text = ""` and the real text streams in `TextEvent`s.
+2. `TextEvent` (one per text chunk): `{event: "text", text: "..."}`. Send as many as needed.
+3. `FlushEvent` (optional): `{event: "flush"}`. Forces the server to synthesize buffered text immediately (use for turn-taking / low-latency flushes).
+4. `CloseEvent` (final): `{event: "stop"}`. **Note the literal is `stop`, not `close`.**
 
 Server → client:
 
-- `AudioEvent`: `{event: "audio", audio: <bytes>}` — many of these, concatenate in order to reconstruct the audio stream in the format set by `request.format`.
-- `FinishEvent`: `{event: "finish", reason: "stop" | "error"}` — exactly one, then the server closes the socket. Ignore unknown events for forward compatibility.
+- `AudioEvent`: `{event: "audio", audio: <bytes>}`. Many of these; concatenate in order to reconstruct the audio stream in the format set by `request.format`.
+- `FinishEvent`: `{event: "finish", reason: "stop" | "error"}`. Exactly one, then the server closes the socket. Ignore unknown events for forward compatibility.
 
 ### Python example (`websockets>=14` + `msgpack`)
 
@@ -336,7 +530,7 @@ start = {
 }
 
 async def run(text_stream):
-    headers = {"Authorization": f"Bearer {API_KEY}", "model": "s2-pro"}
+    headers = {"Authorization": f"Bearer {API_KEY}", "model": "s2.1-pro"}
     async with websockets.connect(URL, additional_headers=headers,
                                   max_size=None) as ws:
         await ws.send(msgpack.packb(start, use_bin_type=True))
@@ -385,7 +579,7 @@ import { createWriteStream } from "node:fs";
 const ws = new WebSocket("wss://api.fish.audio/v1/tts/live", {
   headers: {
     Authorization: `Bearer ${process.env.FISH_API_KEY}`,
-    model: "s2-pro",
+    model: "s2.1-pro",
   },
 });
 
@@ -413,13 +607,13 @@ ws.on("message", (buf) => {
 
 ## Emotion / expression control
 
-The S1 model uses `(parenthesis)` tags inside `text`, e.g. `(happy) What a day!`. S2-Pro uses free-form `[bracket]` natural-language tags, e.g. `[slightly sarcastic, rising tone]`. Either works through `text` — no separate parameter. Full list: `https://docs.fish.audio/api-reference/emotion-reference.md`.
+The S1 model uses `(parenthesis)` tags inside `text`, e.g. `(happy) What a day!`. S2-Pro uses free-form `[bracket]` natural-language tags, e.g. `[slightly sarcastic, rising tone]`. Either works through `text`; there is no separate parameter. Full list: `https://docs.fish.audio/api-reference/emotion-reference.md`.
 
 ## Encoding and content-type rules
 
-- Use `application/json` for normal TTS requests — it's the simplest and works for `reference_id` flows.
+- Use `application/json` for normal TTS requests. It's the simplest and works for `reference_id` flows.
 - Use `application/msgpack` when you need to send raw audio bytes inline (inline `references`, or the WebSocket protocol).
-- Use `multipart/form-data` for `/v1/asr` and `POST /model` because they upload files.
+- Use `multipart/form-data` for `/v1/asr` and `POST /model` because they upload files. `/v1/asr` also accepts `application/msgpack`; it does not accept base64 audio in JSON.
 - All WebSocket frames are MessagePack binary, regardless of inner payload.
 
 ## Error handling checklist
@@ -428,18 +622,24 @@ The S1 model uses `(parenthesis)` tags inside `text`, e.g. `(happy) What a day!`
 - 402 → out of credit. Check `/wallet/self/api-credit`.
 - 404 → bad `model/{id}` (voice model doesn't exist or isn't visible to you).
 - 422 → validation. The response is an array; each item's `loc` points at the offending field. Most common causes:
-  - `model` header missing on `/v1/tts` or WebSocket.
-  - `reference_id` is an array but model is `s1` (multi-speaker requires `s2-pro`).
+  - `reference_id` is an array but model is `s1` (multi-speaker requires `s2-pro`, an S2.1-Pro model, or `drama-3-preview`).
   - `references` sent with `Content-Type: application/json` (must be msgpack).
   - Numeric param out of range (`temperature`, `top_p`, `chunk_length`, `min_chunk_length`, `prosody.speed`, `early_stop_threshold`).
   - `mp3_bitrate` / `opus_bitrate` set without matching `format`.
-- WebSocket: a `finish` event with `reason: "error"` means the server failed mid-stream — surface the message and reconnect rather than retrying on the same socket.
+- WebSocket: a `finish` event with `reason: "error"` means the server failed mid-stream. Surface the message and reconnect rather than retrying on the same socket.
+- `POST /v1/asr` (`transcribe-1-pro`): branch on the HTTP status and on `code`, never on `message`. New `code` values may be added; handle unknown codes by HTTP status. With `transcribe-1`, rely only on `status` and `message`.
+  - 400 → fix the request; do not retry. Codes: `invalid_request` (unreadable body, missing or repeated `audio`), `invalid_parameter` (bad or conflicting field values), `invalid_audio` (undecodable or unsupported format), `audio_too_long` (over 60 minutes), `audio_too_short` (under about 0.08 s).
+  - 413 → request too large (`request_too_large`). It may come from the network edge without a JSON body. Send compressed audio.
+  - 415 → unsupported `Content-Type` (`unsupported_media_type`). Use `multipart/form-data` or `application/msgpack`.
+  - 429 → usually your account is at its concurrency limit, shared by all its API keys; each `/v1/asr` request holds a slot until its response returns. No `Retry-After` header is sent; retry with exponential backoff.
+  - 500 (`internal_error`), 502, 503 (`upstream_unavailable`, `upstream_timeout`, `excessive_repetition`, `diarization_failed`), 504 → temporary; retry with exponential backoff.
+  - Any other 4xx (`upstream_rejected`, rare) → do not retry.
 
 ## Decision shortcuts
 
 - User just wants audio from text → `POST /v1/tts` with JSON + `reference_id`.
 - User has a raw voice clip and wants instant cloning → `POST /v1/tts` with MessagePack + `references`.
-- User wants dialogue between multiple speakers → `POST /v1/tts` on `s2-pro` with `reference_id` array and `<|speaker:N|>` tags.
+- User wants dialogue between multiple speakers → `POST /v1/tts` on `s2.1-pro` with `reference_id` array and `<|speaker:N|>` tags.
 - User is streaming tokens from an LLM and wants speech to play as it arrives → WebSocket `/v1/tts/live`.
 - User wants a persistent custom voice they can reuse → `POST /model` first, then reuse the returned `_id` as `reference_id`.
-- User wants a transcript → `POST /v1/asr`.
+- User wants a transcript → `POST /v1/asr` with the `model: transcribe-1-pro` header (send it on every request; without it, the request runs on `transcribe-1`).

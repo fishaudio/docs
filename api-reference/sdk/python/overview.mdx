@@ -97,7 +97,7 @@ asyncio.run(main())
 # Use a specific voice by ID
 audio = client.tts.convert(
     text="Custom voice",
-    reference_id="802e3bc2b27e49c2995d23ef70e6ac89"
+    reference_id="9a9cf47702da476aa4629e2506d4a857"
 )
 ```
 
@@ -143,9 +143,18 @@ audio = client.tts.stream(text="Hello!").collect()
 ### Speech-to-Text
 
 ```python
-# Transcribe audio
+from fishaudio.core import RequestOptions
+
+# Transcribe audio with transcribe-1-pro (recommended).
+# Without the model header, the request runs on transcribe-1.
 with open("audio.wav", "rb") as f:
-    result = client.asr.transcribe(audio=f.read(), language="en")
+    result = client.asr.transcribe(
+        audio=f.read(),
+        language="en",
+        request_options=RequestOptions(
+            additional_headers={"model": "transcribe-1-pro"}
+        ),
+    )
 
 print(result.text)
 
@@ -185,7 +194,7 @@ async def text_chunks():
 
 async def main():
     async with AsyncFishAudio() as client:
-        # stream_websocket is an async generator — iterate it, don't await the call
+        # stream_websocket is an async generator: iterate it, don't await the call
         audio_stream = client.tts.stream_websocket(text_chunks(), latency="balanced")
         with open("out.mp3", "wb") as f:
             async for chunk in audio_stream:

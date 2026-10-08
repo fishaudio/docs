@@ -36,35 +36,38 @@ with open("audio.mp3", "rb") as f:
 
 # Transcribe
 response = session.asr(ASRRequest(
-    audio=audio_data
+    audio=audio_data,
+    ignore_timestamps=True
 ))
 
 print(response.text)
-print(f"Duration: {response.duration}ms")
+print(f"Duration: {response.duration}s")
 ```
 
 ## Language Specification
 
-Improve accuracy by specifying the language:
+Pass a language hint when you know the source language:
 
 ```python
 # English transcription
 response = session.asr(ASRRequest(
     audio=audio_data,
-    language="en"
+    language="en",
+    ignore_timestamps=True
 ))
 
 # Chinese transcription
 response = session.asr(ASRRequest(
     audio=audio_data,
-    language="zh"
+    language="zh",
+    ignore_timestamps=True
 ))
 ```
 
 Common language codes: `en` (English), `zh` (Chinese), `es` (Spanish), `fr` (French), `de` (German), `ja` (Japanese), `ko` (Korean), `pt` (Portuguese)
 
 <Tip>
-Automatic language detection works well, but specifying the language improves accuracy and speed.
+The language is detected automatically whether or not you send a hint, and a hint does not force the transcript into that language.
 </Tip>
 
 ## Working with Segments
@@ -73,7 +76,8 @@ Get detailed timing for each segment:
 
 ```python
 response = session.asr(ASRRequest(
-    audio=audio_data
+    audio=audio_data,
+    ignore_timestamps=False
 ))
 
 # Full transcription
@@ -89,7 +93,7 @@ for segment in response.segments:
 Control timestamp generation:
 
 ```python
-# Include timestamps (default)
+# Include timestamps
 response = session.asr(ASRRequest(
     audio=audio_data,
     ignore_timestamps=False  # False = include timestamps
@@ -103,7 +107,7 @@ response = session.asr(ASRRequest(
 ```
 
 <Note>
-`ignore_timestamps=False` (default) includes segment timestamps. Set to `True` to skip timestamp processing for faster transcription when you only need the text.
+Always set `ignore_timestamps`. The legacy SDK sends `None` when you leave it out, and the API rejects that with a 400 error. `ignore_timestamps=False` includes segment timestamps. Set it to `True` to skip timestamp processing for faster transcription when you only need the text.
 </Note>
 
 ## Audio Formats
@@ -117,8 +121,7 @@ Supported audio formats:
 - AAC
 
 File requirements:
-- Maximum size: 100MB
-- Maximum duration: 60 minutes
+- Size and duration limits depend on the model; see [Speech to Text limits](/features/speech-to-text#limits)
 - Sample rate: 16kHz or higher recommended
 
 ## Transcribing TTS Output
@@ -137,7 +140,8 @@ for chunk in session.tts(TTSRequest(
 
 # Transcribe it
 response = session.asr(ASRRequest(
-    audio=bytes(audio_buffer)
+    audio=bytes(audio_buffer),
+    ignore_timestamps=True
 ))
 
 print(response.text)
@@ -152,12 +156,13 @@ from fish_audio_sdk.exceptions import HttpCodeErr
 
 try:
     response = session.asr(ASRRequest(
-        audio=audio_data
+        audio=audio_data,
+        ignore_timestamps=True
     ))
 except HttpCodeErr as e:
-    if e.status_code == 413:
-        print("Audio file too large (max 100MB)")
-    elif e.status_code == 400:
+    if e.status == 413:
+        print("Audio file too large")
+    elif e.status == 400:
         print("Invalid audio format")
     else:
         raise e
@@ -170,7 +175,7 @@ The ASR response includes:
 | Field      | Type                | Description                    |
 |------------|---------------------|--------------------------------|
 | `text`     | str                 | Complete transcription         |
-| `duration` | float               | Audio duration (milliseconds)  |
+| `duration` | float               | Audio duration (seconds)       |
 | `segments` | list[ASRSegment]    | Timestamped text segments      |
 
 Segment structure:
@@ -180,14 +185,10 @@ Segment structure:
 | `start` | float | Start time (seconds)     |
 | `end`   | float | End time (seconds)       |
 
-<Warning>
-Note the timing units: `duration` is in milliseconds while segment `start`/`end` are in seconds.
-</Warning>
-
 ## Request Parameters
 
 | Parameter           | Type  | Description                | Default            |
 |---------------------|-------|----------------------------|--------------------|
 | `audio`             | bytes | Audio data to transcribe   | Required           |
 | `language`          | str   | Language code (e.g., "en") | None (auto-detect) |
-| `ignore_timestamps` | bool  | Skip timestamp processing  | False              |
+| `ignore_timestamps` | bool  | Skip timestamp processing  | None (must be set) |

@@ -1,0 +1,133 @@
+---
+title: "SLNG"
+description: "Access Fish Audio's real-time speech models through SLNG, our preferred regional hosting provider"
+icon: "/images/slng-logo.svg"
+---
+
+Run Fish Audio's real-time speech models closer to your users with [SLNG](https://slng.ai), our **preferred provider for regional hosting**. Europe and Australia are available now, with more [regions coming soon](#regions). Generate speech through its HTTP API or stream audio in real time over WebSocket.
+
+## Prerequisites
+
+- A SLNG account with an [API key](https://docs.slng.ai/authentication)
+- `curl` for the HTTP example
+- Python 3.9 or higher with `websockets` 14+ and `msgpack` for the WebSocket example (`pip install 'websockets>=14' msgpack`)
+
+Set your SLNG API key in the environment before running the examples:
+
+```bash
+export SLNG_API_KEY="YOUR_SLNG_API_KEY"
+```
+
+Both HTTP and WebSocket requests authenticate with `Authorization: Bearer <SLNG_API_KEY>`.
+
+## Available models
+
+Choose a model and use its endpoint path with `https://api.slng.ai` for HTTP or `wss://api.slng.ai` for WebSocket. Each model's API references describe its supported request fields and response format.
+
+| Model    | Endpoint path                    | API references                                                                                                                                                                       |
+| -------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| S2.1 Pro | `/v1/tts/slng/fish/tts:s2.1-pro` | [HTTP POST](https://docs.slng.ai/api-reference/tts/fish-tts-2-1-pro/fish-tts-2-1-pro-http), [WebSocket](https://docs.slng.ai/api-reference/tts/fish-tts-2-1-pro/fish-tts-2-1-pro-ws) |
+
+The examples below use S2.1 Pro in Europe (`eu`). See [Regions](#regions) for availability, region selection, and requests for additional regions.
+
+## Voices
+
+Browse [SLNG's official Fish Audio voice list](https://docs.slng.ai/voices/fish-audio) for available voices and audio samples. Set `reference_id` to the `Voice ID` listed for your chosen voice. The examples use `9a9cf47702da476aa4629e2506d4a857` (Hannah).
+
+For voice cloning with inline reference audio, SLNG accepts `references` containing audio bytes and their transcripts through MessagePack requests.
+
+## REST API
+
+Synthesize a complete utterance with a single request:
+
+```bash
+curl --fail-with-body --request POST \
+  --url "https://api.slng.ai/v1/tts/slng/fish/tts:s2.1-pro" \
+  --header "Authorization: Bearer $SLNG_API_KEY" \
+  --header "X-World-Part-Override: eu" \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "text": "Hello from Fish Audio on SLNG.",
+    "reference_id": "9a9cf47702da476aa4629e2506d4a857",
+    "format": "mp3"
+  }' \
+  --output output.mp3
+```
+
+The response contains binary audio in the requested format. Supported formats are `mp3`, `wav`, `pcm`, and `opus`.
+
+## WebSocket streaming
+
+Send text incrementally and receive audio chunks over a persistent connection. SLNG's Fish Audio WebSocket endpoint uses **MessagePack** for both outgoing and incoming messages. MessagePack is a binary serialization format that can carry audio bytes directly.
+
+```python
+import asyncio
+import os
+
+import msgpack
+from websockets.asyncio.client import connect
+
+
+async def tts_stream():
+    url = "wss://api.slng.ai/v1/tts/slng/fish/tts:s2.1-pro"
+    headers = {
+        "Authorization": f"Bearer {os.environ['SLNG_API_KEY']}",
+        "X-World-Part-Override": "eu",
+    }
+
+    async with connect(url, additional_headers=headers) as ws:
+        # Start a session with the voice and output format.
+        await ws.send(msgpack.packb({
+            "event": "start",
+            "request": {
+                "text": "",
+                "reference_id": "9a9cf47702da476aa4629e2506d4a857",
+                "format": "mp3",
+            },
+        }, use_bin_type=True))
+
+        # Send one or more text frames, then signal the end of input.
+        await ws.send(msgpack.packb({
+            "event": "text",
+            "text": "Hello from Fish Audio on SLNG.",
+        }, use_bin_type=True))
+        await ws.send(msgpack.packb({"event": "stop"}, use_bin_type=True))
+
+        with open("output.mp3", "wb") as output:
+            async for message in ws:
+                data = msgpack.unpackb(message, raw=False)
+
+                if data["event"] == "audio":
+                    output.write(data["audio"])
+                elif data["event"] == "error":
+                    raise RuntimeError(data["error"])
+                elif data["event"] == "finish":
+                    if data["reason"] == "error":
+                        raise RuntimeError("SLNG ended synthesis with an error")
+                    break
+
+
+asyncio.run(tts_stream())
+```
+
+Use a `flush` event to synthesize buffered text while keeping the session open. The `stop` event ends input and lets the server finish synthesis.
+
+## Regions
+
+Current and upcoming regional availability for Fish Audio through SLNG:
+
+| Region               | Region code | Availability |
+| -------------------- | ----------- | ------------ |
+| Europe               | `eu`        | Available    |
+| Australia            | `au`        | Available    |
+| Brazil               | —           | Coming soon  |
+| Singapore            | —           | Coming soon  |
+| India                | —           | Coming soon  |
+| Saudi Arabia         | —           | Coming soon  |
+| United Arab Emirates | —           | Coming soon  |
+| Indonesia            | —           | Coming soon  |
+| South Korea          | —           | Coming soon  |
+
+For available regions, set `X-World-Part-Override` to the region code in your HTTP request or WebSocket connection headers. If you omit the header, SLNG selects the region automatically. Region codes for upcoming regions will be added when they become available.
+
+For upcoming region availability or to request a new region, [contact Fish Audio](https://fish.audio/contact-sales/). Include your preferred region, model, and expected usage so our team can discuss availability and timelines.

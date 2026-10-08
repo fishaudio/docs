@@ -18,7 +18,7 @@ export const DownloadAssets = () => {
         </label>
       </div>
       <a
-        href="https://drive.google.com/drive/folders/1lpMhiJ0nPLwk02ZZnUji2NYjV-aXkxEI"
+        href="https://drive.google.com/drive/folders/1GYsYXDtzx1es7xEHOaTdlIleTCDoXufB"
         target="_blank"
         rel="noopener noreferrer"
         aria-disabled={!agreed}

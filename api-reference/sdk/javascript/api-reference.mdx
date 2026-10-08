@@ -43,12 +43,17 @@ Returns: `RealtimeConnection` (`EventEmitter`-like connection) emitting `Realtim
 Transcribe audio to text.
 
 ```typescript
-const res = await fishAudio.speechToText.convert({ audio: myAudio });
+const res = await fishAudio.speechToText.convert(
+  { audio: myAudio },
+  { headers: { model: "transcribe-1-pro" } }
+);
 console.log(res.text);
 ```
 
-Parameters: `request` (STTRequest) <br />
+Parameters: `request` (STTRequest), `requestOptions?` (for example `headers` and `timeoutInSeconds`) <br />
 Returns: `STTResponse`
+
+Select the model with the `model` header in `requestOptions.headers`. Without it, the request is served and billed as `transcribe-1`. See [Speech to Text](/features/speech-to-text).
 
 ## Voices
 
@@ -172,6 +177,8 @@ The backend model to use.
 ```typescript
 Backends = 's1' | 's2-pro';
 ```
+
+The API also accepts `s2.1-pro` and `s2.1-pro-free`; the SDK's `Backends` type has not been updated yet, so pass them with a type assertion (for example `'s2.1-pro' as Backends`) or call the [REST API](/api-reference/endpoint/openapi-v1/text-to-speech) directly.
 
 ## Response Classes
 

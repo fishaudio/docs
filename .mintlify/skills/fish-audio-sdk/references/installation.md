@@ -52,7 +52,7 @@ Never hardcode a key in source. If neither the argument nor `FISH_API_KEY` is se
 | Request timeout    | `timeout=240.0` (seconds)           | per-call `requestOptions.timeoutInSeconds` |
 | Custom HTTP client | `httpx_client=`                     | (not exposed)                              |
 
-> Python caveat: if you pass your own `httpx_client`, the SDK uses it **as-is** — your `base_url`, `timeout`, and the `Authorization` header are **not** applied to it. Pre-configure those on the client you inject.
+> Python caveat: if you pass your own `httpx_client`, the SDK uses it **as-is**. Your `base_url`, `timeout`, and the `Authorization` header are **not** applied to it. Pre-configure those on the client you inject.
 
 There is no client-level `max_retries` or `default_headers` option in Python. Per-request headers go through `request_options`. See [errors.md](errors.md) for retry/timeout behavior.
 
@@ -72,7 +72,7 @@ brew install ffmpeg
 sudo apt-get install ffmpeg
 ```
 
-In a server or browser context, don't use `play()` — use `save()` (Python) or write/stream the bytes yourself.
+In a server or browser context, don't use `play()`. Use `save()` (Python) or write/stream the bytes yourself.
 
 ## Verify a key works
 

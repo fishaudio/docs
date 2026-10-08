@@ -20,6 +20,7 @@
               "overview/capabilities",
               "developer-guide/getting-started/api-key",
               "developer-guide/getting-started/quickstart",
+              "developer-guide/getting-started/migration",
               "developer-guide/resources/agent-quickstart",
               "developer-guide/getting-started/changelog"
             ]
@@ -38,6 +39,7 @@
                     "icon": "sliders",
                     "pages": [
                       "developer-guide/core-features/fine-grained-control",
+                      "developer-guide/core-features/fine-grained-control/pronunciation-dictionaries",
                       "developer-guide/core-features/fine-grained-control/english",
                       "developer-guide/core-features/fine-grained-control/chinese",
                       "developer-guide/core-features/fine-grained-control/japanese"
@@ -46,6 +48,7 @@
                 ]
               },
               "features/speech-to-text",
+              "features/voice-design",
               "features/voice-cloning",
               "features/realtime-streaming",
               "features/manage-voices"
@@ -62,7 +65,8 @@
                   "overview/platform/create-voice/professional-voice-clone",
                   "overview/platform/create-voice/voice-design"
                 ]
-              }
+              },
+              "overview/mcp"
             ]
           },
           {
@@ -72,6 +76,81 @@
               "developer-guide/models-pricing/choosing-a-model",
               "developer-guide/models-pricing/deprecations",
               "developer-guide/models-pricing/pricing-and-rate-limits"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Agents",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "agents/overview",
+              "agents/quickstart",
+              "agents/concepts",
+              "agents/pricing"
+            ]
+          },
+          {
+            "group": "Build",
+            "pages": [
+              "agents/build/configuration",
+              "agents/build/voice-language",
+              "agents/build/time-timezone",
+              "agents/build/knowledge-base",
+              {
+                "group": "Tools",
+                "icon": "wrench",
+                "pages": [
+                  "agents/build/tools",
+                  "agents/build/webhook-tools",
+                  "agents/build/client-tools",
+                  "agents/build/system-tools"
+                ]
+              },
+              "agents/build/dynamic-variables",
+              "agents/build/custom-llm"
+            ]
+          },
+          {
+            "group": "Test",
+            "pages": [
+              "agents/test/preview-calls",
+              "agents/test/agent-tests",
+              "agents/test/import-export-tests",
+              "agents/test/simulation-tutorial"
+            ]
+          },
+          {
+            "group": "Deploy",
+            "pages": [
+              "agents/deploy/overview",
+              "agents/deploy/versions-publishing",
+              "agents/deploy/public-agents",
+              "agents/deploy/authenticated-sessions",
+              "agents/deploy/widget",
+              "agents/deploy/web-sdk",
+              "agents/deploy/react-sdk",
+              "agents/deploy/protocol"
+            ]
+          },
+          {
+            "group": "Telephony",
+            "pages": [
+              "agents/telephony/phone-numbers",
+              "agents/telephony/byo-sip",
+              "agents/telephony/inbound-calls",
+              "agents/telephony/outbound-calls",
+              "agents/telephony/transfers"
+            ]
+          },
+          {
+            "group": "Monitor",
+            "pages": [
+              "agents/monitor/conversation-history",
+              "agents/monitor/post-call-analysis",
+              "agents/monitor/webhooks"
             ]
           }
         ]
@@ -141,15 +220,34 @@
             "pages": [
               "developer-guide/integrations/pipecat",
               "developer-guide/integrations/livekit",
-              "developer-guide/integrations/n8n"
+              "developer-guide/integrations/n8n",
+              "developer-guide/integrations/telnyx",
+              "developer-guide/integrations/slng"
+            ]
+          },
+          {
+            "group": "Compatible APIs",
+            "tag": "Beta",
+            "pages": [
+              "developer-guide/compat/migrate-from-openai",
+              "developer-guide/compat/migrate-from-openrouter",
+              "developer-guide/compat/migrate-from-elevenlabs",
+              "developer-guide/compat/migrate-from-groq",
+              "developer-guide/compat/capabilities",
+              "developer-guide/compat/realtime-protocol"
             ]
           },
           {
             "group": "Self-Hosting",
             "pages": [
-              "developer-guide/self-hosting/local-setup",
-              "developer-guide/self-hosting/docker-deployment",
-              "developer-guide/self-hosting/running-inference"
+              "developer-guide/self-hosting/introduction",
+              "developer-guide/self-hosting/requirements",
+              "developer-guide/self-hosting/registry-access",
+              "developer-guide/self-hosting/kubernetes",
+              "developer-guide/self-hosting/all-in-one",
+              "developer-guide/self-hosting/air-gapped",
+              "developer-guide/self-hosting/operations",
+              "developer-guide/self-hosting/enterprise-releases"
             ]
           },
           {
@@ -169,6 +267,7 @@
             "group": "API Reference",
             "pages": [
               "api-reference/introduction",
+              "api-reference/observability",
               "api-reference/errors"
             ]
           },
@@ -195,13 +294,119 @@
                 ]
               },
               {
-                "group": "TTS & ASR (v1)",
+                "group": "TTS (v1)",
                 "icon": "code",
                 "pages": [
                   "api-reference/endpoint/openapi-v1/text-to-speech",
                   "api-reference/endpoint/openapi-v1/text-to-speech-stream-with-timestamps",
-                  "api-reference/endpoint/openapi-v1/speech-to-text",
-                  "api-reference/endpoint/websocket/tts-live"
+                  "api-reference/endpoint/websocket/tts-live",
+                  "api-reference/endpoint/openapi-v1/text-to-speech-live-with-timestamps"
+                ]
+              },
+              {
+                "group": "ASR (v1)",
+                "icon": "microphone",
+                "pages": ["api-reference/endpoint/openapi-v1/speech-to-text"]
+              },
+              {
+                "group": "Voice Design",
+                "icon": "wand-magic-sparkles",
+                "pages": ["api-reference/endpoint/openapi-v1/voice-design"]
+              }
+            ]
+          },
+          {
+            "group": "Agents API",
+            "pages": [
+              "api-reference/agent-errors",
+              {
+                "group": "Agents",
+                "icon": "robot",
+                "pages": [
+                  "api-reference/endpoint/agent/list-agents",
+                  "api-reference/endpoint/agent/create-agent",
+                  "api-reference/endpoint/agent/get-agent",
+                  "api-reference/endpoint/agent/update-agent",
+                  "api-reference/endpoint/agent/delete-agent",
+                  "api-reference/endpoint/agent/get-draft-config",
+                  "api-reference/endpoint/agent/update-draft-config",
+                  "api-reference/endpoint/agent/publish-agent",
+                  "api-reference/endpoint/agent/list-agent-versions",
+                  "api-reference/endpoint/agent/get-agent-version",
+                  "api-reference/endpoint/agent/get-widget-config"
+                ]
+              },
+              {
+                "group": "Sessions",
+                "icon": "headset",
+                "pages": [
+                  "api-reference/endpoint/agent/create-agent-session",
+                  "api-reference/endpoint/agent/list-agent-sessions",
+                  "api-reference/endpoint/agent/get-agent-session",
+                  "api-reference/endpoint/agent/get-agent-session-recording",
+                  "api-reference/endpoint/agent/end-agent-session"
+                ]
+              },
+              {
+                "group": "Tools",
+                "icon": "wrench",
+                "pages": [
+                  "api-reference/endpoint/agent/list-tools",
+                  "api-reference/endpoint/agent/create-tool",
+                  "api-reference/endpoint/agent/get-tool",
+                  "api-reference/endpoint/agent/update-tool",
+                  "api-reference/endpoint/agent/delete-tool",
+                  "api-reference/endpoint/agent/list-agents-using-tool"
+                ]
+              },
+              {
+                "group": "Tests",
+                "icon": "flask",
+                "pages": [
+                  "api-reference/endpoint/agent/list-tests",
+                  "api-reference/endpoint/agent/create-test",
+                  "api-reference/endpoint/agent/get-test",
+                  "api-reference/endpoint/agent/update-test",
+                  "api-reference/endpoint/agent/delete-test",
+                  "api-reference/endpoint/agent/attach-test",
+                  "api-reference/endpoint/agent/detach-test",
+                  "api-reference/endpoint/agent/list-test-tools",
+                  "api-reference/endpoint/agent/run-tests",
+                  "api-reference/endpoint/agent/list-test-batches",
+                  "api-reference/endpoint/agent/get-test-batch",
+                  "api-reference/endpoint/agent/list-test-runs",
+                  "api-reference/endpoint/agent/get-test-run"
+                ]
+              },
+              {
+                "group": "Knowledge Sources",
+                "icon": "book",
+                "pages": [
+                  "api-reference/endpoint/agent/list-knowledge-sources",
+                  "api-reference/endpoint/agent/create-knowledge-source",
+                  "api-reference/endpoint/agent/get-knowledge-source",
+                  "api-reference/endpoint/agent/update-knowledge-source",
+                  "api-reference/endpoint/agent/delete-knowledge-source",
+                  "api-reference/endpoint/agent/list-agents-using-knowledge-source"
+                ]
+              },
+              {
+                "group": "Phone Numbers",
+                "icon": "phone",
+                "pages": [
+                  "api-reference/endpoint/agent/search-available-phone-numbers",
+                  "api-reference/endpoint/agent/list-phone-numbers",
+                  "api-reference/endpoint/agent/purchase-phone-number",
+                  "api-reference/endpoint/agent/get-phone-number",
+                  "api-reference/endpoint/agent/update-phone-number",
+                  "api-reference/endpoint/agent/release-phone-number"
+                ]
+              },
+              {
+                "group": "Phone Calls",
+                "icon": "phone-arrow-up-right",
+                "pages": [
+                  "api-reference/endpoint/agent/create-phone-call"
                 ]
               }
             ]
@@ -232,9 +437,7 @@
               {
                 "group": "JavaScript SDK",
                 "icon": "js",
-                "pages": [
-                  "api-reference/sdk/javascript/api-reference"
-                ]
+                "pages": ["api-reference/sdk/javascript/api-reference"]
               }
             ]
           }
@@ -267,21 +470,16 @@
     "drilldown": true
   },
   "contextual": {
-    "options": [
-      "copy",
-      "view",
-      "chatgpt",
-      "claude",
-      "perplexity",
-      "mcp",
-      "cursor",
-      "vscode"
-    ]
+    "options": ["copy", "view", "chatgpt", "claude", "perplexity"]
   },
   "fonts": {
     "family": "Onest"
   },
   "redirects": [
+    {
+      "source": "/agents/deploy/authentication",
+      "destination": "/agents/deploy/authenticated-sessions"
+    },
     {
       "source": "/python",
       "destination": "/developer-guide/sdk-guide/python/overview"
@@ -336,15 +534,23 @@
     },
     {
       "source": "/developer-guide/migration",
-      "destination": "/overview/capabilities"
+      "destination": "/developer-guide/getting-started/migration"
+    },
+    {
+      "source": "/developer-guide/compat/introduction",
+      "destination": "/developer-guide/getting-started/migration"
+    },
+    {
+      "source": "/developer-guide/compat/quickstart",
+      "destination": "/developer-guide/getting-started/migration"
     },
     {
       "source": "/resources/migration",
-      "destination": "/overview/capabilities"
+      "destination": "/developer-guide/getting-started/migration"
     },
     {
       "source": "/developer-guide/resources/migration",
-      "destination": "/overview/capabilities"
+      "destination": "/developer-guide/getting-started/migration"
     },
     {
       "source": "/developer-guide/sdks-tools/coding-agents",
@@ -356,7 +562,7 @@
     },
     {
       "source": "/agents",
-      "destination": "/developer-guide/resources/agent-quickstart"
+      "destination": "/agents/overview"
     },
     {
       "source": "/agent-quickstart",
@@ -493,6 +699,22 @@
     {
       "source": "/developer-guide/getting-started/introduction",
       "destination": "/overview/capabilities"
+    },
+    {
+      "source": "/self-host",
+      "destination": "/developer-guide/self-hosting/introduction"
+    },
+    {
+      "source": "/developer-guide/self-hosting/local-setup",
+      "destination": "/developer-guide/self-hosting/introduction"
+    },
+    {
+      "source": "/developer-guide/self-hosting/docker-deployment",
+      "destination": "/developer-guide/self-hosting/introduction"
+    },
+    {
+      "source": "/developer-guide/self-hosting/running-inference",
+      "destination": "/developer-guide/self-hosting/introduction"
     }
   ],
   "footer": {

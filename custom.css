@@ -28,3 +28,57 @@
 img[src*="/images/"] {
   background: transparent !important;
 }
+
+/* Clickable prompt cards (snippets/prompt-card.jsx) */
+.prompt-card {
+  /* The wrapper is the grid item; let the inner Card fill it so cards in a row stay equal height. */
+  display: grid;
+  cursor: pointer;
+  outline: none;
+}
+
+.prompt-card .card {
+  transition: border-color 0.15s ease;
+}
+
+.prompt-card:hover .card,
+.prompt-card:focus-visible .card {
+  border-color: rgb(var(--primary)) !important;
+}
+
+.dark .prompt-card:hover .card,
+.dark .prompt-card:focus-visible .card {
+  border-color: rgb(var(--primary-light)) !important;
+}
+
+.prompt-card-hint {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: rgb(var(--gray-500));
+  background: rgba(120, 120, 120, 0.12);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.prompt-card:hover .prompt-card-hint,
+.prompt-card:focus-visible .prompt-card-hint,
+.prompt-card[data-state="copied"] .prompt-card-hint,
+.prompt-card[data-state="failed"] .prompt-card-hint {
+  opacity: 1;
+}
+
+.prompt-card[data-state="copied"] .prompt-card-hint {
+  color: rgb(var(--primary));
+  background: rgb(var(--primary) / 0.12);
+}
+
+.dark .prompt-card[data-state="copied"] .prompt-card-hint {
+  color: rgb(var(--primary-light));
+  background: rgb(var(--primary-light) / 0.16);
+}

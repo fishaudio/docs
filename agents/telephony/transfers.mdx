@@ -1,0 +1,340 @@
+---
+title: "Call Transfers"
+description: "Let the agent hand a phone call to a human: a cold carrier handoff, or a warm transfer with hold music and a private briefing"
+icon: "phone-arrow-right"
+---
+
+When a caller needs a person, the agent can transfer the call. Configure one or more destination numbers and the agent gains a built-in `transfer_call` tool it invokes when the caller asks for a human or the request clearly needs one. With several destinations, the agent picks the one whose name and description best match the conversation, so a single number can act as a switchboard. Transfers apply to phone calls only.
+
+Two modes decide what the handoff feels like:
+
+|                                | Cold                                                                                                       | Warm                                                                                                                                                                |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Handoff**                    | The agent announces the transfer and drops out; the carrier connects the caller to the destination.        | The caller waits on hold while the agent briefs the human on a private call, then the two are connected.                                                            |
+| **What the human hears first** | The caller, directly.                                                                                      | The agent's briefing: who is calling and what they need.                                                                                                            |
+| **Recording & analysis**       | Stop at the handoff: nothing after it appears in [post-call analysis](/agents/monitor/post-call-analysis). | Recording continues after the human joins, capturing the full call audio; the transcript (and therefore analysis) covers only the agent's segment, up to the merge. |
+
+## Prerequisites
+
+- A phone number bound to your agent, answering inbound calls. See [Inbound calls](/agents/telephony/inbound-calls).
+- The number must support transfers. Numbers purchased from the platform inventory (`provider: "twilio"`) do; see [Phone numbers](/agents/telephony/phone-numbers). [Imported SIP numbers](/agents/telephony/byo-sip) support cold transfers when the carrier honors SIP REFER to the destination (on Twilio, enable Call Transfer and allow PSTN transfers on the trunk), and warm transfers when a termination is configured.
+
+## Configure destinations
+
+### In the console
+
+On the agent's **Phone** page, under **Inbound calls**, turn on **Call transfer**. Give the destination a name, enter its phone number, describe when the agent should transfer there, choose its [announcement](#the-transfer-announcement), and pick the transfer mode. Choosing **Warm** adds a handoff choice (ask the human to accept first, or connect immediately after the briefing). **Add destination** adds another card; with more than one, every destination needs a distinct name. Like every config edit, the change lands in the agent's draft and takes effect on live calls after you [publish](/agents/deploy/versions-publishing).
+
+### Through the API
+
+Transfer destinations live in the `conversation` section of the [agent config](/agents/build/configuration), as `transfer_destinations`. An empty list disables transfers; the list is replaced as a whole on every write.
+
+<CodeGroup>
+```bash Enable
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "conversation": {
+      "transfer_destinations": [
+        {
+          "label": "Support desk",
+          "phone_number": "+14155550123",
+          "mode": "warm",
+          "warm_connect": "confirm"
+        }
+      ]
+    }
+  }'
+```
+
+```bash Route by context
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "conversation": {
+      "transfer_destinations": [
+        {
+          "label": "Billing",
+          "description": "Account information, invoices, payments and refunds",
+          "phone_number": "+14155550100",
+          "mode": "cold"
+        },
+        {
+          "label": "Tech support",
+          "description": "Troubleshooting, outages, anything not working",
+          "phone_number": "+14155550200",
+          "mode": "warm",
+          "warm_connect": "confirm"
+        }
+      ]
+    }
+  }'
+```
+
+```bash Disable
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "conversation": { "transfer_destinations": [] } }'
+```
+
+</CodeGroup>
+
+| Field                        | Description                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`                       | Destination type; `phone` is the only value today and the default.                                                                                                                                                                                                                                                                                      |
+| `label`                      | Name for the destination, shown in the Builder and used by the agent to pick one. At most 64 characters. Required, and unique (case-insensitive), once there is more than one entry.                                                                                                                                                                    |
+| `description`                | When to transfer here, in plain language ("Invoices, payments, account balance"). The agent reads it when choosing between destinations. At most 500 characters.                                                                                                                                                                                        |
+| `phone_number`               | The destination in E.164 format, for example `+14155550123`.                                                                                                                                                                                                                                                                                            |
+| `mode`                       | `cold` (default) or `warm`; see the comparison above.                                                                                                                                                                                                                                                                                                   |
+| `warm_connect`               | Warm only: `confirm` (default) waits for the human's go-ahead before connecting; `direct` connects right after the briefing.                                                                                                                                                                                                                            |
+| `announcement_mode`          | The sentence the agent says right before transferring, cold or warm: `generated` (default) words it itself, `fixed` says `announcement_message`, `off` adds none. See [The transfer announcement](#the-transfer-announcement).                                                                                                                          |
+| `announcement_message`       | The line `fixed` says, at most 500 characters. [Dynamic variables](/agents/build/dynamic-variables) are filled in per call. It is kept when you switch modes, and an empty message falls back to `generated`.                                                                                                                                           |
+| `warm_briefing_instructions` | Warm only: what the agent says to your team member before asking them to take the call, replacing the default introduction. Notes from the conversation are always added after it, and [dynamic variables](/agents/build/dynamic-variables) are filled in per call. At most 1000 characters. See [Customizing the briefing](#customizing-the-briefing). |
+
+Destination numbers must be E.164 and are limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list. A missing label, or two labels that differ only in case, is rejected the same way. There is no cap on the number of destinations, but every description is part of the agent's tool instructions on every turn, so keep the list to what a receptionist could hold in their head.
+
+## How the agent decides to transfer
+
+Configuring a destination is what enables the built-in `transfer_call` tool: an empty destination list removes it. Unlike the toggled [system tools](/agents/build/system-tools), you won't find it in the `tools` config section; it ships automatically on phone sessions whenever a valid destination exists.
+
+Your system prompt decides when the agent transfers. Only when it says nothing about transfers does the built-in default apply, which is conservative: the agent transfers when the caller asks for a person, or when the request clearly needs one and the agent cannot help further. A switchboard agent should say so plainly, for example "Route the caller to the right team as soon as you know what they need; do not try to answer billing or technical questions yourself."
+
+With several destinations, the tool gains a `destination` argument listing every label, and its instructions carry each destination's description. The agent picks the destination whose description matches what the caller needs based on the conversation so far, asks one short question when the need is unclear, and otherwise takes the closest match. Write descriptions the way you would brief a receptionist: what the team handles, in the caller's words.
+
+<Tip>
+  The prompt can loosen the policy as well as tighten it: "Transfer to a human
+  whenever the caller mentions a refund" or "Never transfer before collecting
+  the caller's name and account number." See [Tools](/agents/build/tools) for
+  how the agent chooses between its tools.
+</Tip>
+
+## The transfer announcement
+
+Right before a call is transferred, the agent says one short sentence so the caller knows what is happening, for example "One moment, I'm connecting you to billing." The **Transfer announcement** setting on each destination chooses where that sentence comes from.
+
+| Option                               | What the agent says before transferring                                                                                                      | Use it when                                                        |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| **Generated** (`generated`, default) | A short sentence in its own words, in the caller's language. If your system prompt says what to say when transferring, it says that instead. | You want a natural line, or your system prompt already scripts it. |
+| **Fixed message** (`fixed`)          | The text in `announcement_message`, word for word.                                                                                           | Every caller should hear the same line.                            |
+| **Off** (`off`)                      | No extra sentence. The transfer starts as soon as the agent finishes its current reply.                                                      | You don't want transfers announced.                                |
+
+These apply to every option:
+
+- The sentence is said only once. If the agent already spoke in the same reply as the transfer, nothing is added. For example, if your system prompt has the agent say "Thanks, connecting you now." itself, the caller hears that line and the fixed message is skipped. With **Fixed message** or **Off**, remove any instruction in your system prompt about what to say when transferring.
+- The caller cannot interrupt the sentence.
+- Once the transfer starts, the caller can no longer answer, so the agent asks its questions before transferring (see [Questions before transferring](#questions-before-transferring)). Don't put a question in a fixed message either.
+
+### In the console
+
+On each destination card, the **Transfer announcement** control sits above the transfer mode. Choosing **Fixed message** shows a field for the line.
+
+### Through the API
+
+Set `announcement_mode` on the destination, plus `announcement_message` for `fixed`. The message can use [dynamic variables](/agents/build/dynamic-variables), filled in when the session starts. Since the destination list is replaced as a whole on every write, send every destination you want to keep, not just the one you are changing.
+
+<CodeGroup>
+```bash Fixed message
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "conversation": {
+      "transfer_destinations": [
+        {
+          "label": "Billing",
+          "phone_number": "+14155550100",
+          "mode": "cold",
+          "announcement_mode": "fixed",
+          "announcement_message": "Thanks for waiting. I am connecting you to our billing team now."
+        }
+      ]
+    }
+  }'
+```
+
+```bash Off
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "conversation": {
+      "transfer_destinations": [
+        {
+          "label": "Billing",
+          "phone_number": "+14155550100",
+          "mode": "cold",
+          "announcement_mode": "off"
+        }
+      ]
+    }
+  }'
+```
+
+</CodeGroup>
+
+To return to the default, set `announcement_mode` to `generated` or leave it out. As with every config edit, the change takes effect on live calls after you [publish](/agents/deploy/versions-publishing).
+
+### Questions before transferring
+
+If the agent tries to transfer while its announcement asks the caller something, for example "Before I connect you, what is your account number?", the transfer is held back. The agent asks the question in its reply, waits for the answer, and transfers after that. This applies to every announcement option, since a question means the agent has not asked it yet.
+
+This is on by default. To let the agent transfer with a question, turn off **Don't transfer on a question** on the **Call transfer** card, or set `conversation.transfer_refuse_questions` to `false`. It is one setting for the whole agent, not part of the destination list, so you can change it without resending your destinations.
+
+```bash
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "conversation": { "transfer_refuse_questions": false } }'
+```
+
+## What happens on a cold transfer
+
+The agent says its [announcement](#the-transfer-announcement) and, once that finishes playing, the call is handed to the carrier. The caller hears a dial tone while the destination rings; the agent drops out and its session ends at the handoff.
+
+If the handoff is refused (the destination is unreachable, or the number doesn't support transfers), the agent stays on the line, apologizes, and keeps helping. It can attempt the transfer again later.
+
+## What happens on a warm transfer
+
+<Steps>
+  <Step title="The caller goes on hold">
+    The agent says its [announcement](#the-transfer-announcement), then hold
+    music starts. With `off`, hold music starts as soon as the agent finishes
+    its current reply.
+  </Step>
+  <Step title="The platform dials your human agent">
+    A separate, private consult call rings the destination for up to 30 seconds.
+    By default your team sees your agent's phone number as caller ID. You can
+    show the caller's own number instead, see [Caller ID on
+    transfers](#caller-id-on-transfers).
+  </Step>
+  <Step title="The agent briefs the human">
+    The agent greets the human, reads out the caller's number digit by digit
+    with a pause between groups when the caller ID is known, and relays short
+    third-person notes on who is calling and what they need, generated from
+    the conversation so far. The
+    caller hears none of this. `warm_briefing_instructions` scripts the
+    introduction; see [Customizing the briefing](#customizing-the-briefing).
+  </Step>
+  <Step title="The calls merge">
+    With `warm_connect: "confirm"` the merge waits for the human to agree; with
+    `direct` it happens right after the briefing. The hold music stops, the
+    human joins the caller, and the agent leaves without another word.
+  </Step>
+</Steps>
+
+If the human cannot be reached, declines, or the consult call hits voicemail, the caller comes off hold and the agent apologizes and continues helping. It can retry if the caller asks. If the caller hangs up while on hold, the agent briefly tells the human what happened and ends the consult call.
+
+### Customizing the briefing
+
+By default the agent introduces itself, reads out the caller's number, relays the notes, and asks whether the person can take the call. A warm destination's briefing instructions replace that introduction. The notes generated from the conversation and the handoff itself stay as they are: the agent still waits for a yes (or connects right away with `direct`), so the text only has to say what you want relayed and how.
+
+The text is rendered with [dynamic variables](/agents/build/dynamic-variables) when the session starts, so it can carry facts the conversation may not mention. A custom text is spoken as written, so if it should include the caller's number, put it in yourself with `{{system.caller_number_spoken}}`, which arrives pre-grouped for speech (`+1; 4 1 5; 5 5 5; 0 1 2 3`) so the voice reads it digit by digit in any language; see [Reading a number out loud](/agents/build/dynamic-variables#reading-a-number-out-loud).
+
+Two things to keep in mind. The variables are filled in once, when the session is created, so an order number the caller mentions later reaches the colleague only through the notes. And a withheld caller ID renders as an empty string, so write the text to read well without it.
+
+#### In the console
+
+On the destination card, choosing **Warm** shows a **Briefing instructions** field beneath the handoff choice. Leave it empty to keep the default introduction.
+
+#### Through the API
+
+Set `warm_briefing_instructions` on the destination; it is ignored on cold destinations.
+
+<CodeGroup>
+```bash Custom briefing
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "conversation": {
+      "transfer_destinations": [
+        {
+          "label": "Support desk",
+          "phone_number": "+14155550123",
+          "mode": "warm",
+          "warm_connect": "confirm",
+          "warm_briefing_instructions": "Say the caller number, {{system.caller_number_spoken}}, then explain in one sentence why they are calling and ask if the colleague can take the call. Skip the number if it is empty."
+        }
+      ]
+    }
+  }'
+```
+</CodeGroup>
+
+## Caller ID on transfers
+
+When the agent transfers a call, your team member's phone shows a caller ID. You choose which number it shows:
+
+| Option                       | Your team sees                                          | Good for                                             |
+| ---------------------------- | ------------------------------------------------------- | ---------------------------------------------------- |
+| **Agent's number** (default) | The number the caller dialed, such as your support line | Recognizing that the call comes from the agent       |
+| **Caller's number**          | The caller's own phone number                           | Seeing who is calling before answering, calling back |
+
+The choice is set on each phone number, and applies to every transfer on that number, cold and warm. It is available on numbers you bought on Fish Audio. For imported numbers, see [Imported SIP numbers](/agents/telephony/byo-sip#caller-id-on-transfers).
+
+If the caller hides their number, a warm transfer shows the agent's number instead.
+
+### In the console
+
+- **For all numbers of an agent**: open the agent's **Phone** page and use the **Show the caller's number on transfers** switch in the **Call transfer** section.
+- **For one number**: on the **Phone numbers** page, open the number's menu and choose **Transfer caller ID**.
+
+Only team owners and admins can change it. You don't need to publish the agent.
+
+### Through the API
+
+Set `transfer_caller_id` on the number: `original_caller` shows the caller's number, `agent_number` shows the agent's number.
+
+```bash Request
+curl --request PATCH https://api.fish.audio/v1/agent/phone-numbers/$PHONE_NUMBER_ID \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "transfer_caller_id": "original_caller" }'
+```
+
+The caller ID is a setting on the number, not part of the agent, so it needs no publish and rolling back the agent leaves it as it is. Warm transfers use a new choice from the next call.
+
+The response is the updated number, with `caller_id_sync_status` normally `synced`, which means cold transfers use the new choice too. If it reads `pending` or `error`, the change has not reached the phone carrier yet and cold transfers still use the previous choice. Send `{ "retry_caller_id_sync": true }` to try again.
+
+The older boolean `cold_transfer_use_original_caller` still works, but it is deprecated. Use `transfer_caller_id` instead.
+
+## Limitations
+
+- **Phone calls only**: web and SDK sessions have no phone leg to hand off, so the `transfer_call` tool never ships for them.
+- **Supported countries**: destination numbers are limited to an allowlist of country codes.
+
+## Billing
+
+Time after a transfer is billed separately from agent time, at a cold or warm transfer rate per minute. The agent rate stops when the call is handed over (cold) or when the caller and the person are joined (warm); from that point the call is billed as transfer minutes. Current rates are on the [Pricing](/agents/pricing) page.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card
+    title="Inbound calls"
+    icon="phone-arrow-down-left"
+    href="/agents/telephony/inbound-calls"
+  >
+    Bind a number and put your agent on the phone.
+  </Card>
+  <Card
+    title="Phone numbers"
+    icon="hashtag"
+    href="/agents/telephony/phone-numbers"
+  >
+    Number management, providers, and agent bindings.
+  </Card>
+  <Card title="System tools" icon="gears" href="/agents/build/system-tools">
+    The other built-in capabilities, like hanging up.
+  </Card>
+  <Card
+    title="Conversation history"
+    icon="clock-rotate-left"
+    href="/agents/monitor/conversation-history"
+  >
+    Review transcripts and recordings of transferred calls.
+  </Card>
+</CardGroup>
