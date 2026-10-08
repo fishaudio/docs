@@ -61,8 +61,27 @@ const session = await AgentSession.start({
 ```
 </CodeGroup>
 
+### Default values
+
+A placeholder is resolved in this order: the value supplied for the session, then the default configured on the agent, then empty text. The literal `{{variable_name}}` never reaches the model or the caller, so a missing value cannot be spoken as braces on a live call.
+
+Set defaults in the **Dynamic variables** section of the agent's Configuration page, or through the `variables` section of the config API. The map replaces as a whole on every update, and names follow the same rules as `dynamic_variables`:
+
+```bash
+curl --request PATCH https://api.fish.audio/v1/agent/agents/YOUR_AGENT_ID/config \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "variables": {
+      "defaults": { "customer_name": "there", "plan": "Free" }
+    }
+  }'
+```
+
+With these defaults, a session that sends only `{"plan": "Pro"}` renders the first message `Hi {{customer_name}}, welcome to the {{plan}} plan.` as `Hi there, welcome to the Pro plan.`
+
 <Warning>
-Placeholders with no matching variable are **not** removed: the literal `{{variable_name}}` text stays in the prompt, visible to the model. Make sure every placeholder in your configuration has a value at session creation.
+A placeholder with no session value and no default renders as empty text: `Hi {{customer_name}}, welcome.` becomes `Hi , welcome.` Give every placeholder that can go unfilled a default that reads well on its own, especially in a fixed first message, which is spoken word for word. A fixed first message that renders to nothing but whitespace is dropped and the agent opens with its generic greeting instead.
 </Warning>
 
 Variables fill placeholders in the configured text. To replace whole configuration fields for a session (the prompt itself, the opener, voice, language), use [overrides](/agents/deploy/authenticated-sessions#overrides) on the same request; `{{placeholders}}` render inside overridden text too.

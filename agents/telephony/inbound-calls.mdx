@@ -119,7 +119,7 @@ Inbound calls have no session-creation request to carry [dynamic variables](/age
 Hi {{customer_name}}, thanks for calling Acme. Are you calling about order {{last_order}}?
 ```
 
-Set it on the agent's **Webhooks** page in the console (**Inbound call webhook**) or through `webhooks.conversation_init` in the config API, then publish. A slow or failing endpoint never blocks the call: after the configured timeout (up to 8 seconds, default 5) the call connects without variables.
+Set it on the agent's **Webhooks** page in the console (**Inbound call webhook**) or through `webhooks.conversation_init` in the config API, then publish. A slow or failing endpoint never blocks the call: after the configured timeout (up to 8 seconds, default 5) the call connects and every placeholder takes its configured [default value](/agents/build/dynamic-variables#default-values) (`Hi there, thanks for calling Acme.`), so set a default for each placeholder the first message depends on.
 
 ## Phone sessions behave like any session
 
