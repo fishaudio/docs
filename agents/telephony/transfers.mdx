@@ -4,7 +4,7 @@ description: "Let the agent hand a phone call to a human: a cold carrier handoff
 icon: "phone-arrow-right"
 ---
 
-When a caller needs a person, the agent can transfer the call. Configure one or more destination numbers and the agent gains a built-in `transfer_call` tool it invokes when the caller asks for a human or the request clearly needs one. With several destinations, the agent picks the one whose name and description best match the conversation, so a single number can act as a switchboard. Transfers apply to phone calls only.
+When a caller needs a person, the agent can transfer the call. Configure one or more destination numbers and the agent gains a built-in `_transfer_call` tool it invokes when the caller asks for a human or the request clearly needs one. With several destinations, the agent picks the one whose name and description best match the conversation, so a single number can act as a switchboard. Transfers apply to phone calls only.
 
 Two modes decide what the handoff feels like:
 
@@ -98,7 +98,7 @@ Destination numbers must be E.164 and are limited to a set of supported countrie
 
 ## How the agent decides to transfer
 
-Configuring a destination is what enables the built-in `transfer_call` tool: an empty destination list removes it. Unlike the toggled [system tools](/agents/build/system-tools), you won't find it in the `tools` config section; it ships automatically on phone sessions whenever a valid destination exists.
+Configuring a destination is what enables the built-in `_transfer_call` tool: an empty destination list removes it. Unlike the toggled [system tools](/agents/build/system-tools), you won't find it in the `tools` config section; it ships automatically on phone sessions whenever a valid destination exists.
 
 Your system prompt decides when the agent transfers. Only when it says nothing about transfers does the built-in default apply, which is conservative: the agent transfers when the caller asks for a person, or when the request clearly needs one and the agent cannot help further. A switchboard agent should say so plainly, for example "Route the caller to the right team as soon as you know what they need; do not try to answer billing or technical questions yourself."
 
@@ -303,7 +303,7 @@ The older boolean `cold_transfer_use_original_caller` still works, but it is dep
 
 ## Limitations
 
-- **Phone calls only**: web and SDK sessions have no phone leg to hand off, so the `transfer_call` tool never ships for them.
+- **Phone calls only**: web and SDK sessions have no phone leg to hand off, so the `_transfer_call` tool never ships for them.
 - **Supported countries**: destination numbers are limited to an allowlist of country codes.
 
 ## Billing
