@@ -23,7 +23,7 @@ Your audio can still change, because S2.1-Pro treats some input and defaults dif
 
 - S1-style `(happy)` emotion tags are not interpreted as tags, and the API does not convert them.
 - Loudness normalization is applied to the output.
-- The default sampling parameters are different.
+- `repetition_penalty` has no effect.
 
 The steps below cover each of these changes.
 
@@ -97,16 +97,8 @@ If you need to turn it off, set `prosody.normalize_loudness` to the boolean `fal
 }
 ```
 
-### Review sampling defaults
+### Check `repetition_penalty`
 
-If you do not set `temperature`, `top_p`, or `repetition_penalty` in your request, each model uses its own defaults:
-
-| Parameter            | `s1` default | `s2.1-pro` default |
-| -------------------- | ------------ | ------------------ |
-| `temperature`        | 0.9          | 1.0                |
-| `top_p`              | 0.9          | 0.9                |
-| `repetition_penalty` | 1.1          | 1.0                |
-
-When you switch to `s2.1-pro`, requests that do not set these parameters use the `s2.1-pro` defaults. Test your output after you switch.
+`repetition_penalty` applies to S1 but has no effect on S2.1-Pro. If you tuned it to reduce repeated sounds in S1 output, that setting no longer changes your audio after you switch. Listen to your output after you migrate.
 
 <Support />
