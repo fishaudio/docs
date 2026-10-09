@@ -3724,6 +3724,9 @@
                     "llm": {
                       "$ref": "#/components/schemas/AgentLLMConfigRedacted"
                     },
+                    "variables": {
+                      "$ref": "#/components/schemas/AgentVariablesConfig"
+                    },
                     "updated_at": {
                       "format": "date-time",
                       "title": "Updated At",
@@ -3943,6 +3946,9 @@
                     },
                     "llm": {
                       "$ref": "#/components/schemas/AgentLLMConfigRedacted"
+                    },
+                    "variables": {
+                      "$ref": "#/components/schemas/AgentVariablesConfig"
                     },
                     "updated_at": {
                       "format": "date-time",
@@ -19492,6 +19498,12 @@
             "title": "Warm Confirm Timeout Seconds",
             "type": "integer"
           },
+          "warm_human_detection": {
+            "default": false,
+            "description": "Applies to warm transfers whose warm_connect is `confirm` or `briefing`, and is ignored for cold transfers and `direct`. When true, once the destination answers, the agent stays silent until the other side speaks, then classifies the pickup. A person is briefed as usual. Voicemail or an IVR (phone menu) ends the transfer as failed. A hold queue or silence keeps the agent waiting until `warm_confirm_timeout_seconds` ends the attempt as unreachable. A failed transfer follows `on_failure`. Leave it off for destinations whose people are only reachable through a phone menu, because the menu stops the transfer.",
+            "title": "Warm Human Detection",
+            "type": "boolean"
+          },
           "on_failure": {
             "$ref": "#/components/schemas/AgentTransferOnFailurePatch"
           },
@@ -19914,6 +19926,18 @@
               }
             ],
             "default": null
+          },
+          "variables": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentVariablesPatch"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Default values for the {{placeholders}} in the configured text, used when the session supplies none (the map replaces as a whole), and on_missing for a placeholder with neither: keep leaves it as written (default), empty renders it as empty text, reject refuses the session."
           }
         },
         "title": "PublicAgentConfigPatchPayload",
@@ -20432,6 +20456,58 @@
           }
         },
         "title": "PublicAgentToolsPatch",
+        "type": "object"
+      },
+      "PublicAgentVariablesPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "defaults": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Defaults"
+          },
+          "on_missing": {
+            "anyOf": [
+              {
+                "enum": [
+                  "keep",
+                  "empty",
+                  "reject"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "On Missing"
+          }
+        },
+        "title": "PublicAgentVariablesPatch",
         "type": "object"
       },
       "PublicAgentVoicePatch": {
@@ -21414,6 +21490,12 @@
             "title": "Warm Confirm Timeout Seconds",
             "type": "integer"
           },
+          "warm_human_detection": {
+            "default": false,
+            "description": "Applies to warm transfers whose warm_connect is `confirm` or `briefing`, and is ignored for cold transfers and `direct`. When true, once the destination answers, the agent stays silent until the other side speaks, then classifies the pickup. A person is briefed as usual. Voicemail or an IVR (phone menu) ends the transfer as failed. A hold queue or silence keeps the agent waiting until `warm_confirm_timeout_seconds` ends the attempt as unreachable. A failed transfer follows `on_failure`. Leave it off for destinations whose people are only reachable through a phone menu, because the menu stops the transfer.",
+            "title": "Warm Human Detection",
+            "type": "boolean"
+          },
           "on_failure": {
             "$ref": "#/components/schemas/AgentTransferOnFailure"
           },
@@ -21454,6 +21536,43 @@
           }
         },
         "title": "AgentTransferOnFailure",
+        "type": "object"
+      },
+      "AgentVariablesConfig": {
+        "description": "Defaults for `{{name}}` placeholders and what a placeholder without a value does.",
+        "properties": {
+          "defaults": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "title": "Defaults",
+            "type": "object"
+          },
+          "on_missing": {
+            "default": "keep",
+            "enum": [
+              "keep",
+              "empty",
+              "reject"
+            ],
+            "title": "On Missing",
+            "type": "string"
+          }
+        },
+        "title": "AgentVariablesConfig",
         "type": "object"
       },
       "AgentVoiceConfigView": {
@@ -21740,6 +21859,9 @@
           },
           "llm": {
             "$ref": "#/components/schemas/AgentLLMConfigRedacted"
+          },
+          "variables": {
+            "$ref": "#/components/schemas/AgentVariablesConfig"
           },
           "updated_at": {
             "format": "date-time",
