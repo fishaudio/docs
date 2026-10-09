@@ -37,7 +37,7 @@ export const AudioClip = ({ src, title, text }) => {
       document.querySelectorAll('audio').forEach((other) => {
         if (other !== audio) other.pause();
       });
-      audio.play();
+      audio.play().catch(() => setIsPlaying(false));
     } else {
       audio.pause();
     }
@@ -72,7 +72,7 @@ export const AudioClip = ({ src, title, text }) => {
         <audio ref={audioRef} src={src} preload="metadata" />
         <button
           onClick={togglePlay}
-          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary text-white transition-opacity hover:opacity-90"
+          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary text-white transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-primary"
           aria-label={isPlaying ? `Pause ${title || 'sample'}` : `Play ${title || 'sample'}`}
         >
           {isPlaying ? (
@@ -88,7 +88,7 @@ export const AudioClip = ({ src, title, text }) => {
         <span className="w-10 font-mono text-xs tabular-nums text-gray-500 dark:text-gray-400">
           {formatTime(currentTime)}
         </span>
-        <div className="relative h-1.5 flex-1 rounded-full bg-gray-200 dark:bg-white/10">
+        <div className="relative h-1.5 flex-1 rounded-full bg-gray-200 dark:bg-white/10 focus-within:ring-2 focus-within:ring-primary">
           <div
             className="absolute top-0 left-0 h-full rounded-full bg-primary"
             style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
