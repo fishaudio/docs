@@ -23,7 +23,7 @@ Two modes decide what the handoff feels like:
 
 ### In the console
 
-On the agent's **Phone** page, under **Inbound calls**, turn on **Call transfer**. Give the destination a name, enter its phone number, describe when the agent should transfer there, choose its [announcement](#the-transfer-announcement), and pick the transfer mode. Choosing **Warm** adds a handoff choice (ask the human to accept first, or connect immediately after the briefing). **Add destination** adds another card; with more than one, every destination needs a distinct name. Like every config edit, the change lands in the agent's draft and takes effect on live calls after you [publish](/agents/deploy/versions-publishing).
+On the agent's **Phone** page, under **Inbound calls**, turn on **Call transfer**. Give the destination a name, enter its phone number, describe when the agent should transfer there, choose its [announcement](#the-transfer-announcement), and pick the transfer mode. Choosing **Warm** adds a handoff choice (ask the human to accept before connecting, connect right after a briefing, or connect without an introduction) and the [warm transfer settings](#warm-transfer-settings). **Add destination** adds another card; with more than one, every destination needs a distinct name. Like every config edit, the change lands in the agent's draft and takes effect on live calls after you [publish](/agents/deploy/versions-publishing).
 
 ### Through the API
 
@@ -82,17 +82,20 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 
 </CodeGroup>
 
-| Field                        | Description                                                                                                                                                                                                                                                                                                                                             |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `type`                       | Destination type; `phone` is the only value today and the default.                                                                                                                                                                                                                                                                                      |
-| `label`                      | Name for the destination, shown in the Builder and used by the agent to pick one. At most 64 characters. Required, and unique (case-insensitive), once there is more than one entry.                                                                                                                                                                    |
-| `description`                | When to transfer here, in plain language ("Invoices, payments, account balance"). The agent reads it when choosing between destinations. At most 500 characters.                                                                                                                                                                                        |
-| `phone_number`               | The destination in E.164 format, for example `+14155550123`.                                                                                                                                                                                                                                                                                            |
-| `mode`                       | `cold` (default) or `warm`; see the comparison above.                                                                                                                                                                                                                                                                                                   |
-| `warm_connect`               | Warm only: `confirm` (default) waits for the human's go-ahead before connecting; `direct` connects right after the briefing.                                                                                                                                                                                                                            |
-| `announcement_mode`          | The sentence the agent says right before transferring, cold or warm: `generated` (default) words it itself, `fixed` says `announcement_message`, `off` adds none. See [The transfer announcement](#the-transfer-announcement).                                                                                                                          |
-| `announcement_message`       | The line `fixed` says, at most 500 characters. [Dynamic variables](/agents/build/dynamic-variables) are filled in per call. It is kept when you switch modes, and an empty message falls back to `generated`.                                                                                                                                           |
-| `warm_briefing_instructions` | Warm only: what the agent says to your team member before asking them to take the call, replacing the default introduction. Notes from the conversation are always added after it, and [dynamic variables](/agents/build/dynamic-variables) are filled in per call. At most 1000 characters. See [Customizing the briefing](#customizing-the-briefing). |
+| Field                          | Description                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`                         | Destination type; `phone` is the only value today and the default.                                                                                                                                                                                                                                                                                      |
+| `label`                        | Name for the destination, shown in the Builder and used by the agent to pick one. At most 64 characters. Required, and unique (case-insensitive), once there is more than one entry.                                                                                                                                                                    |
+| `description`                  | When to transfer here, in plain language ("Invoices, payments, account balance"). The agent reads it when choosing between destinations. At most 500 characters.                                                                                                                                                                                        |
+| `phone_number`                 | The destination in E.164 format, for example `+14155550123`.                                                                                                                                                                                                                                                                                            |
+| `mode`                         | `cold` (default) or `warm`; see the comparison above.                                                                                                                                                                                                                                                                                                   |
+| `warm_connect`                 | Warm only: `confirm` (default) briefs the human and waits for their go-ahead before connecting, `briefing` connects right after the briefing without asking, `direct` connects as soon as the human answers, with no briefing.                                                                                                                          |
+| `announcement_mode`            | The sentence the agent says right before transferring, cold or warm: `generated` (default) words it itself, `fixed` says `announcement_message`, `off` adds none. See [The transfer announcement](#the-transfer-announcement).                                                                                                                          |
+| `announcement_message`         | The line `fixed` says, at most 500 characters. [Dynamic variables](/agents/build/dynamic-variables) are filled in per call. It is kept when you switch modes, and an empty message falls back to `generated`.                                                                                                                                           |
+| `warm_briefing_instructions`   | Warm only: what the agent says to your team member before asking them to take the call, replacing the default introduction. Notes from the conversation are always added after it, and [dynamic variables](/agents/build/dynamic-variables) are filled in per call. At most 1000 characters. See [Customizing the briefing](#customizing-the-briefing). |
+| `warm_ring_timeout_seconds`    | Warm only: how long the human's phone rings before the transfer counts as unanswered, in whole seconds from 5 to 120. Default 30. See [Timeouts](#timeouts).                                                                                                                                                                                            |
+| `warm_confirm_timeout_seconds` | Warm `confirm` and `briefing` only: how long the agent waits after the human answers before giving up, in whole seconds from 10 to 300. Default 60. See [Timeouts](#timeouts).                                                                                                                                                                          |
+| `warm_human_detection`         | Warm `confirm` and `briefing` only: `true` makes the agent wait for the other side to speak and stop the transfer when voicemail or a phone menu answers. Default `false`. See [Waiting for a person to answer](#waiting-for-a-person-to-answer).                                                                                                       |
 
 Destination numbers must be E.164 and are limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list. A missing label, or two labels that differ only in case, is rejected the same way. There is no cap on the number of destinations, but every description is part of the agent's tool instructions on every turn, so keep the list to what a receptionist could hold in their head.
 
@@ -205,27 +208,31 @@ If the handoff is refused (the destination is unreachable, or the number doesn't
     its current reply.
   </Step>
   <Step title="The platform dials your human agent">
-    A separate, private consult call rings the destination for up to 30 seconds.
-    By default your team sees your agent's phone number as caller ID. You can
-    show the caller's own number instead, see [Caller ID on
-    transfers](#caller-id-on-transfers).
+    A separate, private consult call rings the destination for up to the [ring
+    timeout](#timeouts), 30 seconds by default. By default your team sees your
+    agent's phone number as caller ID. You can show the caller's own number
+    instead, see [Caller ID on transfers](#caller-id-on-transfers).
   </Step>
   <Step title="The agent briefs the human">
     The agent greets the human, reads out the caller's number digit by digit
     with a pause between groups when the caller ID is known, and relays short
-    third-person notes on who is calling and what they need, generated from
-    the conversation so far. The
-    caller hears none of this. `warm_briefing_instructions` scripts the
-    introduction; see [Customizing the briefing](#customizing-the-briefing).
+    third-person notes on who is calling and what they need, generated from the
+    conversation so far. The caller hears none of this.
+    `warm_briefing_instructions` scripts the introduction; see [Customizing the
+    briefing](#customizing-the-briefing). With [Wait for a person to
+    answer](#waiting-for-a-person-to-answer) on, the agent first waits for the
+    other side to speak.
   </Step>
   <Step title="The calls merge">
-    With `warm_connect: "confirm"` the merge waits for the human to agree; with
-    `direct` it happens right after the briefing. The hold music stops, the
-    human joins the caller, and the agent leaves without another word.
+    With `warm_connect: "confirm"` the merge waits for the human to agree, with
+    `briefing` it happens right after the briefing, and with `direct` the human
+    is connected as soon as they answer, without a briefing. The hold music
+    stops, the human joins the caller, and the agent leaves without another
+    word.
   </Step>
 </Steps>
 
-If the human cannot be reached, declines, or the consult call hits voicemail, the caller comes off hold and the agent apologizes and continues helping. It can retry if the caller asks. If the caller hangs up while on hold, the agent briefly tells the human what happened and ends the consult call.
+If the human cannot be reached, declines, or the consult call hits voicemail, the caller comes off hold and the agent apologizes and continues helping. To keep the agent from briefing a voicemail or a phone menu, turn on [Wait for a person to answer](#waiting-for-a-person-to-answer). It can retry if the caller asks. If the caller hangs up while on hold, the agent briefly tells the human what happened and ends the consult call.
 
 ### Customizing the briefing
 
@@ -263,6 +270,57 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   }'
 ```
 </CodeGroup>
+
+## Warm transfer settings
+
+These settings apply to each warm destination. In the console, they appear on the destination card once you choose **Warm**. Leave a timeout empty to keep its default. Through the API, set them on the destination. Like every config edit, changes take effect on live calls after you [publish](/agents/deploy/versions-publishing).
+
+### Timeouts
+
+| Console                       | API field                      | Range     | Default | What it does                                                                                                                                                                                                                                                                                                    |
+| ----------------------------- | ------------------------------ | --------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ring timeout (seconds)**    | `warm_ring_timeout_seconds`    | 5 to 120  | 30      | How long the human's phone rings. When it runs out, the transfer counts as unanswered and the caller comes back to the agent. Set it shorter than the time your team's voicemail takes to pick up, so an unanswered call comes back instead of reaching voicemail.                                              |
+| **Confirm timeout (seconds)** | `warm_confirm_timeout_seconds` | 10 to 300 | 60      | `confirm` and `briefing` only. How long the agent waits, after the human answers, for the call to be taken. When it runs out, the agent ends the consult call and the caller comes back to the agent. The agent never cuts its briefing short, and the human always gets at least 10 seconds to reply after it. |
+
+### Waiting for a person to answer
+
+With **Wait for a person to answer** on, the agent says nothing after the human's line answers. It waits for the other side to speak, then works out what answered:
+
+| What answered                    | What happens                                                                                                                           |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| A person                         | The agent briefs them as usual.                                                                                                        |
+| Voicemail                        | The transfer stops, usually while the greeting is still playing, and the agent says nothing to it. The caller comes back to the agent. |
+| A phone menu (IVR)               | The same as voicemail.                                                                                                                 |
+| A hold queue, or nobody speaking | The agent keeps waiting until the confirm timeout.                                                                                     |
+| Only a name, then a pause        | The agent treats it as a person waiting for a reply and starts the briefing.                                                           |
+
+- It is off by default, and available for `confirm` and `briefing`. `direct` connects as soon as the human answers, so there is nothing to wait for.
+- Leave it off for lines where people can only be reached through a phone menu, because the menu stops the transfer.
+- The agent goes by what is said, not by the voicemail beep. A greeting that opens like a live person ("Hi, this is Amy.") and then pauses can still get the briefing. With `confirm`, the confirm timeout still brings the caller back. With `briefing`, the caller is connected once the briefing ends.
+- Pair it with a short confirm timeout, such as 20 seconds, so a pickup where nobody speaks comes back quickly.
+
+```bash Request
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "conversation": {
+      "transfer_destinations": [
+        {
+          "label": "Front desk",
+          "phone_number": "+14155550123",
+          "mode": "warm",
+          "warm_connect": "confirm",
+          "warm_ring_timeout_seconds": 25,
+          "warm_confirm_timeout_seconds": 20,
+          "warm_human_detection": true
+        }
+      ]
+    }
+  }'
+```
+
+Since the destination list is replaced as a whole on every write, send every destination you want to keep.
 
 ## Caller ID on transfers
 
