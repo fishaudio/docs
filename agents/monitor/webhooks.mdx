@@ -370,7 +370,7 @@ The endpoint can personalize a call but never block one. The caller is waiting w
 
 | Outcome                                  | Effect                                                        |
 | ---------------------------------------- | ------------------------------------------------------------- |
-| Response within the timeout              | Variables are rendered into the prompt and first message      |
+| Response within the timeout              | Variables are rendered into the prompt, first message, and webhook tool requests |
 | Timeout                                  | The call connects without variables; the request is not retried |
 | Connection error or non-`2xx` response   | One immediate retry, then the call connects without variables |
 | Body is not a JSON object                | The call connects without variables                           |
