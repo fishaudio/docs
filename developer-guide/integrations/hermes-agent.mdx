@@ -1,0 +1,83 @@
+---
+title: "Hermes Agent"
+description: "Give Hermes Agent a Fish Audio voice with text-to-speech, speech-to-text, voice cloning, and voice design"
+icon: "terminal"
+---
+
+[Hermes Agent](https://github.com/NousResearch/hermes-agent) is an open-source AI agent by Nous Research. It runs in the terminal, in messaging apps such as Telegram and Discord, and in a desktop app. The official Fish Audio plugin for Hermes makes Fish Audio the agent's speech and transcription provider. It also gives the agent tools to search, clone, and design voices.
+
+## Prerequisites
+
+- Hermes Agent 0.21.5 or newer, on macOS or Linux
+- A Fish Audio API key from [fish.audio/app/api-keys](https://fish.audio/app/api-keys)
+
+## Installation
+
+Fish Audio is in the Hermes plugin catalog. Install it and enable it:
+
+```bash
+hermes plugins install fish-audio --enable
+```
+
+With the Hermes desktop app installed, you can open [hermes://plugin/install?catalog=fish-audio](hermes://plugin/install?catalog=fish-audio) instead. The app finds Fish Audio in the catalog and asks you to confirm the install.
+
+Hermes 0.21.5 installs the plugin's Python dependencies automatically. Newer Hermes builds ask first; add `--yes-deps` to answer yes.
+
+## Configuration
+
+Save your API key on the machine that runs Hermes:
+
+```bash
+hermes fish login
+```
+
+`login` checks the key against your Fish Audio account and saves it to the active Hermes profile. Where no speech or transcription provider is set, it selects Fish Audio. It asks before it replaces another provider; run without a terminal, it keeps the other provider unless you pass `--yes`.
+
+You can also add the key in the Hermes desktop app under **Plugins** > **Fish Audio**, or with `hermes tools` > **Text-to-Speech** > **Fish Audio**.
+
+Check the setup:
+
+```bash
+hermes fish doctor
+```
+
+`doctor` makes one short billed synthesis. Add `--no-synth` to skip it. Restart a running Hermes gateway or the desktop app to pick up a new key.
+
+## Choose a voice
+
+Search the voice library from any chat and switch voices:
+
+```text
+/fish voices narrator
+/fish use <voice-id>
+```
+
+In the Hermes desktop app, open **Voices** to search the library, preview a voice, and click **Use**. To add the page, switch on **Desktop** for Fish Audio under **Capabilities** > **Plugins**, then restart the Hermes gateway once.
+
+Or set a voice in the profile's `config.yaml`:
+
+```yaml
+tts:
+  provider: fish-audio
+  fish-audio:
+    voice: 933563129e564b19a115bedd57b7406a # Sarah
+    model: s2.1-pro
+```
+
+## Features
+
+- **Text-to-speech**: voice replies, read-aloud, and voice notes use Fish Audio. On Hermes 0.21.6 or newer, CLI voice mode and desktop voice replies stream sentence by sentence. Hermes 0.21.5 waits for each sentence in CLI voice mode, and for the whole reply in the desktop app, to finish synthesizing before it plays.
+- **Speech-to-text**: voice notes and desktop dictation are transcribed with `transcribe-1-pro`.
+- **Agent tools**:
+  - `fish_speak` for expressive and multi-speaker speech, with word timestamps and subtitles;
+  - `fish_voices` to search, clone, design, and manage voices;
+  - `fish_transcribe` for transcripts with speaker turns and SRT subtitles.
+- **Voices page in the desktop app**: browse and preview the voice library, choose the agent's voice, clone or design voices, and check your API credit.
+- **Commands**: `/fish status`, `/fish voices`, `/fish use`, `/fish model`, `/fish preview`, and `/fish balance` work in every chat. `hermes fish login`, `status`, `doctor`, and `use` work in the terminal.
+
+Synthesis, transcription, cloning, and voice design are billed to your Fish Audio API credits, except requests that run on the free `s2.1-pro-free` model. Cloning and deleting voices from chat go through Hermes's approval prompt; on the desktop Voices page, you confirm them on the page.
+
+## Resources
+
+- [GitHub](https://github.com/100yenadmin/fish-audio-hermes)
+- [Hermes Agent](https://github.com/NousResearch/hermes-agent)
