@@ -95,7 +95,22 @@ Requests authenticate with `Authorization: Bearer <your API key>`. The endpoint 
 
 ## Point the agent at your endpoint
 
-In the console, open the agent's **Configuration**, click the **Model** selector and choose **+ Custom LLM** at the bottom of the menu. Enter the base URL, the model name and your API key, then click **Run test**: it sends one streaming turn with the agent's prompt and tools, exactly as a live call would, and reports whether the endpoint was reached, whether it streamed `delta.content`, whether it accepted the tools, and the time to first token. **Save and use** switches the agent to your endpoint; the entry then appears under a **Custom** group in the selector, where you can edit or remove it. Picking a platform model again removes the endpoint and the stored key.
+To set it up in the console:
+
+1. Open the agent's **Configuration** and click the **Model** selector.
+2. Choose **+ Custom LLM** at the bottom of the menu.
+3. Enter the base URL, the model name and your API key.
+4. Click **Run test**. It sends one streaming turn with the agent's prompt and tools, just like a live call.
+5. Click **Save and use**. The agent now uses your endpoint.
+
+**Run test** reports:
+
+- Whether the endpoint was reached.
+- Whether it streamed `delta.content`.
+- Whether it accepted the tools.
+- The time to first token.
+
+The saved endpoint appears under **Custom** in the selector. You can edit or remove it there. If you pick a platform model again, the endpoint and the stored key are removed.
 
 Through the API, set the `llm.custom` section on the agent's [configuration](/agents/build/configuration#configure-through-the-api):
 
@@ -131,7 +146,12 @@ A custom LLM never silently falls back to a platform model, because a platform m
 - After three consecutive failed generations the agent apologizes, hangs up, and the session ends with `end_reason: llm_endpoint_failure` (in the [sessions API](/agents/monitor/conversation-history#status-and-end-reason), the dashboard, and the `call.ended` webhook's `ended_reason`). Each failure also emits an `llm.endpoint_error` event on the session timeline.
 
 <Tip>
-Voice conversations are latency sensitive. Aim for a time-to-first-token under 800 ms for natural turn-taking; above 1.5 s the pause is too long for voice. This is guidance only and does not affect the connection, but reasoning models (GPT-6, o-series and similar) usually take over 1.5 s, so turn reasoning off or pick a non-reasoning model for voice. The console's **Run test** shows the time to first token of a single turn, and turn latency is attributed per session in [conversation history](/agents/monitor/conversation-history), which lets you tell endpoint time from platform time.
+Voice conversations are latency sensitive:
+
+- Aim for a time-to-first-token under 800 ms. This is a recommendation, not a limit.
+- Reasoning models (GPT-6, o-series and similar) are often slow. For voice, turn reasoning off or use a non-reasoning model.
+- **Run test** shows the time to first token of one turn.
+- [Conversation history](/agents/monitor/conversation-history) shows turn latency per session. It separates endpoint time from platform time.
 </Tip>
 
 ## Limitations
