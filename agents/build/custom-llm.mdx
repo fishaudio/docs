@@ -95,7 +95,9 @@ Requests authenticate with `Authorization: Bearer <your API key>`. The endpoint 
 
 ## Point the agent at your endpoint
 
-Set the `llm.custom` section on the agent's [configuration](/agents/build/configuration#configure-through-the-api):
+In the console, open the agent's **Configuration**, click the **Model** selector and choose **+ Custom LLM** at the bottom of the menu. Enter the base URL, the model name and your API key, then click **Run test**: it sends one streaming turn with the agent's prompt and tools, exactly as a live call would, and reports whether the endpoint was reached, whether it streamed `delta.content`, whether it accepted the tools, and the time to first token. **Save and use** switches the agent to your endpoint; the entry then appears under a **Custom** group in the selector, where you can edit or remove it. Picking a platform model again removes the endpoint and the stored key.
+
+Through the API, set the `llm.custom` section on the agent's [configuration](/agents/build/configuration#configure-through-the-api):
 
 ```bash
 curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
@@ -129,11 +131,10 @@ A custom LLM never silently falls back to a platform model, because a platform m
 - After three consecutive failed generations the agent apologizes, hangs up, and the session ends with `end_reason: llm_endpoint_failure` (in the [sessions API](/agents/monitor/conversation-history#status-and-end-reason), the dashboard, and the `call.ended` webhook's `ended_reason`). Each failure also emits an `llm.endpoint_error` event on the session timeline.
 
 <Tip>
-Voice conversations are latency sensitive, so aim for a time-to-first-token under 800 ms. Turn latency is attributed per session in [conversation history](/agents/monitor/conversation-history), which lets you tell endpoint time from platform time.
+Voice conversations are latency sensitive. Aim for a time-to-first-token under 800 ms for natural turn-taking; above 1.5 s the pause is too long for voice. This is guidance only and does not affect the connection, but reasoning models (GPT-6, o-series and similar) usually take over 1.5 s, so turn reasoning off or pick a non-reasoning model for voice. The console's **Run test** shows the time to first token of a single turn, and turn latency is attributed per session in [conversation history](/agents/monitor/conversation-history), which lets you tell endpoint time from platform time.
 </Tip>
 
 ## Limitations
 
 - Single Turn and Tool [agent tests](/agents/test/agent-tests) are not supported. A scripted test run refuses to execute rather than substitute a platform model for yours. Simulation tests run on your endpoint.
-- Configuration is API-only for now. A console UI comes later.
 - The prompt-level safety guardrails still ride the assembled context, but your model decides whether to honor them.
