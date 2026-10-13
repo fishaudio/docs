@@ -11,7 +11,7 @@ Select `transcribe-1-pro` with the `model` header:
 
 - Python: `request_options=RequestOptions(additional_headers={"model": "transcribe-1-pro"})`, with `from fishaudio.core import RequestOptions`.
 - JavaScript: pass `{ headers: { model: "transcribe-1-pro" } }` as the second argument of `convert`.
-- Write the value exactly, in lowercase. A missing or unrecognized value (for example `Transcribe-1-Pro` or `transcribe-1pro`) is served and billed as `transcribe-1`, and no error is returned. If you expected `transcribe-1-pro` but the transcript has no speaker markers, check the header.
+- Write the value exactly, in lowercase. A missing or unrecognized value (for example `Transcribe-1-Pro` or `transcribe-1pro`) is served and billed as `transcribe-1`, and no error is returned. If you expected `transcribe-1-pro` but the transcript has no speaker markers and you did not send `diarize=false`, check the header.
 
 ## Python: `client.asr.transcribe`
 
