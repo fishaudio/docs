@@ -134,11 +134,17 @@ You've reached {{department}}. How can I help?
 
 On a call where the menu plays, the menu's value always wins: a default value or an [inbound call webhook](/agents/monitor/webhooks#inbound-call-webhook) value with the same name is not used.
 
-The menu prompt is the caller's greeting, so the first message should pick up from the choice rather than greet again. A fixed first message like the one above does that. A generated first message is told the caller has just answered the menu, but it still follows your first message prompt, and the default prompt greets the caller. Rewrite it for a caller who has already heard the menu:
+<Warning>
+  The first message plays after the menu, and the default first message, fixed
+  or generated, greets the caller. With a menu turned on, the caller hears two
+  greetings until you rewrite it to pick up from the choice, like the fixed
+  first message above. For a generated first message, change the prompt:
 
 ```text First message prompt
 Don't greet the caller again. Confirm they want {{department}} and ask how you can help.
 ```
+
+</Warning>
 
 #### Sessions without the menu
 
