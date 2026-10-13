@@ -1617,6 +1617,17 @@
                       "default": null,
                       "title": "Content Purged At"
                     },
+                    "keypad_menu": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentSessionKeypadMenu"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
                     "unattributed_llm_usage": {
                       "items": {
                         "$ref": "#/components/schemas/LLMMessageUsage"
@@ -1630,7 +1641,8 @@
                           "mapping": {
                             "message": "#/components/schemas/AgentSessionMessageItem",
                             "tool_call": "#/components/schemas/AgentSessionToolCallItem",
-                            "tool_result": "#/components/schemas/AgentSessionToolResultItem"
+                            "tool_result": "#/components/schemas/AgentSessionToolResultItem",
+                            "transfer": "#/components/schemas/AgentSessionTransferItem"
                           },
                           "propertyName": "type"
                         },
@@ -1640,6 +1652,9 @@
                           },
                           {
                             "$ref": "#/components/schemas/AgentSessionToolCallItem"
+                          },
+                          {
+                            "$ref": "#/components/schemas/AgentSessionTransferItem"
                           },
                           {
                             "$ref": "#/components/schemas/AgentSessionToolResultItem"
@@ -1876,6 +1891,13 @@
                         "$ref": "#/components/schemas/AgentSessionRecordingTrackEntity"
                       },
                       "title": "Tracks",
+                      "type": "array"
+                    },
+                    "transfers": {
+                      "items": {
+                        "$ref": "#/components/schemas/AgentSessionTransferRecordingEntity"
+                      },
+                      "title": "Transfers",
                       "type": "array"
                     },
                     "error": {
@@ -14321,7 +14343,7 @@
           {
             "in": "header",
             "name": "model",
-            "description": "Specify which TTS model to use. Use `s2.1-pro-free` for the free developer tier. `drama-3-preview` is a preview model; its behavior and availability may change. If omitted or set to an unrecognized value, the request falls back to `s2.1-pro`.",
+            "description": "Specify which TTS model to use. Use `s2.1-pro-free` for the free developer tier. If omitted or set to an unrecognized value, the request falls back to `s2.1-pro`.",
             "required": false,
             "schema": {
               "default": "s2.1-pro",
@@ -14330,7 +14352,7 @@
                 "s2-pro",
                 "s2.1-pro",
                 "s2.1-pro-free",
-                "drama-3-preview"
+                "drama-3"
               ],
               "title": "Model",
               "type": "string"
@@ -14506,7 +14528,7 @@
           {
             "in": "header",
             "name": "model",
-            "description": "Specify which TTS model to use. Use `s2.1-pro-free` for the free developer tier. `drama-3-preview` is a preview model; its behavior and availability may change. If omitted or set to an unrecognized value, the request falls back to `s2.1-pro`.",
+            "description": "Specify which TTS model to use. Use `s2.1-pro-free` for the free developer tier. If omitted or set to an unrecognized value, the request falls back to `s2.1-pro`.",
             "required": false,
             "schema": {
               "default": "s2.1-pro",
@@ -14515,7 +14537,7 @@
                 "s2-pro",
                 "s2.1-pro",
                 "s2.1-pro-free",
-                "drama-3-preview"
+                "drama-3"
               ],
               "title": "Model",
               "type": "string"
@@ -15467,7 +15489,7 @@
           {
             "in": "header",
             "name": "model",
-            "description": "Specify which TTS model to use. Use `s2.1-pro-free` for the free developer tier. `drama-3-preview` is a preview model; its behavior and availability may change. If omitted or set to an unrecognized value, the request falls back to `s2.1-pro`.",
+            "description": "Specify which TTS model to use. Use `s2.1-pro-free` for the free developer tier. If omitted or set to an unrecognized value, the request falls back to `s2.1-pro`.",
             "required": false,
             "schema": {
               "default": "s2.1-pro",
@@ -15476,7 +15498,7 @@
                 "s2-pro",
                 "s2.1-pro",
                 "s2.1-pro-free",
-                "drama-3-preview"
+                "drama-3"
               ],
               "title": "Model",
               "type": "string"
@@ -18028,6 +18050,82 @@
       }
     },
     "schemas": {
+      "AgentSessionKeypadMenu": {
+        "description": "How the keypad menu of an inbound phone call ended. `outcome` is\n`selected` when the caller chose an option, `no_input` or `no_match`\nwhen no attempt got a valid choice (the last one had no input, or input\nmatching no option), and `skipped` when the menu could not run (a resumed\nconversation or no SIP caller). `value` is what the menu variable\nreceived: the chosen option's value, or the fallback value when the\ncaller never made a valid choice.",
+        "properties": {
+          "outcome": {
+            "enum": [
+              "selected",
+              "no_input",
+              "no_match",
+              "skipped"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "variable": {
+            "title": "Variable",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Key"
+          },
+          "input": {
+            "anyOf": [
+              {
+                "enum": [
+                  "dtmf",
+                  "speech"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Input"
+          },
+          "attempts": {
+            "default": 0,
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Completed At"
+          }
+        },
+        "required": [
+          "outcome",
+          "variable",
+          "value"
+        ],
+        "title": "AgentSessionKeypadMenu",
+        "type": "object"
+      },
       "AgentSessionSummary": {
         "description": "One list row: lifecycle facts only — the conversation timeline lives on\nthe detail endpoint (Retell-style thin list).",
         "properties": {
@@ -18287,6 +18385,17 @@
             ],
             "default": null,
             "title": "Content Purged At"
+          },
+          "keypad_menu": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentSessionKeypadMenu"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "required": [
@@ -18778,6 +18887,19 @@
             "title": "Content",
             "type": "string"
           },
+          "input_medium": {
+            "anyOf": [
+              {
+                "const": "dtmf",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Input Medium"
+          },
           "turn_id": {
             "anyOf": [
               {
@@ -18985,6 +19107,236 @@
           "status"
         ],
         "title": "AgentSessionToolResultItem",
+        "type": "object"
+      },
+      "AgentSessionTransferItem": {
+        "description": "One transfer attempt. `call_id` matches its `_transfer_call` tool_call\nitem. A warm transfer's consult call (the caller on hold meanwhile) is in\n`messages`, never in the caller's message items. `merged` and `referred`\nsucceeded, and `outcome` is null while the attempt runs.",
+        "properties": {
+          "type": {
+            "const": "transfer",
+            "default": "transfer",
+            "title": "Type",
+            "type": "string"
+          },
+          "call_id": {
+            "title": "Call Id",
+            "type": "string"
+          },
+          "destination": {
+            "title": "Destination",
+            "type": "string"
+          },
+          "destination_type": {
+            "enum": [
+              "phone",
+              "sip"
+            ],
+            "title": "Destination Type",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "cold",
+              "warm"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "warm_connect": {
+            "anyOf": [
+              {
+                "enum": [
+                  "confirm",
+                  "briefing",
+                  "direct"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Warm Connect"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "enum": [
+                  "merged",
+                  "referred",
+                  "dial_failed",
+                  "declined",
+                  "voicemail",
+                  "ivr",
+                  "consult_closed",
+                  "consult_timeout",
+                  "merge_failed",
+                  "refer_failed",
+                  "caller_hangup",
+                  "cancelled",
+                  "unavailable"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Outcome"
+          },
+          "sip_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sip Status"
+          },
+          "decline_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Decline Reason"
+          },
+          "hold_started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Hold Started At"
+          },
+          "hold_ended_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Hold Ended At"
+          },
+          "dial_started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Dial Started At"
+          },
+          "answered_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Answered At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ended At"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSessionTransferMessage"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Created At"
+          }
+        },
+        "required": [
+          "call_id",
+          "destination",
+          "destination_type",
+          "target",
+          "mode"
+        ],
+        "title": "AgentSessionTransferItem",
+        "type": "object"
+      },
+      "AgentSessionTransferMessage": {
+        "description": "One line of a warm transfer's private consult call: `assistant` is the\nagent briefing, `transfer_target` the person it dialed.",
+        "properties": {
+          "role": {
+            "enum": [
+              "assistant",
+              "transfer_target"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Created At"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "AgentSessionTransferMessage",
         "type": "object"
       },
       "LLMMessageTokenCost": {
@@ -19288,6 +19640,38 @@
         "title": "AgentSessionRecordingTrackEntity",
         "type": "object"
       },
+      "AgentSessionTransferRecordingEntity": {
+        "description": "A warm transfer's consult call, recorded apart from the caller, who\nwas on hold meanwhile. `transfer_id` is the transfer item's `call_id`.",
+        "properties": {
+          "transfer_id": {
+            "title": "Transfer Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "processing",
+              "complete",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSessionRecordingTrackEntity"
+            },
+            "title": "Tracks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "transfer_id",
+          "status",
+          "tracks"
+        ],
+        "title": "AgentSessionTransferRecordingEntity",
+        "type": "object"
+      },
       "PublicAgentEntity": {
         "properties": {
           "agent_id": {
@@ -19370,6 +19754,114 @@
           "updated_at"
         ],
         "title": "PublicAgentEntity",
+        "type": "object"
+      },
+      "AgentKeypadInputPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "default": false,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "terminator": {
+            "default": "#",
+            "enum": [
+              "#",
+              "*",
+              "none"
+            ],
+            "title": "Terminator",
+            "type": "string"
+          },
+          "inter_digit_timeout_seconds": {
+            "default": 2,
+            "maximum": 10,
+            "minimum": 1,
+            "title": "Inter Digit Timeout Seconds",
+            "type": "integer"
+          }
+        },
+        "title": "AgentKeypadInputPatch",
+        "type": "object"
+      },
+      "AgentKeypadMenuOptionPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "value"
+        ],
+        "title": "AgentKeypadMenuOptionPatch",
+        "type": "object"
+      },
+      "AgentKeypadMenuPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "default": false,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "prompt": {
+            "default": "",
+            "title": "Prompt",
+            "type": "string"
+          },
+          "options": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AgentKeypadMenuOptionPatch"
+            },
+            "maxItems": 12,
+            "title": "Options",
+            "type": "array"
+          },
+          "accept_speech": {
+            "default": true,
+            "title": "Accept Speech",
+            "type": "boolean"
+          },
+          "variable": {
+            "default": "menu_choice",
+            "title": "Variable",
+            "type": "string"
+          },
+          "no_input_timeout_seconds": {
+            "default": 5,
+            "maximum": 15,
+            "minimum": 2,
+            "title": "No Input Timeout Seconds",
+            "type": "integer"
+          },
+          "max_attempts": {
+            "default": 2,
+            "maximum": 3,
+            "minimum": 1,
+            "title": "Max Attempts",
+            "type": "integer"
+          },
+          "retry_message": {
+            "default": "",
+            "title": "Retry Message",
+            "type": "string"
+          },
+          "fallback_value": {
+            "default": "",
+            "title": "Fallback Value",
+            "type": "string"
+          }
+        },
+        "title": "AgentKeypadMenuPatch",
         "type": "object"
       },
       "AgentOutboundPatch": {
@@ -20156,6 +20648,28 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/AgentOutboundPatch"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "keypad_menu": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentKeypadMenuPatch"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "keypad_input": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentKeypadInputPatch"
               },
               {
                 "type": "null"
@@ -21231,6 +21745,12 @@
               }
             ],
             "default": null
+          },
+          "keypad_menu": {
+            "$ref": "#/components/schemas/AgentKeypadMenu"
+          },
+          "keypad_input": {
+            "$ref": "#/components/schemas/AgentKeypadInput"
           }
         },
         "title": "AgentConversationConfig",
@@ -21250,6 +21770,104 @@
           }
         },
         "title": "AgentGuardrailsConfig",
+        "type": "object"
+      },
+      "AgentKeypadInput": {
+        "description": "Keypad input for phone calls: digits the caller types during the\nconversation reach the agent as one user turn, ended by `terminator` or\nby a pause of `inter_digit_timeout_seconds` (`none`: the pause only).",
+        "properties": {
+          "enabled": {
+            "default": false,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "terminator": {
+            "default": "#",
+            "enum": [
+              "#",
+              "*",
+              "none"
+            ],
+            "title": "Terminator",
+            "type": "string"
+          },
+          "inter_digit_timeout_seconds": {
+            "default": 2,
+            "title": "Inter Digit Timeout Seconds",
+            "type": "integer"
+          }
+        },
+        "title": "AgentKeypadInput",
+        "type": "object"
+      },
+      "AgentKeypadMenu": {
+        "description": "Keypad menu for inbound phone calls. Before the agent's first turn it\nspeaks `prompt` in the agent's voice, collects one key press (or, with\n`accept_speech`, the option's value said aloud) and stores the chosen\noption's `value` in the dynamic variable named by `variable`. The system\nprompt, first message, transfer texts, farewell and webhook tools can use\n`{{variable}}` to act on the choice. Outbound calls, web, API and test\nsessions skip the menu, and the variable renders from its default.",
+        "properties": {
+          "enabled": {
+            "default": false,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "prompt": {
+            "default": "",
+            "title": "Prompt",
+            "type": "string"
+          },
+          "options": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AgentKeypadMenuOption"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "accept_speech": {
+            "default": true,
+            "title": "Accept Speech",
+            "type": "boolean"
+          },
+          "variable": {
+            "default": "menu_choice",
+            "title": "Variable",
+            "type": "string"
+          },
+          "no_input_timeout_seconds": {
+            "default": 5,
+            "title": "No Input Timeout Seconds",
+            "type": "integer"
+          },
+          "max_attempts": {
+            "default": 2,
+            "title": "Max Attempts",
+            "type": "integer"
+          },
+          "retry_message": {
+            "default": "",
+            "title": "Retry Message",
+            "type": "string"
+          },
+          "fallback_value": {
+            "default": "",
+            "title": "Fallback Value",
+            "type": "string"
+          }
+        },
+        "title": "AgentKeypadMenu",
+        "type": "object"
+      },
+      "AgentKeypadMenuOption": {
+        "properties": {
+          "key": {
+            "default": "",
+            "title": "Key",
+            "type": "string"
+          },
+          "value": {
+            "default": "",
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "title": "AgentKeypadMenuOption",
         "type": "object"
       },
       "AgentLLMConfigRedacted": {
@@ -22961,6 +23579,7 @@
           },
           "body_template": {
             "default": "",
+            "description": "Request body sent for non-GET calls. `{{argument}}`, `{{system.*}}` and custom session variable placeholders are filled in at call time; a missing value becomes empty. When the body's content type is JSON (the default `application/json`, any `+json` type, or a `Content-Type` header saying so), a placeholder inside a JSON string, such as `{\"note\": \"{{note}}\"}`, is JSON-escaped, so quotes, backslashes and newlines in the value keep the body valid JSON. A placeholder outside a string, such as `{\"count\": {{count}}}`, is inserted as is. Other content types are filled in as is.",
             "maxLength": 100000,
             "title": "Body Template",
             "type": "string"
@@ -23161,6 +23780,7 @@
               }
             ],
             "default": null,
+            "description": "Request body sent for non-GET calls. `{{argument}}`, `{{system.*}}` and custom session variable placeholders are filled in at call time; a missing value becomes empty. When the body's content type is JSON (the default `application/json`, any `+json` type, or a `Content-Type` header saying so), a placeholder inside a JSON string, such as `{\"note\": \"{{note}}\"}`, is JSON-escaped, so quotes, backslashes and newlines in the value keep the body valid JSON. A placeholder outside a string, such as `{\"count\": {{count}}}`, is inserted as is. Other content types are filled in as is.",
             "title": "Body Template"
           },
           "headers": {
@@ -24794,7 +25414,7 @@
         "type": "object"
       },
       "TTSRequest": {
-        "description": "Request body for text-to-speech synthesis. Supports single-speaker synthesis on all compatible TTS models. Multi-speaker dialogue synthesis is available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`) and `drama-3-preview`, not `s1`.\n\n## Single Speaker\nProvide either `reference_id` (string) pointing to a voice model, or `references` (array of ReferenceAudio) for zero-shot cloning.\n\n## Multiple Speakers (Dialogue — S2 family and `drama-3-preview`)\nFor multi-speaker synthesis, provide:\n- `reference_id`: array of voice model IDs, e.g., [\"speaker-0-id\", \"speaker-1-id\"]\n- `text`: use speaker tags `<|speaker:0|>`, `<|speaker:1|>`, etc. to indicate speaker changes, e.g., \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\"\n\nAlternatively, for zero-shot multi-speaker:\n- `references`: 2D array where each inner array contains references for one speaker\n- `reference_id`: array of identifiers (can be arbitrary strings for zero-shot)\n\n## Example (Multi-Speaker with Model IDs)\n```json\n{\n  \"text\": \"<|speaker:0|>Good morning!<|speaker:1|>Good morning! How are you?<|speaker:0|>I'm great, thanks!\",\n  \"reference_id\": [\"model-id-alice\", \"model-id-bob\"]\n}\n```",
+        "description": "Request body for text-to-speech synthesis. Supports single-speaker synthesis on all compatible TTS models. Multi-speaker dialogue synthesis is available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`) and `drama-3`, not `s1`.\n\n## Single Speaker\nProvide either `reference_id` (string) pointing to a voice model, or `references` (array of ReferenceAudio) for zero-shot cloning.\n\n## Multiple Speakers (Dialogue — S2 family and `drama-3`)\nFor multi-speaker synthesis, provide:\n- `reference_id`: array of voice model IDs, e.g., [\"speaker-0-id\", \"speaker-1-id\"]\n- `text`: use speaker tags `<|speaker:0|>`, `<|speaker:1|>`, etc. to indicate speaker changes, e.g., \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\"\n\nAlternatively, for zero-shot multi-speaker:\n- `references`: 2D array where each inner array contains references for one speaker\n- `reference_id`: array of identifiers (can be arbitrary strings for zero-shot)\n\n## Example (Multi-Speaker with Model IDs)\n```json\n{\n  \"text\": \"<|speaker:0|>Good morning!<|speaker:1|>Good morning! How are you?<|speaker:0|>I'm great, thanks!\",\n  \"reference_id\": [\"model-id-alice\", \"model-id-bob\"]\n}\n```",
         "properties": {
           "text": {
             "description": "Text to convert to speech.",
@@ -24840,7 +25460,7 @@
                 "type": "null"
               }
             ],
-            "description": "Inline voice references for zero-shot cloning. Requires MessagePack (not JSON). For single speaker, provide an array of ReferenceAudio objects. For multiple speakers, provide an array of arrays where each inner array contains references for one speaker. **Multi-speaker is available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`) and `drama-3-preview`, not `s1`.** The speaker index corresponds to the index in reference_id array. Example for multi-speaker: [[{audio, text}], [{audio, text}, {audio, text}]] for 2 speakers where speaker 1 has 2 reference samples.",
+            "description": "Inline voice references for zero-shot cloning. Requires MessagePack (not JSON). For single speaker, provide an array of ReferenceAudio objects. For multiple speakers, provide an array of arrays where each inner array contains references for one speaker. **Multi-speaker is available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`) and `drama-3`, not `s1`.** The speaker index corresponds to the index in reference_id array. Example for multi-speaker: [[{audio, text}], [{audio, text}, {audio, text}]] for 2 speakers where speaker 1 has 2 reference samples.",
             "title": "References"
           },
           "reference_id": {
@@ -24861,7 +25481,7 @@
               }
             ],
             "default": null,
-            "description": "Voice model ID(s) from Fish Audio library or your custom models. For single-speaker synthesis, provide a string. For multi-speaker synthesis (dialogue), provide an array of model IDs. **Multi-speaker is available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`) and `drama-3-preview`, not `s1`.** When using multiple speakers, use speaker tags in your text like `<|speaker:0|>` and `<|speaker:1|>` to indicate speaker changes. Example: `<|speaker:0|>Hello!<|speaker:1|>Hi there!<|speaker:0|>How are you?` with `reference_id: [\"speaker-a-id\", \"speaker-b-id\"]`.",
+            "description": "Voice model ID(s) from Fish Audio library or your custom models. For single-speaker synthesis, provide a string. For multi-speaker synthesis (dialogue), provide an array of model IDs. **Multi-speaker is available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`) and `drama-3`, not `s1`.** When using multiple speakers, use speaker tags in your text like `<|speaker:0|>` and `<|speaker:1|>` to indicate speaker changes. Example: `<|speaker:0|>Hello!<|speaker:1|>Hi there!<|speaker:0|>How are you?` with `reference_id: [\"speaker-a-id\", \"speaker-b-id\"]`.",
             "title": "Reference Id"
           },
           "prosody": {
@@ -25073,7 +25693,7 @@
                 "type": "null"
               }
             ],
-            "description": "Inline voice references for zero-shot cloning. Requires MessagePack (not JSON). For single speaker, provide an array of ReferenceAudio objects. For multiple speakers, provide an array of arrays where each inner array contains references for one speaker. **Multi-speaker is available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`) and `drama-3-preview`, not `s1`.** The speaker index corresponds to the index in reference_id array. Example for multi-speaker: [[{audio, text}], [{audio, text}, {audio, text}]] for 2 speakers where speaker 1 has 2 reference samples.",
+            "description": "Inline voice references for zero-shot cloning. Requires MessagePack (not JSON). For single speaker, provide an array of ReferenceAudio objects. For multiple speakers, provide an array of arrays where each inner array contains references for one speaker. **Multi-speaker is available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`) and `drama-3`, not `s1`.** The speaker index corresponds to the index in reference_id array. Example for multi-speaker: [[{audio, text}], [{audio, text}, {audio, text}]] for 2 speakers where speaker 1 has 2 reference samples.",
             "title": "References"
           },
           "reference_id": {
@@ -25094,7 +25714,7 @@
               }
             ],
             "default": null,
-            "description": "Voice model ID(s) from Fish Audio library or your custom models. For single-speaker synthesis, provide a string. For multi-speaker synthesis (dialogue), provide an array of model IDs. **Multi-speaker is available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`) and `drama-3-preview`, not `s1`.** When using multiple speakers, use speaker tags in your text like `<|speaker:0|>` and `<|speaker:1|>` to indicate speaker changes. Example: `<|speaker:0|>Hello!<|speaker:1|>Hi there!<|speaker:0|>How are you?` with `reference_id: [\"speaker-a-id\", \"speaker-b-id\"]`.",
+            "description": "Voice model ID(s) from Fish Audio library or your custom models. For single-speaker synthesis, provide a string. For multi-speaker synthesis (dialogue), provide an array of model IDs. **Multi-speaker is available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`) and `drama-3`, not `s1`.** When using multiple speakers, use speaker tags in your text like `<|speaker:0|>` and `<|speaker:1|>` to indicate speaker changes. Example: `<|speaker:0|>Hello!<|speaker:1|>Hi there!<|speaker:0|>How are you?` with `reference_id: [\"speaker-a-id\", \"speaker-b-id\"]`.",
             "title": "Reference Id"
           },
           "prosody": {
