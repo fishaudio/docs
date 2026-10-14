@@ -21139,6 +21139,22 @@
             "default": null,
             "title": "Speed"
           },
+          "tts_model": {
+            "anyOf": [
+              {
+                "enum": [
+                  "s2.1-pro",
+                  "drama-3"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tts Model"
+          },
           "pronunciation_dictionary_ids": {
             "anyOf": [
               {
@@ -22285,6 +22301,15 @@
             "minimum": 0.5,
             "title": "Speed",
             "type": "number"
+          },
+          "tts_model": {
+            "default": "s2.1-pro",
+            "enum": [
+              "s2.1-pro",
+              "drama-3"
+            ],
+            "title": "Tts Model",
+            "type": "string"
           },
           "pronunciation_dictionary_ids": {
             "items": {
