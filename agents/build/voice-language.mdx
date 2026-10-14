@@ -104,6 +104,32 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 
 Both settings can also be replaced for a single session: send `overrides.voice_id` or `overrides.language` on the session request. See [Overrides](/agents/deploy/authenticated-sessions#overrides).
 
+## Text-to-speech model
+
+**Text-to-speech model** picks the Fish Audio model that renders the agent's voice (`voice.tts_model` on the wire). Every voice from the Voice Library works with either model.
+
+| Value | Model | Status | Notes |
+|---|---|---|---|
+| `s2.1-pro` | S2.1 Pro | Default | The production model every agent has spoken with so far. |
+| `drama-3` | Drama 3 | Available | The directable model from [Drama 3](/features/text-to-speech/drama-3). Time to first audio is comparable to S2.1 Pro. |
+
+Choose it with the **Text-to-speech model** selector in the Builder's voice section, or via the API:
+
+<CodeGroup>
+```bash API (curl)
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "voice": {
+      "tts_model": "drama-3"
+    }
+  }'
+```
+</CodeGroup>
+
+The model applies to everything the agent speaks in voice and phone sessions. As with every voice setting, the change lands in the draft: publish to roll it out.
+
 ## Speech recognition model
 
 **Speech recognition** picks the model that transcribes what callers say (`asr.model` on the wire). Latency is the typical wait from the caller's last word to the transcript. The agent starts its reply after that.
