@@ -82,7 +82,7 @@ Each row carries the session facts:
 | ---------------------- | ----------- | -------------------------------------------------------------------------------- |
 | `user_hangup`          | `completed` | The caller hung up                                                               |
 | `agent_hangup`         | `completed` | The agent ended the call (end-call tool, workflow end node, or idle hangup)      |
-| `escalated`            | `completed` | The call was transferred to a human                                              |
+| `escalated`            | `completed` | The call was transferred to a human. See [Transfer items](#transfer-items)       |
 | `conversation_timeout` | `completed` | The call reached its maximum duration                                            |
 | `heartbeat_timeout`    | `completed` | The agent runtime stopped responding mid-call                                    |
 | `agent_join_timeout`   | `completed` | The caller connected but no agent joined the call                                |
@@ -186,8 +186,9 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
 | `type`        | What it is                                                                                                                                                 |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `message`     | One utterance. `role` is `user` or `assistant` (system prompt content is never exposed). `turn_id` groups items belonging to the same conversational turn. |
-| `tool_call`   | A tool invocation as it started. `input` is a JSON string, stored in full with no truncation.                                                                 |
+| `tool_call`   | A tool invocation as it started. `input` is a JSON string, stored in full with no truncation.                                                              |
 | `tool_result` | The paired outcome, matched by `call_id`. `status` is `completed` or `failed`. `latency_ms` is the execution time.                                         |
+| `transfer`    | One [call transfer](/agents/telephony/transfers) attempt, successful or not. See [Transfer items](#transfer-items).                                        |
 
 Details worth knowing:
 
@@ -203,6 +204,95 @@ Details worth knowing:
   item types and fields you don't recognize. New modalities and item kinds will
   appear without a version bump.
 </Warning>
+
+### Transfer items
+
+When the agent [transfers a phone call](/agents/telephony/transfers), each attempt becomes one `transfer` item, including attempts that failed. Its `call_id` is the `call_id` of the `_transfer_call` `tool_call` that started it, and its `created_at` is when the attempt started, which is where it sits in the timeline. Every field is always present and is `null` when there is no value.
+
+```json
+{
+  "type": "transfer",
+  "call_id": "tool_3c1…",
+  "destination": "Front desk",
+  "destination_type": "phone",
+  "target": "+14155550123",
+  "mode": "warm",
+  "warm_connect": "confirm",
+  "outcome": "merged",
+  "sip_status": null,
+  "dial_status": null,
+  "decline_reason": null,
+  "consult_end_reason": null,
+  "hold_started_at": "2026-07-22T09:15:40Z",
+  "hold_ended_at": "2026-07-22T09:16:25Z",
+  "dial_started_at": "2026-07-22T09:15:41Z",
+  "answered_at": "2026-07-22T09:15:57Z",
+  "ended_at": "2026-07-22T09:16:25Z",
+  "transferred_call_ended_at": "2026-07-22T09:30:11Z",
+  "transferred_call_duration_seconds": 826,
+  "transferred_call_end_reason": "caller_hangup",
+  "messages": [
+    {
+      "role": "assistant",
+      "content": "Hi, I have a caller who needs help with a delivery. Can you take the call?",
+      "created_at": "2026-07-22T09:15:59Z"
+    },
+    {
+      "role": "transfer_target",
+      "content": "Sure, put them through.",
+      "created_at": "2026-07-22T09:16:21Z"
+    }
+  ],
+  "created_at": "2026-07-22T09:15:39Z"
+}
+```
+
+| Field                               | Description                                                                                                                                                                                               |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `call_id`                           | The `call_id` of the `_transfer_call` tool call that started the attempt.                                                                                                                                 |
+| `destination`                       | The destination's name at the time of the call. An empty string when the agent has a single unnamed destination.                                                                                          |
+| `destination_type`                  | `phone` or `sip`.                                                                                                                                                                                         |
+| `target`                            | The E.164 number or SIP URI that was dialed.                                                                                                                                                              |
+| `mode`                              | `cold` or `warm`.                                                                                                                                                                                         |
+| `warm_connect`                      | `confirm`, `briefing`, or `direct` on warm transfers. `null` on cold transfers.                                                                                                                           |
+| `outcome`                           | How the attempt ended. `merged` and `referred` are the successful ones. See [Transfer results](/agents/telephony/transfers#transfer-results) for every value. `null` while the attempt is in progress.    |
+| `sip_status`                        | `dial_failed` and `refer_failed` only: the final SIP response code the carrier returned, such as `486`. `null` when the carrier gave none.                                                                |
+| `dial_status`                       | `dial_failed` and `refer_failed` only: `busy`, `no_answer`, or `failed`, grouped from `sip_status` the same way as an [outbound call's](/agents/telephony/outbound-calls#the-dial-outcome) `dial_status`. |
+| `decline_reason`                    | `declined` only: the agent's short summary of why your team member declined. `null` when they gave no reason. What they actually said is in `messages`.                                                   |
+| `consult_end_reason`                | `consult_closed` only: how the consult call ended before the calls were merged, `transfer_target_hangup` or `connection_lost`. `null` when the platform could not tell.                                   |
+| `hold_started_at`                   | Warm: when the caller started hearing hold music.                                                                                                                                                         |
+| `hold_ended_at`                     | Warm: when the caller came off hold, connected to your team member or back with the agent.                                                                                                                |
+| `dial_started_at`                   | Warm: when the platform started dialing the destination.                                                                                                                                                  |
+| `answered_at`                       | Warm: when the destination answered the consult call.                                                                                                                                                     |
+| `ended_at`                          | When the attempt reached its outcome: the merge on a warm transfer, the completed handoff on a cold one (normally the moment the destination answered), or the failure.                                   |
+| `transferred_call_ended_at`         | `merged` and `referred` only: when the call between the caller and your team member ended. See [After the transfer](#after-the-transfer).                                                                 |
+| `transferred_call_duration_seconds` | `merged` and `referred` only: how long that call lasted, counted from `ended_at`.                                                                                                                         |
+| `transferred_call_end_reason`       | `merged` only: how that call ended. Always `null` on cold transfers.                                                                                                                                      |
+| `messages`                          | Warm: the transcript of the private consult call. `role` is `assistant` (the agent briefing) or `transfer_target` (the person it dialed). These lines never appear among the caller's `message` items.    |
+
+A warm transfer's consult call is also recorded when the session [records audio](#what-gets-stored). Its tracks are under `transfers` in the [recording response](#download-recordings), where `transfer_id` is the item's `call_id`.
+
+#### After the transfer
+
+On a successful transfer the session ends with `end_reason` `escalated`, whatever happens on the call afterwards. The three `transferred_call_*` fields describe that call between the caller and your team member.
+
+`transferred_call_end_reason` is one of:
+
+| Value                    | Meaning                                                                                                                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `caller_hangup`          | The caller hung up. On an [outbound call](/agents/telephony/outbound-calls), this is the person the agent called.                                                                |
+| `transfer_target_hangup` | Your team member hung up.                                                                                                                                                        |
+| `conversation_timeout`   | The call reached the agent's [maximum call duration](/agents/build/configuration#call-duration). The limit counts from the start of the call, time before the transfer included. |
+| `connection_lost`        | One of the lines dropped. Nobody hung up.                                                                                                                                        |
+| `null`                   | The platform could not tell how the call ended.                                                                                                                                  |
+
+When the values arrive depends on the mode:
+
+- **Warm**: when the call ends. They are `null` while the caller and your team member are still talking.
+- **Cold**: the platform leaves the call at the handoff, so the end time and duration come from the carrier's call record. They appear up to about an hour after the call ends. Who hung up is never known, so `transferred_call_end_reason` stays `null`.
+- **Cold transfers on [imported SIP numbers](/agents/telephony/byo-sip)**: the call record stays with your carrier, so the three fields stay `null`.
+
+When `transferred_call_ended_at` is `null`, the other two are `null` as well. A `referred` item with a duration of `0` means the carrier's record shows the destination never picked up, for example because the caller hung up while it was still ringing.
 
 ### Correlate with live events
 
