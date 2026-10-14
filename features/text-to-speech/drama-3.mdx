@@ -14,7 +14,7 @@ Drama 3 is our latest text-to-speech model built for voice direction and content
 - Direct a performance in plain language, including a language other than the script.
 - Add a sound or a pause where it happens, or limit a delivery to specific words.
 - Switch language for a phrase, or pin a pronunciation with phoneme tags.
-- Keep your current `POST /v1/tts` request and set the model header to `drama-3-preview`.
+- Keep your current `POST /v1/tts` request and set the model header to `drama-3`.
 
 ## Voice cast
 
@@ -28,12 +28,7 @@ Choosing a voice that fits the role is key to getting the best out of Drama 3. T
 
 ## How to use
 
-To use Drama 3, set the `model` header to `drama-3-preview` on your existing `POST /v1/tts` request.
-
-| Status | Model header | Availability |
-|---|---|---|
-| Released | `drama-3` | Available now |
-| Preview | `drama-3-preview` | Available now |
+To use Drama 3, set the `model` header to `drama-3` on your existing `POST /v1/tts` request.
 
 <Warning>
   If the `model` header is missing or misspelled, the request doesn't fail: it
@@ -185,7 +180,7 @@ The names in the script above are for reading. The request sends the same lines 
 curl --fail --show-error --request POST https://api.fish.audio/v1/tts \
   --header "Authorization: Bearer $FISH_API_KEY" \
   --header "Content-Type: application/json" \
-  --header "model: drama-3-preview" \
+  --header "model: drama-3" \
   --data '{
     "text": "<|speaker:0|>[calm, measured storyteller voice] The ship had been silent for three days.<|speaker:1|>[low, gravelly, tired but in control] Status report.<|speaker:2|>[fast, nervous, stumbling over words] Uh, sir, so, the thing is, the reactor is, it is not, it is not great.<|speaker:1|>[slow, dangerously quiet] Define \"not great.\"<|speaker:2|>[voice breaking, close to panic] It is going to <emphasis>blow</emphasis>.",
     "reference_id": ["c70cfb98867a4bfb9ae20d2401257b92", "bf322df2096a46f18c579d0baa36f41d", "f3a2b90078d54a65af4b95f63bc7798e"],
