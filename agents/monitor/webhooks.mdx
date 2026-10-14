@@ -92,7 +92,7 @@ The list is replaced as a whole on each update, so send every endpoint you want 
 
 ## Payload
 
-Every payload carries the `event` name and a `session` object with a fixed set of session facts. Note the field names differ from the [sessions API](/agents/monitor/conversation-history), which uses `session_id` / `started_at` / `ended_at` for the same facts. `call.ended` adds `ended_reason`; `call.analyzed` adds the `analysis` entity; `phone_call.dial_finished` adds top-level `dial_status` and `answered_by`:
+Every payload carries the `event` name and a `session` object with the session facts. Note the field names differ from the [sessions API](/agents/monitor/conversation-history), which uses `session_id` / `started_at` / `ended_at` for the same facts. `call.ended` adds `ended_reason`; `call.analyzed` adds the `analysis` entity; `phone_call.dial_finished` adds top-level `dial_status` and `answered_by`:
 
 <CodeGroup>
 
@@ -298,6 +298,16 @@ Respond with a `2xx` status within the timeout; a `500` response or a timed-out 
   published agent.
 </Note>
 
+### Forward compatibility
+
+Payloads change additively. This applies to every webhook on this page, including the [inbound call webhook](#inbound-call-webhook) request.
+
+- New fields can appear at any time, at the top level and inside `session`, `analysis` and `call`. They come without a new event name.
+- Published fields never change name, type or meaning, and are never removed.
+- Enum fields such as `status` and `ended_reason` can gain new values.
+
+Parse payloads without rejecting unknown fields. A receiver that validates against a strict schema breaks when a field is added. Treat an enum value you don't recognize as a generic case instead of failing.
+
 ## Inbound call webhook
 
 `webhooks.conversation_init` is a single endpoint called while an [inbound phone call](/agents/telephony/inbound-calls) is being set up, before the agent answers. It receives the caller's number and returns `dynamic_variables` that fill the `{{placeholders}}` in the agent's published prompt and first message, so the agent can greet a known customer by name or pick up an open order. In the console it is the **Inbound call webhook** on the agent's Webhooks page.
@@ -346,7 +356,7 @@ The platform sends one `POST` with a JSON body:
 
 `caller_number` and `dialed_number` are E.164. `caller_number` is an empty string when the carrier withholds the caller's number, and `twilio_call_sid` is empty when the call did not come through a Twilio number.
 
-The request carries no session id: the session is created after your endpoint answers. To match this request with the call later, keep `twilio_call_sid`. Post-call webhooks and the sessions API return the same value. During the call, webhook tools can send the session id with `{{system.session_id}}`.
+The request carries no session id: the session is created after your endpoint answers. To match this request with the call later, keep `twilio_call_sid`. Post-call webhooks and the sessions API return the same value. During the call, webhook tools can send the session id with `{{system.session_id}}`. New fields can be added to this request, see [Forward compatibility](#forward-compatibility).
 
 ### Response
 
