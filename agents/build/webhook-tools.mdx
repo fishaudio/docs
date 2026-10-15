@@ -53,7 +53,7 @@ https://api.example.com/orders/{{order_number}}
 
 ### Values in a JSON body
 
-When the body is JSON, the platform keeps it valid. What happens to a value depends on where its placeholder sits:
+When the body is JSON, what happens to a value depends on where its placeholder sits:
 
 - **Inside a JSON string**, like `"note": "{{note}}"`: the value is JSON-escaped. Quotes, backslashes, and line breaks in it can't break the body.
 - **Outside a string**, like `"count": {{count}}`: the value is inserted as is. Use this to send a number, a boolean, or a whole object.
