@@ -157,6 +157,8 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 
 Speech recognition applies to spoken sessions (voice calls and phone). As with every voice setting, the change lands in the draft: publish to roll it out.
 
+To use a different model for a single session, pass `overrides.asr.model` when you [create the session](/agents/deploy/authenticated-sessions#overrides) from your backend.
+
 ## Multilingual recognition
 
 **Multilingual recognition** lets the agent understand callers who switch to another language partway through a conversation. With it off, speech recognition listens only for the speaking language. That is more accurate when every caller speaks the same language, and it keeps short or accented phrases from being transcribed as another language.

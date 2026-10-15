@@ -151,6 +151,7 @@ Unknown fields (top-level or inside `overrides`) are rejected with `422`.
 | `voice_id`             | string                                   | The voice the agent speaks with: any [voice model id](/agents/build/voice-language#use-any-voice-model) from the Voice Library. Voices bias pronunciation toward their own language, so pair it with `language`. |
 | `language`             | the code of one of the [52 supported languages](/agents/build/voice-language#speaking-language) | Pins
  the conversation language, taking precedence over the configured [speaking language](/agents/build/voice-language#speaking-language).                                                                        |
+| `asr.model`            | one of the [speech recognition models](/agents/build/voice-language#speech-recognition-model) | The model that transcribes the caller, in place of the agent's `asr.model`. Nested like the agent's `asr` configuration: `"asr": { "model": "deepgram:nova-3" }`. |
 
 ```json
 {
