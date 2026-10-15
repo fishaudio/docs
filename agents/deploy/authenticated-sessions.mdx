@@ -151,7 +151,7 @@ Unknown fields (top-level or inside `overrides`) are rejected with `422`.
 | `voice_id`             | string                                   | The voice the agent speaks with: any [voice model id](/agents/build/voice-language#use-any-voice-model) from the Voice Library. Voices bias pronunciation toward their own language, so pair it with `language`. |
 | `language`             | the code of one of the [52 supported languages](/agents/build/voice-language#speaking-language) | Pins
  the conversation language, taking precedence over the configured [speaking language](/agents/build/voice-language#speaking-language).                                                                        |
-| `asr_model`            | one of the [speech recognition models](/agents/build/voice-language#speech-recognition-model) | The model that transcribes the caller, in place of the agent's `asr.model`. A model in preview is rejected with `403` unless your account has access to it or the agent already uses it. |
+| `asr.model`            | one of the [speech recognition models](/agents/build/voice-language#speech-recognition-model) | The model that transcribes the caller, in place of the agent's `asr.model`. Nested like the agent's `asr` configuration: `"asr": { "model": "deepgram:nova-3" }`. A model in preview is rejected with `403` unless your account has access to it or the agent already uses it. |
 
 ```json
 {
@@ -226,7 +226,7 @@ Session creation fails with standard HTTP statuses; the SDK surfaces them as a `
 | `400`  | A keyless (public-agent) request sent an override [public sessions don't accept](#overrides), or a `name`.                                    |
 | `401`  | Invalid API key. A request with no `Authorization` header at all is treated as a public-agent request instead.                                |
 | `402`  | Quota exceeded.                                                                                                                               |
-| `403`  | Public-agent request rejected: the agent is not public, or the page's `Origin` is not on the allow-list. Also returned when `overrides.asr_model` names a preview model your account doesn't have access to. |
+| `403`  | Public-agent request rejected: the agent is not public, or the page's `Origin` is not on the allow-list. Also returned when `overrides.asr.model` names a preview model your account doesn't have access to. |
 | `409`  | Conflict: most commonly the agent has no published version yet. [Publish](/agents/deploy/versions-publishing) to resolve.                    |
 | `422`  | The request body failed validation: an unknown field, an unsupported `language` code, an invalid `timezone`, or an invalid dynamic variable. |
 | `429`  | Rate limited: a public-agent request exceeded the per-agent or per-IP limit.                                                                 |
