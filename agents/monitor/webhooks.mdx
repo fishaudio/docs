@@ -359,7 +359,7 @@ The platform sends one `POST` with a JSON body:
 
 `twilio_call_sid` is deprecated. It carries the same value as `call_sid` and stays in the request. Read `call_sid` in new code.
 
-The request carries no session id: the session is created after your endpoint answers. To match this request with the call later, keep `call_sid`. Post-call webhooks and the sessions API return the same value. This works only when `call_sid` is not empty, that is for calls through a Twilio number. During the call, webhook tools can send the session id with `{{system.session_id}}`. New fields can be added to this request, see [Forward compatibility](#forward-compatibility).
+The request carries no session id: the session is created after your endpoint answers. To match this request with the call, keep `call_sid`. Once the call is connected, `GET /v1/agent/sessions?call_sid=…` returns its session, and post-call webhooks carry the same value. This works only when `call_sid` is not empty, that is for calls through a Twilio number. During the call, webhook tools can send the session id with `{{system.session_id}}`. New fields can be added to this request, see [Forward compatibility](#forward-compatibility).
 
 ### Response
 
