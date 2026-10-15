@@ -199,7 +199,7 @@ https://crm.example.com/availability?phone={{system.caller_number}}&from={{syste
 A reference to a system variable that does not exist (`{{system.foo}}`) is rejected with `422` when you save the configuration or the tool, and when you send it in session overrides. The error lists the available names.
 
 <Note>
-There is no `system.session_id`. The configuration is rendered before the session receives its id, so the id cannot be templated into it. Read it from the `POST /v1/agent/sessions` [response](/agents/deploy/authenticated-sessions), the SDK's `connect` event, or the `session` object in [webhooks](/agents/monitor/webhooks).
+`system.session_id` is filled in at call time, after the session receives its id. Outside the agent, read the id from the `POST /v1/agent/sessions` [response](/agents/deploy/authenticated-sessions), the SDK's `connect` event, or the `session` object in [webhooks](/agents/monitor/webhooks).
 </Note>
 
 ## World context

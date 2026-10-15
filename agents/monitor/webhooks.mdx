@@ -92,7 +92,7 @@ The list is replaced as a whole on each update, so send every endpoint you want 
 
 ## Payload
 
-Every payload carries the `event` name and a `session` object with the session facts. Note the field names differ from the [sessions API](/agents/monitor/conversation-history), which uses `session_id` / `started_at` / `ended_at` for the same facts. `call.ended` adds `ended_reason`; `call.analyzed` adds the `analysis` entity; `phone_call.dial_finished` adds top-level `dial_status` and `answered_by`:
+Every payload carries the `event` name and a `session` object with the session facts. Note the field names differ from the [sessions API](/agents/monitor/conversation-history), which uses `session_id` / `started_at` / `ended_at` for the same facts. `call.ended` adds `ended_reason`; `call.analyzed` adds the `analysis` entity; `phone_call.dial_finished` adds top-level `dial_status` and `answered_by`. The `call.ended` and `call.analyzed` examples show part of the session fields. The `phone_call.dial_finished` example shows all of them.
 
 <CodeGroup>
 
@@ -170,7 +170,7 @@ Every payload carries the `event` name and a `session` object with the session f
     "caller_number": "+15551234567",
     "dialed_number": "+14155550100",
     "sip_call_id": "7f3a9c@sbc.example.com",
-    "twilio_call_sid": "",
+    "call_sid": "",
     "batch_call_id": null,
     "conversation_started_at": "2026-07-23T12:01:12Z",
     "conversation_ended_at": null,
@@ -191,7 +191,7 @@ Every payload carries the `event` name and a `session` object with the session f
 
 `caller_number`, `dialed_number` and `sip_call_id` carry the same values as on the [sessions API](/agents/monitor/conversation-history): the E.164 numbers of the call (person-centric on outbound calls, so `caller_number` is the party you dialed) and the SIP `Call-ID` of the call's INVITE. All three are empty strings on web sessions, and `sip_call_id` is also empty on an unanswered outbound dial. How to use it against your carrier's records: [Match calls with your SIP records](/agents/telephony/byo-sip#match-calls-with-your-sip-records).
 
-`twilio_call_sid` is Twilio's CallSid on an inbound call through a Twilio number. It is the same value the [inbound call webhook](#inbound-call-webhook) request carries, so you can join that request to the session. It is an empty string on web sessions, outbound calls, and calls through your own SIP trunk.
+`call_sid` is the carrier's id of the call. Today that is Twilio's CallSid on an inbound call through a Twilio number. It is the same value the [inbound call webhook](#inbound-call-webhook) request carries, so you can join that request to the session. It is an empty string on web sessions, outbound calls, and calls through your own SIP trunk.
 
 `end_user_id` and `metadata` are echoed exactly as you set them when creating the session. Use them to correlate the event with records in your own system. `branch_id` is an internal configuration-lineage identifier and is safe to ignore. What lands in `summary`, `data`, and `criteria_results` is defined by your [analysis configuration](/agents/monitor/post-call-analysis).
 
@@ -349,14 +349,17 @@ The platform sends one `POST` with a JSON body:
     "dialed_number": "+14155550100",
     "agent_id": "a1b2…",
     "phone_number_id": "7e9f…",
-    "twilio_call_sid": "CA5d3a…"
+    "twilio_call_sid": "CA5d3a…",
+    "call_sid": "CA5d3a…"
   }
 }
 ```
 
-`caller_number` and `dialed_number` are E.164. `caller_number` is an empty string when the carrier withholds the caller's number, and `twilio_call_sid` is empty when the call did not come through a Twilio number.
+`caller_number` and `dialed_number` are E.164. `caller_number` is an empty string when the carrier withholds the caller's number, and `call_sid` is empty when the call did not come through a Twilio number.
 
-The request carries no session id: the session is created after your endpoint answers. To match this request with the call later, keep `twilio_call_sid`. Post-call webhooks and the sessions API return the same value. During the call, webhook tools can send the session id with `{{system.session_id}}`. New fields can be added to this request, see [Forward compatibility](#forward-compatibility).
+`twilio_call_sid` is deprecated. It carries the same value as `call_sid` and stays in the request. Read `call_sid` in new code.
+
+The request carries no session id: the session is created after your endpoint answers. To match this request with the call later, keep `call_sid`. Post-call webhooks and the sessions API return the same value. This works only when `call_sid` is not empty, that is for calls through a Twilio number. During the call, webhook tools can send the session id with `{{system.session_id}}`. New fields can be added to this request, see [Forward compatibility](#forward-compatibility).
 
 ### Response
 
