@@ -106,6 +106,7 @@ The same values appear on the [`call.ended` webhook](/agents/monitor/webhooks) a
 | `caller_number`                    | Exact match on the caller's E.164 number; a bare number gets `+` prepended automatically              |
 | `sip_call_id`                      | Exact match on the SIP `Call-ID` of the call's INVITE, for looking up the session behind a carrier CDR entry              |
 | `end_user_id`                      | Exact, case-sensitive match on the `end_user_id` you set when [creating the session](/agents/deploy/authenticated-sessions), for listing one customer's sessions |
+| `call_sid`                         | Exact match on `call_sid`, for looking up the session behind an [inbound call webhook](/agents/monitor/webhooks#inbound-call-webhook) request |
 | `created_after` / `created_before` | ISO 8601 timestamps                                                                                   |
 
 <Note>
