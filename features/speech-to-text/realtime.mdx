@@ -2,10 +2,10 @@
 title: "Realtime Speech to Text"
 sidebarTitle: "Realtime"
 description: "Transcribe live audio turn by turn with transcribe-1-pro-realtime: turn detection that knows when the user has finished, backchannel and background awareness, and conversation context"
-icon: "bolt"
+icon: "microphone-lines"
 ---
 
-Stream live audio over a WebSocket and get the transcript turn by turn while people speak. `transcribe-1-pro-realtime` does more than transcribe: it decides when the user has finished their turn, tells the user talking to your app apart from background sound, and notices when a "mm-hm" is only an acknowledgement. Your voice agent knows when to answer, when to keep talking and when to stop. Connect to `wss://api.fish.audio/v1/asr/realtime`, send audio as you capture it, and read the events the server sends back.
+Stream live audio over a WebSocket and get the transcript turn by turn while people speak. `transcribe-1-pro-realtime` does more than transcribe: it decides when the user has finished their turn, usually tells the user talking to your app apart from background sound, and notices when a "mm-hm" is only an acknowledgement. This helps your voice agent decide when to answer, when to keep talking and when to stop. Connect to `wss://api.fish.audio/v1/asr/realtime`, send audio as you capture it, and read the events the server sends back.
 
 <Note>
   Realtime speech to text is in preview and is enabled per team. Contact
@@ -60,7 +60,8 @@ Stream live audio over a WebSocket and get the transcript turn by turn while peo
     with push-to-talk.
   </Card>
   <Card title="Phone calls" icon="phone">
-    Stream 8 kHz call audio as it arrives; the server converts the sample rate.
+    Stream 8 kHz call audio as it arrives. Decode μ-law or A-law audio to 16-bit
+    PCM first; the server converts the sample rate.
   </Card>
 </CardGroup>
 
@@ -78,7 +79,7 @@ The realtime endpoints of the [compatible APIs](/developer-guide/compat/capabili
 
 ## Quick start
 
-The SDKs do not wrap this endpoint yet; you connect with any WebSocket client and exchange MessagePack messages.
+The SDKs do not wrap this endpoint; you connect with any WebSocket client and exchange MessagePack messages.
 
 <Steps>
   <Step title="Connect">
@@ -144,7 +145,7 @@ Noise, a TV or side conversations usually become non-user turns, committed with 
 
 ### Room to think
 
-Pauses in the middle of a sentence do not end the turn, so people can stop to think. A safety net still ends a turn that goes silent: when a speaker stops mid-sentence and does not go on, the turn ends about 2 seconds later.
+Short pauses in the middle of a sentence usually do not end the turn, so people can stop to think. When a speaker stops mid-sentence and does not go on, the turn ends about 2 seconds later. As a further safety net, a user turn with no voice activity for `silence_timeout_ms` (default 5 seconds) always ends.
 
 ## History Aware Transcription
 
@@ -163,11 +164,11 @@ The server uses the conversation to recognize names and follow-ups.
 | `vad`            | A fixed silence has passed (`silence_timeout_ms`, default 700 ms). | Simple silence-based endpointing.      |
 | `manual`         | You send `finalize`.                                               | Push-to-talk, or your own endpointing. |
 
-Eager end of turn, backchannel detection and background awareness are available in `auto` mode. In `vad` and `manual` mode, every turn is a user turn. See [Turn detection modes](/api-reference/endpoint/websocket/asr-realtime#turn-detection-modes) for details.
+Eager end of turn, backchannel detection and background awareness are available in `auto` mode, when the session starts in `auto` (the default). In `vad` and `manual` mode, and after a later switch to `auto` from another mode, every turn is a user turn. See [Turn detection modes](/api-reference/endpoint/websocket/asr-realtime#turn-detection-modes) for details.
 
 ## Languages
 
-Smart Turn Detection is trained on English, Chinese and Japanese. Transcription covers many more languages, and every `draft`, `eager_end_of_turn` and `committed` carries the language of its own text as `language_code`, one of 29 [supported codes](/api-reference/endpoint/websocket/asr-realtime#language).
+Smart Turn Detection is trained on English, Chinese and Japanese. Transcription covers many more languages, and `draft`, `eager_end_of_turn` and `committed` carry the language of their own text as `language_code` when it can be identified, one of 29 [supported codes](/api-reference/endpoint/websocket/asr-realtime#language).
 
 In other languages, a turn ends about 2 seconds after the speaker stops, and there is no eager signal. For faster turns in those languages, use `vad` mode, or end turns yourself with `finalize`.
 
@@ -197,7 +198,7 @@ Your API key travels in a request header. Connect from your server, never from a
 
 ### Limits
 
-A session lasts up to 60 minutes and a turn up to 60 seconds. Each open connection holds one of your account's concurrent session slots. See [Limits](/api-reference/endpoint/websocket/asr-realtime#limits) for the full list.
+A session lasts up to 60 minutes and a turn up to 60 seconds. Each open connection holds one of your team's concurrent session slots. See [Limits](/api-reference/endpoint/websocket/asr-realtime#limits) for the full list.
 
 ## Going further
 

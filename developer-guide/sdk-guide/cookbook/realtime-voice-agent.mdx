@@ -240,13 +240,13 @@ Answer a turn when `committed.user_turn` is `true` and its text, without speaker
 
 A turn with `user_turn: false` is not the user talking to your agent: usually background noise, a TV or another person nearby (`turn_kind: "other"`), or an acknowledgement while your agent was speaking (`turn_kind: "backchannel"`). Its text can be shown dimmed in a transcript, or left out.
 
-In `auto` mode, pauses in the middle of a sentence do not end the turn: the server judges from what was said and how whether the speaker has finished. A speaker who stops mid-sentence and does not go on has the turn ended about 2 seconds later. `silence_timeout_ms` (default 5000) is only a safety net.
+In `auto` mode, short pauses in the middle of a sentence usually do not end the turn: the server judges from what was said and how whether the speaker has finished. A speaker who stops mid-sentence and does not go on has the turn ended about 2 seconds later. `silence_timeout_ms` (default 5000) is only a safety net.
 
 ## Start early with eager end of turn
 
 With `turn_detection.eager: true`, the server sends `eager_end_of_turn` once the turn has probably ended, before `committed`. Its text is exactly what `committed` will say unless `turn_resumed` follows, so you can start your LLM on it:
 
-- On `eager_end_of_turn` with non-empty text, start preparing a reply. Do not play it yet, and do not send `agent_speaking: true`.
+- On `eager_end_of_turn` with non-empty text, start preparing a reply. Do not send `agent_speaking: true` until you start playing it; waiting for `committed` before you play is the safe default.
 - On `turn_resumed`, the user went on: cancel the prepared reply. A new `eager_end_of_turn` can follow.
 - On `committed`, if you prepared a reply for this turn, use it; otherwise start one now.
 
@@ -256,7 +256,7 @@ Not every turn has an `eager_end_of_turn`, and it can come right before `committ
 
 Send `agent_speaking` so the server can tell an acknowledgement from an interruption:
 
-- Send `{"type": "agent_speaking", "speaking": true}` when you commit to playing a reply: on `committed`, or, if you play a reply before `committed`, when playback starts. The wait for your LLM and speech synthesis counts as speaking.
+- Send `{"type": "agent_speaking", "speaking": true}` when you commit to playing a reply: on `committed`, or, if you play a reply before `committed`, when playback starts. The wait for your speech synthesis and the gaps between sentences count as speaking. If the first audio is more than about 2 seconds away (a slow LLM or a tool call), treat the wait as a pause, as below.
 - Send `{"type": "agent_speaking", "speaking": false}` when the last audio sample has played to the user, not when synthesis finishes, or when you stop the reply. If `turn_resumed` cancels a reply that was already playing, stop it and send `false`.
 - If a reply pauses for more than about 2 seconds, for example while a tool call runs, send `false` for the pause and `true` when it goes on.
 - Send it on the same connection as your audio, at the moment the state changes, and only when it changes. It applies at its position in the audio stream.
@@ -271,7 +271,7 @@ While your agent is speaking:
 2. On `user_backchannel`, the user only acknowledged ("mm-hm", "yeah", "right", "嗯", "对"): restore the volume and keep talking.
 3. On `user_turn_taken`, the user is taking the turn: stop the agent and send `agent_speaking: false`.
 4. On `committed` with `user_turn: false`, restore the volume.
-5. Cap any duck on your side to a few seconds: a turn over continuous background noise can last up to 20 seconds.
+5. Cap any duck on your side to a few seconds: a turn over continuous background noise can last up to 20 seconds. When the user starts talking over such noise, `user_turn_taken` can come a few hundred milliseconds later than usual.
 
 In `vad` and `manual` mode there is no `user_turn_taken` or `user_backchannel`: stop on `speech_start` instead.
 
@@ -307,7 +307,7 @@ The server uses the conversation to recognize names and follow-ups:
 - **Keep echo cancellation on.** Without it, the agent's own voice reaches the microphone, opens turns and can be taken for the user. In a browser, request `echoCancellation: true` from `getUserMedia`.
 - **Turn automatic gain control off where you can** (`autoGainControl: false` in a browser), so quiet background sound is not amplified between phrases.
 - **Test with headphones first.** They keep the agent's voice out of the microphone, so you can check turn-taking before you tune echo cancellation.
-- **Send audio as you capture it**, mono 16-bit PCM in 80–100 ms messages, at the device's own rate if it is one of the supported rates. The server converts the rate, so do not resample. Telephony audio at 8 kHz is supported.
+- **Send audio as you capture it**, mono 16-bit PCM in 80–100 ms messages, at the device's own rate if it is one of the supported rates. The server converts the rate, so do not resample. Telephony audio at 8 kHz is supported; decode μ-law or A-law call audio to 16-bit PCM first.
 - **Keep keys on your server.** In a browser, capture audio and relay it through your server, as in [Capture from a browser microphone](/developer-guide/sdk-guide/cookbook/realtime-transcription#capture-from-a-browser-microphone). Send `agent_speaking` on that same connection so it stays in order with the audio.
 
 ## Languages

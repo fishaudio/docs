@@ -38,18 +38,18 @@ model: transcribe-1-pro-realtime
 | `Authorization` | Yes      | `Bearer <API key>`.                                                                                |
 | `model`         | No       | `transcribe-1-pro-realtime`, the default and the only realtime model. Any other value returns 400. |
 
-Each open connection holds one of your account's concurrent session slots until it closes. A session cannot be resumed: a new connection is a new session.
+Each open connection holds one of your team's concurrent session slots until it closes. A session cannot be resumed: a new connection is a new session.
 
 If the server refuses the upgrade, it answers with a plain HTTP response whose JSON body is `{"status": <int>, "message": <str>}`:
 
-| Status | Meaning                                                                  | What to do                                                |
-| ------ | ------------------------------------------------------------------------ | --------------------------------------------------------- |
-| 400    | The `model` header names another model.                                  | Send `transcribe-1-pro-realtime` or leave the header out. |
-| 401    | The API key is missing or invalid.                                       | Check the key.                                            |
-| 402    | Insufficient API credit.                                                 | Top up your balance.                                      |
-| 403    | Realtime speech to text is not enabled for your team.                    | Contact support (see the note above).                     |
-| 429    | Your account is at its concurrency limit, or the service is at capacity. | Retry with backoff. Honour `Retry-After` when present.    |
-| 503    | The service is restarting.                                               | Retry.                                                    |
+| Status | Meaning                                                               | What to do                                                |
+| ------ | --------------------------------------------------------------------- | --------------------------------------------------------- |
+| 400    | The `model` header names another model.                               | Send `transcribe-1-pro-realtime` or leave the header out. |
+| 401    | The API key is missing or invalid.                                    | Check the key.                                            |
+| 402    | Insufficient API credit.                                              | Top up your balance.                                      |
+| 403    | Realtime speech to text is not enabled for your team.                 | Contact support (see the note above).                     |
+| 429    | Your team is at its concurrency limit, or the service is at capacity. | Retry with backoff. Honor `Retry-After` when present.     |
+| 503    | The service is restarting.                                            | Retry.                                                    |
 
 The `101 Switching Protocols` response carries an `x-request-id` header, and so do the 400 (model), capacity 429 and 503 refusals. It is the same value as `request_id` in `session_started`, `error` and `session_done`. Log it, and include it when you contact support. Refusals for the key, balance, access and your concurrency limit (401, 402, 403 and concurrency 429) happen before a session is assigned and carry no `x-request-id`.
 
@@ -107,7 +107,7 @@ The first message on the connection. Send it within 10 seconds of connecting, th
 | ----------------------------------- | -------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `protocol_version`                  | No       | `1`             | Only `1` is valid.                                                                                                                                                        |
 | `audio.format`                      | Yes      |                 | `pcm_s16le`: 16-bit little-endian PCM.                                                                                                                                    |
-| `audio.sample_rate`                 | Yes      |                 | One of 8000, 12000, 16000, 22050, 24000, 32000, 44100, 48000. See [Audio](#audio).                                                                                        |
+| `audio.sample_rate`                 | Yes      |                 | One of 8000, 12000, 16000, 22050, 24000, 32000, 44100, 48000. See [Audio format](#audio-format).                                                                          |
 | `audio.channels`                    | Yes      |                 | `1` (mono).                                                                                                                                                               |
 | `turn_detection.mode`               | No       | `"auto"`        | `"auto"`, `"vad"` or `"manual"`. See [Turn detection modes](#turn-detection-modes).                                                                                       |
 | `turn_detection.eager`              | No       | `false`         | `true` sends [`eager_end_of_turn`](#eager_end_of_turn) in `auto` mode.                                                                                                    |
@@ -124,9 +124,9 @@ The first message on the connection. Send it within 10 seconds of connecting, th
 
 A value of the wrong type for `ignore_timestamps`, or a `diarize` value other than those listed, is `invalid_config`.
 
-#### Audio
+#### Audio format
 
-Send 16-bit little-endian PCM, mono, at one of the listed sample rates. Other encodings (such as μ-law or Opus) and stereo audio are `unsupported_audio`. Audio at 16000 Hz is used as is; every other rate is converted on the server, so you never need to resample. The conversion adds at most about 20 ms of delay. Every `*_ms` value is in milliseconds of your audio, whatever its rate.
+Send 16-bit little-endian PCM, mono, at one of the listed sample rates. Other encodings (such as μ-law, A-law or Opus) and stereo audio are `unsupported_audio`; decode phone audio in μ-law or A-law to 16-bit PCM first, and send it at 8000 Hz as is. Audio at 16000 Hz is used as is; every other rate is converted on the server, so you never need to resample. The conversion adds at most about 20 ms of delay. Every `*_ms` value is in milliseconds of your audio, whatever its rate.
 
 An `audio` message can hold any number of bytes; an odd trailing byte waits for the next message. Send 80–100 ms of audio per message. A message can be at most 1 MiB, which holds 65.5 seconds of audio at 8 kHz or 10.9 seconds at 48 kHz.
 
@@ -138,7 +138,7 @@ An `audio` message can hold any number of bytes; an odd trailing byte waits for 
 | `vad`    | `silence_timeout_ms` of silence has passed (default 700 ms).                                  | Fixed silence-based endpointing.             |
 | `manual` | You send `finalize`.                                                                          | Push-to-talk, or your own endpointing.       |
 
-**`auto`.** A turn opens as soon as voice activity is detected. The server then judges whether this is the user taking their turn. If it is, the server sends `user_turn_taken`, and it ends the turn when the speaker has finished, not on silence alone. A pause in the middle of a sentence does not end the turn; a speaker who stops mid-sentence and does not go on has the turn ended about 2 seconds after they stopped. `silence_timeout_ms` is only a safety net here.
+**`auto`.** A turn opens as soon as voice activity is detected. The server then judges whether this is the user taking their turn. If it is, the server sends `user_turn_taken`, and it ends the turn when the speaker has finished, not on silence alone. A short pause in the middle of a sentence usually does not end the turn; a speaker who stops mid-sentence and does not go on has the turn ended about 2 seconds after they stopped. `silence_timeout_ms` is only a safety net here.
 
 Other sounds, usually noise, a TV or other people talking nearby, end after a short quiet, or after 20 seconds at the latest, and are committed as non-user turns with `user_turn: false`. When the user starts speaking during such a sound, the sound before the speech is usually committed first as a non-user turn, and the speech opens a new turn. A sound that began shortly before the speech stays in the user's turn. A turn you end with `finalize` or `audio_done` before `user_turn_taken` is not split: all of it becomes one user turn.
 
@@ -196,7 +196,7 @@ Commit the current turn now, with `reason: "finalize"`. In `auto` mode, the serv
 }
 ```
 
-Change settings during the session. Every field is optional and takes the same values as in `config`; `context` accepts `terms` only, and the new list replaces the old one. The server answers with [`configured`](#configured). If any value is invalid, nothing in the message is applied.
+Change settings during the session. Every field is optional and takes the same values as in `config`; a field you leave out keeps its current value. `context` accepts `terms` only, and the new list replaces the old one; `context.history` is ignored in `configure`, so send earlier lines with [`context_add`](#context_add). The server answers with [`configured`](#configured). If any value is invalid, nothing in the message is applied.
 
 - A change to `ignore_timestamps` or `diarize` applies to turns that open after `configured`. A turn that is already open keeps the settings it started with, so its `eager_end_of_turn` and `committed` always agree.
 - When `mode` changes to or from `auto`, the server first settles its turn decisions on the audio already sent, so `configured` can take a few seconds.
@@ -375,13 +375,13 @@ Watermarks only. Sent every 5 seconds while the client sends nothing.
 
 ### `error`
 
-| Field         | Type    | Description                                                             |
-| ------------- | ------- | ----------------------------------------------------------------------- |
-| `code`        | integer | An HTTP-style status: 400, 408, 413, 500, 503 or 504.                   |
-| `error_type`  | string  | What went wrong. See [Errors and close codes](#errors-and-close-codes). |
-| `message`     | string  | A fixed English sentence per error. Do not parse it.                    |
-| `request_id`  | string  | The session's request ID.                                               |
-| `recoverable` | boolean | `true` when the session continues.                                      |
+| Field         | Type    | Description                                                               |
+| ------------- | ------- | ------------------------------------------------------------------------- |
+| `code`        | integer | An HTTP-style status: 400, 408, 413, 500, 503 or 504.                     |
+| `error_type`  | string  | What went wrong. See [Errors and close codes](#errors-and-close-codes).   |
+| `message`     | string  | A short English description, for humans. Do not parse it.                 |
+| `request_id`  | string  | The session's request ID.                                                 |
+| `recoverable` | boolean | `true` when the session continues, except `server_restarting`: see below. |
 
 ### `session_done`
 
@@ -429,7 +429,7 @@ In every mode:
 
 `ar`, `zh` (Cantonese included), `cs`, `da`, `nl`, `en`, `fi`, `fr`, `de`, `el`, `hi`, `hu`, `id`, `it`, `ja`, `ko`, `mk`, `ms`, `fa`, `pl`, `pt`, `ro`, `ru`, `es`, `sv`, `tl`, `th`, `tr`, `vi`.
 
-Both fields are omitted when the text is empty, too short to tell (most replies under three words, such as "Okay" or "Yes.") or ambiguous; keep the last label you saw. Mixed-language text gets one label, the dominant language. Drafts are labelled one by one and may change; `committed` is final.
+Both fields are omitted when the text is empty, too short to tell (most replies under three words, such as "Okay" or "Yes.") or ambiguous; keep the last label you saw. Mixed-language text gets one label, the dominant language. Drafts are labeled one by one and may change; `committed` is final.
 
 ## Degraded commits
 
@@ -437,17 +437,19 @@ If the final pass for a turn fails, you receive `error` with `engine_error` and 
 
 ## Errors and close codes
 
-| `error_type`            | `code`          | Recoverable | Then                                                                                                                                                                                            |
-| ----------------------- | --------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `invalid_config`        | 400             | No          | Close 4400. A bad or missing `config`, a value over a limit, or `silence_timeout_ms` outside the mode's range.                                                                                  |
-| `unsupported_audio`     | 400             | No          | Close 4400. A sample rate not in the list, a format other than `pcm_s16le`, or more than one channel.                                                                                           |
-| `invalid_request`       | 400             | Yes         | The session continues. A text frame, an unreadable message, an over-limit `context_add`, a second `config`, or `agent_speaking` without a boolean `speaking`. As the first message: close 4400. |
-| `idle_timeout`          | 408             | No          | Close 4408 after 30 seconds without any client message.                                                                                                                                         |
-| `max_duration_exceeded` | 413             | No          | The open turn is committed (`reason: "finalize"`), then close 4413.                                                                                                                             |
-| `frame_too_large`       | 413             | No          | Close 1009. A message over `limits.max_frame_bytes`.                                                                                                                                            |
-| `engine_error`          | 500, 503 or 504 | Yes         | A [degraded `committed`](#degraded-commits) follows (503: temporarily unavailable; 504: timed out). If the session could not start: `recoverable: false`, close 4500.                           |
-| `internal`              | 500             | No          | Close 4500.                                                                                                                                                                                     |
-| `server_restarting`     | 503             | Yes         | The open turn is committed (`reason: "finalize"`), then close 1012. Reconnect for a new session.                                                                                                |
+| `error_type`            | `code`          | Recoverable | Then                                                                                                                                                                  |
+| ----------------------- | --------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `invalid_config`        | 400             | No          | Close 4400. A bad or missing `config`, a value over a limit, or `silence_timeout_ms` outside the mode's range.                                                        |
+| `unsupported_audio`     | 400             | No          | Close 4400. A sample rate not in the list, a format other than `pcm_s16le`, or more than one channel.                                                                 |
+| `invalid_request`       | 400             | Yes         | The session continues. A text frame, an unreadable message, an over-limit `context_add`, a second `config`, or `agent_speaking` without a boolean `speaking`.         |
+| `idle_timeout`          | 408             | No          | Close 4408 after 30 seconds without any client message.                                                                                                               |
+| `max_duration_exceeded` | 413             | No          | The open turn is committed (`reason: "finalize"`), then close 4413.                                                                                                   |
+| `frame_too_large`       | 413             | No          | Close 1009. A message over `limits.max_frame_bytes`.                                                                                                                  |
+| `engine_error`          | 500, 503 or 504 | Yes         | A [degraded `committed`](#degraded-commits) follows (503: temporarily unavailable; 504: timed out). If the session could not start: `recoverable: false`, close 4500. |
+| `internal`              | 500             | No          | Close 4500.                                                                                                                                                           |
+| `server_restarting`     | 503             | Yes         | The open turn is committed (`reason: "finalize"`), then close 1012. Reconnect for a new session.                                                                      |
+
+`server_restarting` is the one recoverable error that closes the connection: the session cannot go on, but you can reconnect at once for a new one. If the first message is not a readable `config`, you get an `error` with `recoverable: false` and close 4400.
 
 A normal end is `session_done`, then close 1000. Match on `error_type`, not on `message`. In `auto` mode, a turn the server commits before closing may have `user_turn: false`.
 

@@ -797,9 +797,9 @@ components:
             const: configure
             description: Message type identifier
           turn_detection:
-            $ref: "#/components/schemas/AsrTurnDetection"
+            $ref: "#/components/schemas/AsrTurnDetectionUpdate"
           results:
-            $ref: "#/components/schemas/AsrResults"
+            $ref: "#/components/schemas/AsrResultsUpdate"
           context:
             type: object
             properties:
@@ -810,10 +810,16 @@ components:
                   type: string
                   maxLength: 32
                 description: Replaces the list of terms.
+            description: |
+              Only `terms` is accepted here. `history` is ignored in
+              `configure`; send earlier lines with `context_add`.
       description: |
-        Changes settings during the session. Answered by `configured`. If any
-        value is invalid, nothing in the message is applied. When `mode`
-        changes to or from `auto`, `configured` can take a few seconds.
+        Changes settings during the session. Answered by `configured`. Every
+        field is optional, and a field you leave out keeps its current value.
+        The one exception: switching `mode` without `silence_timeout_ms`
+        resets it to the new mode's default. If any value is invalid,
+        nothing in the message is applied. When `mode` changes to or from
+        `auto`, `configured` can take a few seconds.
       examples:
         - payload:
             type: configure
@@ -974,6 +980,8 @@ components:
             session_id: s_ab12cd34
             request_id: 0b6f4c1e-7d2a-4e8b-9f3c-5a1d2e3f4b6c
             config:
+              protocol_version: 1
+              model: transcribe-1-pro-realtime
               audio:
                 format: pcm_s16le
                 sample_rate: 16000
@@ -982,6 +990,13 @@ components:
                 mode: auto
                 eager: true
                 silence_timeout_ms: 5000
+              results:
+                drafts: true
+                draft_interval_ms: 250
+                ignore_timestamps: true
+                diarize: true
+                vad_events: false
+                eot_events: false
             limits:
               max_session_ms: 3600000
               max_turn_ms: 60000
@@ -1499,15 +1514,20 @@ components:
             description: Match on this field, not on `message`.
           message:
             type: string
-            description: A fixed English sentence per error.
+            description: A short English description, for humans. Do not parse it.
           request_id:
             type: string
           recoverable:
             type: boolean
-            description: "`true` when the session continues."
+            description: |
+              `true` when the session continues, except for
+              `server_restarting`, which commits the open turn and closes
+              with 1012 so you can reconnect.
       description: |
         An error. When `recoverable` is `false`, the server closes the
-        connection (close codes 4400, 4408, 4413, 4500, 1009 or 1012).
+        connection (close codes 4400, 4408, 4413, 4500 or 1009).
+        `server_restarting` is recoverable but still closes with 1012:
+        reconnect for a new session.
       examples:
         - payload:
             type: error
@@ -1877,7 +1897,7 @@ components:
           description: Send live `draft` messages.
         draft_interval_ms:
           type: integer
-          minimum: 250
+          minimum: 0
           default: 250
           description: Minimum time between drafts. Smaller values count as 250.
         ignore_timestamps:
@@ -1890,8 +1910,10 @@ components:
             - type: string
               enum:
                 - auto
+                - "true"
+                - "false"
           default: true
-          description: Speaker tags in the text. `auto` is the same as `true`; `false` removes them.
+          description: Speaker tags in the text. `auto` is the same as `true`; `false` removes them. The strings `"true"` and `"false"` are accepted too.
         vad_events:
           type: boolean
           default: false
@@ -1899,6 +1921,62 @@ components:
         eot_events:
           type: boolean
           default: false
+          description: Send `eot_prob` messages.
+
+    AsrTurnDetectionUpdate:
+      description: Turn detection changes in `configure`. Omitted fields keep their current values.
+      type: object
+      properties:
+        mode:
+          type: string
+          enum:
+            - auto
+            - vad
+            - manual
+          description: |
+            auto: the server's turn detection decides when the user has
+            finished, and tells user turns from noise and other voices.
+            vad: a turn ends after `silence_timeout_ms` of silence.
+            manual: a turn ends when you send `finalize`.
+        eager:
+          type: boolean
+          description: Send `eager_end_of_turn` in auto mode.
+        silence_timeout_ms:
+          type: integer
+          description: |
+            auto: default 5000, allowed 3000–60000 (a safety net for user
+            turns). vad: default 700, allowed 300–60000 (the silence that
+            ends a turn). manual: default 60000, allowed 300–60000 (a safety
+            net). Checked against the mode it will run under.
+
+    AsrResultsUpdate:
+      description: Result changes in `configure`. Omitted fields keep their current values.
+      type: object
+      properties:
+        drafts:
+          type: boolean
+          description: Send live `draft` messages.
+        draft_interval_ms:
+          type: integer
+          minimum: 0
+          description: Minimum time between drafts. Smaller values count as 250.
+        ignore_timestamps:
+          type: boolean
+          description: "`false` adds `words` with timings to `committed`."
+        diarize:
+          oneOf:
+            - type: boolean
+            - type: string
+              enum:
+                - auto
+                - "true"
+                - "false"
+          description: Speaker tags in the text. `auto` is the same as `true`; `false` removes them. The strings `"true"` and `"false"` are accepted too.
+        vad_events:
+          type: boolean
+          description: Send `vad` messages.
+        eot_events:
+          type: boolean
           description: Send `eot_prob` messages.
 
     AsrContext:
