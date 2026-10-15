@@ -59,7 +59,7 @@ Each row carries the session facts:
       "caller_number": "+15551234567",
       "dialed_number": "+14155550100",
       "sip_call_id": "7f3a9c@sbc.example.com",
-      "twilio_call_sid": "CA5d3a…",
+      "call_sid": "CA5d3a…",
       "started_at": "2026-07-22T09:14:02Z",
       "ended_at": "2026-07-22T09:16:05Z",
       "duration_seconds": 123,
@@ -71,7 +71,7 @@ Each row carries the session facts:
 }
 ```
 
-`caller_number` and `dialed_number` are set for phone sessions only (E.164) and are `null` for web sessions. `sip_call_id` is the SIP `Call-ID` of the call's INVITE. It is `null` on web sessions and on outbound calls that were never answered. See [Match calls with your SIP records](/agents/telephony/byo-sip#match-calls-with-your-sip-records). `twilio_call_sid` is Twilio's CallSid on an inbound call through a Twilio number, the same value the [inbound call webhook](/agents/monitor/webhooks#inbound-call-webhook) sends. It is `null` on other sessions. `name` is the display name you passed when creating the session (`null` when omitted), and `metadata` echoes back whatever you attached when creating the session.
+`caller_number` and `dialed_number` are set for phone sessions only (E.164) and are `null` for web sessions. `sip_call_id` is the SIP `Call-ID` of the call's INVITE. It is `null` on web sessions and on outbound calls that were never answered. See [Match calls with your SIP records](/agents/telephony/byo-sip#match-calls-with-your-sip-records). `call_sid` is the carrier's id of the call: Twilio's CallSid on an inbound call through a Twilio number, the same value the [inbound call webhook](/agents/monitor/webhooks#inbound-call-webhook) sends. It is `null` on other sessions. `name` is the display name you passed when creating the session (`null` when omitted), and `metadata` echoes back whatever you attached when creating the session.
 
 ### Status and end reason
 
