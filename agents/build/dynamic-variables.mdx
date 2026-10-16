@@ -154,6 +154,7 @@ The platform fills a handful of `{{system.*}}` placeholders itself, on every ses
 | `system.caller_number` | The human party's number, E.164 | Inbound: the caller (empty if withheld or not a valid E.164 number). Outbound: the number you dialed. Empty on non-phone sessions. |
 | `system.caller_number_spoken` | The same number written for speech, for example `+1; 4 1 5; 5 5 5; 0 1 2 3` | Use it wherever the agent should say the number out loud; see [Reading a number out loud](#reading-a-number-out-loud). Empty whenever `system.caller_number` is empty. |
 | `system.dialed_number` | Your workspace number, E.164 | Inbound: the number that was called. Outbound: the number the call was placed from. Empty on non-phone sessions. |
+| `system.session_id` | The session's id, for example `sess_5f3e…` | The same id the [sessions API](/agents/monitor/conversation-history) and [post-call webhooks](/agents/monitor/webhooks) use. Send it from a webhook tool to tie each tool call to its session. |
 
 ### Reading a number out loud
 
@@ -198,7 +199,7 @@ https://crm.example.com/availability?phone={{system.caller_number}}&from={{syste
 A reference to a system variable that does not exist (`{{system.foo}}`) is rejected with `422` when you save the configuration or the tool, and when you send it in session overrides. The error lists the available names.
 
 <Note>
-There is no `system.session_id`. The configuration is rendered before the session receives its id, so the id cannot be templated into it. Read it from the `POST /v1/agent/sessions` [response](/agents/deploy/authenticated-sessions), the SDK's `connect` event, or the `session` object in [webhooks](/agents/monitor/webhooks).
+`system.session_id` is filled in at call time, after the session receives its id. Outside the agent, read the id from the `POST /v1/agent/sessions` [response](/agents/deploy/authenticated-sessions), the SDK's `connect` event, or the `session` object in [webhooks](/agents/monitor/webhooks).
 </Note>
 
 ## World context
