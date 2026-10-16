@@ -899,7 +899,7 @@
       },
       "post": {
         "summary": "Create Agent Session",
-        "description": "Start a conversation session with an agent and receive a join token for the\nsession transport (currently LiveKit WebRTC). Authenticate with an API key to\nstart sessions with any agent in your team; without credentials only agents\npublished as public are reachable, and the request `Origin` must match the\nagent's allowed origins.\n\n`language` (and `overrides.language`) accepts `en`, `ja`, `zh`, `ko`, `es`,\n`fr`, `de`, `pt`, `it`, `nl`; anything else is 422. Omit it to use the agent's configured\nspeaking language.",
+        "description": "Start a conversation session with an agent and receive a join token for the\nsession transport (currently LiveKit WebRTC). Authenticate with an API key to\nstart sessions with any agent in your team; without credentials only agents\npublished as public are reachable, and the request `Origin` must match the\nagent's allowed origins.\n\n`language` (and `overrides.language`) accepts `en`, `ja`, `zh`, `ko`, `es`,\n`fr`, `de`, `pt`, `it`, `nl`; anything else is 422. Omit it to use the agent's configured\nspeaking language.\n\n`overrides.asr.model` picks the speech recognition model for this session,\nnested like the agent config's `asr` section and with the same values as\n`asr.model`. It needs an API key. A model in preview is 403 unless your\nteam has access or the agent already uses it.",
         "security": [
           {
             "BearerAuth": []
@@ -2697,7 +2697,8 @@
                           "first_message",
                           "system_prompt",
                           "voice_id",
-                          "language"
+                          "language",
+                          "asr.model"
                         ],
                         "type": "string"
                       },
@@ -2972,7 +2973,8 @@
                           "first_message",
                           "system_prompt",
                           "voice_id",
-                          "language"
+                          "language",
+                          "asr.model"
                         ],
                         "type": "string"
                       },
@@ -3211,7 +3213,8 @@
                           "first_message",
                           "system_prompt",
                           "voice_id",
-                          "language"
+                          "language",
+                          "asr.model"
                         ],
                         "type": "string"
                       },
@@ -3723,7 +3726,7 @@
                       "$ref": "#/components/schemas/AgentVoiceConfigView"
                     },
                     "asr": {
-                      "$ref": "#/components/schemas/AgentAsrConfig"
+                      "$ref": "#/components/schemas/PublicAgentAsrConfig"
                     },
                     "conversation": {
                       "$ref": "#/components/schemas/AgentConversationConfig"
@@ -3893,7 +3896,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default),\n`elevenlabs:scribe_v2_realtime`, or `elevenlabs:scribe_v2_medical`.\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default),\n`elevenlabs:scribe_v2_realtime`, `elevenlabs:scribe_v2_medical`, or\n`fish_audio:transcribe-1-pro-realtime` (Fish realtime recognition, which\nalso decides end of turn and whether the caller is interrupting; in\npreview, switching an agent onto it is 403 unless your team has access).\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
         "security": [
           {
             "BearerAuth": []
@@ -3946,7 +3949,7 @@
                       "$ref": "#/components/schemas/AgentVoiceConfigView"
                     },
                     "asr": {
-                      "$ref": "#/components/schemas/AgentAsrConfig"
+                      "$ref": "#/components/schemas/PublicAgentAsrConfig"
                     },
                     "conversation": {
                       "$ref": "#/components/schemas/AgentConversationConfig"
@@ -4000,6 +4003,43 @@
           },
           "401": {
             "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request forbidden -- authorization will not help",
             "headers": {},
             "content": {
               "application/json": {
@@ -18410,6 +18450,33 @@
         "type": "object"
       },
       "JsonValue": {},
+      "AgentSessionAsrOverridesPayload": {
+        "additionalProperties": false,
+        "description": "Per-session subset of the agent config's asr section, same field names.",
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "enum": [
+                  "deepgram:nova-3",
+                  "elevenlabs:scribe_v2_realtime",
+                  "elevenlabs:scribe_v2_medical",
+                  "fish_audio:transcribe-1-pro-realtime"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Speech recognition model for this session, same values as the agent's `asr.model`. A model in preview is refused with 403 unless your team has access or the agent already uses it.",
+            "title": "Model"
+          }
+        },
+        "title": "AgentSessionAsrOverridesPayload",
+        "type": "object"
+      },
       "AgentSessionCreatePayload": {
         "additionalProperties": false,
         "properties": {
@@ -18692,6 +18759,17 @@
             ],
             "default": null,
             "title": "Language"
+          },
+          "asr": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentSessionAsrOverridesPayload"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "title": "AgentSessionOverridesPayload",
@@ -19200,7 +19278,26 @@
               }
             ],
             "default": null,
+            "description": "dial_failed and refer_failed: the final SIP response code the carrier gave. Null when it gave none.",
             "title": "Sip Status"
+          },
+          "dial_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "busy",
+                  "no_answer",
+                  "failed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "dial_failed and refer_failed: why the transfer target could not be reached, classified from sip_status the same way as an outbound call's dial_status.",
+            "title": "Dial Status"
           },
           "decline_reason": {
             "anyOf": [
@@ -19212,7 +19309,25 @@
               }
             ],
             "default": null,
+            "description": "declined: the agent's summary of why the transfer target declined. Null when none was given. What they actually said is in messages.",
             "title": "Decline Reason"
+          },
+          "consult_end_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "transfer_target_hangup",
+                  "connection_lost"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "consult_closed: how the consult call ended before the caller was connected. Null when it cannot be told.",
+            "title": "Consult End Reason"
           },
           "hold_started_at": {
             "anyOf": [
@@ -19273,6 +19388,51 @@
             ],
             "default": null,
             "title": "Ended At"
+          },
+          "transferred_call_ended_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "merged and referred: when the call between the caller and the transfer target ended. Null while it is still on. A cold transfer waits for the carrier's call record (up to about an hour) and stays null on imported SIP numbers.",
+            "title": "Transferred Call Ended At"
+          },
+          "transferred_call_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "merged and referred: how long the caller talked with the transfer target. Warm: from ended_at to transferred_call_ended_at. Cold: the carrier's call record, 0 when the target never really answered.",
+            "title": "Transferred Call Duration Seconds"
+          },
+          "transferred_call_end_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "caller_hangup",
+                  "transfer_target_hangup",
+                  "conversation_timeout",
+                  "connection_lost"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "merged: how the call between the caller and the transfer target ended. caller_hangup: the caller hung up (on an outbound call, the person the agent called). transfer_target_hangup: the transfer target hung up. conversation_timeout: the call reached the agent's maximum call duration, counted from the start of the call. connection_lost: a line dropped, nobody hung up. Null when it cannot be told, and always null on a cold transfer.",
+            "title": "Transferred Call End Reason"
           },
           "messages": {
             "items": {
@@ -19726,7 +19886,8 @@
                 "first_message",
                 "system_prompt",
                 "voice_id",
-                "language"
+                "language",
+                "asr.model"
               ],
               "type": "string"
             },
@@ -20250,7 +20411,8 @@
                 "enum": [
                   "deepgram:nova-3",
                   "elevenlabs:scribe_v2_realtime",
-                  "elevenlabs:scribe_v2_medical"
+                  "elevenlabs:scribe_v2_medical",
+                  "fish_audio:transcribe-1-pro-realtime"
                 ],
                 "type": "string"
               },
@@ -21139,6 +21301,22 @@
             "default": null,
             "title": "Speed"
           },
+          "tts_model": {
+            "anyOf": [
+              {
+                "enum": [
+                  "s2.1-pro",
+                  "drama-3"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tts Model"
+          },
           "pronunciation_dictionary_ids": {
             "anyOf": [
               {
@@ -21407,7 +21585,8 @@
                     "first_message",
                     "system_prompt",
                     "voice_id",
-                    "language"
+                    "language",
+                    "asr.model"
                   ],
                   "type": "string"
                 },
@@ -21598,41 +21777,6 @@
           }
         },
         "title": "AgentAnalysisSummaryConfig",
-        "type": "object"
-      },
-      "AgentAsrConfig": {
-        "properties": {
-          "model": {
-            "default": "deepgram:nova-3",
-            "enum": [
-              "deepgram:nova-3",
-              "elevenlabs:scribe_v2_realtime",
-              "elevenlabs:scribe_v2_medical"
-            ],
-            "title": "Model",
-            "type": "string"
-          },
-          "multilingual": {
-            "default": false,
-            "title": "Multilingual",
-            "type": "boolean"
-          },
-          "strict_language": {
-            "default": false,
-            "description": "Enforces voice.speaking_language whatever multilingual says: speech recognized as another language reaches the agent as [unintelligible speech]. Language is detected per utterance, so a short or heavily accented phrase in the speaking language can occasionally be detected as another language and replaced too. With deepgram:nova-3, speech in another language is usually not transcribed at all. Only enable it when you explicitly need to stop the agent from understanding other languages.",
-            "title": "Strict Language",
-            "type": "boolean"
-          },
-          "keyterms": {
-            "items": {
-              "type": "string"
-            },
-            "maxItems": 50,
-            "title": "Keyterms",
-            "type": "array"
-          }
-        },
-        "title": "AgentAsrConfig",
         "type": "object"
       },
       "AgentConversationConfig": {
@@ -22286,6 +22430,15 @@
             "title": "Speed",
             "type": "number"
           },
+          "tts_model": {
+            "default": "s2.1-pro",
+            "enum": [
+              "s2.1-pro",
+              "drama-3"
+            ],
+            "title": "Tts Model",
+            "type": "string"
+          },
           "pronunciation_dictionary_ids": {
             "items": {
               "type": "string"
@@ -22295,6 +22448,43 @@
           }
         },
         "title": "AgentVoiceConfigView",
+        "type": "object"
+      },
+      "PublicAgentAsrConfig": {
+        "description": "The asr section as the public API reads it: without the console-only\nnoise cancellation and speaker label switches.",
+        "properties": {
+          "model": {
+            "default": "deepgram:nova-3",
+            "enum": [
+              "deepgram:nova-3",
+              "elevenlabs:scribe_v2_realtime",
+              "elevenlabs:scribe_v2_medical",
+              "fish_audio:transcribe-1-pro-realtime"
+            ],
+            "title": "Model",
+            "type": "string"
+          },
+          "multilingual": {
+            "default": false,
+            "title": "Multilingual",
+            "type": "boolean"
+          },
+          "strict_language": {
+            "default": false,
+            "description": "Enforces voice.speaking_language whatever multilingual says: speech recognized as another language reaches the agent as [unintelligible speech]. Language is detected per utterance, so a short or heavily accented phrase in the speaking language can occasionally be detected as another language and replaced too. With deepgram:nova-3, speech in another language is usually not transcribed at all. Only enable it when you explicitly need to stop the agent from understanding other languages.",
+            "title": "Strict Language",
+            "type": "boolean"
+          },
+          "keyterms": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Keyterms",
+            "type": "array"
+          }
+        },
+        "title": "PublicAgentAsrConfig",
         "type": "object"
       },
       "PublicAgentKnowledgeBaseConfig": {
@@ -22469,7 +22659,7 @@
             "$ref": "#/components/schemas/AgentVoiceConfigView"
           },
           "asr": {
-            "$ref": "#/components/schemas/AgentAsrConfig"
+            "$ref": "#/components/schemas/PublicAgentAsrConfig"
           },
           "conversation": {
             "$ref": "#/components/schemas/AgentConversationConfig"
@@ -25506,9 +25696,29 @@
           },
           "normalize": {
             "default": true,
-            "description": "Normalizes text for English and Chinese, improving stability for numbers.",
+            "description": "Rewrites numbers, dates, units and symbols as spoken words before synthesis, improving stability. Uses `language` when it is set and otherwise detects the language of each text chunk.",
             "title": "Normalize",
             "type": "boolean"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "maxLength": 35,
+                "pattern": "^[A-Za-z0-9_-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "BCP-47 language tag of the text, for example `en`, `es-MX` or `zh-CN`. Case-insensitive, and `_` is read as `-`. Used only by text normalization (how numbers, dates, units and symbols are spelled out before synthesis) and by word-timestamp alignment. It is not passed to the speech model and does not change the voice, accent or audio quality; a wrong tag only changes how those tokens are spelled out. Omit it, or send `auto` or an empty string, to detect the language per chunk. A tag without dedicated normalization rules skips normalization instead of failing. Without a region, Spanish follows Spain conventions; send `es-MX` for Mexican readings. When `normalize` is false it only affects word timestamps. For text that mixes languages, leave it unset.",
+            "examples": [
+              "en",
+              "es-MX",
+              "zh-CN"
+            ],
+            "title": "Language"
           },
           "format": {
             "default": "mp3",
@@ -25739,9 +25949,29 @@
           },
           "normalize": {
             "default": true,
-            "description": "Normalizes text for English and Chinese, improving stability for numbers.",
+            "description": "Rewrites numbers, dates, units and symbols as spoken words before synthesis, improving stability. Uses `language` when it is set and otherwise detects the language of each text chunk.",
             "title": "Normalize",
             "type": "boolean"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "maxLength": 35,
+                "pattern": "^[A-Za-z0-9_-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "BCP-47 language tag of the text, for example `en`, `es-MX` or `zh-CN`. Case-insensitive, and `_` is read as `-`. Used only by text normalization (how numbers, dates, units and symbols are spelled out before synthesis) and by word-timestamp alignment. It is not passed to the speech model and does not change the voice, accent or audio quality; a wrong tag only changes how those tokens are spelled out. Omit it, or send `auto` or an empty string, to detect the language per chunk. A tag without dedicated normalization rules skips normalization instead of failing. Without a region, Spanish follows Spain conventions; send `es-MX` for Mexican readings. When `normalize` is false it only affects word timestamps. For text that mixes languages, leave it unset.",
+            "examples": [
+              "en",
+              "es-MX",
+              "zh-CN"
+            ],
+            "title": "Language"
           },
           "format": {
             "default": "mp3",
