@@ -290,6 +290,58 @@ audio = client.tts.convert(text="Carefully tuned output.", config=config)
 
 Define a `TTSConfig` once and pass it to many `convert()` calls. See the [full field list](/api-reference/sdk/python/types#ttsconfig-objects) for every parameter and default.
 
+### Language
+
+`language` is an optional BCP-47 tag for the language of your text, such as `en`, `es-MX`, `zh-CN`, or `zh-TW`. It is case-insensitive, and `_` is read as `-`.
+
+It is used only by text normalization (how numbers, dates, units, and symbols are spelled out before synthesis) and by word-timestamp alignment. It is not passed to the speech model and does not change the voice, accent, or audio quality. A wrong tag only changes how those tokens are spelled out.
+
+The official SDKs don't expose `language` yet, so send it in the request body:
+
+```bash API (curl)
+curl --request POST https://api.fish.audio/v1/tts \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --header "model: s2-pro" \
+  --data '{ "text": "La entrada cuesta $300.", "language": "es-MX" }' \
+  --output out.mp3
+```
+
+- **Default**: omit `language`, or send `"auto"` or an empty string, and the language is detected for each text chunk. This is the same behavior as before the field was added.
+- **Regional conventions**: Spanish without a region follows Spain conventions, so `$300` becomes "trescientos dólares" and decimals use a comma. Send `es-MX` for Mexican readings ("pesos", "punto"). For Traditional Chinese, send `zh-TW`, which uses its own rules.
+- **Tags without rules**: a tag with no dedicated normalization rules skips normalization instead of failing. See [Supported normalization languages](#supported-normalization-languages).
+- **Mixed-language text**: leave `language` unset.
+- **`normalize: false`**: `language` then only affects word timestamps.
+- **Validation**: values longer than 35 characters, or containing anything other than letters, digits, `-`, and `_`, are rejected with HTTP 400.
+
+The same field is accepted by `POST /v1/tts` (JSON and MessagePack), the with-timestamps HTTP and SSE routes, and the [WebSocket](/api-reference/endpoint/websocket/tts-live) start event as `request.language`. On WebSocket, it applies to the whole session.
+
+### Supported normalization languages
+
+Text normalization has dedicated rules for the languages below. Tags match case-insensitively, and `_` is read as `-`.
+
+| Language | `language` tags |
+|---|---|
+| English | `en`, `en-US`, `en-GB`, `en-AU`, `en-CA`, `en-IE`, `en-NZ` |
+| Chinese (Simplified) | `zh`, `zh-CN`, `zh-SG`, `zh-Hans`, `zh-Hans-CN`, `zh-Hans-SG` |
+| Chinese (Traditional) | `zh-TW`, `zh-Hant`, `zh-Hant-TW` |
+| Japanese | `ja`, `ja-JP` |
+| Korean | `ko`, `ko-KR` |
+| Spanish (Spain) | `es`, `es-ES` |
+| Spanish (Mexico) | `es-MX` |
+| French | `fr`, `fr-FR`, `fr-CA`, `fr-BE`, `fr-CH` |
+| German | `de`, `de-DE`, `de-AT`, `de-CH` |
+| Italian | `it`, `it-IT`, `it-CH` |
+| Portuguese | `pt` |
+| Russian | `ru`, `ru-RU` |
+| Arabic | `ar`, `ar-SA`, `ar-AE`, `ar-EG` |
+
+Each row has its own rules, so the tag you pick changes the readings. For example, with `es` or `es-ES`, `$300` is read as "trescientos dólares" and the `0.9` in `0.9%` as "cero coma nueve". With `es-MX`, they are read as "trescientos pesos" and "cero punto nueve". In the same way, `zh-TW` uses Traditional Chinese rules, not the Simplified Chinese ones.
+
+- Any other tag skips normalization, with no error, and the text is still synthesized as written. Today that includes `zh-HK`, `yue`, `pt-BR`, `pt-PT`, `es-419`, and `es-US`.
+- With `language` unset, the language of each chunk is auto-detected among the languages above. Chunks whose language can't be detected are synthesized without normalization.
+- The list grows over time as normalization rules are added.
+
 ## Going further
 
 <CardGroup cols={2}>

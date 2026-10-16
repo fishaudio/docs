@@ -65,7 +65,8 @@ Response: streaming audio bytes (`Transfer-Encoding: chunked`) in the format set
 | `prosody.normalize_loudness` | bool | true | **`s2-pro` and the S2.1-Pro family.** |
 | `chunk_length` | int 100–300 | 300 | Text segment size. |
 | `min_chunk_length` | int 0–100 | 50 | Min chars before a new chunk. |
-| `normalize` | bool | true | Normalize numbers/etc. for EN/ZH. |
+| `normalize` | bool | true | Spell out numbers, dates, units and symbols before synthesis. Uses `language` when set, otherwise detects the language per chunk. |
+| `language` | string \| null | null (auto) | BCP-47 tag of the text, e.g. `en`, `es-MX`, `zh-CN`, `zh-TW`. Case-insensitive; `_` = `-`. Only affects normalization and word timestamps; never the voice, accent or audio quality. Omit, `""` or `"auto"` = detect per chunk. Tags without normalization rules skip normalization (no error); tag list: `https://docs.fish.audio/features/text-to-speech#supported-normalization-languages`. Spanish without a region uses Spain conventions; `es-MX` for Mexican readings. Leave unset for mixed-language text. With `normalize: false`, only word timestamps use it. Over 35 chars or chars outside `[A-Za-z0-9_-]` → 400. Not in the official SDKs yet; send it in the raw body. |
 | `format` | `wav` \| `pcm` \| `mp3` \| `opus` | `mp3` | Output format. |
 | `sample_rate` | int \| null | null (44100, or 48000 for opus) | Output sample rate. |
 | `mp3_bitrate` | 64 \| 128 \| 192 | 128 | Only when `format=mp3`. |
@@ -497,7 +498,7 @@ For low-latency / streaming TTS (e.g. LLM token stream → speech). All frames a
 
 Client → server:
 
-1. `StartEvent` (once, first message): `{event: "start", request: <TTSRequest>}`. The `request` object is the same schema as `POST /v1/tts` above. Usually `request.text = ""` and the real text streams in `TextEvent`s.
+1. `StartEvent` (once, first message): `{event: "start", request: <TTSRequest>}`. The `request` object is the same schema as `POST /v1/tts` above. Usually `request.text = ""` and the real text streams in `TextEvent`s. `request.language`, if set, applies to the whole session.
 2. `TextEvent` (one per text chunk): `{event: "text", text: "..."}`. Send as many as needed.
 3. `FlushEvent` (optional): `{event: "flush"}`. Forces the server to synthesize buffered text immediately (use for turn-taking / low-latency flushes).
 4. `CloseEvent` (final): `{event: "stop"}`. **Note the literal is `stop`, not `close`.**
@@ -618,6 +619,7 @@ S2-Pro and the S2.1-Pro models use free-form `[bracket]` natural-language tags i
 
 ## Error handling checklist
 
+- 400 on `POST /v1/tts` → `language` is longer than 35 characters or contains characters other than letters, digits, `-` and `_`.
 - 401 → missing / bad `Authorization` header.
 - 402 → out of credit. Check `/wallet/self/api-credit`.
 - 404 → bad `model/{id}` (voice model doesn't exist or isn't visible to you).
