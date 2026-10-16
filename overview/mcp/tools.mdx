@@ -1,0 +1,65 @@
+---
+title: "MCP Tools"
+sidebarTitle: "Tools"
+description: "Every tool the Fish Audio MCP server exposes: voices and voice cloning, speech, transcription, file uploads, and image and video generation"
+icon: "wrench"
+---
+
+This page lists the core tools that the [Fish Audio MCP server](/overview/mcp) exposes. You rarely need the names: ask for what you want in plain language and the agent picks the tools and the order to run them in. Naming a tool is still useful when you want to steer it, for example: "Estimate the video first with `estimate_video_generation`."
+
+## Account
+
+| Tool                 | What it does                                                                                     |
+| -------------------- | ------------------------------------------------------------------------------------------------ |
+| `get_credit_balance` | Your plan, remaining package credits, and the maximum text length allowed in one speech request. |
+| `list_my_workspaces` | The workspaces (teams) this connection can act in.                                               |
+
+## Voices
+
+| Tool                 | What it does                                                                                                                                                                                                    |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `search_voices`      | Searches the public voice library by keyword, or browses the popular voices for a language. Results include voice IDs, tags, and sample audio.                                                                  |
+| `get_voice`          | Everything known about one voice: description, languages, tags, popularity, a sample audio URL, and a default demo text.                                                                                        |
+| `create_voice_clone` | Creates a voice from one to five recordings of a single speaker, given as public URLs. Ten to sixty seconds of clean speech works best, and the samples must total under 270 seconds. Creating a clone is free. |
+| `verify_voice_clone` | Completes speaker verification when the server flags a clone, by submitting a recording of the speaker reading a short prompt.                                                                                  |
+
+## Speech and transcription
+
+| Tool             | What it does                                                                                                     |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `text_to_speech` | Synthesizes text with a voice and returns a permanent audio URL. Audio tags in square brackets control delivery. |
+| `speech_to_text` | Transcribes audio from a public URL. `pro` is the most accurate and `flash` costs less.                          |
+
+## File uploads
+
+Both tools return a temporary upload slot: the agent uploads the file, then passes the returned URL to the tool that needs it. Uploaded files are deleted automatically after 7 days.
+
+| Tool                  | What it does                                                                |
+| --------------------- | --------------------------------------------------------------------------- |
+| `get_upload_url`      | A slot for a local audio file, so it can be transcribed.                    |
+| `create_media_upload` | A slot for an image, video, or audio file to use as an input to generation. |
+
+## Images and video
+
+Generation is split into an estimate and a submission so that nothing is charged before you approve a price. Estimates are read-only and cost nothing. The submission re-checks the price and never charges more than the estimate you approved.
+
+| Tool                        | What it does                                                                                                                                                     |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_media_models`         | The image and video models, with each model's capabilities (text-to-image, image edit, upscale, image-to-video, lip sync, and talking avatar) and default price. |
+| `get_media_model`           | The parameters, required input roles, and accepted file types and size limits for one model.                                                                     |
+| `estimate_image_generation` | Prices a text-to-image request and validates it.                                                                                                                 |
+| `estimate_image_edit`       | Prices an image edit or upscale and validates the input.                                                                                                         |
+| `estimate_video_generation` | Prices a video request, including image-to-video, lip sync, and talking avatars.                                                                                 |
+| `generate_image`            | Submits the image job with the parameters you approved.                                                                                                          |
+| `generate_image_edit`       | Submits the edit or upscale with the parameters you approved.                                                                                                    |
+| `generate_video`            | Submits the video job with the parameters you approved.                                                                                                          |
+| `get_generation_status`     | Checks one or more running generations. A finished job returns its results and billing, so there is nothing more to poll.                                        |
+| `get_generation_result`     | Returns the final media and billing for one generation.                                                                                                          |
+
+A finished result includes a link to the item in your Fish Audio history, where you can view or download it. An image the server just generated can be reused as the input to another generation, without downloading and re-uploading it.
+
+<Note>
+  Video generation needs a Plus plan or higher. Free plans have a daily image
+  allowance and a smaller image count per request. The estimate reports these
+  limits before you are asked to approve anything.
+</Note>
