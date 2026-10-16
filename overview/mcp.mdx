@@ -1,12 +1,12 @@
 ---
 title: "MCP Server"
-description: "Connect Claude, Cursor, or any MCP client to your Fish Audio account: search voices, generate speech, transcribe audio, and create images and videos"
+description: "Connect Claude, Cursor, or any MCP client to your Fish Audio account: search voices, generate speech, transcribe audio, create images and videos, and produce long-form Story Studio projects"
 icon: "plug"
 ---
 
 import { PromptCard } from "/snippets/prompt-card.jsx";
 
-The Fish Audio MCP server gives AI agents direct access to your Fish Audio account: they can browse the voice library, clone a voice, generate speech, transcribe audio, and generate or edit images and videos for you.
+The Fish Audio MCP server gives AI agents direct access to your Fish Audio account: they can browse the voice library, clone a voice, generate speech, transcribe audio, generate or edit images and videos, and produce multi-speaker [Story Studio](https://fish.audio/app/story-studio) projects for you.
 
 - **Endpoint**: `https://api.fish.audio/mcp` (streamable HTTP)
 - **Authentication**: OAuth. Your MCP client opens a browser window, you sign in with your Fish Audio account, and choose the team the connection works in.
@@ -121,24 +121,31 @@ Once connected, ask in plain language and the agent picks the right tools. Click
     icon="film"
     prompt="Turn the image you just generated into a short video with a slow push-in, and give me the video URL and what was charged."
   />
+
+  <PromptCard
+    title="Produce a story"
+    icon="book"
+    prompt="Import chapters.md into a new Story Studio project, give each character a distinct voice, and quote the credits before generating the first chapter."
+  />
 </CardGroup>
 
 In coding agents like Claude Code and Codex, tools compose with the shell: the agent can download generated audio, images, and videos with `curl`, upload local recordings for transcription or reference images for editing, or batch-generate a directory of scripts.
 
 ## Tools
 
-The core tool set is 20 tools across five areas. Agents choose them for you from a plain-language request, so the names matter mainly when you want to steer an agent to a specific step.
+The core tool set is 37 tools across six areas. Agents choose them for you from a plain-language request, so the names matter mainly when you want to steer an agent to a specific step.
 
-| Area                     | Tools | What they cover                                                                        |
-| ------------------------ | ----- | -------------------------------------------------------------------------------------- |
-| Voices                   | 4     | Search the voice library, read the details of a voice, create and verify a voice clone |
-| Speech and transcription | 2     | Text to speech, and speech to text                                                     |
-| File uploads             | 2     | Temporary slots for local audio, images, and video                                     |
-| Images and video         | 10    | Model discovery, price estimates, submission, and polling                              |
-| Account                  | 2     | Team workspaces and credit balance                                                     |
+| Area                     | Tools | What they cover                                                                             |
+| ------------------------ | ----- | ------------------------------------------------------------------------------------------- |
+| Voices                   | 4     | Search the voice library, read the details of a voice, create and verify a voice clone      |
+| Speech and transcription | 2     | Text to speech, and speech to text                                                          |
+| File uploads             | 2     | Temporary slots for local audio, images, and video                                          |
+| Images and video         | 10    | Model discovery, price estimates, submission, and polling                                   |
+| Story Studio             | 17    | Long-form, multi-speaker projects: import and cast, edit blocks, generate audio, and export |
+| Account                  | 2     | Team workspaces and credit balance                                                          |
 
 <Card title="MCP tools reference" icon="wrench" href="/overview/mcp/tools">
-  Every tool the server exposes, with the exact tool names and what each one
+  The tools the server exposes, with the exact tool names and what each one
   does.
 </Card>
 
