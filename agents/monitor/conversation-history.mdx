@@ -185,7 +185,7 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
 
 | `type`        | What it is                                                                                                                                                 |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `message`     | One utterance. `role` is `user` or `assistant` (system prompt content is never exposed). `turn_id` groups items belonging to the same conversational turn. |
+| `message`     | One utterance. `role` is `user` or `assistant` (system prompt content is never exposed). `turn_id` groups items belonging to the same conversational turn. `fallback_reason` is `"llm_error"` on a fixed line the agent spoke because its LLM failed, and `null` otherwise. |
 | `tool_call`   | A tool invocation as it started. `input` is a JSON string, stored in full with no truncation.                                                                 |
 | `tool_result` | The paired outcome, matched by `call_id`. `status` is `completed` or `failed`. `latency_ms` is the execution time.                                         |
 
@@ -197,6 +197,32 @@ Details worth knowing:
 - **Payloads**: `input` and `output` are JSON strings, symmetric with the live SDK events, so one parser covers both. `output` and `error` are stored up to 256 KB; beyond that the text is cut and `output_truncated` is `true`.
 - **Mid-call queries**: you can fetch an `active` session; you get the items persisted so far, and `analysis` is `null` until [post-call analysis](/agents/monitor/post-call-analysis) completes.
 - A `tool_call` without a matching `tool_result` means the execution never resolved.
+
+### LLM endpoint errors
+
+Sessions on a [custom LLM](/agents/build/custom-llm) also carry `llm_endpoint_errors`. It lists each failed generation of your endpoint, oldest first. It is empty when the agent runs on a platform model or your endpoint never failed.
+
+```json
+{
+  "end_reason": "llm_endpoint_failure",
+  "llm_endpoint_errors": [
+    {
+      "occurred_at": "2026-10-15T15:45:10Z",
+      "type": "http_error",
+      "status_code": 502,
+      "message": "no tunnel",
+      "duration_ms": 812,
+      "consecutive_failures": 1
+    }
+  ]
+}
+```
+
+- `type` is `http_error`, `timeout`, `connection_error` or `invalid_response`. See [Failure behavior](/agents/build/custom-llm#failure-behavior). New types may be added.
+- `status_code` is set on `http_error` only.
+- `message` is the start of your response body, or the cause of the failure. It is at most 300 characters, and your API key is masked.
+- `duration_ms` is the time from the request to the response or the failure. It is `null` when it was not measured.
+- `consecutive_failures` counts failures in a row. The agent hangs up at the third.
 
 <Warning>
   `items` is a discriminated union on `type`, and it evolves additively. Ignore
