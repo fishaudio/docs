@@ -40,6 +40,8 @@ To use fine-grained control, you can use either our SDK, API, or Playground.
 
 SDK/API: Phoneme tags are preserved by text normalization, so you can keep the default normalization behavior for pronunciation control. Set `"normalize": false` only when you want to prevent normalization from rewriting the surrounding text, such as numbers, dates, or URLs.
 
+Normalization detects the language of each text chunk. To choose the rules yourself, for example Mexican rather than Spain Spanish readings, set the API field `"language"` to a BCP-47 tag such as `"es-MX"`. It affects only normalization and word timestamps, not the voice or accent. See [Language](/features/text-to-speech#language) and [Supported normalization languages](/features/text-to-speech#supported-normalization-languages).
+
 Playground: You can use V1.6 Control Model, without setting any other options.
 
 <Note>
