@@ -96,8 +96,10 @@ all work.
 `voice_settings` maps onto Fish's synthesis controls: `speed` sets the speech
 rate, and `stability` becomes Fish `temperature = 1 − stability`. The
 vendor-specific tuning knobs (`similarity_boost`, `style`,
-`use_speaker_boost`, `language_code`, `seed`) are accepted and ignored, never
-an error.
+`use_speaker_boost`, `seed`) are accepted and ignored, never an error.
+`language_code` is passed on as Fish's [`language`](/features/text-to-speech#language)
+field: it picks the text-normalization rules (how numbers, dates and symbols
+are spelled out) and the word-timestamp language, and does not change the voice.
 
 ### Output formats
 
@@ -249,7 +251,8 @@ sending none is normal; you then get `language_code: ""` alongside
 Code branching on `language_probability > 0.9` will act on that empty string.
 
 (On the *synthesis* side `language_code` is a different story: there it is
-accepted and dropped, along with the other vendor tuning knobs.)
+passed on as Fish's `language` field, which selects the
+[normalization rules](/features/text-to-speech#supported-normalization-languages).)
 
 Options that would change the response contract are **rejected with 400**
 rather than silently ignored:
