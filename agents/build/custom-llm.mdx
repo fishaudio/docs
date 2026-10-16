@@ -162,7 +162,7 @@ Each failure has a type:
 | `connection_error` | The request got no answer, for example a DNS, TLS or refused connection  |
 | `invalid_response` | A 2xx response that was not a usable reply, such as a broken stream      |
 
-For `http_error`, `message` holds the start of your response body, up to 300 characters. Your API key is masked. The lines the agent spoke in place of a reply are marked with `llm_failure_line: true`.
+For `http_error`, `message` holds the start of your response body, up to 300 characters. Your API key is masked. The lines the agent spoke in place of a reply have `fallback_reason: "llm_error"`.
 
 <Tip>
 Voice conversations are latency sensitive:
