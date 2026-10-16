@@ -133,7 +133,7 @@ In coding agents like Claude Code and Codex, tools compose with the shell: the a
 
 ## Tools
 
-The core tool set is 37 tools across six areas. Agents choose them for you from a plain-language request, so the names matter mainly when you want to steer an agent to a specific step.
+The core tool set is 37 tools across six areas. Agents choose them for you from a plain-language request, so the names matter mainly when you want to steer an agent to a specific step. Your client's own tool list is what the agent actually sees, and it includes a few more tools besides these.
 
 | Area                     | Tools | What they cover                                                                             |
 | ------------------------ | ----- | ------------------------------------------------------------------------------------------- |
@@ -157,5 +157,6 @@ The core tool set is 37 tools across six areas. Agents choose them for you from 
 - Before an image or video is generated, the agent requests a credit estimate and asks you to confirm it. The server re-checks the price when the job is submitted and never charges more than the amount you approved.
 - Video generation needs a Plus plan or higher. Free plans have a daily image allowance and a smaller image count per request; the estimate reports these limits before you are asked to approve anything.
 - Reference images for editing or image-to-video are JPEG, PNG, or WebP files up to 20 MB. The agent uploads them for you, and an image it just generated can be reused as input without downloading it.
+- Story Studio works on the same projects as the [web editor](https://fish.audio/app/story-studio). Importing, casting, and editing are free; only generated audio costs credits. Export requires a paid plan.
 - Generated audio, images, and videos are returned as permanent URLs; failed generations are refunded.
 - A connection is bound to the team you chose at sign-in. To work in another team, add the server again and choose that team.
