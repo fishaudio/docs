@@ -60,6 +60,16 @@ A short answer such as "yes" normally lands on the fast path. When the agent ask
   - `balanced` (default): Interrupts on normal speech.
   - `high` (**Easy to interrupt**): The agent stops on the caller's first word.
 - `conversation.interruption_ignore_phrases` (up to 50 entries of 40 characters): Backchannels such as `"uh-huh"` or `"okay"` that never interrupt the agent when the caller says only them. Matching ignores case and punctuation. Send `[]` to clear the list.
+- `conversation.echo_guard` (**Echo guard** in the Builder): For 3 seconds from the moment the agent first starts talking in a call, it ignores what the caller says while it speaks, so its own voice echoing back from a speakerphone or laptop speakers can't cut it off. Words the caller says over the agent in that window are not heard: they don't interrupt, and they never reach the transcript or the agent. Each [channel](/agents/build/dynamic-variables#system-variables) has its own key, set to `true` (on), `false` (off), or `null` (the default):
+  - `web_voice` (**Web calls**): On by default. [Preview calls](/agents/test/preview-calls) in the Builder count as web calls.
+  - `phone_inbound` (**Inbound phone calls**): On by default.
+  - `phone_outbound` (**Outbound phone calls**): Off by default.
+
+Agents read `echo_guard: null` until you change it, so every channel runs its default.
+
+Turn the guard off on a channel when callers tend to talk during the agent's first seconds, for example answering its greeting, and the agent misses their first words. Keep it on where the agent's voice can echo back to it, for example from a speakerphone or laptop speakers without headphones: an echo that gets through is heard as the caller talking, so the agent stops its opening and replies to its own words. [Keypad entries](/agents/telephony/keypad#keypad-input) and an `interrupt()` call from the [web SDK](/agents/deploy/web-sdk) still stop the agent during the window.
+
+`PATCH` updates `echo_guard` channel by channel: channels you leave out keep their value, `null` on a channel returns it to its default, and `"echo_guard": null` returns all three channels to their defaults. When you pick a channel's default in the Builder, it stores `null` for that channel. Like every setting here, a change reaches callers after you [publish](/agents/deploy/versions-publishing).
 
 ### Call duration
 
@@ -120,6 +130,7 @@ curl --request GET "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
     "interruptible": true,
     "interruption_sensitivity": "balanced",
     "interruption_ignore_phrases": [],
+    "echo_guard": null,
     "speculative_response": true,
     "timezone": ""
   }
