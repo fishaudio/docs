@@ -10,7 +10,7 @@ This is a server-side API: authenticate with your API key. The client SDKs delib
 
 ## What gets stored
 
-The session record (status, timing, caller attribution, name, and `metadata`) and the conversation transcript are always kept for production sessions. Audio recording is a per-agent choice, on by default: set `conversation.record_audio` in the console under your agent's **Settings** or in the `conversation` section of the [config API](/agents/build/configuration#configure-through-the-api), with a per-session override on the [session request](/agents/deploy/authenticated-sessions). Recording off means there is no audio to download.
+The session record (status, timing, caller attribution, name, `end_user_id`, and `metadata`) and the conversation transcript are always kept for production sessions. Audio recording is a per-agent choice, on by default: set `conversation.record_audio` in the console under your agent's **Settings** or in the `conversation` section of the [config API](/agents/build/configuration#configure-through-the-api), with a per-session override on the [session request](/agents/deploy/authenticated-sessions). Recording off means there is no audio to download.
 
 The setting doesn't affect the live call: transcript events still stream to connected clients in real time.
 
@@ -53,6 +53,7 @@ Each row carries the session facts:
       "agent_id": "…",
       "agent_name": "Support agent",
       "name": "Order #4821 follow-up",
+      "end_user_id": "user_42",
       "status": "completed",
       "end_reason": "user_hangup",
       "source": "phone",
@@ -70,7 +71,7 @@ Each row carries the session facts:
 }
 ```
 
-`caller_number` and `dialed_number` are set for phone sessions only (E.164) and are `null` for web sessions. `sip_call_id` is the SIP `Call-ID` of the call's INVITE. It is `null` on web sessions and on outbound calls that were never answered. See [Match calls with your SIP records](/agents/telephony/byo-sip#match-calls-with-your-sip-records). `name` is the display name you passed when creating the session (`null` when omitted), and `metadata` echoes back whatever you attached when creating the session.
+`caller_number` and `dialed_number` are set for phone sessions only (E.164) and are `null` for web sessions. `sip_call_id` is the SIP `Call-ID` of the call's INVITE. It is `null` on web sessions and on outbound calls that were never answered. See [Match calls with your SIP records](/agents/telephony/byo-sip#match-calls-with-your-sip-records). `name` is the display name you passed when creating the session (`null` when omitted), `end_user_id` is the end-user identifier you passed (`null` when omitted), and `metadata` echoes back whatever you attached when creating the session.
 
 ### Status and end reason
 
@@ -103,6 +104,7 @@ The same values appear on the [`call.ended` webhook](/agents/monitor/webhooks) a
 | `end_reason`                       | One or more of the `end_reason` values above, comma-separated                                        |
 | `caller_number`                    | Exact match on the caller's E.164 number; a bare number gets `+` prepended automatically              |
 | `sip_call_id`                      | Exact match on the SIP `Call-ID` of the call's INVITE, for looking up the session behind a carrier CDR entry              |
+| `end_user_id`                      | Exact, case-sensitive match on the `end_user_id` you set when [creating the session](/agents/deploy/authenticated-sessions), for listing one customer's sessions |
 | `created_after` / `created_before` | ISO 8601 timestamps                                                                                   |
 
 <Note>
