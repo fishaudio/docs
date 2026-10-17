@@ -15,12 +15,19 @@ These charges accrue while a web session or phone call runs.
 | Agent conversation   | \$0.06 per minute                                       | All-inclusive: STT, TTS, the basic LLMs, knowledge base retrieval, and tool calls                                                                          |
 | LLM usage            | Covered for the basic LLMs, by token usage for the rest | The other LLMs are billed on the tokens each request uses. See [LLM models](#llm-models). Custom LLM endpoints carry no LLM charge                         |
 | Phone call surcharge | +\$0.01 per minute                                      | Added to the conversation rate on phone calls. Some outbound destinations carry a higher rate instead. See [Outbound destinations](#outbound-destinations) |
-| Cold transfer        | \$0.015 per minute                                      | Charged for the time after the agent hands the call to a person. The conversation rate stops at that point                                                 |
-| Warm transfer        | \$0.025 per minute                                      | Charged for the time after the caller and the person are joined. The joined call is still recorded and transcribed                                         |
 
 Usage is counted per second. A plus sign marks a charge on top of the conversation rate.
 
 Calls on [imported SIP numbers](/agents/telephony/byo-sip) carry no phone surcharge and no transfer fees. They bill like web sessions.
+
+### Transfers
+
+When the agent [transfers](/agents/telephony/transfers) a phone call to a person, the conversation rate and phone surcharge stop, and the rest of the call is billed at a transfer rate instead:
+
+| Item          | Price              | Notes                                                                                                                                                   |
+| ------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cold transfer | \$0.015 per minute | Starts when the agent hands the call to the person                                                                                                      |
+| Warm transfer | \$0.025 per minute | Starts when the caller and the person are joined. The hold and briefing before that bill as part of the conversation. The joined call is still recorded |
 
 ### LLM models
 
