@@ -4,18 +4,18 @@ description: "Rates for conversations, LLM usage, telephony, and transfers, plus
 icon: "credit-card"
 ---
 
-Agents cost **$0.06 per minute** of conversation, with a small number of add-ons for telephony and token-billed models. Every account starts with a $5 trial balance, and everything after that is charged against your API credit.
+Agents cost **\$0.06 per minute** of conversation, with a small number of add-ons for telephony and token-billed models. Every account starts with a \$5 trial balance, and everything after that is charged against your API credit.
 
 ## Rates
 
 | Item                 | Price                                                   | Notes                                                                                                                                                      |
 | -------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Agent conversation   | $0.06 per minute                                        | All-inclusive: STT, TTS, the basic LLMs, knowledge base retrieval, and tool calls                                                                          |
+| Agent conversation   | \$0.06 per minute                                       | All-inclusive: STT, TTS, the basic LLMs, knowledge base retrieval, and tool calls                                                                          |
 | LLM usage            | Covered for the basic LLMs, by token usage for the rest | The other LLMs are billed on the tokens each request uses. See [LLM models](#llm-models). Custom LLM endpoints carry no LLM charge                         |
-| Phone call surcharge | +$0.01 per minute                                       | Added to the conversation rate on phone calls. Some outbound destinations carry a higher rate instead. See [Outbound destinations](#outbound-destinations) |
-| Phone number rental  | $1.20 per month                                         | Charged in daily slices while you hold the number, and stops when you release it                                                                           |
-| Cold transfer        | $0.015 per minute                                       | Charged for the time after the agent hands the call to a person. The conversation rate stops at that point                                                 |
-| Warm transfer        | $0.025 per minute                                       | Charged for the time after the caller and the person are joined. The joined call is still recorded and transcribed                                         |
+| Phone call surcharge | +\$0.01 per minute                                      | Added to the conversation rate on phone calls. Some outbound destinations carry a higher rate instead. See [Outbound destinations](#outbound-destinations) |
+| Phone number rental  | \$1.20 per month                                        | Charged in daily slices while you hold the number, and stops when you release it                                                                           |
+| Cold transfer        | \$0.015 per minute                                      | Charged for the time after the agent hands the call to a person. The conversation rate stops at that point                                                 |
+| Warm transfer        | \$0.025 per minute                                      | Charged for the time after the caller and the person are joined. The joined call is still recorded and transcribed                                         |
 
 Usage is counted per second. A plus sign marks a charge on top of the conversation rate.
 
@@ -41,19 +41,19 @@ After a conversation, each message in the dashboard's conversation view shows it
 
 The standard phone surcharge applies to inbound calls and most outbound calls. Outbound calls to the destinations below replace it with a rate that depends on the number dialed:
 
-| Destination                              | Landline          | Mobile            |
-| ---------------------------------------- | ----------------- | ----------------- |
-| Japan (landline includes 050 numbers)    | +$0.10 per minute | +$0.22 per minute |
-| United Kingdom (03 numbers: +$0.04)      | +$0.02 per minute | +$0.03 per minute |
-| Italy                                    | +$0.02 per minute | +$0.05 per minute |
-| Australia                                | +$0.03 per minute | +$0.09 per minute |
-| Mexico (mobile means the legacy `+52 1`) | +$0.02 per minute | +$0.05 per minute |
+| Destination                              | Landline           | Mobile             |
+| ---------------------------------------- | ------------------ | ------------------ |
+| Japan (landline includes 050 numbers)    | +\$0.10 per minute | +\$0.22 per minute |
+| United Kingdom (03 numbers: +\$0.04)     | +\$0.02 per minute | +\$0.03 per minute |
+| Italy                                    | +\$0.02 per minute | +\$0.05 per minute |
+| Australia                                | +\$0.03 per minute | +\$0.09 per minute |
+| Mexico (mobile means the legacy `+52 1`) | +\$0.02 per minute | +\$0.05 per minute |
 
 The countries purchased numbers can call are listed under [allowed destinations](/agents/telephony/outbound-calls#allowed-destinations).
 
 ## Trial balance
 
-Every account starts with a one-time **$5 trial balance**, about 60 minutes of conversation at the base rate. It pays for real usage at the normal rates:
+Every account starts with a one-time **\$5 trial balance**, about 60 minutes of conversation at the base rate. It pays for real usage at the normal rates:
 
 - Every charge draws on it first: web sessions, phone calls and their surcharges, transferred call time, number rental, and LLM tokens on token-billed models. Only what the trial balance does not cover is charged to your API credit.
 - A session can start on any model, including token-billed ones, as long as the trial balance or your API credit is above zero.
@@ -68,13 +68,13 @@ Every charge is listed on the [Agents billing page](https://fish.audio/app/agent
 
 ## Examples
 
-| Scenario                                                                           | Breakdown                                                                                                                | Total             |
-| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------- |
-| Web conversation, 4 min 30 s, basic LLM                                            | Conversation 4.5 min × $0.06 = $0.27                                                                                     | $0.27             |
-| Inbound phone call, 6 min, basic LLM                                               | Conversation 6 min × $0.06 = $0.36<br />Phone surcharge 6 min × $0.01 = $0.06                                            | $0.42             |
-| Outbound call, 10 min, Japanese mobile number                                      | Conversation 10 min × $0.06 = $0.60<br />Japan mobile surcharge 10 min × $0.22 = $2.20                                   | $2.80             |
-| Inbound call, 3 min with the agent, then 5 min with a person after a warm transfer | Conversation 3 min × $0.06 = $0.18<br />Phone surcharge 3 min × $0.01 = $0.03<br />Warm transfer 5 min × $0.025 = $0.125 | $0.335            |
-| Web conversation, 5 min, token-billed LLM                                          | Conversation 5 min × $0.06 = $0.30<br />LLM usage: the session's tokens at the LLM's rates                               | $0.30 + LLM usage |
+| Scenario                                                                           | Breakdown                                                                                                                      | Total              |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------ |
+| Web conversation, 4 min 30 s, basic LLM                                            | Conversation 4.5 min × \$0.06 = \$0.27                                                                                         | \$0.27             |
+| Inbound phone call, 6 min, basic LLM                                               | Conversation 6 min × \$0.06 = \$0.36<br />Phone surcharge 6 min × \$0.01 = \$0.06                                              | \$0.42             |
+| Outbound call, 10 min, Japanese mobile number                                      | Conversation 10 min × \$0.06 = \$0.60<br />Japan mobile surcharge 10 min × \$0.22 = \$2.20                                     | \$2.80             |
+| Inbound call, 3 min with the agent, then 5 min with a person after a warm transfer | Conversation 3 min × \$0.06 = \$0.18<br />Phone surcharge 3 min × \$0.01 = \$0.03<br />Warm transfer 5 min × \$0.025 = \$0.125 | \$0.335            |
+| Web conversation, 5 min, token-billed LLM                                          | Conversation 5 min × \$0.06 = \$0.30<br />LLM usage: the session's tokens at the LLM's rates                                   | \$0.30 + LLM usage |
 
 ## Going further
 
