@@ -503,7 +503,7 @@
     "/v1/agent/sessions": {
       "get": {
         "summary": "List Agent Sessions",
-        "description": "List your team's sessions, newest first. Filter by agent, status, end\nreason, caller number, SIP Call-ID, or creation time. Paginate with `cursor` (recommended; follow\n`next_cursor` while `has_more` is true) or with `page` for offset pagination\nwith a `total` count — the two are mutually exclusive.",
+        "description": "List your team's sessions, newest first. Filter by agent, status, end\nreason, caller number, SIP Call-ID, end user ID, or creation time.\nPaginate with `cursor` (recommended; follow `next_cursor` while `has_more`\nis true) or with `page` for offset pagination with a `total` count. The\ntwo are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -621,6 +621,25 @@
               ],
               "default": null,
               "title": "Sip Call Id"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "end_user_id",
+            "description": "Exact-match end_user_id set at session creation.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "End User Id"
             },
             "deprecated": false
           },
@@ -1383,6 +1402,18 @@
                       ],
                       "default": null,
                       "title": "Name"
+                    },
+                    "end_user_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "End User Id"
                     },
                     "status": {
                       "enum": [
@@ -18193,6 +18224,18 @@
             "default": null,
             "title": "Name"
           },
+          "end_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "End User Id"
+          },
           "status": {
             "enum": [
               "pending",
@@ -18581,6 +18624,7 @@
               }
             ],
             "default": null,
+            "description": "Your identifier for the end user, stored verbatim. Returned on session reads and webhooks, and filterable with `GET /v1/agent/sessions?end_user_id=`.",
             "title": "End User Id"
           },
           "metadata": {
