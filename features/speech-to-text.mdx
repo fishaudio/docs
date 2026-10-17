@@ -1,11 +1,10 @@
 ---
 title: "Speech to Text"
-sidebarTitle: "Overview"
 description: "Transcribe audio with transcribe-1-pro, including word-level timestamps, speaker turns for multi-speaker conversations, long recordings, and emotion cues"
 icon: "waveform"
 ---
 
-Turn spoken audio into text with `transcribe-1-pro`, Fish Audio's recommended automatic speech recognition (ASR) model. Send an audio file to `POST /v1/asr` with the header `model: transcribe-1-pro` to receive a transcript, its duration, and optional word-level timestamps. Pro handles multi-speaker conversations and recordings up to 60 minutes: it marks speakers inline in the transcript, returns a structured list of speaker turns when you request timestamps, and keeps emotion and vocal-event cues. To transcribe live audio as people speak, with turn detection for voice agents, see [Realtime Speech to Text](/features/speech-to-text/realtime).
+Turn spoken audio into text with `transcribe-1-pro`, Fish Audio's recommended automatic speech recognition (ASR) model. Send an audio file to `POST /v1/asr` with the header `model: transcribe-1-pro` to receive a transcript, its duration, and optional word-level timestamps. Pro handles multi-speaker conversations and recordings up to 60 minutes: it marks speakers inline in the transcript, returns a structured list of speaker turns when you request timestamps, and keeps emotion and vocal-event cues.
 
 <CardGroup cols={3}>
   <Card
@@ -592,14 +591,6 @@ The response is the same as for multipart: `text`, `duration` (seconds), `segmen
 ## Going further
 
 <CardGroup cols={2}>
-  <Card
-    title="Transcribe live audio"
-    icon="microphone-lines"
-    href="/features/speech-to-text/realtime"
-  >
-    Realtime transcription over a WebSocket, with turn detection for voice
-    agents.
-  </Card>
   <Card
     title="Generate speech"
     icon="microphone"
