@@ -14,4 +14,5 @@ export const SPECS = [
   { slug: "oneshot-vs-persistent-cloning", mdx: "developer-guide/sdk-guide/cookbook/oneshot-vs-persistent-cloning.mdx", cases: [{ name: "primary", block: 0, file: ["oneshot.mp3", "mp3"] }] },
   { slug: "discover-library-voice", mdx: "developer-guide/sdk-guide/cookbook/discover-library-voice.mdx", cases: [{ name: "primary", block: 0, file: ["out.mp3", "mp3"], subs: { "<voice-id>": "<PUBLIC_VOICE>" } }] },
   { slug: "voice-agent-loop", mdx: "developer-guide/sdk-guide/cookbook/voice-agent-loop.mdx", cases: [{ name: "primary", block: 0, file: ["reply.mp3", "mp3"], subs: { "<voice-id>": "<PUBLIC_VOICE>" } }] },
+  { slug: "realtime-transcription", mdx: "developer-guide/sdk-guide/cookbook/realtime-transcription.mdx", cases: [{ name: "stream a wav file", block: 0, subs: { "process.argv[2]": '"speech.wav"' } }] },
 ];
