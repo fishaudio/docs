@@ -209,7 +209,7 @@ Guide: `https://docs.fish.audio/features/speech-to-text`. The `/v1/asr` entry in
 Headers:
 
 - `Authorization: Bearer <FISH_API_KEY>` (required).
-- `model: transcribe-1-pro` (recommended): recordings up to 60 minutes, including multi-speaker conversations, with speaker markers, `speaker_turns`, and emotion and vocal-event cues. Write the value exactly, in lowercase. The header is optional, but a missing or unrecognized value (for example `Transcribe-1-Pro` or `transcribe-1pro`) is served and billed as `transcribe-1`, and no error is returned; if you expected Pro but `text` has no speaker markers, check the header. `model` is a header only; a `model` form field is ignored.
+- `model: transcribe-1-pro` (recommended): recordings up to 60 minutes, including multi-speaker conversations, with speaker markers, `speaker_turns`, and emotion and vocal-event cues. Write the value exactly, in lowercase. The header is optional, but a missing or unrecognized value (for example `Transcribe-1-Pro` or `transcribe-1pro`) is served and billed as `transcribe-1`, and no error is returned; if you expected Pro but `text` has no speaker markers and you did not send `diarize=false`, check the header. `model` is a header only; a `model` form field is ignored.
 - Body encoding: `multipart/form-data` (let the HTTP client set `Content-Type` and the boundary) or `Content-Type: application/msgpack`. Base64-encoded audio in a JSON body is not supported.
 
 Request fields (the same names in multipart and MessagePack):
@@ -220,7 +220,7 @@ Request fields (the same names in multipart and MessagePack):
 | `language`                     | unset        | Optional hint, a lowercase ISO 639-1 code such as `en`, `zh`, or `ja`. Detection still runs, and the hint does not force the transcript language. Other forms, such as `en-US` or `English`, may be rejected with 400.                          |
 | `ignore_timestamps`            | `true`       | `false` returns word-level `segments` and, unless `diarize=false`, `speaker_turns`; it adds processing time. Multipart: any value other than `true` (case-insensitive), including `1` or an empty value, means `false`. MessagePack: a boolean. |
 | `tag_audio_events`             | `true`       | `false` removes bracketed cues such as `[laughter]` or `[高兴]` from `text` and `speaker_turns`. Timestamps, `duration`, and billing do not change.                                                                                             |
-| `diarize`                      | `auto`       | `auto` or `true`: return `speaker_turns` when timestamps are requested. `false`: omit `speaker_turns`; the transcript and its speaker markers do not change.                                                                                    |
+| `diarize`                      | `auto`       | `auto` or `true`: return `speaker_turns` when timestamps are requested. `false`: omit `speaker_turns` and the speaker markers in `text`; the rest of the transcript does not change.                                                                                    |
 | `num_speakers`                 | unset        | Expected number of speakers, an integer ≥ 1. A best-effort hint that may have no effect on short recordings. Cannot be combined with `min_speakers` or `max_speakers`.                                                                          |
 | `min_speakers`, `max_speakers` | unset        | Bounds on the number of speakers, integers ≥ 1, with `min_speakers` ≤ `max_speakers`. Same best-effort rule.                                                                                                                                    |
 
@@ -269,7 +269,7 @@ Response (200), an illustrative `transcribe-1-pro` response with `ignore_timesta
 
 Response fields:
 
-- `text`: The full transcript, with inline `<|speaker:N|>` markers, usually with a space on each side, and, unless `tag_audio_events=false`, bracketed cues. Text before the first marker belongs to the first turn; a transcript with no marker is a single speaker (speaker 0).
+- `text`: The full transcript, with inline `<|speaker:N|>` markers (none with `diarize=false`), usually with a space on each side, and, unless `tag_audio_events=false`, bracketed cues. Text before the first marker belongs to the first turn; unless `diarize=false` was sent, a transcript with no marker is a single speaker (speaker 0).
 - `duration`: Audio length in seconds, including silence.
 - `segments`: Word-level timestamps `{ text, start, end }` in seconds. Usually one word (one or a few characters in Chinese and Japanese), with no punctuation, markers, or cues; it can be normalized (`35` for `3.5`), so it does not always match `text`. `start` can equal `end`. `[]` (never omitted) when `ignore_timestamps=true`, when no speech was found, or when timing is temporarily unavailable. Segments are not speaker turns.
 - `language`: The detected language's English name, such as `English` or `Chinese`. Omitted when it cannot be determined.
