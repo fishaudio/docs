@@ -1,12 +1,12 @@
 ---
 title: "MCP Server"
-description: "Connect Claude, Cursor, or any MCP client to your Fish Audio account: search voices, generate speech, transcribe audio, and create images and videos"
+description: "Connect Claude, Cursor, or any MCP client to your Fish Audio account: search voices, generate speech, transcribe audio, create images and videos, and produce long-form Story Studio projects"
 icon: "plug"
 ---
 
 import { PromptCard } from "/snippets/prompt-card.jsx";
 
-The Fish Audio MCP server gives AI agents direct access to your Fish Audio account: they can browse the voice library, generate speech, transcribe audio, and generate or edit images and videos for you.
+The Fish Audio MCP server gives AI agents direct access to your Fish Audio account: they can browse the voice library, clone a voice, generate speech, transcribe audio, generate or edit images and videos, and produce multi-speaker [Story Studio](https://fish.audio/app/story-studio) projects for you.
 
 - **Endpoint**: `https://api.fish.audio/mcp` (streamable HTTP)
 - **Authentication**: OAuth. Your MCP client opens a browser window, you sign in with your Fish Audio account, and choose the team the connection works in.
@@ -121,9 +121,33 @@ Once connected, ask in plain language and the agent picks the right tools. Click
     icon="film"
     prompt="Turn the image you just generated into a short video with a slow push-in, and give me the video URL and what was charged."
   />
+
+  <PromptCard
+    title="Produce a story"
+    icon="book"
+    prompt="Import chapters.md into a new Story Studio project, give each character a distinct voice, and quote the credits before generating the first chapter."
+  />
 </CardGroup>
 
 In coding agents like Claude Code and Codex, tools compose with the shell: the agent can download generated audio, images, and videos with `curl`, upload local recordings for transcription or reference images for editing, or batch-generate a directory of scripts.
+
+## Tools
+
+The core tool set is 37 tools across six areas. Agents choose them for you from a plain-language request, so the names matter mainly when you want to steer an agent to a specific step. Your client's own tool list is what the agent actually sees, and it includes a few more tools besides these.
+
+| Area                     | Tools | What they cover                                                                             |
+| ------------------------ | ----- | ------------------------------------------------------------------------------------------- |
+| Voices                   | 4     | Search the voice library, read the details of a voice, create and verify a voice clone      |
+| Speech and transcription | 2     | Text to speech, and speech to text                                                          |
+| File uploads             | 2     | Temporary slots for local audio, images, and video                                          |
+| Images and video         | 10    | Model discovery, price estimates, submission, and polling                                   |
+| Story Studio             | 17    | Long-form, multi-speaker projects: import and cast, edit blocks, generate audio, and export |
+| Account                  | 2     | Team workspaces and credit balance                                                          |
+
+<Card title="MCP tools reference" icon="wrench" href="/overview/mcp/tools">
+  The tools the server exposes, with the exact tool names and what each one
+  does.
+</Card>
 
 ## Good to know
 
@@ -133,5 +157,6 @@ In coding agents like Claude Code and Codex, tools compose with the shell: the a
 - Before an image or video is generated, the agent requests a credit estimate and asks you to confirm it. The server re-checks the price when the job is submitted and never charges more than the amount you approved.
 - Video generation needs a Plus plan or higher. Free plans have a daily image allowance and a smaller image count per request; the estimate reports these limits before you are asked to approve anything.
 - Reference images for editing or image-to-video are JPEG, PNG, or WebP files up to 20 MB. The agent uploads them for you, and an image it just generated can be reused as input without downloading it.
+- Story Studio works on the same projects as the [web editor](https://fish.audio/app/story-studio). Importing, casting, and editing are free; only generated audio costs credits. Export requires a paid plan.
 - Generated audio, images, and videos are returned as permanent URLs; failed generations are refunded.
 - A connection is bound to the team you chose at sign-in. To work in another team, add the server again and choose that team.

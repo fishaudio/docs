@@ -1,0 +1,107 @@
+---
+title: "MCP Tools"
+sidebarTitle: "Tools"
+description: "The tools the Fish Audio MCP server exposes: voices and voice cloning, speech, transcription, file uploads, image and video generation, and Story Studio"
+icon: "wrench"
+---
+
+This page lists the core tools that the [Fish Audio MCP server](/overview/mcp) exposes. You rarely need the names: ask for what you want in plain language and the agent picks the tools and the order to run them in. Naming a tool is still useful when you want to steer it, for example: "Estimate the video first with `estimate_video_generation`."
+
+Your MCP client receives each tool's full schema at runtime, so argument names, accepted values, and limits come from the server. Use this page to plan, not to look up parameters. Your client's tool list is authoritative and lists a few more tools than this page: the asset library tools (`list_assets`, `get_asset`, and related ones) and some internal tools are not covered here.
+
+## Account
+
+| Tool                 | What it does                                                                                     |
+| -------------------- | ------------------------------------------------------------------------------------------------ |
+| `get_credit_balance` | Your plan, remaining package credits, and the maximum text length allowed in one speech request. |
+| `list_my_workspaces` | The workspaces (teams) this connection can act in.                                               |
+
+## Voices
+
+| Tool                 | What it does                                                                                                                                                                                                    |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `search_voices`      | Searches the public voice library by keyword, or browses the popular voices for a language. Results include voice IDs, tags, and sample audio.                                                                  |
+| `get_voice`          | Everything known about one voice: description, languages, tags, popularity, a sample audio URL, and a default demo text.                                                                                        |
+| `create_voice_clone` | Creates a voice from one to five recordings of a single speaker, given as public URLs. Ten to sixty seconds of clean speech works best, and the samples must total under 270 seconds. Creating a clone is free. |
+| `verify_voice_clone` | Completes speaker verification when the server flags a clone, by submitting a recording of the speaker reading a short prompt.                                                                                  |
+
+## Speech and transcription
+
+| Tool             | What it does                                                                                                     |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `text_to_speech` | Synthesizes text with a voice and returns a permanent audio URL. Audio tags in square brackets control delivery. |
+| `speech_to_text` | Transcribes audio from a public URL. `pro` is the most accurate and `flash` costs less.                          |
+
+## File uploads
+
+Both tools return a temporary upload slot: the agent uploads the file, then passes the result to the tool that needs it, either a URL for transcription or a storage key for a Story Studio import. Clients that cannot make HTTP uploads (claude.ai, ChatGPT web chat) get a link the user can open to upload from their browser. Uploaded files are deleted automatically after 7 days.
+
+| Tool                  | What it does                                                                                       |
+| --------------------- | -------------------------------------------------------------------------------------------------- |
+| `get_upload_url`      | A slot for a local audio file or document, so it can be transcribed or imported into Story Studio. |
+| `create_media_upload` | A slot for an image, video, or audio file to use as an input to generation.                        |
+
+## Images and video
+
+Generation is split into an estimate and a submission so that nothing is charged before you approve a price. Estimates are read-only and cost nothing. The submission re-checks the price and never charges more than the estimate you approved.
+
+| Tool                        | What it does                                                                                                                                                     |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_media_models`         | The image and video models, with each model's capabilities (text-to-image, image edit, upscale, image-to-video, lip sync, and talking avatar) and default price. |
+| `get_media_model`           | The parameters, required input roles, and accepted file types and size limits for one model.                                                                     |
+| `estimate_image_generation` | Prices a text-to-image request and validates it.                                                                                                                 |
+| `estimate_image_edit`       | Prices an image edit or upscale and validates the input.                                                                                                         |
+| `estimate_video_generation` | Prices a video request, including image-to-video, lip sync, and talking avatars.                                                                                 |
+| `generate_image`            | Submits the image job with the parameters you approved.                                                                                                          |
+| `generate_image_edit`       | Submits the edit or upscale with the parameters you approved.                                                                                                    |
+| `generate_video`            | Submits the video job with the parameters you approved.                                                                                                          |
+| `get_generation_status`     | Checks one or more running generations. A finished job returns its results and billing, so there is nothing more to poll.                                        |
+| `get_generation_result`     | Returns the final media and billing for one generation.                                                                                                          |
+
+A finished result includes a link to the item in your Fish Audio history, where you can view or download it. An image the server just generated can be reused as the input to another generation, without downloading and re-uploading it.
+
+<Note>
+  Video generation needs a Plus plan or higher. Free plans have a daily image
+  allowance and a smaller image count per request. The estimate reports these
+  limits before you are asked to approve anything.
+</Note>
+
+## Story Studio
+
+Story Studio is the long-form, multi-speaker side of Fish Audio: a project holds chapters, and a chapter holds blocks, one per paragraph or heading, each with its own voice. These tools drive the same projects as the [Story Studio editor](https://fish.audio/app/story-studio), so an edit the agent makes appears in an open editor as it works.
+
+Blocks and chapters are addressed by short anchors returned from an earlier read, and each block carries a revision (`rev`) that a write must quote when it changes a block's text, voice, or audio settings, so two edits cannot silently overwrite each other. A block whose text or voice has changed since its audio was generated is _dirty_; only dirty blocks are regenerated, and only those are billed.
+
+A typical run is: find or create the project (`studio_list_projects`, `studio_create_project`, or `studio_import_document`), wait for it to settle with `studio_project`, read what is there (`studio_read_blocks`, `studio_find`), edit (`studio_write_blocks`, `studio_recast_speaker`, `studio_enhance_text`), quote and generate audio (`studio_generate`), then export (`studio_export`). `studio_help` restates this in the agent's own context, and most tools suggest calling it before your first Studio operation.
+
+### Projects
+
+| Tool                     | What it does                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `studio_help`            | The operating manual for Story Studio, by topic: `quickstart`, `editing`, `tags`, `billing`, `errors`, and `workflows`. Worth calling before the first Studio operation.                                                                                                                                                                                                                                                                                  |
+| `studio_list_projects`   | Your Story Studio projects, newest first, with each one's chapter count and whether an import is still running.                                                                                                                                                                                                                                                                                                                                           |
+| `studio_project`         | One project: the chapter outline with durations and dirty counts, the speaker roster, and the live state of an import or export. This is the tool to poll for both.                                                                                                                                                                                                                                                                                       |
+| `studio_create_project`  | Creates a project from the chapters and blocks you pass in, up to 200 blocks. A roster maps speaker names to voice IDs from `search_voices`, so a block can name a character rather than a voice. Free, but not idempotent, so check `studio_list_projects` before retrying a call that timed out.                                                                                                                                                        |
+| `studio_import_document` | Imports a document or long text (novel, script, or article, up to 1.5M characters) into a new project. A background model splits it into chapters, casts a voice per speaker, and either adds delivery tags or rewrites for naturalness. Returns immediately; poll `studio_project`, and expect the project to be locked for writes until it finishes. Free, but a retry after a timeout can duplicate the import, so check `studio_list_projects` first. |
+| `studio_update_project`  | Project-wide settings: name, description, the default voice and backend for new blocks, audio defaults, a room-ambience scene preset, and chapter order. Defaults affect only blocks created afterwards.                                                                                                                                                                                                                                                  |
+
+### Reading and editing
+
+| Tool                    | What it does                                                                                                                                                                                                                                                                                               |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `studio_read_blocks`    | Reads a whole chapter or a list of blocks: anchor, revision, voice, text, kind, dirty flag, and duration. `format=script` renders a read-only script view for showing a reader.                                                                                                                            |
+| `studio_find`           | Searches block text across a project, as a substring or a regular expression, and returns matching anchors with snippets, the way to fix something everywhere without reading every chapter.                                                                                                               |
+| `studio_write_blocks`   | Applies up to 100 edits in order: update, insert, move, or delete blocks, with updates quoting the block's revision. Per-edit results report `ok`, `noop`, `conflict`, or `missing`, and a conflict returns the current text and revision to retry against. Free, and `dry_run` validates without writing. |
+| `studio_create_chapter` | Adds a chapter, optionally after an existing chapter. New chapters start with one empty block.                                                                                                                                                                                                             |
+| `studio_update_chapter` | Renames a chapter.                                                                                                                                                                                                                                                                                         |
+| `studio_recast_speaker` | Switches every block using one voice to another voice, project-wide, for recasting a character after an import. Free; the affected blocks become dirty.                                                                                                                                                    |
+| `studio_enhance_text`   | Polishes one block's text for speech: expands numbers, dates, symbols, and phone numbers into spoken words, and adds delivery tags at the density the Studio voices are tuned for. Free.                                                                                                                   |
+
+### Generating and exporting
+
+| Tool                | What it does                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `studio_generate`   | Synthesizes audio for blocks, a chapter, or the whole project. By default only dirty blocks run, since unchanged audio is reused at no cost. Quote it with `dry_run=true` first: 1 credit per UTF-8 byte of spoken text, doubled for another team's professional clone voice. Runs for up to about 45 seconds; remaining blocks continue in the background and `studio_project` reports what is left, so call it, then generate again to collect. |
+| `studio_list_takes` | A block's previous takes, with the exact text and voice each was generated from and whether it still matches the block's current text and voice.                                                                                                                                                                                                                                                                                                  |
+| `studio_adopt_take` | Rebinds an earlier take's audio to its block. Free, and no generation runs. Only takes that still match the block's text and voice adopt cleanly.                                                                                                                                                                                                                                                                                                 |
+| `studio_export`     | Exports the project, or selected chapters, to a downloadable MP3 or WAV, optionally with subtitles. Two steps: the first call returns a quote, and a second call that confirms those credits starts the background job. Only blocks that were not yet generated are billed. Requires a paid plan (any plan other than Free).                                                                                                                      |
