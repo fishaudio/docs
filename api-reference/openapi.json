@@ -5456,7 +5456,7 @@
     "/v1/agent/agents/{agent_id}/tests/run": {
       "post": {
         "summary": "Run Tests",
-        "description": "Start a batch that runs the agent's attached tests against its current\ndraft, one run per test and repeat. A simulation test repeats\n`simulation.repeat_count` times, and a `repeat_count` in the body repeats\nevery selected test that many times instead. A batch starts at most 1000\nruns. Runs are queued and finish in the background, simulations take\nminutes. Poll `GET /v1/agent/agents/{agent_id}/test-batches/{batch_id}`\nuntil `completed` is true, then gate on `pass_rate`, which leaves out\n`error` runs.",
+        "description": "Start a batch that runs the agent's attached tests against its current\ndraft, one run per test and repeat. A simulation test repeats\n`simulation.repeat_count` times, and a `repeat_count` in the body repeats\nevery selected test that many times instead. A batch starts at most 1000\nruns. Runs are queued and finish in the background, simulations take\nminutes. Poll `GET /v1/agent/agents/{agent_id}/test-batches/{batch_id}`\nuntil `completed` is true, then gate on `pass_rate`, which leaves out\n`error` runs.\n\nEach simulation run that ends `passed` or `failed` is billed: a platform\nfee per agent reply plus the LLM tokens of the agent, the simulated user\nand the judge. `error` runs are not billed. A batch with a simulation\ntest returns 402 when the account has no trial balance or API credit\nleft, and 403 when the team's agreement does not allow agent usage.",
         "security": [
           {
             "BearerAuth": []
@@ -5591,6 +5591,80 @@
           },
           "401": {
             "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "No payment -- see charging schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request forbidden -- authorization will not help",
             "headers": {},
             "content": {
               "application/json": {
@@ -19961,6 +20035,52 @@
         "title": "PublicAgentEntity",
         "type": "object"
       },
+      "AgentEchoGuardPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "web_voice": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Voice calls in a browser or app (web widget, SDK, test calls). Null uses the default (on).",
+            "title": "Web Voice"
+          },
+          "phone_inbound": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Inbound phone calls. Null uses the default (on).",
+            "title": "Phone Inbound"
+          },
+          "phone_outbound": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Outbound phone calls. Null uses the default (off).",
+            "title": "Phone Outbound"
+          }
+        },
+        "title": "AgentEchoGuardPatch",
+        "type": "object"
+      },
       "AgentKeypadInputPatch": {
         "additionalProperties": false,
         "properties": {
@@ -20882,6 +21002,18 @@
               }
             ],
             "default": null
+          },
+          "echo_guard": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentEchoGuardPatch"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Echo guard. For the first 3 seconds after the agent first starts talking in a call, the caller cannot interrupt it and anything the caller says while the agent is talking is not heard. This stops the agent's own voice, echoing back from a speakerphone or laptop, from cutting it off. Per channel: true on, false off, null uses the default (on for web_voice and phone_inbound, off for phone_outbound). Channels you send replace the stored value, null on a channel resets it to the default, channels you leave out are kept. null resets every channel."
           }
         },
         "title": "PublicAgentConversationPatch",
@@ -21939,9 +22071,67 @@
           },
           "keypad_input": {
             "$ref": "#/components/schemas/AgentKeypadInput"
+          },
+          "echo_guard": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentEchoGuard"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Echo guard. For the first 3 seconds after the agent first starts talking in a call, the caller cannot interrupt it and anything the caller says while the agent is talking is not heard. This stops the agent's own voice, echoing back from a speakerphone or laptop, from cutting it off. Per channel: true on, false off, null uses the default (on for web_voice and phone_inbound, off for phone_outbound)."
           }
         },
         "title": "AgentConversationConfig",
+        "type": "object"
+      },
+      "AgentEchoGuard": {
+        "description": "Echo guard per call channel: true on, false off, null uses the default.",
+        "properties": {
+          "web_voice": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Voice calls in a browser or app (web widget, SDK, test calls). Null uses the default (on).",
+            "title": "Web Voice"
+          },
+          "phone_inbound": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Inbound phone calls. Null uses the default (on).",
+            "title": "Phone Inbound"
+          },
+          "phone_outbound": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Outbound phone calls. Null uses the default (off).",
+            "title": "Phone Outbound"
+          }
+        },
+        "title": "AgentEchoGuard",
         "type": "object"
       },
       "AgentGuardrailsConfig": {
@@ -23329,6 +23519,129 @@
         "title": "PublicAgentTestRun",
         "type": "object"
       },
+      "PublicAgentTestRunLLMCharge": {
+        "properties": {
+          "participant": {
+            "description": "Whose tokens: the agent, the simulated user, or the judge.",
+            "enum": [
+              "agent",
+              "simulated_user",
+              "judge"
+            ],
+            "title": "Participant",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "amount_usd": {
+            "description": "What these tokens charged, in USD.",
+            "title": "Amount Usd",
+            "type": "string"
+          },
+          "input": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentTestRunTokenCharge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "cache_read": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentTestRunTokenCharge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "cache_write_5m": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentTestRunTokenCharge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "cache_write_1h": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentTestRunTokenCharge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "output": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentTestRunTokenCharge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "participant",
+          "model",
+          "amount_usd"
+        ],
+        "title": "PublicAgentTestRunLLMCharge",
+        "type": "object"
+      },
+      "PublicAgentTestRunPlatformFee": {
+        "properties": {
+          "rate_usd": {
+            "description": "USD per agent reply.",
+            "title": "Rate Usd",
+            "type": "string"
+          },
+          "amount_usd": {
+            "description": "`agent_replies` times `rate_usd`.",
+            "title": "Amount Usd",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rate_usd",
+          "amount_usd"
+        ],
+        "title": "PublicAgentTestRunPlatformFee",
+        "type": "object"
+      },
+      "PublicAgentTestRunTokenCharge": {
+        "properties": {
+          "tokens": {
+            "title": "Tokens",
+            "type": "integer"
+          },
+          "amount_usd": {
+            "title": "Amount Usd",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tokens",
+          "amount_usd"
+        ],
+        "title": "PublicAgentTestRunTokenCharge",
+        "type": "object"
+      },
       "PublicAgentTestRunUsage": {
         "properties": {
           "agent_replies": {
@@ -23346,8 +23659,28 @@
               }
             ],
             "default": null,
-            "description": "LLM cost of the run in USD, null while any part is unpriced.",
+            "description": "What the run was charged in USD. `0` on a finished run that is not charged: runs that end in `error` and tests other than simulations. Null until the run's charge is settled.",
             "title": "Cost Usd"
+          },
+          "platform_fee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentTestRunPlatformFee"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The fee per agent reply. Null unless charged."
+          },
+          "llm": {
+            "description": "LLM tokens, one entry per participant and model, by token category. With `platform_fee` they add up to `cost_usd`. Empty unless charged.",
+            "items": {
+              "$ref": "#/components/schemas/PublicAgentTestRunLLMCharge"
+            },
+            "title": "Llm",
+            "type": "array"
           }
         },
         "title": "PublicAgentTestRunUsage",
