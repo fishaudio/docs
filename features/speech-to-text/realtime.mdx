@@ -170,9 +170,9 @@ Eager end of turn, backchannel detection and background awareness are available 
 
 ## Languages
 
-Smart Turn Detection is trained on a set of major languages. Transcription covers many more languages, and `draft`, `eager_end_of_turn` and `committed` carry the language of their own text as `language_code` when it can be identified, one of 29 [supported codes](/api-reference/endpoint/websocket/asr-realtime#language).
+Smart Turn Detection, including eager end of turn, backchannel detection and background awareness, works on speech in every language. In some languages, a turn can end a little later after the speaker stops.
 
-In languages outside that set, a turn ends about 2 seconds after the speaker stops, and there is no eager signal. For faster turns in those languages, use `vad` mode, or end turns yourself with `finalize`.
+`draft`, `eager_end_of_turn` and `committed` carry the language of their own text as `language_code` when it can be identified, one of 29 [supported codes](/api-reference/endpoint/websocket/asr-realtime#language).
 
 ## Latency
 
@@ -192,7 +192,7 @@ Send 16-bit little-endian PCM, mono, at 8000, 12000, 16000, 22050, 24000, 32000,
 
 ### Speakers
 
-Transcripts contain speaker tags such as `<|speaker:0|>`, stable within a session. Strip them, or send `results.diarize: false` for plain text.
+Transcripts contain speaker tags such as `<|speaker:0|>`, stable within a session. Strip them, or send `results.diarize: false` for plain text. Whitespace right after a tag can vary, so trim the text after you strip the tags. Transcripts can also contain sound tags such as `[laughter]` or `[pause]`; see [Sound tags](/api-reference/endpoint/websocket/asr-realtime#sound-tags).
 
 ### Keys and browsers
 
@@ -200,7 +200,7 @@ Your API key travels in a request header. Connect from your server, never from a
 
 ### Limits
 
-A session lasts up to 60 minutes and a turn up to 60 seconds. Each open connection holds one of your team's concurrent session slots. See [Limits](/api-reference/endpoint/websocket/asr-realtime#limits) for the full list.
+A session lasts up to 60 minutes and a turn up to 60 seconds. Each open connection counts against the same concurrency limit as your other API requests, from the moment it opens until it closes, even while you send no audio; see [Concurrent request limits](/developer-guide/models-pricing/pricing-and-rate-limits#concurrent-request-limits). See [Limits](/api-reference/endpoint/websocket/asr-realtime#limits) for the full list.
 
 ## Going further
 
