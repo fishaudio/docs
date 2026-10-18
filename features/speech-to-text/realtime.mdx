@@ -119,15 +119,26 @@ The SDKs do not wrap this endpoint; you connect with any WebSocket client and ex
 
 ## How a session works
 
-Audio is divided into turns. A turn opens when voice activity begins (`speech_start`) and ends with exactly one `committed` message, which holds the final transcript and says why the turn ended. In between, you can receive live `draft` text and turn signals:
+Audio is divided into turns. A turn opens when voice activity begins (`speech_start`), usually before the server knows what the sound is: the user speaking, a short acknowledgement, noise or another voice. It ends with exactly one `committed` message, which holds the final transcript and says why the turn ended. In between, you can receive live `draft` text and turn signals that tell you what the turn is. In the default `auto` mode, with `results.drafts` and `turn_detection.eager` turned on as in the example above:
 
 ```text
-speech_start → draft … → user_turn_taken → draft … → eager_end_of_turn → committed
+The user's turn:
+  speech_start → draft … → user_turn_taken → draft … → eager_end_of_turn → committed (user_turn: true)
+
+"Mm-hm" from the user while your agent speaks:
+  speech_start → draft … → user_backchannel → draft … → committed (user_turn: false, turn_kind: "backchannel")
+
+Noise, a TV or another voice:
+  speech_start → draft … → committed (user_turn: false, turn_kind: "other")
 ```
 
+- `draft`: the turn's text so far. Drafts come in every kind of turn, so a draft does not mean the user is talking.
 - `user_turn_taken`: the server judged that the user is taking their turn.
-- `eager_end_of_turn`: the turn has probably ended; its text equals the final transcript unless `turn_resumed` follows.
-- `committed`: the final transcript. `user_turn` says whether it was the user's turn.
+- `user_backchannel`: while your agent is speaking (see [Backchannel detection](#backchannel-detection)), the user only acknowledged; keep talking. If the user goes on to take the turn, `user_turn_taken` follows, and the turn that holds the acknowledgement is the user's. That can be a new turn, with its own `speech_start`.
+- `eager_end_of_turn`: the turn has probably ended; its text equals the final transcript unless `turn_resumed` follows. Only the user's turns get it, and not every one does.
+- `committed`: the final transcript. `user_turn` says whether it was the user's turn, and `turn_kind` what it was otherwise.
+
+So do not stop your agent on `speech_start` or on a `draft`: noise opens turns and gets drafts too. Wait for `user_turn_taken`. In `vad` and `manual` mode there is no `user_turn_taken`: every turn is a user turn, so stop on `speech_start` there (see [Turn detection modes](#turn-detection-modes)).
 
 ## Smart Turn Detection
 
