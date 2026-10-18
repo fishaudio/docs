@@ -190,7 +190,7 @@ A failed assertion fails the run regardless of the judge's verdict. Each asserti
 
 ### Current date and time
 
-As in a live session, the agent knows today's date and the current time during a simulation (see [Time & timezone](/agents/build/time-timezone)). That date is the day the test runs. If the agent's prompt fixes a date of its own, for example `Today is July 1, 2026`, the agent sees two dates that disagree: a simulated caller asking for "the eighth" may get a booking in the wrong month, and the result changes with the day the test runs. For such a test, turn off **Current date and time** under **Advanced**: the agent then goes by the date in its prompt. `{{system.today}}` still renders the day the test runs.
+A simulation does not tell the agent today's date or the current time unless you turn on **Current date and time** under **Advanced**. With it on, the agent knows the date and time of the day the test runs, as in a live session (see [Time & timezone](/agents/build/time-timezone)). It is off by default because an agent prompt that fixes its own date, for example `Today is July 1, 2026`, would otherwise see two dates that disagree: a simulated caller asking for "the eighth" may get a booking in the wrong month, and the result changes with the day the test runs. Turn it on when the scenario relies on the real date. Tests created before this setting existed keep it on. `{{system.today}}` renders the day the test runs either way.
 
 ### Repeat count
 
@@ -215,7 +215,7 @@ Every Simulation field lives under `simulation`. An optional `conversation`, up 
 | Required tool calls               | `assertions.tool_calls`: `tool`, `params`, `min_calls`, `max_calls`                      |
 | Forbidden tools                   | `assertions.forbidden_tools`                                                             |
 | Ended by                          | `assertions.ended_by`: `agent`, `user`, `transfer`, or `any`                             |
-| Current date and time             | `world_context`: `true` or `false`, default `true`                                       |
+| Current date and time             | `world_context`: `true` or `false`, default `false`                                      |
 | Repeat                            | `repeat_count`, 1 to 20                                                                  |
 
 Tools are referenced by `id`, `name`, and `type`, as in Tool tests, and integration tools use the `<provider_key>:<tool_name>` ids that [List Test Tools](/api-reference/endpoint/agent/list-test-tools) returns. Parameter conditions (`when` on a mock entry, `params` on a required call) map a parameter name to `{"type": "exact" | "regex" | "any", "value": "..."}`.
