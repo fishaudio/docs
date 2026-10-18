@@ -1,0 +1,521 @@
+---
+asyncapi: "/api-reference/asyncapi-asr-realtime.yml asrRealtime"
+title: "WebSocket Realtime Speech to Text"
+description: "Stream audio over a WebSocket and receive transcripts turn by turn, with turn detection, live drafts and conversation context"
+icon: "webhook"
+iconType: "solid"
+hidden: true
+noindex: true
+---
+
+<Note>
+  Connect to `wss://api.fish.audio/v1/asr/realtime` with a WebSocket client.
+  Every message in both directions is one MessagePack map in a binary frame. A
+  normal HTTP GET request does not start a session. For an introduction, see
+  [Realtime Speech to Text](/features/speech-to-text/realtime).
+</Note>
+
+<Note>
+  Realtime speech to text is in preview and is enabled per team. Contact
+  [support@fish.audio](mailto:support@fish.audio) to turn it on for your team.
+  Until then, connecting returns `403`.
+</Note>
+
+## Before you start
+
+You need a [Fish Audio API key](/developer-guide/getting-started/api-key) and a WebSocket client that can set request headers. The API key travels in a request header, so connect from your server, not from a browser; to capture audio in a browser, relay it through your server as in [Transcribe a live audio stream](/developer-guide/sdk-guide/cookbook/realtime-transcription#capture-from-a-browser-microphone). The examples on these pages use Python with `websockets` and `msgpack`, and Node.js with `ws` and `@msgpack/msgpack`.
+
+This endpoint is separate from the realtime endpoints of the [compatible APIs](/developer-guide/compat/capabilities), which use manual commit and have no server-side turn detection.
+
+## Connect
+
+```text
+GET wss://api.fish.audio/v1/asr/realtime
+Authorization: Bearer <API key>
+model: transcribe-1-pro-realtime
+```
+
+| Header          | Required | Description                                                                                        |
+| --------------- | -------- | -------------------------------------------------------------------------------------------------- |
+| `Authorization` | Yes      | `Bearer <API key>`.                                                                                |
+| `model`         | No       | `transcribe-1-pro-realtime`, the default and the only realtime model. Any other value returns 400. |
+
+Each open connection holds one of your team's concurrent session slots until it closes. A session cannot be resumed: a new connection is a new session.
+
+If the server refuses the upgrade, it answers with a plain HTTP response whose JSON body is `{"status": <int>, "message": <str>}`:
+
+| Status | Meaning                                                               | What to do                                                |
+| ------ | --------------------------------------------------------------------- | --------------------------------------------------------- |
+| 400    | The `model` header names another model.                               | Send `transcribe-1-pro-realtime` or leave the header out. |
+| 401    | The API key is missing or invalid.                                    | Check the key.                                            |
+| 402    | Insufficient API credit.                                              | Top up your balance.                                      |
+| 403    | Realtime speech to text is not enabled for your team.                 | Contact support (see the note above).                     |
+| 429    | Your team is at its concurrency limit, or the service is at capacity. | Retry with backoff. Honor `Retry-After` when present.     |
+| 503    | The service is restarting.                                            | Retry.                                                    |
+
+The `101 Switching Protocols` response carries an `x-request-id` header, and so do the 400 (model), capacity 429 and 503 refusals. It is the same value as `request_id` in `session_started`, `error` and `session_done`. Log it, and include it when you contact support. Refusals for the key, balance, access and your concurrency limit (401, 402, 403 and concurrency 429) happen before a session is assigned and carry no `x-request-id`.
+
+## Framing
+
+- Every message is **one binary WebSocket frame holding one MessagePack map** with a `type` field. Audio bytes are MessagePack `bin`. Do not send text frames.
+- Every server message carries `seq`, which increases by one per message within the session.
+- Times are `*_ms` integers: milliseconds of session audio since the first audio byte, in your audio's own time at the `sample_rate` you configured.
+- WebSocket ping and pong frames are allowed at any time, including before `config`. The server answers pings, and a ping counts as client activity for the 30-second idle limit. Pings do not extend the 10-second deadline for the first `config`.
+
+## Session flow
+
+```text
+Client → config                 first message, within 10 s of connecting
+Server → session_started
+Client → audio, audio, ...      plus finalize, configure, context_add, keepalive, agent_speaking at any time
+
+Per turn:
+Server → speech_start
+         draft*                 only with results.drafts: true
+         user_turn_taken        auto mode only
+         eager_end_of_turn      with turn_detection.eager: true; turn_resumed cancels it
+         committed              the final transcript of the turn
+Server → user_backchannel       auto mode, while your agent is speaking
+
+Client → audio_done
+Server → committed              the open turn, reason "audio_done"
+         session_done
+         close 1000
+```
+
+In `auto` mode, `draft` messages can come before and after `user_turn_taken`, and `eager_end_of_turn` followed by `turn_resumed` can repeat before the turn commits. After `audio_done`, the server first finishes its turn decisions on the audio already sent, so you can still receive `speech_start`, `user_turn_taken` and `committed` for earlier turns.
+
+## Client messages
+
+### `config`
+
+The first message on the connection. Send it within 10 seconds of connecting, then wait for `session_started` before you send audio.
+
+```json
+{
+  "type": "config",
+  "audio": { "format": "pcm_s16le", "sample_rate": 16000, "channels": 1 },
+  "turn_detection": { "mode": "auto", "eager": true },
+  "results": { "drafts": true, "ignore_timestamps": false },
+  "context": {
+    "history": [{ "role": "assistant", "text": "Hi, how can I help?" }],
+    "terms": ["Fish Audio", "transcribe-1-pro-realtime"]
+  },
+  "client_reference_id": "call-8f2c"
+}
+```
+
+| Field                               | Required | Default         | Description                                                                                                                                                               |
+| ----------------------------------- | -------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `protocol_version`                  | No       | `1`             | Only `1` is valid.                                                                                                                                                        |
+| `audio.format`                      | Yes      |                 | `pcm_s16le`: 16-bit little-endian PCM.                                                                                                                                    |
+| `audio.sample_rate`                 | Yes      |                 | One of 8000, 12000, 16000, 22050, 24000, 32000, 44100, 48000. See [Audio format](#audio-format).                                                                          |
+| `audio.channels`                    | Yes      |                 | `1` (mono).                                                                                                                                                               |
+| `turn_detection.mode`               | No       | `"auto"`        | `"auto"`, `"vad"` or `"manual"`. See [Turn detection modes](#turn-detection-modes).                                                                                       |
+| `turn_detection.eager`              | No       | `false`         | `true` sends [`eager_end_of_turn`](#eager_end_of_turn) in `auto` mode.                                                                                                    |
+| `turn_detection.silence_timeout_ms` | No       | Depends on mode | See [`silence_timeout_ms`](#silence_timeout_ms).                                                                                                                          |
+| `results.drafts`                    | No       | `false`         | `true` sends live [`draft`](#draft) messages.                                                                                                                             |
+| `results.draft_interval_ms`         | No       | `250`           | Minimum time between drafts. Smaller values count as 250.                                                                                                                 |
+| `results.ignore_timestamps`         | No       | `true`          | `false` adds word timings (`words`) to `committed`.                                                                                                                       |
+| `results.diarize`                   | No       | `true`          | `true`, `false` or `"auto"` (same as `true`); the strings `"true"` and `"false"` are accepted too. `false` removes speaker tags from the text. See [Speakers](#speakers). |
+| `results.vad_events`                | No       | `false`         | `true` sends [`vad`](#vad) messages.                                                                                                                                      |
+| `results.eot_events`                | No       | `false`         | `true` sends [`eot_prob`](#eot_prob) messages.                                                                                                                            |
+| `context.history`                   | No       | `[]`            | Earlier conversation, oldest first: up to 32 items of `{ "role": "user" \| "assistant", "text": str }`, each up to 2,000 characters.                                      |
+| `context.terms`                     | No       | `[]`            | Up to 100 terms of up to 32 characters each: names, products and jargon to recognize.                                                                                     |
+| `client_reference_id`               | No       |                 | Your own ID for the session, up to 256 characters. It is recorded with the session and not sent back.                                                                     |
+
+A value of the wrong type for `ignore_timestamps`, or a `diarize` value other than those listed, is `invalid_config`.
+
+#### Audio format
+
+Send 16-bit little-endian PCM, mono, at one of the listed sample rates. Other encodings (such as μ-law, A-law or Opus) and stereo audio are `unsupported_audio`; decode phone audio in μ-law or A-law to 16-bit PCM first, and send it at 8000 Hz as is. Audio at 16000 Hz is used as is; every other rate is converted on the server, so you never need to resample. The conversion adds at most about 20 ms of delay. Every `*_ms` value is in milliseconds of your audio, whatever its rate.
+
+An `audio` message can hold any number of bytes; an odd trailing byte waits for the next message. Send 80–100 ms of audio per message. A message can be at most 1 MiB, which holds 65.5 seconds of audio at 8 kHz or 10.9 seconds at 48 kHz.
+
+#### Turn detection modes
+
+| Mode     | A turn ends when                                                                              | Use it for                                   |
+| -------- | --------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `auto`   | The server's turn detection judges that the speaker has finished, from what was said and how. | Voice agents and conversations. The default. |
+| `vad`    | `silence_timeout_ms` of silence has passed (default 700 ms).                                  | Fixed silence-based endpointing.             |
+| `manual` | You send `finalize`.                                                                          | Push-to-talk, or your own endpointing.       |
+
+**`auto`.** A turn opens as soon as voice activity is detected. The server then judges whether this is the user taking their turn. If it is, the server sends `user_turn_taken`, and it ends the turn when the speaker has finished, not on silence alone. A short pause in the middle of a sentence usually does not end the turn; a speaker who stops mid-sentence and does not go on has the turn ended about 2 seconds after they stopped. `silence_timeout_ms` is only a safety net here.
+
+Other sounds, usually noise, a TV or other people talking nearby, end after a short quiet, or after 20 seconds at the latest, and are committed as non-user turns with `user_turn: false`. When the user starts speaking during such a sound, the sound before the speech is usually committed first as a non-user turn, and the speech opens a new turn. A sound that began shortly before the speech stays in the user's turn. A turn you end with `finalize` or `audio_done` before `user_turn_taken` is not split: all of it becomes one user turn.
+
+This judgement needs `auto` in the **first** `config`; a `config` without `mode` has it. A session that starts in `vad` or `manual` and switches to `auto` later makes every turn a user turn as it opens (`user_turn_taken` right after `speech_start`, never `user_turn: false`). A session that starts in `auto` keeps the judgement when it switches away and back. In rare cases every turn of a session is treated as a user turn; `user_turn_taken` then follows `speech_start` immediately.
+
+**`vad`.** A turn ends after `silence_timeout_ms` of silence, with `reason: "eot"`. Every turn is a user turn.
+
+**`manual`.** A turn ends when you send `finalize`. A turn that has been silent for `silence_timeout_ms` ends too; at the default (60000) that never happens, because the 60-second turn limit comes first. Every turn is a user turn.
+
+In every mode, a turn ends after 60 seconds at the latest, and an `auto` turn without `user_turn_taken` after 20 seconds (`reason: "max_turn_duration"`).
+
+#### `silence_timeout_ms`
+
+The default, the allowed range (inclusive) and the meaning depend on the mode:
+
+| Mode     | Default | Allowed    | Meaning                                                                                                                                                                                                  |
+| -------- | ------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auto`   | 5000    | 3000–60000 | A safety net for user turns: a user turn with no voice activity for this long ends with `reason: "silence_timeout"`. Turn detection normally ends a turn long before that. Non-user turns do not use it. |
+| `vad`    | 700     | 300–60000  | The silence that ends a turn (`reason: "eot"`).                                                                                                                                                          |
+| `manual` | 60000   | 300–60000  | A safety net: a turn silent for this long ends with `reason: "silence_timeout"`. At 60000 it never fires.                                                                                                |
+
+- If you leave it out, the mode's default applies. `session_started` and `configured` always show the value in effect.
+- The value must be a whole number inside the range of the mode it will run under: the `mode` in the same message, or else the current mode. In `config` the current mode is `auto`, so a `config` with `silence_timeout_ms: 700` and no `mode` is refused.
+- Outside the range, `config` gets `error` with `invalid_config` and the connection closes with 4400; the message gives the range, for example "turn_detection.silence_timeout_ms must be between 3000 and 60000 in auto mode". A `configure` gets `configured` with `ok: false` and the same message, and nothing in that `configure` is applied.
+- A value that is not a non-negative integer is `invalid_config` in `config`, and a recoverable `invalid_request` (nothing applied) in `configure`.
+- A `configure` that switches `mode` without `silence_timeout_ms` resets it to the new mode's default. To switch and keep your own value, send both.
+- A new value takes effect at once, for the open turn too, from the point in the audio where the `configure` arrives.
+
+### `audio`
+
+```json
+{ "type": "audio", "data": "<bin: PCM bytes>" }
+```
+
+Audio in the format from `config`, as MessagePack `bin`. Send audio only after `session_started`. For live audio, send it as it is captured; 80–100 ms per message is a good size. You can send faster than real time, for example from a file: the server accepts it and reads it at a bounded rate, and results keep following the audio.
+
+### `finalize`
+
+```json
+{ "type": "finalize" }
+```
+
+Commit the current turn now, with `reason: "finalize"`. In `auto` mode, the server first settles its turn decisions on the audio already sent: a turn they already ended (possibly with `user_turn: false`) is not reopened, and if no turn is open after that, `finalize` is ignored. The turn `finalize` ends is always a user turn; `user_turn_taken` is sent first if it has not been.
+
+**Push-to-talk:** use `mode: "manual"` and send `finalize` when the button is released. Send audio while the button is held; a turn opens on voice activity, so if none was detected, no turn is open and `finalize` is ignored. While the button is up you can send no audio, which keeps other sounds from opening turns; send `keepalive` then.
+
+### `configure`
+
+```json
+{
+  "type": "configure",
+  "turn_detection": { "mode": "vad", "silence_timeout_ms": 900 },
+  "results": { "drafts": false },
+  "context": { "terms": ["Fish Audio", "Main Street"] }
+}
+```
+
+Change settings during the session. Every field is optional and takes the same values as in `config`; a field you leave out keeps its current value. `context` accepts `terms` only, and the new list replaces the old one; `context.history` is ignored in `configure`, so send earlier lines with [`context_add`](#context_add). The server answers with [`configured`](#configured). If any value is invalid, nothing in the message is applied.
+
+- A change to `ignore_timestamps` or `diarize` applies to turns that open after `configured`. A turn that is already open keeps the settings it started with, so its `eager_end_of_turn` and `committed` always agree.
+- When `mode` changes to or from `auto`, the server first settles its turn decisions on the audio already sent, so `configured` can take a few seconds.
+- A turn's `user_turn` status follows the mode it opened in: a turn opened in `vad` or `manual` mode is always a user turn and gets no `user_turn_taken`. How an open turn ends follows the current mode.
+- Switching away from `auto` settles an open turn that has no `user_turn_taken` yet: it becomes a user turn (`user_turn_taken` is sent) if there was speech in about the last second; otherwise it is committed at once with `user_turn: false`.
+
+### `context_add`
+
+```json
+{
+  "type": "context_add",
+  "items": [{ "role": "assistant", "text": "Sure. Which day works for you?" }],
+  "reset_history": false
+}
+```
+
+Add conversation context. The server keeps the session's conversation and uses the recent part of it to recognize names and follow-ups. Every committed user turn is added as a `user` item automatically; non-user turns are not added. Send what the other party said, for a voice agent each line it speaks, as `assistant` items, ideally right after the `committed` it answers. Items follow the `context.history` limits (up to 32 items of up to 2,000 characters per message). `reset_history: true` first drops the items you added before. There is no reply.
+
+### `keepalive`
+
+```json
+{ "type": "keepalive" }
+```
+
+Keeps an idle session open. A session closes after 30 seconds without any client message.
+
+### `audio_done`
+
+```json
+{ "type": "audio_done" }
+```
+
+No more audio. The server commits the open turn (`reason: "audio_done"`), sends `session_done`, and closes the connection with 1000. In `auto` mode it first settles its turn decisions on the audio already sent; the turn `audio_done` ends is always a user turn, as with `finalize`.
+
+### `agent_speaking`
+
+```json
+{ "type": "agent_speaking", "speaking": true }
+```
+
+For voice agents in `auto` mode: tell the server when your agent's reply is in progress, so it can tell a short acknowledgement from the user taking the turn. While the agent is speaking, a "mm-hm" or "yeah" from the user does not take the turn: the server sends [`user_backchannel`](#user_backchannel) instead of `user_turn_taken`, and the turn commits as a non-user turn with `turn_kind: "backchannel"`.
+
+- **When to send `true`:** when you commit to playing a reply, typically on `committed`, or, for a reply you prepared on `eager_end_of_turn`, when you start playing it. Preparing a reply is not speaking: do not send `true` on `eager_end_of_turn` itself, since the turn can still resume. "Speaking" covers the wait for your speech synthesis and the gaps between sentences.
+- **When to send `false`:** when the last audio sample of the reply has played to the user, or when you stop the reply (barge-in). If you start playing a reply before `committed` and `turn_resumed` then cancels it, stop it and send `false`.
+- **Pauses:** if a reply pauses for more than about 2 seconds, send `false` for the pause and `true` again when it goes on.
+- **Default:** not speaking. Without this message, every acknowledgement can take the turn. Send it only when the value changes; repeating it changes nothing.
+- **Timing:** it applies at the point in the audio where it arrives: after the audio you sent before it. Send it on the same connection as your audio, at the moment the reply starts or stops.
+- **Other modes:** in `vad` and `manual` mode it is accepted and remembered, and has no effect. After a switch to `auto`, the remembered value applies.
+- `speaking` must be a boolean. Anything else, or a message without it, is a recoverable `invalid_request` and changes nothing.
+- Keep acoustic echo cancellation on. Without it, the agent's own voice can reach the microphone, open turns, and be taken for the user.
+
+## Server messages
+
+`draft`, `committed` and `progress` carry three watermarks, in milliseconds of audio: `audio_received_ms` (audio the server has received), `audio_processed_ms` (audio it has processed, never more than it received) and `audio_committed_ms` (the end of the audio covered by committed turns). The difference between the first two shows how far processing is behind your audio.
+
+### `session_started`
+
+| Field        | Type   | Description                                                                       |
+| ------------ | ------ | --------------------------------------------------------------------------------- |
+| `session_id` | string | The session's ID.                                                                 |
+| `request_id` | string | The same value as the `x-request-id` header. Include it when you contact support. |
+| `config`     | map    | The effective configuration, with defaults filled in.                             |
+| `limits`     | map    | `max_session_ms`, `max_turn_ms` and `max_frame_bytes`. See [Limits](#limits).     |
+
+Send audio after this message.
+
+### `speech_start`
+
+| Field        | Type    | Description                                        |
+| ------------ | ------- | -------------------------------------------------- |
+| `turn_index` | integer | The turn that opened, counting from 0.             |
+| `audio_ms`   | integer | Where the turn starts, slightly before the speech. |
+
+A turn opened: voice activity began. It is sent shortly after voice activity begins. In `auto` mode, noise and other voices open turns too, so wait for `user_turn_taken` before treating it as the user's turn. In `auto` mode it can come later if you stream faster than real time or in messages of about 0.3 seconds or more; the turns are the same as for a real-time stream. If the speaker is still talking when a turn ends, the next turn starts at that turn's `audio_end_ms`.
+
+### `user_turn_taken`
+
+| Field        | Type    | Description                                          |
+| ------------ | ------- | ---------------------------------------------------- |
+| `turn_index` | integer | The turn.                                            |
+| `audio_ms`   | integer | Where the server judged that the user took the turn. |
+
+`auto` mode only: the server judged that the user is taking their turn. It usually comes within the first second or so of speech, and at the latest right before `committed` (always for a turn ended by `finalize` or `audio_done`). At most once per turn. When the sound before the user's speech is committed on its own, this turn's `speech_start` and `user_turn_taken` come right after that `committed`.
+
+### `draft`
+
+| Field           | Type    | Description                                                       |
+| --------------- | ------- | ----------------------------------------------------------------- |
+| `turn_index`    | integer | The turn.                                                         |
+| `text`          | string  | The whole turn so far. Not final.                                 |
+| `language`      | string  | Optional. The language's English name. See [Language](#language). |
+| `language_code` | string  | Optional. ISO 639-1 code. See [Language](#language).              |
+| `audio_ms`      | integer | The audio position the draft covers up to.                        |
+
+Each draft **replaces** the previous one for the turn. Drafts are best effort, sent at most every `draft_interval_ms`, and only with `results.drafts: true`. Turn them on for live captions; an agent that acts on `eager_end_of_turn` and `committed` does not need them. Drafts may pause during long background sounds and resume when `user_turn_taken` comes.
+
+### `eager_end_of_turn`
+
+| Field           | Type    | Description                                 |
+| --------------- | ------- | ------------------------------------------- |
+| `turn_index`    | integer | The turn.                                   |
+| `text`          | string  | The turn's text. Can be empty.              |
+| `language`      | string  | Optional. See [Language](#language).        |
+| `language_code` | string  | Optional. See [Language](#language).        |
+| `audio_ms`      | integer | Optional. The audio position of the signal. |
+
+With `turn_detection.eager: true` in `auto` mode, and only after `user_turn_taken`: the turn has probably ended. `text` and the language are exactly what `committed` will say unless `turn_resumed` follows, so you can start preparing your response early. Not every user turn has one. It usually comes some time before `committed`, and sometimes right before it.
+
+### `turn_resumed`
+
+| Field        | Type    | Description |
+| ------------ | ------- | ----------- |
+| `turn_index` | integer | The turn.   |
+
+The speaker went on after `eager_end_of_turn`: discard that text. If you already started playing a reply to it and sent `agent_speaking: true`, stop the reply and send `agent_speaking: false`.
+
+### `user_backchannel`
+
+| Field        | Type    | Description                                                              |
+| ------------ | ------- | ------------------------------------------------------------------------ |
+| `turn_index` | integer | The open turn, or, if no turn is open, the index the next turn will get. |
+| `audio_ms`   | integer | Where the acknowledgement is in the audio.                               |
+
+`auto` mode only, while your agent is speaking (see [`agent_speaking`](#agent_speaking)): the user acknowledged ("mm-hm", "yeah", "right") without taking the turn. Keep talking. One message per acknowledgement. It always comes before the named turn's `committed`, and it can come before that turn's `speech_start`. A backchannel counts for the turn that contains it; that turn commits with `user_turn: false` and `turn_kind: "backchannel"` unless the user goes on to take the turn. A turn that opened in `vad` or `manual` mode never counts an acknowledgement. When your agent is not speaking, an acknowledgement takes the turn (`user_turn_taken`).
+
+### `committed`
+
+| Field            | Type    | Description                                                                                                                                             |
+| ---------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `turn_index`     | integer | The turn.                                                                                                                                               |
+| `text`           | string  | The final transcript of the turn. Can be empty.                                                                                                         |
+| `words`          | array   | Present when `ignore_timestamps` is `false`: `[{ "text", "start_ms", "end_ms" }]`, or `[]` when there is nothing to align.                              |
+| `language`       | string  | Optional. See [Language](#language).                                                                                                                    |
+| `language_code`  | string  | Optional. See [Language](#language).                                                                                                                    |
+| `audio_start_ms` | integer | Where the turn starts.                                                                                                                                  |
+| `audio_end_ms`   | integer | Where the turn ends.                                                                                                                                    |
+| `reason`         | string  | Why the turn ended: `eot`, `finalize`, `silence_timeout`, `max_turn_duration` or `audio_done`. See [Why a turn ended](#why-a-turn-ended).               |
+| `degraded`       | boolean | `true` when the final pass failed. See [Degraded commits](#degraded-commits).                                                                           |
+| `user_turn`      | boolean | `true` for the user's turn; `false` for a non-user turn. Always `true` in `vad` and `manual` mode. If it is ever missing, treat it as `true`.           |
+| `turn_kind`      | string  | `"user"` (exactly when `user_turn` is true), `"backchannel"` (a non-user turn holding an acknowledgement) or `"other"` (noise, another voice, unclear). |
+
+The final transcript of the turn. Decide whether to answer a turn by `user_turn`, never by `reason`: a turn the server ends itself (for example on `server_restarting`) has `reason: "finalize"` and may have `user_turn: false`. Treat a `turn_kind` you do not recognize like `"other"` when `user_turn` is false. A non-user turn is usually noise or another voice, often with empty `text`.
+
+### `vad`
+
+| Field      | Type    | Description                  |
+| ---------- | ------- | ---------------------------- |
+| `audio_ms` | integer | The audio position.          |
+| `score`    | number  | Voice activity, from 0 to 1. |
+
+Up to 10 per second, with `results.vad_events: true`.
+
+### `eot_prob`
+
+| Field        | Type    | Description                          |
+| ------------ | ------- | ------------------------------------ |
+| `turn_index` | integer | The turn.                            |
+| `audio_ms`   | integer | The audio position.                  |
+| `prob`       | number  | End-of-turn likelihood, from 0 to 1. |
+
+With `results.eot_events: true`, for display only. In `vad` mode it is 0.7 × the silence so far ÷ `silence_timeout_ms`: the turn ends where it reaches 0.7.
+
+### `configured`
+
+| Field     | Type    | Description                                                |
+| --------- | ------- | ---------------------------------------------------------- |
+| `ok`      | boolean | `false` means nothing changed.                             |
+| `config`  | map     | The configuration in effect after the `configure`.         |
+| `message` | string  | Present when `ok` is `false`: why, in English, for humans. |
+
+The reply to `configure`. `ok: false` comes for an invalid value, such as a `silence_timeout_ms` outside the mode's range, or a value over a limit.
+
+### `progress`
+
+Watermarks only. Sent every 5 seconds while the client sends nothing.
+
+### `error`
+
+| Field         | Type    | Description                                                               |
+| ------------- | ------- | ------------------------------------------------------------------------- |
+| `code`        | integer | An HTTP-style status: 400, 408, 413, 500, 503 or 504.                     |
+| `error_type`  | string  | What went wrong. See [Errors and close codes](#errors-and-close-codes).   |
+| `message`     | string  | A short English description, for humans. Do not parse it.                 |
+| `request_id`  | string  | The session's request ID.                                                 |
+| `recoverable` | boolean | `true` when the session continues, except `server_restarting`: see below. |
+
+### `session_done`
+
+| Field   | Type | Description                                                                                     |
+| ------- | ---- | ----------------------------------------------------------------------------------------------- |
+| `stats` | map  | `audio_ms` (audio received), `turns` (every committed turn, user turn or not) and `request_id`. |
+
+Sent after `audio_done`, just before the server closes the connection with 1000.
+
+## Guarantees
+
+- Every turn has exactly one `speech_start` and one `committed`, and nothing about that turn follows its `committed`.
+- `user_turn_taken` comes at most once per turn, between `speech_start` and `committed`, and before any `eager_end_of_turn`. For a turn opened in `auto` mode, `user_turn` is true exactly when `user_turn_taken` was sent.
+- A turn has at most one `eager_end_of_turn` that no `turn_resumed` follows. If it has one, `committed.text` and `committed.language_code` equal its own.
+- `user_turn` is true exactly when `turn_kind` is `"user"`.
+- `user_backchannel` comes only in `auto` mode, while your agent is speaking, and before its turn's `committed`.
+- `language` and `language_code` are both present or both absent.
+- `committed.words` is present exactly when `ignore_timestamps` was `false` when the turn opened and the commit is not degraded.
+
+## Why a turn ended
+
+`committed.reason` depends on the mode:
+
+| Mode     | `eot`                                                                                                                                                                                        | `silence_timeout`                                                      |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `auto`   | Turn detection ended the turn: the speaker finished, or stopped mid-sentence and did not go on (about 2 seconds later). Non-user turns, such as a sound that went quiet, end with `eot` too. | The safety net ended a user turn (`silence_timeout_ms`, default 5000). |
+| `vad`    | `silence_timeout_ms` of silence (default 700).                                                                                                                                               | Never.                                                                 |
+| `manual` | Never.                                                                                                                                                                                       | `silence_timeout_ms` of silence (never at the default 60000).          |
+
+In every mode:
+
+- `finalize`: you sent `finalize`, or the server ended the session (`server_restarting`, `max_duration_exceeded`).
+- `max_turn_duration`: the turn reached 60 seconds, or 20 seconds for an `auto` turn without `user_turn_taken`.
+- `audio_done`: you sent `audio_done`.
+
+**Treat a `reason` you do not recognize like `eot`.** To decide whether to answer a turn, use `user_turn`, not `reason`.
+
+## Speakers
+
+`text` can contain speaker tags `<|speaker:N|>` (N = 0, 1, ...). Numbers are stable within a session and start over in a new one. Strip the tags if you only need the words, or send `results.diarize: false` to get text without them. With `diarize: false`, whitespace in the text, line breaks included, is collapsed to single spaces and trimmed; sound tags in square brackets, such as `[laughter]`, stay.
+
+## Language
+
+`draft`, `eager_end_of_turn` and `committed` carry the language of their own `text`. Use `language_code` (ISO 639-1) in your code; `language` is its English name, for display, with the same names as [`POST /v1/asr`](/api-reference/endpoint/openapi-v1/speech-to-text). The language is detected from that message's text alone, ignoring speaker tags, sound tags and interjections such as "okay" or "hmm". It is one of:
+
+`ar`, `zh`, `cs`, `da`, `nl`, `en`, `fi`, `fr`, `de`, `el`, `hi`, `hu`, `id`, `it`, `ja`, `ko`, `mk`, `ms`, `fa`, `pl`, `pt`, `ro`, `ru`, `es`, `sv`, `tl`, `th`, `tr`, `vi`.
+
+Both fields are omitted when the text is empty, too short to tell (most replies under three words, such as "Okay" or "Yes.") or ambiguous; keep the last label you saw. Mixed-language text gets one label, the dominant language. Drafts are labeled one by one and may change; `committed` is final.
+
+## Degraded commits
+
+If the final pass for a turn fails, you receive `error` with `engine_error` and `recoverable: true`, and then a `committed` with `degraded: true`. Its `text` and language are those of the turn's last draft (empty and without a language when the turn had no draft, as with `results.drafts: false`), and it has no `words`. The session continues.
+
+## Errors and close codes
+
+| `error_type`            | `code`          | Recoverable | Then                                                                                                                                                                  |
+| ----------------------- | --------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `invalid_config`        | 400             | No          | Close 4400. A bad or missing `config`, a value over a limit, or `silence_timeout_ms` outside the mode's range.                                                        |
+| `unsupported_audio`     | 400             | No          | Close 4400. A sample rate not in the list, a format other than `pcm_s16le`, or more than one channel.                                                                 |
+| `invalid_request`       | 400             | Yes         | The session continues. A text frame, an unreadable message, an over-limit `context_add`, a second `config`, or `agent_speaking` without a boolean `speaking`.         |
+| `idle_timeout`          | 408             | No          | Close 4408 after 30 seconds without any client message.                                                                                                               |
+| `max_duration_exceeded` | 413             | No          | The open turn is committed (`reason: "finalize"`), then close 4413.                                                                                                   |
+| `frame_too_large`       | 413             | No          | Close 1009. A message over `limits.max_frame_bytes`.                                                                                                                  |
+| `engine_error`          | 500, 503 or 504 | Yes         | A [degraded `committed`](#degraded-commits) follows (503: temporarily unavailable; 504: timed out). If the session could not start: `recoverable: false`, close 4500. |
+| `internal`              | 500             | No          | Close 4500.                                                                                                                                                           |
+| `server_restarting`     | 503             | Yes         | The open turn is committed (`reason: "finalize"`), then close 1012. Reconnect for a new session.                                                                      |
+
+`server_restarting` is the one recoverable error that closes the connection: the session cannot go on, but you can reconnect at once for a new one. If the first message is not a readable `config`, you get an `error` with `recoverable: false` and close 4400.
+
+A normal end is `session_done`, then close 1000. Match on `error_type`, not on `message`. In `auto` mode, a turn the server commits before closing may have `user_turn: false`.
+
+## Limits
+
+| Limit                | Value                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------ |
+| Audio                | `pcm_s16le`, mono, at 8000, 12000, 16000, 22050, 24000, 32000, 44100 or 48000 Hz           |
+| Session length       | 3,600 seconds (`limits.max_session_ms`)                                                    |
+| Turn length          | 60 seconds (`limits.max_turn_ms`); 20 seconds for an `auto` turn without `user_turn_taken` |
+| `silence_timeout_ms` | `auto`: 3000–60000; `vad` and `manual`: 300–60000                                          |
+| Message size         | 1 MiB (`limits.max_frame_bytes`)                                                           |
+| First `config`       | Within 10 seconds of connecting                                                            |
+| Idle                 | 30 seconds without any client message                                                      |
+| Drafts               | At most every 250 ms                                                                       |
+| Context              | 32 items × 2,000 characters per message; 100 terms × 32 characters                         |
+
+## Example
+
+A session in `auto` mode with eager end of turn, drafts and word timings. `C` is the client and `S` the server; fields are abbreviated.
+
+```text
+C → config {audio: {format: "pcm_s16le", sample_rate: 16000, channels: 1},
+            turn_detection: {mode: "auto", eager: true},
+            results: {drafts: true, ignore_timestamps: false}}
+S → session_started {seq: 0, session_id: "s_ab12…", request_id: "…", config: {…}, limits: {…}}
+C → audio {data: <bin>} …
+S → speech_start {seq: 1, turn_index: 0, audio_ms: 300}
+S → draft {seq: 2, turn_index: 0, text: "what's the", audio_ms: 900, …}
+S → user_turn_taken {seq: 3, turn_index: 0, audio_ms: 1280}
+S → draft {seq: 4, turn_index: 0, text: "what's the weather like", language: "English",
+           language_code: "en", audio_ms: 1800, …}
+S → eager_end_of_turn {seq: 5, turn_index: 0, text: "What's the weather like?",
+                       language: "English", language_code: "en", audio_ms: 2240}
+S → committed {seq: 6, turn_index: 0, text: "What's the weather like?", words: […],
+               language: "English", language_code: "en", audio_start_ms: 300,
+               audio_end_ms: 2880, reason: "eot", degraded: false, user_turn: true,
+               turn_kind: "user", …}
+C → agent_speaking {speaking: true}
+C → context_add {items: [{role: "assistant", text: "Sunny, 24 degrees, and a light breeze."}]}
+S → speech_start {seq: 7, turn_index: 1, audio_ms: 3520}
+S → user_backchannel {seq: 8, turn_index: 1, audio_ms: 3840}
+S → committed {seq: 9, turn_index: 1, text: "Mm-hm.", audio_start_ms: 3520, audio_end_ms: 6080,
+               reason: "eot", degraded: false, user_turn: false, turn_kind: "backchannel", …}
+C → agent_speaking {speaking: false}
+S → speech_start {seq: 10, turn_index: 2, audio_ms: 7040}
+S → committed {seq: 11, turn_index: 2, text: "", audio_start_ms: 7040, audio_end_ms: 8640,
+               reason: "eot", degraded: false, user_turn: false, turn_kind: "other", …}
+C → audio_done
+S → session_done {seq: 12, stats: {audio_ms: 8960, turns: 3, request_id: "…"}}
+    close 1000
+```
+
+Turn 0 is the user's turn. The agent prepared its reply on `eager_end_of_turn`; once the turn commits, it starts playing the reply and sends `agent_speaking: true`. The first draft has no language: "what's the" is too short to tell. Turn 1 is the user saying "mm-hm" while the agent speaks: the server sends `user_backchannel`, so the agent keeps talking, and the turn commits as a non-user turn that is not added to the context. When the reply has played out, the agent sends `agent_speaking: false`. Turn 2 is a non-user turn, a sound such as a cough: the agent ignores it.
+
+## Compatibility rules
+
+- **Ignore fields and message types you do not know.** Version 1 only ever adds them. Breaking changes get a new path (`/v2/...`).
+- Treat an unknown `reason` like `eot`, and an unknown `turn_kind` like `"other"` when `user_turn` is `false`.
+- Match errors on `error_type`, not on `message`.
+
+## Related
+
+- [Realtime Speech to Text](/features/speech-to-text/realtime): what the realtime model does and when to use it.
+- [Transcribe a live audio stream](/developer-guide/sdk-guide/cookbook/realtime-transcription): a complete client in Python and Node.js, and a browser microphone relay.
+- [Build a realtime voice agent](/developer-guide/sdk-guide/cookbook/realtime-voice-agent): turn-taking, barge-in and backchannels.
+- [Speech to Text](/api-reference/endpoint/openapi-v1/speech-to-text): transcribe a complete audio file with `POST /v1/asr`.

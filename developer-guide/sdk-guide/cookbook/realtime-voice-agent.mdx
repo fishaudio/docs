@@ -1,0 +1,328 @@
+---
+title: "Build a realtime voice agent: streaming speech in, reply, speech out"
+description: "Use realtime speech to text to know when the user has finished, start replies early, keep talking through backchannels and stop on interruptions"
+icon: "headset"
+hidden: true
+noindex: true
+---
+
+import Prerequisites from "/snippets/prerequisites.mdx";
+
+<Note>
+  This guide is for building your own voice agent on the realtime speech-to-text
+  API. To have Fish Audio run the whole agent for you, see
+  [Agents](/agents/overview).
+</Note>
+
+<Note>
+  Realtime speech to text is in preview and is enabled per team. Contact
+  [support@fish.audio](mailto:support@fish.audio) to turn it on for your team.
+  Until then, connecting returns `403`.
+</Note>
+
+## Prerequisites
+
+<Prerequisites />
+
+Install a WebSocket client and a MessagePack library:
+
+```bash
+pip install "websockets>=14" msgpack
+```
+
+Read [Transcribe a live audio stream](/developer-guide/sdk-guide/cookbook/realtime-transcription) first if you have not used the realtime endpoint before.
+
+## How a conversation flows
+
+A voice agent has to answer three questions while audio streams in: has the user finished, is a sound the user talking to the agent at all, and is the user interrupting or just saying "mm-hm"? In the default `auto` mode, the server answers them with events. This is what the recipe below receives for a 15-second clip in which the user asks a question, says "uh-huh" while the agent answers, and then interrupts:
+
+| Elapsed | Server event                                                                                   | What the agent does                                                                             |
+| ------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| 3.8 s   | `speech_start` #0                                                                              | Nothing yet: a turn opened on voice activity.                                                   |
+| 4.5 s   | `user_turn_taken` #0                                                                           | The user is speaking to the agent.                                                              |
+| 8.2 s   | `eager_end_of_turn` #0 "Can you tell me what time the pharmacy on Main Street closes tonight?" | Starts the LLM on this text.                                                                    |
+| 8.7 s   | `committed` #0, `user_turn: true`, same text                                                   | Reuses the reply it started, sends `agent_speaking: true` and the reply as context, and speaks. |
+| 10.9 s  | `speech_start` #1                                                                              | The agent is speaking: lowers its volume (ducks), in case this is an interruption.              |
+| 11.9 s  | `user_backchannel` #1                                                                          | "Uh-huh" is only an acknowledgement: restores the volume and keeps talking.                     |
+| 13.8 s  | `committed` #1, `user_turn: false`, `turn_kind: "backchannel"`                                 | Nothing to answer.                                                                              |
+| 14.2 s  | `speech_start` #2                                                                              | Ducks again.                                                                                    |
+| 14.7 s  | `user_turn_taken` #2                                                                           | The user is interrupting: stops speaking and sends `agent_speaking: false`.                     |
+
+Elapsed times are measured from the start of the script, which connects about 0.6 seconds before the audio starts.
+
+## Recipe
+
+The microphone is a WAV file streamed in real time, and `think()` and `speak()` are placeholders for your LLM and your text-to-speech playback. Everything else is the agent loop as you would ship it.
+
+```python voice_agent.py
+"""A voice-agent loop on Fish Audio realtime speech-to-text.
+
+    pip install "websockets>=14" msgpack
+    export FISH_API_KEY=...
+    python voice_agent.py speech.wav
+
+The "microphone" is a 16-bit mono WAV file streamed in real time, and think() / speak() are
+placeholders: replace them with your LLM and your text-to-speech playback.
+"""
+import asyncio
+import contextlib
+import os
+import re
+import sys
+import time
+import wave
+
+import msgpack
+import websockets
+
+URL = "wss://api.fish.audio/v1/asr/realtime"
+CHUNK_MS = 100
+TAGS = re.compile(r"<\|[^|]*\|>")  # speaker tags such as <|speaker:0|>
+T0 = time.monotonic()
+
+
+def log(*args):
+    print(f"{time.monotonic() - T0:6.2f}s", *args)
+
+
+def words(text):
+    """The transcript without speaker tags."""
+    return TAGS.sub("", text or "").strip()
+
+
+async def think(history):
+    """Placeholder LLM: replace with a call to your model."""
+    await asyncio.sleep(0.5)
+    return f"You asked: {history[-1]['content']} Let me check that for you, it will only take a moment."
+
+
+async def speak(text):
+    """Placeholder TTS: returns when the last sample has played."""
+    await asyncio.sleep(len(text) * 0.06)
+
+
+def duck(on):
+    """Placeholder: lower (or restore) the agent's playback volume."""
+    log("  duck" if on else "  unduck")
+
+
+class Agent:
+    def __init__(self, ws):
+        self.ws = ws
+        self.history = []     # the conversation, for your LLM
+        self.prepared = None  # (turn_index, task): a reply started on eager_end_of_turn
+        self.reply = None     # task: the reply being prepared or played
+        self.speaking = False
+        self.hung_up = False  # the caller's audio has ended: answer nothing more
+
+    async def send(self, message):
+        if message["type"] != "audio":
+            log("->", message)
+        await self.ws.send(msgpack.packb(message))
+
+    def start_thinking(self, text):
+        return asyncio.create_task(think(self.history + [{"role": "user", "content": text}]))
+
+    def drop_prepared(self):
+        if self.prepared:
+            self.prepared[1].cancel()
+            self.prepared = None
+
+    async def stop(self):
+        """Barge-in: stop the reply (its finally sends agent_speaking false)."""
+        if self.reply:
+            self.reply.cancel()
+            with contextlib.suppress(asyncio.CancelledError, websockets.ConnectionClosed):
+                await self.reply
+            self.reply = None
+
+    async def play(self, thinking):
+        """Speak a reply. Runs from committed until the last sample has played."""
+        try:
+            self.speaking = True
+            await self.send({"type": "agent_speaking", "speaking": True})  # committed to replying
+            text = await thinking  # the LLM may still be working: that is part of the reply
+            await self.send({"type": "context_add", "items": [{"role": "assistant", "text": text}]})
+            self.history.append({"role": "assistant", "content": text})
+            await speak(text)
+        finally:
+            self.speaking = False
+            await self.send({"type": "agent_speaking", "speaking": False})  # played out, or stopped
+
+    async def on_event(self, m):
+        t = m["type"]
+        if t == "eager_end_of_turn":
+            self.drop_prepared()
+            if words(m["text"]):  # start the reply early; committed will have the same text
+                self.prepared = (m["turn_index"], self.start_thinking(words(m["text"])))
+        elif t == "turn_resumed":
+            self.drop_prepared()  # the user went on: that text is not final
+        elif t == "speech_start":
+            if self.speaking:
+                duck(True)  # maybe an interruption, maybe "mm-hm"
+        elif t == "user_backchannel":
+            duck(False)  # the user only acknowledged: keep talking
+        elif t == "user_turn_taken":
+            await self.stop()  # the user is taking the turn: stop talking
+        elif t == "committed":
+            text = words(m["text"])
+            if m.get("user_turn", True) and text and not self.hung_up:
+                if self.prepared and self.prepared[0] == m["turn_index"]:
+                    thinking = self.prepared[1]  # reuse the reply started on eager_end_of_turn
+                    self.prepared = None
+                else:
+                    self.drop_prepared()
+                    thinking = self.start_thinking(text)
+                self.history.append({"role": "user", "content": text})
+                await self.stop()
+                self.reply = asyncio.create_task(self.play(thinking))
+            else:  # not the user's turn (noise, another voice, a backchannel), or no words
+                if self.prepared and self.prepared[0] == m["turn_index"]:
+                    self.drop_prepared()
+                if self.speaking:
+                    duck(False)
+
+
+async def microphone(agent, wav, rate):
+    """Stream the file in real time, then end the session."""
+    loop = asyncio.get_running_loop()
+    start, sent_ms = loop.time(), 0
+    while chunk := wav.readframes(rate * CHUNK_MS // 1000):
+        await agent.send({"type": "audio", "data": chunk})
+        sent_ms += CHUNK_MS
+        await asyncio.sleep(max(0.0, start + sent_ms / 1000 - loop.time()))
+    agent.hung_up = True
+    await agent.stop()  # agent_speaking false goes before audio_done
+    await agent.send({"type": "audio_done"})
+
+
+async def main(path):
+    wav = wave.open(path, "rb")
+    rate = wav.getframerate()
+    headers = {"Authorization": f"Bearer {os.environ['FISH_API_KEY']}"}
+    async with websockets.connect(URL, additional_headers=headers) as ws:
+        agent = Agent(ws)
+        await agent.send({
+            "type": "config",
+            "audio": {"format": "pcm_s16le", "sample_rate": rate, "channels": 1},
+            "turn_detection": {"mode": "auto", "eager": True},
+            "context": {"terms": ["Main Street"]},
+        })
+        mic = None
+        try:
+            async for frame in ws:
+                m = msgpack.unpackb(frame)
+                shown = {k: v for k, v in m.items() if k in ("turn_index", "text", "user_turn", "turn_kind", "reason")}
+                log("<-", m["type"], shown)
+                if m["type"] == "session_started":
+                    mic = asyncio.create_task(microphone(agent, wav, rate))
+                await agent.on_event(m)
+        finally:
+            if mic:
+                mic.cancel()
+            await agent.stop()
+    log("closed", ws.close_code)
+
+
+if __name__ == "__main__":
+    asyncio.run(main(sys.argv[1]))
+```
+
+Run it with your API key in `FISH_API_KEY`:
+
+```bash
+python voice_agent.py speech.wav
+```
+
+The recipe keeps a reply's full text in its history even when the user interrupts it. In production, keep only the part the user heard.
+
+## Decide when to answer
+
+Answer a turn when `committed.user_turn` is `true` and its text, without speaker tags, is not empty. Do not decide by `reason`: a turn can end for several reasons, and non-user turns end with `eot` too. If `user_turn` is ever missing, treat it as `true`.
+
+A turn with `user_turn: false` is not the user talking to your agent: usually background noise, a TV or another person nearby (`turn_kind: "other"`), or an acknowledgement while your agent was speaking (`turn_kind: "backchannel"`). Its text can be shown dimmed in a transcript, or left out.
+
+In `auto` mode, short pauses in the middle of a sentence usually do not end the turn: the server judges from what was said and how whether the speaker has finished. A speaker who stops mid-sentence and does not go on has the turn ended about 2 seconds later. `silence_timeout_ms` (default 5000) is only a safety net.
+
+## Start early with eager end of turn
+
+With `turn_detection.eager: true`, the server sends `eager_end_of_turn` once the turn has probably ended, before `committed`. Its text is exactly what `committed` will say unless `turn_resumed` follows, so you can start your LLM on it:
+
+- On `eager_end_of_turn` with non-empty text, start preparing a reply. Do not send `agent_speaking: true` until you start playing it; waiting for `committed` before you play is the safe default.
+- On `turn_resumed`, the user went on: cancel the prepared reply. A new `eager_end_of_turn` can follow.
+- On `committed`, if you prepared a reply for this turn, use it; otherwise start one now.
+
+Not every turn has an `eager_end_of_turn`, and it can come right before `committed`, so your agent must also work without it. In the clip above, the eager signal came about half a second before the final transcript.
+
+## Tell the server when your agent speaks
+
+Send `agent_speaking` so the server can tell an acknowledgement from an interruption:
+
+- Send `{"type": "agent_speaking", "speaking": true}` when you commit to playing a reply: on `committed`, or, if you play a reply before `committed`, when playback starts. The wait for your speech synthesis and the gaps between sentences count as speaking. If the first audio is more than about 2 seconds away (a slow LLM or a tool call), treat the wait as a pause, as below.
+- Send `{"type": "agent_speaking", "speaking": false}` when the last audio sample has played to the user, not when synthesis finishes, or when you stop the reply. If `turn_resumed` cancels a reply that was already playing, stop it and send `false`.
+- If a reply pauses for more than about 2 seconds, for example while a tool call runs, send `false` for the pause and `true` when it goes on.
+- Send it on the same connection as your audio, at the moment the state changes, and only when it changes. It applies at its position in the audio stream.
+
+Without `agent_speaking`, every acknowledgement takes the turn, and you have to tell "mm-hm" from an interruption yourself.
+
+## Handle interruptions and backchannels
+
+While your agent is speaking:
+
+1. On `speech_start`, duck the agent's audio: the user may be interrupting. For the earliest signal, turn on `results.vad_events` and duck on `vad` messages instead.
+2. On `user_backchannel`, the user only acknowledged ("mm-hm", "yeah", "right", "uh-huh"): restore the volume and keep talking.
+3. On `user_turn_taken`, the user is taking the turn: stop the agent and send `agent_speaking: false`.
+4. On `committed` with `user_turn: false`, restore the volume.
+5. Cap any duck on your side to a few seconds: a turn over continuous background noise can last up to 20 seconds. When the user starts talking over such noise, `user_turn_taken` can come a few hundred milliseconds later than usual.
+
+In `vad` and `manual` mode there is no `user_turn_taken` or `user_backchannel`: stop on `speech_start` instead.
+
+## Give the model context
+
+The server uses the conversation to recognize names and follow-ups:
+
+- **Custom vocabulary:** send names, products and jargon in `context.terms` (up to 100 terms of up to 32 characters). Replace the list during the session with `configure`, for example after you look up the caller's account.
+- **What your agent said:** send each line your agent speaks as an `assistant` item with `context_add`, right after the `committed` it answers. The recipe does this when a reply starts.
+- **Conversation history:** committed user turns are added automatically; non-user turns are not. Speaker labels stay the same for the whole session.
+- **Prior conversation:** to continue a conversation in a new session, pass earlier lines in `context.history` in `config`.
+
+```json
+{
+  "type": "config",
+  "audio": { "format": "pcm_s16le", "sample_rate": 16000, "channels": 1 },
+  "turn_detection": { "mode": "auto", "eager": true },
+  "context": {
+    "history": [
+      {
+        "role": "assistant",
+        "text": "Thanks for calling Main Street Pharmacy."
+      },
+      { "role": "user", "text": "Hi, I'm calling about my prescription." }
+    ],
+    "terms": ["Main Street Pharmacy", "Lisinopril"]
+  }
+}
+```
+
+## Capture audio well
+
+- **Keep echo cancellation on.** Without it, the agent's own voice reaches the microphone, opens turns and can be taken for the user. In a browser, request `echoCancellation: true` from `getUserMedia`.
+- **Turn automatic gain control off where you can** (`autoGainControl: false` in a browser), so quiet background sound is not amplified between phrases.
+- **Test with headphones first.** They keep the agent's voice out of the microphone, so you can check turn-taking before you tune echo cancellation.
+- **Send audio as you capture it**, mono 16-bit PCM in 80–100 ms messages, at the device's own rate if it is one of the supported rates. The server converts the rate, so do not resample. Telephony audio at 8 kHz is supported; decode μ-law or A-law call audio to 16-bit PCM first.
+- **Keep keys on your server.** In a browser, capture audio and relay it through your server, as in [Capture from a browser microphone](/developer-guide/sdk-guide/cookbook/realtime-transcription#capture-from-a-browser-microphone). Send `agent_speaking` on that same connection so it stays in order with the audio.
+
+## Languages
+
+Turn detection, including eager end of turn, backchannel detection and background awareness, is trained on a set of major languages. Transcription and language identification cover many more languages. In languages outside that set, a turn ends about 2 seconds after the speaker stops and there is no `eager_end_of_turn`. For faster turns in those languages, use `vad` mode with a shorter `silence_timeout_ms`, or end turns yourself with `finalize`.
+
+## Connect your LLM and speech
+
+Replace `think()` with a call to your LLM, and `speak()` with text to speech and playback. To start speaking before the LLM has finished, stream its tokens into the [TTS WebSocket](/developer-guide/sdk-guide/cookbook/realtime-llm-to-speech) and play audio chunks as they arrive. Send `agent_speaking: false` when the last chunk has played, not when synthesis ends.
+
+## Related
+
+- [Realtime Speech to Text](/features/speech-to-text/realtime)
+- [Transcribe a live audio stream](/developer-guide/sdk-guide/cookbook/realtime-transcription)
+- [WebSocket Realtime Speech to Text reference](/api-reference/endpoint/websocket/asr-realtime)
+- [Realtime: LLM tokens → speech](/developer-guide/sdk-guide/cookbook/realtime-llm-to-speech)

@@ -1,0 +1,236 @@
+---
+title: "Realtime Speech to Text"
+sidebarTitle: "Realtime"
+description: "Transcribe live audio turn by turn with transcribe-1-pro-realtime: turn detection that knows when the user has finished, backchannel and background awareness, and conversation context"
+icon: "microphone-lines"
+hidden: true
+noindex: true
+---
+
+Stream live audio over a WebSocket and get the transcript turn by turn while people speak. `transcribe-1-pro-realtime` does more than transcribe: it decides when the user has finished their turn, usually tells the user talking to your app apart from background sound, and notices when a "mm-hm" is only an acknowledgement. This helps your voice agent decide when to answer, when to keep talking and when to stop. Connect to `wss://api.fish.audio/v1/asr/realtime`, send audio as you capture it, and read the events the server sends back.
+
+<Note>
+  Realtime speech to text is in preview and is enabled per team. Contact
+  [support@fish.audio](mailto:support@fish.audio) to turn it on for your team.
+  Until then, connecting returns `403`.
+</Note>
+
+<CardGroup cols={3}>
+  <Card
+    title="API reference"
+    icon="brackets-curly"
+    href="/api-reference/endpoint/websocket/asr-realtime"
+  >
+    Every message, field, error and limit.
+  </Card>
+  <Card
+    title="Quickstart"
+    icon="book-open"
+    href="/developer-guide/sdk-guide/cookbook/realtime-transcription"
+  >
+    Stream a file or a browser microphone.
+  </Card>
+  <Card
+    title="Voice agent guide"
+    icon="headset"
+    href="/developer-guide/sdk-guide/cookbook/realtime-voice-agent"
+  >
+    Turn-taking, interruptions and backchannels.
+  </Card>
+</CardGroup>
+
+## When to use it
+
+<CardGroup cols={2}>
+  <Card
+    title="Voice agents"
+    icon="headset"
+    href="/developer-guide/sdk-guide/cookbook/realtime-voice-agent"
+  >
+    Know when the user has finished, start replies early, and handle
+    interruptions.
+  </Card>
+  <Card
+    title="Live captions"
+    icon="closed-captioning"
+    href="/developer-guide/sdk-guide/cookbook/realtime-transcription"
+  >
+    Show live drafts as people speak, then the final text for each turn.
+  </Card>
+  <Card title="Voice commands" icon="microphone-lines">
+    Act on what the user said as soon as the turn ends, or on button release
+    with push-to-talk.
+  </Card>
+  <Card title="Phone calls" icon="phone">
+    Stream 8 kHz call audio as it arrives. Decode μ-law or A-law audio to 16-bit
+    PCM first; the server converts the sample rate.
+  </Card>
+</CardGroup>
+
+To transcribe a recording you already have, use [`POST /v1/asr`](/features/speech-to-text) with `transcribe-1-pro` instead:
+
+|                | Realtime (`/v1/asr/realtime`)                                  | File (`POST /v1/asr`)                                      |
+| -------------- | -------------------------------------------------------------- | ---------------------------------------------------------- |
+| Model          | `transcribe-1-pro-realtime`                                    | `transcribe-1-pro`                                         |
+| Input          | Live 16-bit PCM over a WebSocket                               | A complete audio file (WAV, MP3, Opus, and more)           |
+| Output         | Events per turn: drafts, turn signals and the final transcript | One transcript, with optional timestamps and speaker turns |
+| Turn detection | Yes                                                            | No                                                         |
+| Session length | Up to 60 minutes                                               | Recordings up to 60 minutes                                |
+
+The realtime endpoints of the [compatible APIs](/developer-guide/compat/capabilities) are separate from this endpoint. They use manual commit and have no server-side turn detection.
+
+## Quick start
+
+The SDKs do not wrap this endpoint; you connect with any WebSocket client and exchange MessagePack messages.
+
+<Steps>
+  <Step title="Connect">
+    Open `wss://api.fish.audio/v1/asr/realtime` from your server with the header
+    `Authorization: Bearer <API key>`.
+  </Step>
+  <Step title="Configure the session">
+    Send a `config` message with your audio format and options, and wait for
+    `session_started`.
+  </Step>
+  <Step title="Stream audio">
+    Send `audio` messages with 16-bit mono PCM, 80–100 ms each, as you capture
+    it.
+  </Step>
+  <Step title="Read the transcript">
+    Each turn ends with one `committed` message holding its final text. Answer
+    it if `user_turn` is `true`.
+  </Step>
+  <Step title="Finish">
+    Send `audio_done`. The server commits the last turn, sends `session_done`
+    and closes the connection.
+  </Step>
+</Steps>
+
+```json
+{
+  "type": "config",
+  "audio": { "format": "pcm_s16le", "sample_rate": 16000, "channels": 1 },
+  "turn_detection": { "mode": "auto", "eager": true },
+  "results": { "drafts": true }
+}
+```
+
+[Transcribe a live audio stream](/developer-guide/sdk-guide/cookbook/realtime-transcription) has complete, tested clients in Python and Node.js, and a browser microphone page with a server relay.
+
+## How a session works
+
+Audio is divided into turns. A turn opens when voice activity begins (`speech_start`) and ends with exactly one `committed` message, which holds the final transcript and says why the turn ended. In between, you can receive live `draft` text and turn signals:
+
+```text
+speech_start → draft … → user_turn_taken → draft … → eager_end_of_turn → committed
+```
+
+- `user_turn_taken`: the server judged that the user is taking their turn.
+- `eager_end_of_turn`: the turn has probably ended; its text equals the final transcript unless `turn_resumed` follows.
+- `committed`: the final transcript. `user_turn` says whether it was the user's turn.
+
+## Smart Turn Detection
+
+In the default `auto` mode, the server's turn detection decides when a turn ends, from what was said and how, not from silence alone.
+
+### Eager end of turn
+
+With `turn_detection.eager: true`, you receive `eager_end_of_turn` as soon as the turn has probably ended, before the final transcript. Its text is exactly the text `committed` will have, unless `turn_resumed` follows because the user went on. A voice agent can start its LLM on the eager text and save that time.
+
+### Backchannel detection
+
+Tell the server when your agent is speaking with `agent_speaking`. While it speaks, a short "mm-hm", "yeah", "right" or "uh-huh" from the user produces `user_backchannel`: the agent keeps talking. A real interruption produces `user_turn_taken`: the agent stops.
+
+### Background awareness
+
+Noise, a TV or side conversations usually become non-user turns, committed with `user_turn: false`, so your agent does not answer them.
+
+### Room to think
+
+Short pauses in the middle of a sentence usually do not end the turn, so people can stop to think. When a speaker stops mid-sentence and does not go on, the turn ends about 2 seconds later. As a further safety net, a user turn with no voice activity for `silence_timeout_ms` (default 5 seconds) always ends.
+
+## History Aware Transcription
+
+The server uses the conversation to recognize names and follow-ups.
+
+- **Custom vocabulary:** list names, products and jargon in `context.terms`, up to 100 terms of up to 32 characters. Update the list during the session with `configure`.
+- **What the agent just said:** send each line your agent speaks with `context_add` as an `assistant` item, so the user's answer is heard in context.
+- **Conversation history:** recent turns of the session are used as context, and speaker labels such as `<|speaker:0|>` stay the same for the whole session.
+- **Prior conversation:** start a session with earlier lines in `context.history`.
+
+## Turn detection modes
+
+| Mode             | A turn ends when                                                   | Use it for                             |
+| ---------------- | ------------------------------------------------------------------ | -------------------------------------- |
+| `auto` (default) | Turn detection judges that the user has finished.                  | Voice agents and conversations.        |
+| `vad`            | A fixed silence has passed (`silence_timeout_ms`, default 700 ms). | Simple silence-based endpointing.      |
+| `manual`         | You send `finalize`.                                               | Push-to-talk, or your own endpointing. |
+
+Eager end of turn, backchannel detection and background awareness are available in `auto` mode, when the session starts in `auto` (the default). In `vad` and `manual` mode, and after a later switch to `auto` from another mode, every turn is a user turn. See [Turn detection modes](/api-reference/endpoint/websocket/asr-realtime#turn-detection-modes) for details.
+
+## Languages
+
+Smart Turn Detection is trained on a set of major languages. Transcription covers many more languages, and `draft`, `eager_end_of_turn` and `committed` carry the language of their own text as `language_code` when it can be identified, one of 29 [supported codes](/api-reference/endpoint/websocket/asr-realtime#language).
+
+In languages outside that set, a turn ends about 2 seconds after the speaker stops, and there is no eager signal. For faster turns in those languages, use `vad` mode, or end turns yourself with `finalize`.
+
+## Latency
+
+Measured on the production service with synthetic speech:
+
+- The first text, a `draft` (with `results.drafts: true`), arrives about 0.5 seconds after speech starts.
+- `eager_end_of_turn` arrives about 0.6 seconds after the speaker stops.
+- `committed` arrives about 1.1 seconds after the speaker stops.
+
+Your network and how you send audio add to these times. Send audio as you capture it, in 80–100 ms messages.
+
+## Implementation details
+
+### Audio
+
+Send 16-bit little-endian PCM, mono, at 8000, 12000, 16000, 22050, 24000, 32000, 44100 or 48000 Hz. The server converts the sample rate, so you never need to resample. Compressed formats such as Opus or MP3 are not accepted on this endpoint.
+
+### Speakers
+
+Transcripts contain speaker tags such as `<|speaker:0|>`, stable within a session. Strip them, or send `results.diarize: false` for plain text.
+
+### Keys and browsers
+
+Your API key travels in a request header. Connect from your server, never from a web page. To transcribe a browser microphone, relay the audio through your server, as shown in the [quickstart](/developer-guide/sdk-guide/cookbook/realtime-transcription#capture-from-a-browser-microphone).
+
+### Limits
+
+A session lasts up to 60 minutes and a turn up to 60 seconds. Each open connection holds one of your team's concurrent session slots. See [Limits](/api-reference/endpoint/websocket/asr-realtime#limits) for the full list.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card
+    title="Build a voice agent"
+    icon="headset"
+    href="/developer-guide/sdk-guide/cookbook/realtime-voice-agent"
+  >
+    The agent loop: eager replies, interruptions and backchannels.
+  </Card>
+  <Card
+    title="Stream speech back"
+    icon="bolt"
+    href="/features/realtime-streaming"
+  >
+    Speak your agent's replies with streaming text to speech.
+  </Card>
+  <Card
+    title="Transcribe files"
+    icon="waveform"
+    href="/features/speech-to-text"
+  >
+    Recordings up to 60 minutes with `transcribe-1-pro`.
+  </Card>
+  <Card
+    title="WebSocket reference"
+    icon="webhook"
+    href="/api-reference/endpoint/websocket/asr-realtime"
+  >
+    Messages, errors, close codes and limits.
+  </Card>
+</CardGroup>
