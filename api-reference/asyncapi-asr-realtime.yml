@@ -106,7 +106,7 @@ channels:
       Every message in both directions is one MessagePack map in a binary
       frame, with a `type` field. Send `config` first, wait for
       `session_started`, then stream `audio`. Ignore fields and message types
-      you do not know: version 1 only adds them.
+      you do not know in server messages: version 1 only adds them.
 
 operations:
   receiveAsrClientMessages:
@@ -196,8 +196,12 @@ components:
       description: |
         The first message on the connection. Send it within 10 seconds of
         connecting, then wait for `session_started` before sending audio.
-        An invalid `config` is answered with an `error` (`invalid_config` or
-        `unsupported_audio`) and close code 4400.
+        An invalid `config`, including one with an unknown field, is
+        answered with an `error` (`invalid_config` or `unsupported_audio`)
+        and close code 4400. A first message that is not a readable
+        `config` (for example a text frame or JSON) gets `invalid_config`
+        and close code 4400 too. `session_started.config` shows the
+        settings in effect.
       examples:
         - name: Voice agent
           payload:
@@ -240,7 +244,13 @@ components:
           data:
             type: string
             format: binary
-            description: PCM bytes in the configured format, as MessagePack `bin`. Any length; an odd trailing byte waits for the next message.
+            description: |
+              The raw PCM bytes in the configured format, as MessagePack
+              `bin`. Do not base64-encode the audio, and do not send it as a
+              string or an array of numbers. If you do, you receive a
+              recoverable `invalid_request`, and those messages are dropped:
+              nothing in them is transcribed or counted as received audio.
+              Any length; an odd trailing byte waits for the next message.
       description: |
         Audio in the format from `config`. Send it after `session_started`;
         80–100 ms per message is a good size. A message can be at most 1 MiB.
@@ -298,15 +308,20 @@ components:
                   maxLength: 32
                 description: Replaces the list of terms.
             description: |
-              Only `terms` is accepted here. `history` is ignored in
-              `configure`; send earlier lines with `context_add`.
+              Only `terms` is accepted here. A `configure` with `history`
+              gets `configured` with `ok: false`; send earlier lines with
+              `context_add`.
       description: |
         Changes settings during the session. Answered by `configured`. Every
         field is optional, and a field you leave out keeps its current value.
         The one exception: switching `mode` without `silence_timeout_ms`
         resets it to the new mode's default. If any value is invalid,
-        nothing in the message is applied. When `mode` changes to or from
-        `auto`, `configured` can take a few seconds.
+        nothing in the message is applied. `audio` is fixed for the
+        session: a `configure` with an unknown field, with an `audio` that
+        differs from the session's, or with `context.history` gets
+        `configured` with `ok: false`, and nothing in it is applied. An
+        `audio` identical to the session's is accepted. When `mode`
+        changes to or from `auto`, `configured` can take a few seconds.
       examples:
         - payload:
             type: configure
@@ -370,7 +385,9 @@ components:
             description: Message type identifier
       description: |
         Keeps an idle session open. A session closes after 30 seconds without
-        any client message.
+        any client message. A WebSocket ping counts as client activity too,
+        so a client library that sends pings on its own keeps the session
+        open.
       examples:
         - payload:
             type: keepalive
@@ -748,7 +765,7 @@ components:
             type: integer
           text:
             type: string
-            description: The final transcript of the turn. Can contain speaker tags such as `<|speaker:0|>`. Can be empty.
+            description: The final transcript of the turn. Can contain speaker tags such as `<|speaker:0|>` and sound tags such as `[laughter]`. Can be empty.
           words:
             type: array
             items:
@@ -1013,8 +1030,10 @@ components:
       description: |
         An error. When `recoverable` is `false`, the server closes the
         connection (close codes 4400, 4408, 4413, 4500 or 1009).
-        `server_restarting` is recoverable but still closes with 1012:
-        reconnect for a new session.
+        `idle_timeout` (close 4408) comes after 30 seconds without any
+        client message, or when no `config` arrives within 10 seconds of
+        connecting. `server_restarting` is recoverable but still closes
+        with 1012: reconnect for a new session.
       examples:
         - payload:
             type: error
