@@ -188,6 +188,12 @@ Under **Advanced**, add deterministic checks that run alongside the judge:
 
 A failed assertion fails the run regardless of the judge's verdict. Each assertion shows **Passed** or **Failed** with a short detail in the result.
 
+### Current date and time
+
+In a live session the agent knows today's date and the current time (see [Time & timezone](/agents/build/time-timezone)). A simulation leaves them out by default, so the agent goes by the date in its prompt, if it has one. With them in, a prompt that fixes its own date, for example `Today is July 1, 2026`, would disagree with the day the test runs. A simulated caller asking for "the eighth" may then get a booking in the wrong month, and the result changes from one day to the next. `{{system.today}}` still renders the day the test runs.
+
+To give the agent the date and time of the day the test runs, as in a live session, turn on **Current date and time** under **Advanced**. Do this when the scenario relies on the real date. Tests created before this setting existed have it on.
+
 ### Repeat count
 
 Set **Repeat** to run the same scenario up to 20 times in a batch. Simulated conversations vary from run to run, so repeats surface flaky behaviour that a single run would miss. The agent's Tests page shows how many repeats passed out of those that reached a verdict, for example `2 / 3 passed`, or `2 / 2 passed · 1 error` when one repeat ended in **Error**. While repeats are still running, the row counts them instead, for example `1 passed · 2 running`. Opening the test from that page lets you switch between the finished repeats of the latest batch to read each conversation. The test opens on the first failed repeat.
@@ -211,6 +217,7 @@ Every Simulation field lives under `simulation`. An optional `conversation`, up 
 | Required tool calls               | `assertions.tool_calls`: `tool`, `params`, `min_calls`, `max_calls`                      |
 | Forbidden tools                   | `assertions.forbidden_tools`                                                             |
 | Ended by                          | `assertions.ended_by`: `agent`, `user`, `transfer`, or `any`                             |
+| Current date and time             | `world_context`: `true` or `false`, default `false`                                      |
 | Repeat                            | `repeat_count`, 1 to 20                                                                  |
 
 Tools are referenced by `id`, `name`, and `type`, as in Tool tests, and integration tools use the `<provider_key>:<tool_name>` ids that [List Test Tools](/api-reference/endpoint/agent/list-test-tools) returns. Parameter conditions (`when` on a mock entry, `params` on a required call) map a parameter name to `{"type": "exact" | "regex" | "any", "value": "..."}`.
