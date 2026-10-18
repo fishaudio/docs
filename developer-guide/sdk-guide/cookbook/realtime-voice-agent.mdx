@@ -314,7 +314,7 @@ The server uses the conversation to recognize names and follow-ups:
 
 ## Languages
 
-Turn detection, including eager end of turn, backchannel detection and background awareness, is trained on English, Chinese and Japanese. Transcription and language identification cover many more languages. In other languages, a turn ends about 2 seconds after the speaker stops and there is no `eager_end_of_turn`. For faster turns in those languages, use `vad` mode with a shorter `silence_timeout_ms`, or end turns yourself with `finalize`.
+Turn detection, including eager end of turn, backchannel detection and background awareness, is trained on a set of major languages. Transcription and language identification cover many more languages. In languages outside that set, a turn ends about 2 seconds after the speaker stops and there is no `eager_end_of_turn`. For faster turns in those languages, use `vad` mode with a shorter `silence_timeout_ms`, or end turns yourself with `finalize`.
 
 ## Connect your LLM and speech
 

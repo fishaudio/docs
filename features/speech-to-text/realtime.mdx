@@ -170,9 +170,9 @@ Eager end of turn, backchannel detection and background awareness are available 
 
 ## Languages
 
-Smart Turn Detection is trained on English, Chinese and Japanese. Transcription covers many more languages, and `draft`, `eager_end_of_turn` and `committed` carry the language of their own text as `language_code` when it can be identified, one of 29 [supported codes](/api-reference/endpoint/websocket/asr-realtime#language).
+Smart Turn Detection is trained on a set of major languages. Transcription covers many more languages, and `draft`, `eager_end_of_turn` and `committed` carry the language of their own text as `language_code` when it can be identified, one of 29 [supported codes](/api-reference/endpoint/websocket/asr-realtime#language).
 
-In other languages, a turn ends about 2 seconds after the speaker stops, and there is no eager signal. For faster turns in those languages, use `vad` mode, or end turns yourself with `finalize`.
+In languages outside that set, a turn ends about 2 seconds after the speaker stops, and there is no eager signal. For faster turns in those languages, use `vad` mode, or end turns yourself with `finalize`.
 
 ## Latency
 

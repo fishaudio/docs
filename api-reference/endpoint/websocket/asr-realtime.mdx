@@ -429,7 +429,7 @@ In every mode:
 
 `draft`, `eager_end_of_turn` and `committed` carry the language of their own `text`. Use `language_code` (ISO 639-1) in your code; `language` is its English name, for display, with the same names as [`POST /v1/asr`](/api-reference/endpoint/openapi-v1/speech-to-text). The language is detected from that message's text alone, ignoring speaker tags, sound tags and interjections such as "okay" or "hmm". It is one of:
 
-`ar`, `zh` (Cantonese included), `cs`, `da`, `nl`, `en`, `fi`, `fr`, `de`, `el`, `hi`, `hu`, `id`, `it`, `ja`, `ko`, `mk`, `ms`, `fa`, `pl`, `pt`, `ro`, `ru`, `es`, `sv`, `tl`, `th`, `tr`, `vi`.
+`ar`, `zh`, `cs`, `da`, `nl`, `en`, `fi`, `fr`, `de`, `el`, `hi`, `hu`, `id`, `it`, `ja`, `ko`, `mk`, `ms`, `fa`, `pl`, `pt`, `ro`, `ru`, `es`, `sv`, `tl`, `th`, `tr`, `vi`.
 
 Both fields are omitted when the text is empty, too short to tell (most replies under three words, such as "Okay" or "Yes.") or ambiguous; keep the last label you saw. Mixed-language text gets one label, the dominant language. Drafts are labeled one by one and may change; `committed` is final.
 
