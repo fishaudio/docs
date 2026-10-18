@@ -241,6 +241,10 @@ ws.on("close", (code, reason) => console.log(`closed: ${code} ${reason}`));
 
 </CodeGroup>
 
+The audio goes in `data` as the raw PCM bytes, which must travel as MessagePack `bin`, not as base64 text: msgpack for Python packs `bytes` as `bin` by default (do not set `use_bin_type=False`), and `@msgpack/msgpack` packs a `Buffer` or `Uint8Array` as `bin`.
+
+The server closes a session after 30 seconds without any client message, but a WebSocket ping counts as one, and Python's `websockets` sends a ping every 20 seconds by default, so the session stays open even if your audio stops; see [Capture audio well](/developer-guide/sdk-guide/cookbook/realtime-voice-agent#capture-audio-well) for a live source that can stall.
+
 Run it with your API key in `FISH_API_KEY`:
 
 ```bash
@@ -254,25 +258,25 @@ For a 15-second customer-support clip, the output looks like this (`...` marks d
 ```text
 session s_ab12cd34 (request 0b6f4c1e-7d2a-4e8b-9f3c-5a1d2e3f4b6c)
   speech_start #0
-  draft     #0: <|speaker:0|>Can you...
-  draft     #0: <|speaker:0|>Can you tell
+  draft     #0: <|speaker:0|> Can you...
+  draft     #0: <|speaker:0|> Can you tell
   user_turn_taken #0
-  draft     #0: <|speaker:0|>Can you tell me what...
+  draft     #0: <|speaker:0|> Can you tell me what...
   ...
-  draft     #0: <|speaker:0|>Can you tell me what time the pharmacy on Main Street closes tonight?
-  eager     #0: <|speaker:0|>Can you tell me what time the pharmacy on Main Street closes tonight?
-committed   #0 [user ] 2768-8000 ms (eot, en): <|speaker:0|>Can you tell me what time the pharmacy on Main Street closes tonight?
+  draft     #0: <|speaker:0|> Can you tell me what time the pharmacy on Main Street closes tonight?
+  eager     #0: <|speaker:0|> Can you tell me what time the pharmacy on Main Street closes tonight?
+committed   #0 [user ] 2768-8000 ms (eot, en): <|speaker:0|> Can you tell me what time the pharmacy on Main Street closes tonight?
   speech_start #1
-  draft     #1: <|speaker:0|>Uh-huh.
+  draft     #1: <|speaker:0|> Uh-huh.
   user_turn_taken #1
-  eager     #1: <|speaker:0|>Uh-huh.
-committed   #1 [user ] 9840-11840 ms (eot, ?): <|speaker:0|>Uh-huh.
+  eager     #1: <|speaker:0|> Uh-huh.
+committed   #1 [user ] 9840-11840 ms (eot, ?): <|speaker:0|> Uh-huh.
   speech_start #2
-  draft     #2: <|speaker:0|>I'd like
+  draft     #2: <|speaker:0|> I'd like
   user_turn_taken #2
   ...
-  draft     #2: <|speaker:0|>I'd like to change my deli-
-committed   #2 [user ] 13168-14992 ms (audio_done, en): <|speaker:0|>I'd like to change my delivery
+  draft     #2: <|speaker:0|> I'd like to change my deli-
+committed   #2 [user ] 13168-14992 ms (audio_done, en): <|speaker:0|> I'd like to change my delivery
 done: 15000 ms of audio, 3 turns
 closed: 1000 done
 ```
@@ -285,7 +289,7 @@ The clip ends mid-sentence, so the last turn is committed by `audio_done`. Draft
 - **`draft`** is the whole turn so far, and replaces the previous draft. Drafts come only with `results.drafts: true`; use them for live captions.
 - **`user_turn_taken`** says the server judged that the user is taking their turn, rather than noise or someone else nearby.
 - **`eager_end_of_turn`** comes with `turn_detection.eager: true` when the turn has probably ended. Its text equals the final transcript unless `turn_resumed` follows, so an agent can start its reply early.
-- **`committed`** is the final transcript of the turn. `user_turn: false` marks a non-user turn, such as background noise or a short acknowledgement while your agent is speaking. Speaker tags such as `<|speaker:0|>` are stable within the session; strip them, or send `results.diarize: false`. `language_code` is omitted when the text is too short to tell, as for "Uh-huh." above.
+- **`committed`** is the final transcript of the turn. `user_turn: false` marks a non-user turn, such as background noise or a short acknowledgement while your agent is speaking. Speaker tags such as `<|speaker:0|>` are stable within the session; strip them and trim the text, or send `results.diarize: false`. Text can also contain [sound tags](/api-reference/endpoint/websocket/asr-realtime#sound-tags) such as `[laughter]`. `language_code` is omitted when the text is too short to tell, as for "Uh-huh." above.
 - **`session_done`** follows `audio_done`, and the server then closes the connection with code 1000.
 
 Ignore message types and fields you do not know: new ones can be added. Every message is described in the [WebSocket reference](/api-reference/endpoint/websocket/asr-realtime#server-messages).
@@ -401,7 +405,12 @@ registerProcessor("pcm16", Pcm16);`;
 
   const RATES = [8000, 12000, 16000, 22050, 24000, 32000, 44100, 48000];
   const $ = id => document.getElementById(id);
-  const strip = text => (text || "").replace(/<\|[^|]*\|>/g, "").trim(); // speaker tags
+  // Speaker tags and sound tags out, whitespace collapsed.
+  const strip = text =>
+    (text || "")
+      .replace(/<\|[^|]*\|>|\[[^\[\]]*\]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
   let ws,
     ctx,
     stream,

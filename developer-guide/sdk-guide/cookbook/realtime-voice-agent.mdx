@@ -77,7 +77,7 @@ import websockets
 
 URL = "wss://api.fish.audio/v1/asr/realtime"
 CHUNK_MS = 100
-TAGS = re.compile(r"<\|[^|]*\|>")  # speaker tags such as <|speaker:0|>
+TAGS = re.compile(r"<\|[^|]*\|>|\[[^\[\]]*\]")  # speaker tags such as <|speaker:0|>, sound tags such as [laughter]
 T0 = time.monotonic()
 
 
@@ -86,8 +86,8 @@ def log(*args):
 
 
 def words(text):
-    """The transcript without speaker tags."""
-    return TAGS.sub("", text or "").strip()
+    """The transcript without speaker or sound tags, whitespace collapsed."""
+    return " ".join(TAGS.sub("", text or "").split())
 
 
 async def think(history):
@@ -238,7 +238,7 @@ The recipe keeps a reply's full text in its history even when the user interrupt
 
 ## Decide when to answer
 
-Answer a turn when `committed.user_turn` is `true` and its text, without speaker tags, is not empty. Do not decide by `reason`: a turn can end for several reasons, and non-user turns end with `eot` too. If `user_turn` is ever missing, treat it as `true`.
+Answer a turn when `committed.user_turn` is `true` and its text, without speaker tags and [sound tags](/api-reference/endpoint/websocket/asr-realtime#sound-tags), is not empty. Do not decide by `reason`: a turn can end for several reasons, and non-user turns end with `eot` too. If `user_turn` is ever missing, treat it as `true`.
 
 A turn with `user_turn: false` is not the user talking to your agent: usually background noise, a TV or another person nearby (`turn_kind: "other"`), or an acknowledgement while your agent was speaking (`turn_kind: "backchannel"`). Its text can be shown dimmed in a transcript, or left out.
 
@@ -273,7 +273,7 @@ While your agent is speaking:
 2. On `user_backchannel`, the user only acknowledged ("mm-hm", "yeah", "right", "uh-huh"): restore the volume and keep talking.
 3. On `user_turn_taken`, the user is taking the turn: stop the agent and send `agent_speaking: false`.
 4. On `committed` with `user_turn: false`, restore the volume.
-5. Cap any duck on your side to a few seconds: a turn over continuous background noise can last up to 20 seconds. When the user starts talking over such noise, `user_turn_taken` can come a few hundred milliseconds later than usual.
+5. Cap any duck on your side at about 2 seconds, then restore the volume even if the turn is still open. For a real interruption, `user_turn_taken` normally comes within about a second of `speech_start`. Non-user turns can stay open much longer: leftover echo of your agent's own voice can open a turn that lasts as long as the reply, and a turn over continuous background noise can last up to 20 seconds. When the user starts talking over such noise, `user_turn_taken` can come a few hundred milliseconds later than usual.
 
 In `vad` and `manual` mode there is no `user_turn_taken` or `user_backchannel`: stop on `speech_start` instead.
 
@@ -306,15 +306,16 @@ The server uses the conversation to recognize names and follow-ups:
 
 ## Capture audio well
 
-- **Keep echo cancellation on.** Without it, the agent's own voice reaches the microphone, opens turns and can be taken for the user. In a browser, request `echoCancellation: true` from `getUserMedia`.
+- **Keep echo cancellation on.** Without it, the agent's own voice reaches the microphone, opens turns and can be taken for the user. In a browser, request `echoCancellation: true` from `getUserMedia`. Some echo can remain even with echo cancellation. It is usually committed as a non-user turn, but it still opens turns (`speech_start`) while your agent speaks, which is why ducks need a cap. If the start of most replies is ducked, echo is leaking: check echo cancellation, or test with headphones.
 - **Turn automatic gain control off where you can** (`autoGainControl: false` in a browser), so quiet background sound is not amplified between phrases.
 - **Test with headphones first.** They keep the agent's voice out of the microphone, so you can check turn-taking before you tune echo cancellation.
 - **Send audio as you capture it**, mono 16-bit PCM in 80–100 ms messages, at the device's own rate if it is one of the supported rates. The server converts the rate, so do not resample. Telephony audio at 8 kHz is supported; decode μ-law or A-law call audio to 16-bit PCM first.
+- **Watch your audio source.** The server closes a session after 30 seconds without any client message (`idle_timeout`, close 4408), but a WebSocket ping counts as one, and Python's `websockets` sends a ping every 20 seconds by default. With that default, a session stays open even when your audio stops, and it counts against your concurrency limit until you close it or the 60-minute session limit ends it. If your audio source can stall, watch it in your own code and send `audio_done` or close the connection when it stops, or pass `ping_interval=None` to `websockets.connect` to leave idle detection to the server. Node's `ws` sends no pings by default.
 - **Keep keys on your server.** In a browser, capture audio and relay it through your server, as in [Capture from a browser microphone](/developer-guide/sdk-guide/cookbook/realtime-transcription#capture-from-a-browser-microphone). Send `agent_speaking` on that same connection so it stays in order with the audio.
 
 ## Languages
 
-Turn detection, including eager end of turn, backchannel detection and background awareness, is trained on a set of major languages. Transcription and language identification cover many more languages. In languages outside that set, a turn ends about 2 seconds after the speaker stops and there is no `eager_end_of_turn`. For faster turns in those languages, use `vad` mode with a shorter `silence_timeout_ms`, or end turns yourself with `finalize`.
+Turn detection, including eager end of turn, backchannel detection and background awareness, works on speech in every language. In some languages, a turn can end a little later after the speaker stops. For faster turns, use `vad` mode (500 ms or more is a good start for `silence_timeout_ms`), or end turns yourself with `finalize`.
 
 ## Connect your LLM and speech
 
