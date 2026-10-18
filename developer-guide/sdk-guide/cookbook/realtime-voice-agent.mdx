@@ -270,7 +270,7 @@ Without `agent_speaking`, every acknowledgement takes the turn, and you have to 
 While your agent is speaking:
 
 1. On `speech_start`, duck the agent's audio: the user may be interrupting. For the earliest signal, turn on `results.vad_events` and duck on `vad` messages instead.
-2. On `user_backchannel`, the user only acknowledged ("mm-hm", "yeah", "right", "嗯", "对"): restore the volume and keep talking.
+2. On `user_backchannel`, the user only acknowledged ("mm-hm", "yeah", "right", "uh-huh"): restore the volume and keep talking.
 3. On `user_turn_taken`, the user is taking the turn: stop the agent and send `agent_speaking: false`.
 4. On `committed` with `user_turn: false`, restore the volume.
 5. Cap any duck on your side to a few seconds: a turn over continuous background noise can last up to 20 seconds. When the user starts talking over such noise, `user_turn_taken` can come a few hundred milliseconds later than usual.
