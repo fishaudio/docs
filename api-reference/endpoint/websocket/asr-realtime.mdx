@@ -126,7 +126,7 @@ Audio sent before `session_started` is not lost: once the session has started, t
 | `context.terms`                     | No       | `[]`            | Up to 100 terms of up to 32 characters each: names, products and jargon to recognize.                                                                                     |
 | `client_reference_id`               | No       |                 | Your own ID for the session, up to 256 characters. It is recorded with the session and not sent back.                                                                     |
 
-A value of the wrong type for `ignore_timestamps`, or a `diarize` value other than those listed, is `invalid_config`. So is an unknown field, including a misspelled one; the error's `message` names the field. `invalid_config` closes the connection with 4400. `session_started.config` shows the settings in effect.
+A value of the wrong type for `ignore_timestamps`, or a `diarize` value other than those listed, is `invalid_config`. So is an unknown field, including a misspelled one; the error's `message` names the field. `invalid_config` closes the connection with 4400. Send only the fields listed here: not every other field is refused, so check `session_started.config`, which shows the settings in effect.
 
 #### Audio format
 
@@ -205,7 +205,7 @@ Commit the current turn now, with `reason: "finalize"`. In `auto` mode, the serv
 
 Change settings during the session. `turn_detection`, `results` and `context` take the same values as in `config`; every field is optional, and a field you leave out keeps its current value. `context` accepts `terms` only, and the new list replaces the old one; send earlier lines with [`context_add`](#context_add). The server answers with [`configured`](#configured). If any value is invalid, nothing in the message is applied.
 
-`audio` is fixed for the session: to change the audio format, open a new session. A `configure` with an unknown field, with an `audio` that differs from the session's, or with `context.history` gets `configured` with `ok: false`, and nothing in it is applied. An `audio` identical to the session's is accepted.
+`audio` is fixed for the session: to change the audio format, open a new session. A `configure` with an unknown field, with an `audio` that differs from the session's, or with `context.history` gets `configured` with `ok: false`, and nothing in it is applied. An `audio` identical to the session's is accepted. As with `config`, send only the fields listed here; `configured.config` shows the settings in effect.
 
 - A change to `ignore_timestamps` or `diarize` applies to turns that open after `configured`. A turn that is already open keeps the settings it started with, so its `eager_end_of_turn` and `committed` always agree.
 - When `mode` changes to or from `auto`, the server first settles its turn decisions on the audio already sent, so `configured` can take a few seconds.
@@ -442,7 +442,7 @@ Tags are sounds, not words. Strip them when you need only the words, for example
 
 ## Language
 
-`draft`, `eager_end_of_turn` and `committed` carry the language of their own `text`. Use `language_code` (ISO 639-1) in your code; `language` is its English name, for display, with the same names as [`POST /v1/asr`](/api-reference/endpoint/openapi-v1/speech-to-text). The language is detected from that message's text alone, ignoring speaker tags, sound tags and interjections such as "okay", "hmm", "uh" or "um". It is one of:
+`draft`, `eager_end_of_turn` and `committed` carry the language of their own `text`. Use `language_code` (ISO 639-1) in your code; `language` is its English name, for display, with the same names as [`POST /v1/asr`](/api-reference/endpoint/openapi-v1/speech-to-text). The language is detected from that message's text alone, ignoring speaker tags, sound tags and interjections such as "okay", "hmm" or "uh". It is one of:
 
 `ar`, `zh`, `cs`, `da`, `nl`, `en`, `fi`, `fr`, `de`, `el`, `hi`, `hu`, `id`, `it`, `ja`, `ko`, `mk`, `ms`, `fa`, `pl`, `pt`, `ro`, `ru`, `es`, `sv`, `tl`, `th`, `tr`, `vi`.
 

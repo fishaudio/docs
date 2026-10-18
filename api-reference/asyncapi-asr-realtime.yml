@@ -200,8 +200,9 @@ components:
         answered with an `error` (`invalid_config` or `unsupported_audio`)
         and close code 4400. A first message that is not a readable
         `config` (for example a text frame or JSON) gets `invalid_config`
-        and close code 4400 too. `session_started.config` shows the
-        settings in effect.
+        and close code 4400 too. Send only the documented fields: not
+        every other field is refused, so check `session_started.config`,
+        which shows the settings in effect.
       examples:
         - name: Voice agent
           payload:
@@ -320,8 +321,10 @@ components:
         session: a `configure` with an unknown field, with an `audio` that
         differs from the session's, or with `context.history` gets
         `configured` with `ok: false`, and nothing in it is applied. An
-        `audio` identical to the session's is accepted. When `mode`
-        changes to or from `auto`, `configured` can take a few seconds.
+        `audio` identical to the session's is accepted. As with `config`,
+        send only the documented fields; `configured.config` shows the
+        settings in effect. When `mode` changes to or from `auto`,
+        `configured` can take a few seconds.
       examples:
         - payload:
             type: configure
