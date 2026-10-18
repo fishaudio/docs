@@ -190,7 +190,7 @@ A failed assertion fails the run regardless of the judge's verdict. Each asserti
 
 ### Current date and time
 
-In a live session the agent knows today's date and the current time (see [Time & timezone](/agents/build/time-timezone)). A simulation leaves them out by default, so the agent goes by the date in its prompt, if it has one. With them in, a prompt that fixes its own date, for example `Today is July 1, 2026`, would disagree with the day the test runs: a simulated caller asking for "the eighth" may get a booking in the wrong month, and the result changes from one day to the next. `{{system.today}}` still renders the day the test runs.
+In a live session the agent knows today's date and the current time (see [Time & timezone](/agents/build/time-timezone)). A simulation leaves them out by default, so the agent goes by the date in its prompt, if it has one. With them in, a prompt that fixes its own date, for example `Today is July 1, 2026`, would disagree with the day the test runs. A simulated caller asking for "the eighth" may then get a booking in the wrong month, and the result changes from one day to the next. `{{system.today}}` still renders the day the test runs.
 
 To give the agent the date and time of the day the test runs, as in a live session, turn on **Current date and time** under **Advanced**. Do this when the scenario relies on the real date. Tests created before this setting existed have it on.
 
