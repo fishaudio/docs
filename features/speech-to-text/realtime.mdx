@@ -3,8 +3,6 @@ title: "Realtime Speech to Text"
 sidebarTitle: "Realtime"
 description: "Transcribe live audio turn by turn with realtime-1: turn detection that knows when the user has finished, backchannel and background awareness, and conversation context"
 icon: "microphone-lines"
-hidden: true
-noindex: true
 ---
 
 Stream live audio over a WebSocket and get the transcript turn by turn while people speak. `realtime-1` does more than transcribe: it decides when the user has finished their turn, usually tells the user talking to your app apart from background sound, and notices when a "mm-hm" is only an acknowledgement. This helps your voice agent decide when to answer, when to keep talking and when to stop. Connect to `wss://api.fish.audio/v1/asr/realtime`, send audio as you capture it, and read the events the server sends back.
