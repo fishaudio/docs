@@ -15,12 +15,6 @@ noindex: true
   [Realtime Speech to Text](/features/speech-to-text/realtime).
 </Note>
 
-<Note>
-  Realtime speech to text is in preview and is enabled per team. Contact
-  [support@fish.audio](mailto:support@fish.audio) to turn it on for your team.
-  Until then, connecting returns `403`.
-</Note>
-
 ## Before you start
 
 You need a [Fish Audio API key](/developer-guide/getting-started/api-key) and a WebSocket client that can set request headers. The API key travels in a request header, so connect from your server, not from a browser; to capture audio in a browser, relay it through your server as in [Transcribe a live audio stream](/developer-guide/sdk-guide/cookbook/realtime-transcription#capture-from-a-browser-microphone). The examples on these pages use Python with `websockets` and `msgpack`, and Node.js with `ws` and `@msgpack/msgpack`.
@@ -32,28 +26,29 @@ This endpoint is separate from the realtime endpoints of the [compatible APIs](/
 ```text
 GET wss://api.fish.audio/v1/asr/realtime
 Authorization: Bearer <API key>
-model: transcribe-1-pro-realtime
+model: realtime-1
 ```
 
-| Header          | Required | Description                                                                                        |
-| --------------- | -------- | -------------------------------------------------------------------------------------------------- |
-| `Authorization` | Yes      | `Bearer <API key>`. Write the scheme exactly as `Bearer`, followed by a space and the key.         |
-| `model`         | No       | `transcribe-1-pro-realtime`, the default and the only realtime model. Any other value returns 400. |
+| Header          | Required | Description                                                                                                                                        |
+| --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Authorization` | Yes      | `Bearer <API key>`. Write the scheme exactly as `Bearer`, followed by a space and the key.                                                         |
+| `model`         | No       | `realtime-1`, the default and the only realtime model. The legacy name `transcribe-1-pro-realtime` is still accepted. Any other value returns 400. |
 
 Each open connection counts against the same concurrency limit as your other API requests, from the moment it opens until it closes, even while you send no audio. See [Concurrent request limits](/developer-guide/models-pricing/pricing-and-rate-limits#concurrent-request-limits). A session cannot be resumed: a new connection is a new session.
 
+Sessions are billed per second of session duration, as Realtime ASR. See [ASR pricing](/developer-guide/models-pricing/pricing-and-rate-limits#automatic-speech-recognition-asr-models).
+
 If the server refuses the upgrade, it answers with a plain HTTP response whose JSON body is `{"status": <int>, "message": <str>}`:
 
-| Status | Meaning                                                                                         | What to do                                                |
-| ------ | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| 400    | The `model` header names another model.                                                         | Send `transcribe-1-pro-realtime` or leave the header out. |
-| 401    | The API key is missing or invalid, or the `Authorization` header does not start with `Bearer `. | Check the key and the header.                             |
-| 402    | Insufficient API credit.                                                                        | Top up your balance.                                      |
-| 403    | Realtime speech to text is not enabled for your team.                                           | Contact support (see the note above).                     |
-| 429    | Your team is at its concurrency limit, or the service is at capacity.                           | Retry with backoff. Honor `Retry-After` when present.     |
-| 503    | The service is restarting.                                                                      | Retry.                                                    |
+| Status | Meaning                                                                                         | What to do                                            |
+| ------ | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| 400    | The `model` header names another model.                                                         | Send `realtime-1` or leave the header out.            |
+| 401    | The API key is missing or invalid, or the `Authorization` header does not start with `Bearer `. | Check the key and the header.                         |
+| 402    | Insufficient API credit.                                                                        | Top up your balance.                                  |
+| 429    | Your team is at its concurrency limit, or the service is at capacity.                           | Retry with backoff. Honor `Retry-After` when present. |
+| 503    | The service is restarting.                                                                      | Retry.                                                |
 
-The `101 Switching Protocols` response carries an `x-request-id` header, and so do the 400 (model), capacity 429 and 503 refusals. It is the same value as `request_id` in `session_started`, `error` and `session_done`. Log it, and include it when you contact support. Refusals for the key, balance, access and your concurrency limit (401, 402, 403 and concurrency 429) happen before a session is assigned and carry no `x-request-id`.
+The `101 Switching Protocols` response carries an `x-request-id` header, and so do the 400 (model), capacity 429 and 503 refusals. It is the same value as `request_id` in `session_started`, `error` and `session_done`. Log it, and include it when you contact support. Refusals for the key, balance and your concurrency limit (401, 402 and concurrency 429) happen before a session is assigned and carry no `x-request-id`.
 
 ## Framing
 
@@ -101,7 +96,7 @@ Audio sent before `session_started` is not lost: once the session has started, t
   "results": { "drafts": true, "ignore_timestamps": false },
   "context": {
     "history": [{ "role": "assistant", "text": "Hi, how can I help?" }],
-    "terms": ["Fish Audio", "transcribe-1-pro-realtime"]
+    "terms": ["Fish Audio", "realtime-1"]
   },
   "client_reference_id": "call-8f2c"
 }

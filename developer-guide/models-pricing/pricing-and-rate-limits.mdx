@@ -39,19 +39,27 @@ the same price. See [Migrate from S1](/developer-guide/models-pricing/migrate-fr
 
 ### Automatic Speech Recognition (ASR) Models
 
-| Model Name                       | Price (USD)        |
-| -------------------------------- | ------------------ |
-| `transcribe-1-pro` (recommended) | $0.36 / audio hour |
-| `transcribe-1`                   | $0.36 / audio hour |
+| Model Name                       | Price (USD)          |
+| -------------------------------- | -------------------- |
+| `transcribe-1-pro` (recommended) | $0.36 / audio hour   |
+| `transcribe-1`                   | $0.36 / audio hour   |
+| `realtime-1` (Realtime ASR)      | $0.36 / session hour |
 
-We recommend `transcribe-1-pro`, which handles multi-speaker conversations (speaker markers and speaker turns), long recordings, and inline emotion cues. Both models cost the same and use the [Speech to Text API](/api-reference/endpoint/openapi-v1/speech-to-text). Send the `model: transcribe-1-pro` HTTP header to select Pro; a request whose `model` header is missing or not an exact match is served and billed as `transcribe-1`. See the [model comparison](/features/speech-to-text#choose-an-asr-model).
+For recordings, we recommend `transcribe-1-pro`, which handles multi-speaker conversations (speaker markers and speaker turns), long recordings, and inline emotion cues. Both file models cost the same and use the [Speech to Text API](/api-reference/endpoint/openapi-v1/speech-to-text). Send the `model: transcribe-1-pro` HTTP header to select Pro; a request whose `model` header is missing or not an exact match is served and billed as `transcribe-1`. See the [model comparison](/features/speech-to-text#choose-an-asr-model).
 
-**How ASR billing works:**
+`realtime-1` transcribes live audio over the [realtime WebSocket](/features/speech-to-text/realtime) and is billed as its own line item, Realtime ASR, separate from file transcription.
+
+**How ASR billing works for files (`transcribe-1-pro`, `transcribe-1`):**
 
 - Charges are based on the duration of audio processed
 - Duration is rounded up to the nearest second
 - The full duration of the recording is billed, including silence, once per successful request
 - Requests that return an error response are not billed
+
+**How Realtime ASR billing works (`realtime-1`):**
+
+- Charges are based on session duration, billed per second, once per session
+- Session duration is the time the connection is open, or the duration of the audio you send if that is longer, rounded up to the nearest second
 
 ### Voice Design
 
