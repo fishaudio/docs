@@ -8,6 +8,26 @@ from harness import PUBLIC_VOICE
 
 COOKBOOK = "developer-guide/sdk-guide/cookbook"
 
+# Runs a realtime recipe's main() on speech.wav, capturing what it prints in `_lines`.
+REALTIME_RUN = """
+import asyncio, builtins
+import pytest, websockets
+_lines = []
+def print(*args, **kwargs):
+    _lines.append(" ".join(str(a) for a in args))
+    builtins.print(*args, **kwargs)
+try:
+    asyncio.run(main("speech.wav"))
+except SystemExit as e:
+    if "HTTP 403" in str(e):
+        pytest.skip("realtime speech to text is not enabled for this key's team")
+    raise
+except websockets.InvalidStatus as e:
+    if e.response.status_code == 403:
+        pytest.skip("realtime speech to text is not enabled for this key's team")
+    raise
+"""
+
 SPECS = [
     {
         "slug": "streaming-to-file",
@@ -121,6 +141,31 @@ SPECS = [
              "postamble": "assert '<|speaker' not in reply, reply"},
             {"name": "asr -> reply -> tts (async)", "block": 1, "file": ("reply.mp3", "mp3"),
              "subs": {'"<voice-id>"': f'"{PUBLIC_VOICE}"'}},
+        ],
+    },
+    # Realtime speech to text (WebSocket). The recipes are scripts: the postamble runs
+    # main() on the fixture clip and checks the printed events. The endpoint is enabled
+    # per team, so a key without access (HTTP 403) skips instead of failing.
+    {
+        "slug": "realtime-transcription",
+        "path": f"{COOKBOOK}/realtime-transcription.mdx",
+        "cases": [
+            {"name": "stream a wav file", "block": 0, "postamble": REALTIME_RUN + """
+assert any(line.startswith("session ") for line in _lines), _lines
+assert any(line.startswith("committed") for line in _lines), _lines
+assert any(line.startswith("done: ") for line in _lines), _lines
+assert any(line.startswith("closed: 1000") for line in _lines), _lines
+"""},
+        ],
+    },
+    {
+        "slug": "realtime-voice-agent",
+        "path": f"{COOKBOOK}/realtime-voice-agent.mdx",
+        "cases": [
+            {"name": "agent loop on a wav file", "block": 0, "postamble": REALTIME_RUN + """
+assert any("<- committed" in line for line in _lines), _lines
+assert any("closed 1000" in line for line in _lines), _lines
+"""},
         ],
     },
 ]

@@ -359,6 +359,61 @@ The response is the updated number, with `caller_id_sync_status` normally `synce
 
 The older boolean `cold_transfer_use_original_caller` still works, but it is deprecated. Use `transfer_caller_id` instead.
 
+## Transfer results
+
+Every transfer attempt is recorded on the session, including the ones that failed:
+
+- **In the console**: open the call from the **Conversations** page. Each attempt has a card in the timeline with the destination, the result and why a failed one failed. A connected transfer also shows how long the caller and your team member talked and how their call ended.
+- **Through the API**: each attempt is a `transfer` item in the session's `items`. See [Transfer items](/agents/monitor/conversation-history#transfer-items) for every field.
+
+A session with a successful transfer ends with `end_reason` `escalated`, however the call goes after the handoff. A failed attempt does not make the session `escalated`. What the agent does after a failure is described under [cold](#what-happens-on-a-cold-transfer) and [warm](#what-happens-on-a-warm-transfer) transfers.
+
+### Outcomes
+
+| `outcome`         | Mode   | What happened                                                                                                                                                                               |
+| ----------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `merged`          | Warm   | The caller and your team member were connected.                                                                                                                                             |
+| `referred`        | Cold   | The carrier took over the call, normally once the destination answered. A [call length](#after-a-successful-transfer) of `0` means the destination never picked up.                         |
+| `dial_failed`     | Warm   | The destination could not be reached: busy, rejected, not answered within the [ring timeout](#timeouts), or the call failed. See [Why a call did not connect](#why-a-call-did-not-connect). |
+| `declined`        | Warm   | Your team member said they could not take the call. `decline_reason` has the agent's summary of why.                                                                                        |
+| `voicemail`       | Warm   | Voicemail answered the consult call.                                                                                                                                                        |
+| `ivr`             | Warm   | A phone menu answered the consult call, with [Wait for a person to answer](#waiting-for-a-person-to-answer) on.                                                                             |
+| `consult_closed`  | Warm   | The consult call ended before the calls were merged. `consult_end_reason` is `transfer_target_hangup` when your team member hung up and `connection_lost` when the line dropped.            |
+| `consult_timeout` | Warm   | Your team member answered but neither took nor declined the call within the [confirm timeout](#timeouts).                                                                                   |
+| `merge_failed`    | Warm   | The caller and your team member could not be connected.                                                                                                                                     |
+| `refer_failed`    | Cold   | The carrier refused the handoff, or the destination did not answer while the caller was still on the line. See [Why a call did not connect](#why-a-call-did-not-connect).                   |
+| `caller_hangup`   | Warm   | The caller hung up while on hold.                                                                                                                                                           |
+| `cancelled`       | Either | The transfer stopped before it started, for example because the caller hung up during the announcement or the call was already ending.                                                      |
+| `unavailable`     | Warm   | The warm transfer could not be set up, so nobody was dialed.                                                                                                                                |
+
+`outcome` is `null` while an attempt is in progress. New values may be added, so don't reject ones you don't recognize.
+
+### Why a call did not connect
+
+`dial_failed` and `refer_failed` carry `dial_status`, which groups the carrier's answer the same way as an [outbound call's](/agents/telephony/outbound-calls#the-dial-outcome) `dial_status`:
+
+| `dial_status` | Meaning                                            | SIP responses                                             |
+| ------------- | -------------------------------------------------- | --------------------------------------------------------- |
+| `busy`        | The line was busy, or the person rejected the call | `486`, `600`, `603`                                       |
+| `no_answer`   | Nobody answered                                    | `408`, `480`, `487`, or no response within the time limit |
+| `failed`      | Any other failure                                  | Every other code                                          |
+
+`sip_status` is the carrier's final SIP response code as received, and `null` when the carrier gave none. When a cold handoff rings past the time limit with the caller still on the line, the attempt is `refer_failed` with `dial_status` `no_answer` and no `sip_status`.
+
+### After a successful transfer
+
+`merged` and `referred` items carry three facts about the call between the caller and your team member:
+
+| Field                               | Warm                               | Cold                                                               |
+| ----------------------------------- | ---------------------------------- | ------------------------------------------------------------------ |
+| `transferred_call_ended_at`         | When the call ended                | When the call ended, from the carrier's call record                |
+| `transferred_call_duration_seconds` | Seconds from the merge to the end  | Seconds from the answer to the end, from the carrier's call record |
+| `transferred_call_end_reason`       | Who hung up, or why the call ended | Always `null`                                                      |
+
+The end reason is `caller_hangup`, `transfer_target_hangup`, `conversation_timeout` (the agent's [maximum call duration](/agents/build/configuration#call-duration) was reached, counted from the start of the call), `connection_lost` (a line dropped), or `null` when the platform could not tell. See [After the transfer](/agents/monitor/conversation-history#after-the-transfer).
+
+A warm transfer's values are there once the call ends. On a cold transfer the platform leaves the call at the handoff, so the values come from the carrier's call record and appear up to about an hour after the call ends. They never appear for cold transfers on [imported SIP numbers](/agents/telephony/byo-sip), because that call record stays with your carrier.
+
 ## Limitations
 
 - **Phone calls only**: web and SDK sessions have no phone leg to hand off, so the `_transfer_call` tool never ships for them.

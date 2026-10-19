@@ -1,0 +1,507 @@
+---
+title: "Transcribe a live audio stream in realtime"
+description: "Stream audio to transcribe-1-pro-realtime over a WebSocket and print drafts, turn events and final transcripts as they arrive"
+icon: "tower-broadcast"
+hidden: true
+noindex: true
+---
+
+import Prerequisites from "/snippets/prerequisites.mdx";
+
+<Note>
+  Realtime speech to text is in preview and is enabled per team. Contact
+  [support@fish.audio](mailto:support@fish.audio) to turn it on for your team.
+  Until then, connecting returns `403`.
+</Note>
+
+## Prerequisites
+
+<Prerequisites />
+
+The SDKs do not wrap the realtime speech-to-text endpoint yet, so this recipe speaks the WebSocket protocol directly. Install a WebSocket client and a MessagePack library:
+
+<CodeGroup>
+
+```bash Python
+pip install "websockets>=14" msgpack
+```
+
+```bash JavaScript
+npm install ws @msgpack/msgpack
+```
+
+</CodeGroup>
+
+You also need a 16-bit PCM mono WAV file, at 8000, 12000, 16000, 22050, 24000, 32000, 44100 or 48000 Hz. To convert a recording, run `ffmpeg -i input.mp3 -ac 1 -ar 16000 -c:a pcm_s16le speech.wav`.
+
+## Recipe
+
+The script connects to `wss://api.fish.audio/v1/asr/realtime`, sends a `config` message, waits for `session_started`, and then streams the file in 100 ms messages at real-time speed, as a live microphone would. It prints every message the server sends until the session ends.
+
+<CodeGroup>
+
+```python Python
+"""Stream a WAV file to Fish Audio realtime speech-to-text and print the events.
+
+    pip install "websockets>=14" msgpack
+    export FISH_API_KEY=...
+    python transcribe_file.py speech.wav
+
+The WAV must be 16-bit PCM, mono, at 8000, 12000, 16000, 22050, 24000, 32000, 44100 or 48000 Hz.
+"""
+import asyncio
+import os
+import sys
+import wave
+
+import msgpack
+import websockets
+
+URL = "wss://api.fish.audio/v1/asr/realtime"
+CHUNK_MS = 100  # 80-100 ms of audio per message
+
+
+def pack(message):
+    return msgpack.packb(message)  # bytes values are sent as MessagePack bin
+
+
+async def stream_file(ws, wav, rate):
+    """Send the audio in real time, as a live microphone would, then audio_done."""
+    loop = asyncio.get_running_loop()
+    start = loop.time()
+    sent_ms = 0
+    while chunk := wav.readframes(rate * CHUNK_MS // 1000):
+        await ws.send(pack({"type": "audio", "data": chunk}))
+        sent_ms += CHUNK_MS
+        await asyncio.sleep(max(0.0, start + sent_ms / 1000 - loop.time()))
+    await ws.send(pack({"type": "audio_done"}))
+
+
+async def main(path):
+    wav = wave.open(path, "rb")
+    if wav.getsampwidth() != 2 or wav.getnchannels() != 1:
+        sys.exit("need a 16-bit mono WAV")
+    rate = wav.getframerate()
+    headers = {"Authorization": f"Bearer {os.environ['FISH_API_KEY']}"}
+
+    try:
+        ws = await websockets.connect(URL, additional_headers=headers)
+    except websockets.InvalidStatus as e:  # the upgrade was refused: 401, 402, 403, 429, 503 ...
+        sys.exit(f"refused: HTTP {e.response.status_code} {e.response.body.decode(errors='replace')}")
+
+    async with ws:
+        await ws.send(pack({
+            "type": "config",
+            "audio": {"format": "pcm_s16le", "sample_rate": rate, "channels": 1},
+            "turn_detection": {"mode": "auto", "eager": True},
+            "results": {"drafts": True},
+        }))
+        sender = None
+        try:
+            async for frame in ws:
+                m = msgpack.unpackb(frame)
+                t = m["type"]
+                if t == "session_started":
+                    print(f"session {m['session_id']} (request {m['request_id']})")
+                    sender = asyncio.create_task(stream_file(ws, wav, rate))  # send audio after this
+                elif t == "draft":
+                    print(f"  draft     #{m['turn_index']}: {m['text']}")
+                elif t == "eager_end_of_turn":
+                    print(f"  eager     #{m['turn_index']}: {m['text']}")
+                elif t == "committed":
+                    who = "user " if m.get("user_turn", True) else "other"
+                    print(f"committed   #{m['turn_index']} [{who}] {m['audio_start_ms']}-{m['audio_end_ms']} ms "
+                          f"({m['reason']}, {m.get('language_code', '?')}): {m['text']}")
+                elif t == "error":
+                    print(f"error {m['error_type']} ({m['code']}): {m['message']} [request {m['request_id']}]")
+                elif t == "session_done":
+                    print(f"done: {m['stats']['audio_ms']} ms of audio, {m['stats']['turns']} turns")
+                else:  # speech_start, user_turn_taken, turn_resumed, ... (ignore types you don't know)
+                    print(f"  {t} #{m.get('turn_index', '')}")
+        except websockets.ConnectionClosedError:
+            pass
+        finally:
+            if sender:
+                sender.cancel()
+    print(f"closed: {ws.close_code} {ws.close_reason}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main(sys.argv[1]))
+```
+
+```javascript JavaScript
+// npm install ws @msgpack/msgpack
+// FISH_API_KEY=... node transcribe_file.mjs speech.wav
+import { readFileSync } from "node:fs";
+import { setTimeout as sleep } from "node:timers/promises";
+import { encode, decode } from "@msgpack/msgpack";
+import WebSocket from "ws";
+
+const URL = "wss://api.fish.audio/v1/asr/realtime";
+const CHUNK_MS = 100; // 80-100 ms of audio per message
+
+// Read a 16-bit mono PCM WAV file: its sample rate and its samples.
+function readWav(path) {
+  const buf = readFileSync(path);
+  let rate, channels, bits, data;
+  for (let pos = 12; pos + 8 <= buf.length; ) {
+    const id = buf.toString("ascii", pos, pos + 4);
+    const size = buf.readUInt32LE(pos + 4);
+    if (id === "fmt ") {
+      channels = buf.readUInt16LE(pos + 10);
+      rate = buf.readUInt32LE(pos + 12);
+      bits = buf.readUInt16LE(pos + 22);
+    } else if (id === "data") {
+      data = buf.subarray(pos + 8, pos + 8 + size);
+    }
+    pos += 8 + size + (size % 2);
+  }
+  if (bits !== 16 || channels !== 1 || !data)
+    throw new Error("need a 16-bit mono WAV");
+  return { rate, data };
+}
+
+const { rate, data } = readWav(process.argv[2]);
+const ws = new WebSocket(URL, {
+  headers: { Authorization: `Bearer ${process.env.FISH_API_KEY}` },
+});
+const send = message => ws.send(encode(message)); // Buffers are sent as MessagePack bin
+
+// Send the audio in real time, as a live microphone would, then audio_done.
+async function streamFile() {
+  const bytesPerChunk = ((rate * CHUNK_MS) / 1000) * 2;
+  const start = Date.now();
+  for (let i = 0; i < data.length; i += bytesPerChunk) {
+    if (ws.readyState !== WebSocket.OPEN) return;
+    send({ type: "audio", data: data.subarray(i, i + bytesPerChunk) });
+    const sentMs = (i / bytesPerChunk + 1) * CHUNK_MS;
+    await sleep(Math.max(0, start + sentMs - Date.now()));
+  }
+  send({ type: "audio_done" });
+}
+
+ws.on("unexpected-response", (req, res) => {
+  // The upgrade was refused: 401, 402, 403, 429, 503 ...
+  let body = "";
+  res.on("data", chunk => (body += chunk));
+  res.on("end", () => {
+    console.error(`refused: HTTP ${res.statusCode} ${body}`);
+    process.exit(1);
+  });
+});
+
+ws.on("open", () =>
+  send({
+    type: "config",
+    audio: { format: "pcm_s16le", sample_rate: rate, channels: 1 },
+    turn_detection: { mode: "auto", eager: true },
+    results: { drafts: true },
+  })
+);
+
+ws.on("message", frame => {
+  const m = decode(frame);
+  switch (m.type) {
+    case "session_started":
+      console.log(`session ${m.session_id} (request ${m.request_id})`);
+      streamFile(); // send audio after this
+      break;
+    case "draft":
+      console.log(`  draft     #${m.turn_index}: ${m.text}`);
+      break;
+    case "eager_end_of_turn":
+      console.log(`  eager     #${m.turn_index}: ${m.text}`);
+      break;
+    case "committed": {
+      const who = m.user_turn === false ? "other" : "user ";
+      console.log(
+        `committed   #${m.turn_index} [${who}] ${m.audio_start_ms}-${m.audio_end_ms} ms ` +
+          `(${m.reason}, ${m.language_code ?? "?"}): ${m.text}`
+      );
+      break;
+    }
+    case "error":
+      console.log(
+        `error ${m.error_type} (${m.code}): ${m.message} [request ${m.request_id}]`
+      );
+      break;
+    case "session_done":
+      console.log(
+        `done: ${m.stats.audio_ms} ms of audio, ${m.stats.turns} turns`
+      );
+      break;
+    default: // speech_start, user_turn_taken, turn_resumed, ... (ignore types you don't know)
+      console.log(`  ${m.type} #${m.turn_index ?? ""}`);
+  }
+});
+
+ws.on("close", (code, reason) => console.log(`closed: ${code} ${reason}`));
+```
+
+</CodeGroup>
+
+The audio goes in `data` as the raw PCM bytes, which must travel as MessagePack `bin`, not as base64 text: msgpack for Python packs `bytes` as `bin` by default (do not set `use_bin_type=False`), and `@msgpack/msgpack` packs a `Buffer` or `Uint8Array` as `bin`.
+
+The server closes a session after 30 seconds without any client message, but a WebSocket ping counts as one, and Python's `websockets` sends a ping every 20 seconds by default, so the session stays open even if your audio stops; see [Capture audio well](/developer-guide/sdk-guide/cookbook/realtime-voice-agent#capture-audio-well) for a live source that can stall.
+
+Run it with your API key in `FISH_API_KEY`:
+
+```bash
+python transcribe_file.py speech.wav
+# or
+node transcribe_file.mjs speech.wav
+```
+
+For a 15-second customer-support clip, the output looks like this (`...` marks drafts left out):
+
+```text
+session s_ab12cd34 (request 0b6f4c1e-7d2a-4e8b-9f3c-5a1d2e3f4b6c)
+  speech_start #0
+  draft     #0: <|speaker:0|> Can you...
+  draft     #0: <|speaker:0|> Can you tell
+  user_turn_taken #0
+  draft     #0: <|speaker:0|> Can you tell me what...
+  ...
+  draft     #0: <|speaker:0|> Can you tell me what time the pharmacy on Main Street closes tonight?
+  eager     #0: <|speaker:0|> Can you tell me what time the pharmacy on Main Street closes tonight?
+committed   #0 [user ] 2768-8000 ms (eot, en): <|speaker:0|> Can you tell me what time the pharmacy on Main Street closes tonight?
+  speech_start #1
+  draft     #1: <|speaker:0|> Uh-huh.
+  user_turn_taken #1
+  eager     #1: <|speaker:0|> Uh-huh.
+committed   #1 [user ] 9840-11840 ms (eot, ?): <|speaker:0|> Uh-huh.
+  speech_start #2
+  draft     #2: <|speaker:0|> I'd like
+  user_turn_taken #2
+  ...
+  draft     #2: <|speaker:0|> I'd like to change my deli-
+committed   #2 [user ] 13168-14992 ms (audio_done, en): <|speaker:0|> I'd like to change my delivery
+done: 15000 ms of audio, 3 turns
+closed: 1000 done
+```
+
+The clip ends mid-sentence, so the last turn is committed by `audio_done`. Drafts can hold partial words, such as `deli-`; the committed text is final.
+
+## Read the events
+
+- **`speech_start`** opens a turn when voice activity begins. In the default `auto` mode, noise and other voices open turns too.
+- **`draft`** is the whole turn so far, and replaces the previous draft. Drafts come only with `results.drafts: true`; use them for live captions.
+- **`user_turn_taken`** says the server judged that the user is taking their turn, rather than noise or someone else nearby.
+- **`eager_end_of_turn`** comes with `turn_detection.eager: true` when the turn has probably ended. Its text equals the final transcript unless `turn_resumed` follows, so an agent can start its reply early.
+- **`committed`** is the final transcript of the turn. `user_turn: false` marks a non-user turn, such as background noise or a short acknowledgement while your agent is speaking. Speaker tags such as `<|speaker:0|>` are stable within the session; strip them and trim the text, or send `results.diarize: false`. Text can also contain [sound tags](/api-reference/endpoint/websocket/asr-realtime#sound-tags) such as `[laughter]`. `language_code` is omitted when the text is too short to tell, as for "Uh-huh." above.
+- **`session_done`** follows `audio_done`, and the server then closes the connection with code 1000.
+
+Ignore message types and fields you do not know: new ones can be added. Every message is described in the [WebSocket reference](/api-reference/endpoint/websocket/asr-realtime#server-messages).
+
+<Tip>
+  The script streams the file at real-time speed so that the events arrive as
+  they would for live audio. To transcribe a recording you already have, use
+  [`POST /v1/asr`](/features/speech-to-text) instead; it is simpler and returns
+  the whole transcript at once.
+</Tip>
+
+## Capture from a browser microphone
+
+The API key travels in a request header, and browsers cannot set headers on a WebSocket. Never put your API key in a web page: run a small relay on your server that adds the `Authorization` header and passes MessagePack frames through unchanged. The page then speaks the same protocol as the scripts above.
+
+<CodeGroup>
+
+```python relay.py
+"""Browser <-> Fish Audio realtime speech-to-text relay. The API key stays on the server.
+
+    pip install aiohttp
+    export FISH_API_KEY=...
+    python relay.py          # then open http://localhost:8080
+
+The page speaks the realtime protocol itself (MessagePack binary frames); the relay adds the
+Authorization header and pipes binary frames both ways, unchanged.
+"""
+import asyncio
+import os
+from pathlib import Path
+
+from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError, web
+
+URL = "wss://api.fish.audio/v1/asr/realtime"
+API_KEY = os.environ["FISH_API_KEY"]
+
+
+async def index(request):
+    return web.FileResponse(Path(__file__).with_name("index.html"))
+
+
+async def relay(request):
+    browser = web.WebSocketResponse(max_msg_size=1 << 20)
+    await browser.prepare(request)
+    async with ClientSession() as http:
+        try:
+            # autoclose=False keeps the API's close code (1000, 4400, ...) readable below
+            upstream = await http.ws_connect(
+                URL, headers={"Authorization": f"Bearer {API_KEY}"}, autoclose=False
+            )
+        except WSServerHandshakeError as e:  # 401 / 402 / 403 / 429 / 503 ...
+            await browser.close(code=1013 if e.status in (429, 503) else 1011, message=f"HTTP {e.status}".encode())
+            return browser
+
+        async def pipe(src, dst):
+            async for msg in src:
+                if msg.type == WSMsgType.BINARY:
+                    await dst.send_bytes(msg.data)
+
+        to_api = asyncio.create_task(pipe(browser, upstream))
+        to_browser = asyncio.create_task(pipe(upstream, browser))
+        await asyncio.wait([to_api, to_browser], return_when=asyncio.FIRST_COMPLETED)
+        if to_api.done():  # the page went away (or sent audio_done and closed): let the session finish
+            await asyncio.wait([to_browser], timeout=10)
+        for task in (to_api, to_browser):
+            task.cancel()
+        code = upstream.close_code or 1000
+        await upstream.close()
+        # forward the API's close code (1000, 1009, 1012, 44xx, 4500); 1006 and similar cannot be sent
+        await browser.close(code=code if code in (1000, 1009, 1011, 1012) or 4000 <= code < 5000 else 1011)
+    return browser
+
+
+app = web.Application()
+app.add_routes([web.get("/", index), web.get("/ws", relay)])
+
+if __name__ == "__main__":
+    web.run_app(app, host="127.0.0.1", port=8080)
+```
+
+```html index.html
+<!doctype html>
+<meta charset="utf-8" />
+<title>Realtime speech-to-text</title>
+<button id="start">Start</button> <button id="stop" disabled>Stop</button>
+<p id="draft"></p>
+<pre id="log"></pre>
+<script type="module">
+  import {
+    encode,
+    decode,
+  } from "https://cdn.jsdelivr.net/npm/@msgpack/msgpack@3.1.2/+esm";
+
+  // Runs on the audio thread: float samples in, 16-bit PCM out, ~100 ms per message.
+  const WORKLET = `
+class Pcm16 extends AudioWorkletProcessor {
+  constructor() { super(); this.size = Math.round(sampleRate / 10); this.buf = new Int16Array(this.size); this.n = 0; }
+  process([input]) {
+    const ch = input[0] || [];
+    for (let i = 0; i < ch.length; i++) {
+      const s = Math.max(-1, Math.min(1, ch[i]));
+      this.buf[this.n++] = s < 0 ? s * 0x8000 : s * 0x7fff;
+      if (this.n === this.size) {
+        this.port.postMessage(this.buf.buffer, [this.buf.buffer]);
+        this.buf = new Int16Array(this.size);  // the old buffer was transferred
+        this.n = 0;
+      }
+    }
+    return true;
+  }
+}
+registerProcessor("pcm16", Pcm16);`;
+
+  const RATES = [8000, 12000, 16000, 22050, 24000, 32000, 44100, 48000];
+  const $ = id => document.getElementById(id);
+  // Speaker tags and sound tags out, whitespace collapsed.
+  const strip = text =>
+    (text || "")
+      .replace(/<\|[^|]*\|>|\[[^\[\]]*\]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  let ws,
+    ctx,
+    stream,
+    live = false;
+
+  $("start").onclick = async () => {
+    $("start").disabled = true;
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1,
+        echoCancellation: true,
+        autoGainControl: false,
+      },
+    });
+    ctx = new AudioContext(); // the device rate: the API accepts it as is (no resampling needed)
+    await ctx.resume();
+    if (!RATES.includes(ctx.sampleRate))
+      throw new Error(`unsupported sample rate ${ctx.sampleRate}`);
+    await ctx.audioWorklet.addModule(
+      URL.createObjectURL(new Blob([WORKLET], { type: "text/javascript" }))
+    );
+    const mic = new AudioWorkletNode(ctx, "pcm16", {
+      channelCount: 1,
+      channelCountMode: "explicit",
+    });
+    ctx.createMediaStreamSource(stream).connect(mic);
+
+    ws = new WebSocket(new URL("/ws", location.href.replace(/^http/, "ws")));
+    ws.binaryType = "arraybuffer";
+    live = false;
+    ws.onopen = () =>
+      ws.send(
+        encode({
+          type: "config",
+          audio: {
+            format: "pcm_s16le",
+            sample_rate: ctx.sampleRate,
+            channels: 1,
+          },
+          turn_detection: { mode: "auto" },
+          results: { drafts: true },
+        })
+      );
+    mic.port.onmessage = e => {
+      // audio goes out after session_started
+      if (live && ws.readyState === WebSocket.OPEN)
+        ws.send(encode({ type: "audio", data: new Uint8Array(e.data) }));
+    };
+    ws.onmessage = e => {
+      const m = decode(e.data);
+      if (m.type === "session_started") {
+        live = true;
+        $("stop").disabled = false;
+      } else if (m.type === "draft") $("draft").textContent = strip(m.text);
+      else if (m.type === "committed") {
+        $("draft").textContent = "";
+        if (m.user_turn !== false && strip(m.text))
+          $("log").textContent += strip(m.text) + "\n";
+      } else if (m.type === "error")
+        $("log").textContent += `[${m.error_type}] ${m.message}\n`;
+    };
+    ws.onclose = e => {
+      $("log").textContent += `[closed ${e.code}]\n`;
+      stream.getTracks().forEach(t => t.stop());
+      ctx.close();
+      $("start").disabled = false;
+      $("stop").disabled = true;
+    };
+  };
+
+  $("stop").onclick = () => {
+    // the API commits the open turn, sends session_done and closes
+    $("stop").disabled = true;
+    live = false;
+    stream.getTracks().forEach(t => t.stop());
+    ws.send(encode({ type: "audio_done" }));
+  };
+</script>
+```
+
+</CodeGroup>
+
+Install `aiohttp`, put both files in one folder, run `python relay.py`, and open `http://localhost:8080`.
+
+- The page captures audio at the device's own sample rate and sends that rate in `config`; the server converts it, so the page does not resample. The rate must be one of the supported rates.
+- An `AudioWorklet` converts the samples to 16-bit PCM and posts about 100 ms per message.
+- **Stop** sends `audio_done`, so the server commits the last turn before it closes the connection.
+- The relay forwards the API's close code to the page. In production, add your own user authentication, per-user session limits and input checks to the relay.
+
+## Related
+
+- [Realtime Speech to Text](/features/speech-to-text/realtime)
+- [Build a realtime voice agent](/developer-guide/sdk-guide/cookbook/realtime-voice-agent)
+- [WebSocket Realtime Speech to Text reference](/api-reference/endpoint/websocket/asr-realtime)

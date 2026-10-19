@@ -694,8 +694,35 @@ components:
           type: boolean
           default: true
           description: |
-            Normalizes text for English and Chinese, improving stability for
-            numbers.
+            Rewrites numbers, dates, units and symbols as spoken words before
+            synthesis, improving stability. Uses `language` when it is set and
+            otherwise detects the language of each text chunk.
+
+        language:
+          type: [string, "null"]
+          maxLength: 35
+          pattern: "^[A-Za-z0-9_-]*$"
+          default: null
+          description: |
+            BCP-47 language tag of the text, for example `en`, `es-MX`, `zh-CN`
+            or `zh-TW`. Case-insensitive, and `_` is read as `-`. Applies to
+            the whole WebSocket session.
+
+            Used only by text normalization (how numbers, dates, units and
+            symbols are spelled out before synthesis) and by word-timestamp
+            alignment. It is not passed to the speech model and does not change
+            the voice, accent or audio quality; a wrong tag only changes how
+            those tokens are spelled out.
+
+            Omit it, or send `auto` or an empty string, to detect the language
+            per chunk. A tag without dedicated normalization rules skips
+            normalization instead of failing; see
+            [Supported normalization languages](/features/text-to-speech#supported-normalization-languages).
+            Without a region, Spanish follows Spain conventions; send `es-MX`
+            for Mexican readings. When `normalize` is false it only affects
+            word timestamps. For text that mixes languages, leave it unset.
+            Values longer than 35 characters, or containing anything other than
+            letters, digits, `-` and `_`, are rejected.
 
         early_stop_threshold:
           type: number

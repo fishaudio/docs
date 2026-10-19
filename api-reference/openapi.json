@@ -66,6 +66,19 @@
                       "title": "Finished At",
                       "type": "string"
                     },
+                    "anchor_day": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "UTC day of month used for credit refreshes; clamp to the month's last day. Missing/null falls back to updated_at's UTC day.",
+                      "title": "Anchor Day"
+                    },
                     "stripe_subscription_id": {
                       "anyOf": [
                         {
@@ -503,7 +516,7 @@
     "/v1/agent/sessions": {
       "get": {
         "summary": "List Agent Sessions",
-        "description": "List your team's sessions, newest first. Filter by agent, status, end\nreason, caller number, SIP Call-ID, or creation time. Paginate with `cursor` (recommended; follow\n`next_cursor` while `has_more` is true) or with `page` for offset pagination\nwith a `total` count — the two are mutually exclusive.",
+        "description": "List your team's sessions, newest first. Filter by agent, status, end\nreason, caller number, SIP Call-ID, end user ID, or creation time.\nPaginate with `cursor` (recommended; follow `next_cursor` while `has_more`\nis true) or with `page` for offset pagination with a `total` count. The\ntwo are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -621,6 +634,25 @@
               ],
               "default": null,
               "title": "Sip Call Id"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "end_user_id",
+            "description": "Exact-match end_user_id set at session creation.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "End User Id"
             },
             "deprecated": false
           },
@@ -899,7 +931,7 @@
       },
       "post": {
         "summary": "Create Agent Session",
-        "description": "Start a conversation session with an agent and receive a join token for the\nsession transport (currently LiveKit WebRTC). Authenticate with an API key to\nstart sessions with any agent in your team; without credentials only agents\npublished as public are reachable, and the request `Origin` must match the\nagent's allowed origins.\n\n`language` (and `overrides.language`) accepts `en`, `ja`, `zh`, `ko`, `es`,\n`fr`, `de`, `pt`, `it`, `nl`; anything else is 422. Omit it to use the agent's configured\nspeaking language.",
+        "description": "Start a conversation session with an agent and receive a join token for the\nsession transport (currently LiveKit WebRTC). Authenticate with an API key to\nstart sessions with any agent in your team; without credentials only agents\npublished as public are reachable, and the request `Origin` must match the\nagent's allowed origins.\n\n`language` (and `overrides.language`) accepts `en`, `ja`, `zh`, `ko`, `es`,\n`fr`, `de`, `pt`, `it`, `nl`; anything else is 422. Omit it to use the agent's configured\nspeaking language.\n\n`overrides.asr.model` picks the speech recognition model for this session,\nnested like the agent config's `asr` section and with the same values as\n`asr.model`. It needs an API key. A model in preview is 403 unless your\nteam has access or the agent already uses it.",
         "security": [
           {
             "BearerAuth": []
@@ -1383,6 +1415,18 @@
                       ],
                       "default": null,
                       "title": "Name"
+                    },
+                    "end_user_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "End User Id"
                     },
                     "status": {
                       "enum": [
@@ -2697,7 +2741,8 @@
                           "first_message",
                           "system_prompt",
                           "voice_id",
-                          "language"
+                          "language",
+                          "asr.model"
                         ],
                         "type": "string"
                       },
@@ -2972,7 +3017,8 @@
                           "first_message",
                           "system_prompt",
                           "voice_id",
-                          "language"
+                          "language",
+                          "asr.model"
                         ],
                         "type": "string"
                       },
@@ -3211,7 +3257,8 @@
                           "first_message",
                           "system_prompt",
                           "voice_id",
-                          "language"
+                          "language",
+                          "asr.model"
                         ],
                         "type": "string"
                       },
@@ -3723,7 +3770,7 @@
                       "$ref": "#/components/schemas/AgentVoiceConfigView"
                     },
                     "asr": {
-                      "$ref": "#/components/schemas/AgentAsrConfig"
+                      "$ref": "#/components/schemas/PublicAgentAsrConfig"
                     },
                     "conversation": {
                       "$ref": "#/components/schemas/AgentConversationConfig"
@@ -3893,7 +3940,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default),\n`elevenlabs:scribe_v2_realtime`, or `elevenlabs:scribe_v2_medical`.\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default),\n`elevenlabs:scribe_v2_realtime`, `elevenlabs:scribe_v2_medical`, or\n`fish_audio:transcribe-1-pro-realtime` (Fish realtime recognition, which\nalso decides end of turn and whether the caller is interrupting; in\npreview, switching an agent onto it is 403 unless your team has access).\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
         "security": [
           {
             "BearerAuth": []
@@ -3946,7 +3993,7 @@
                       "$ref": "#/components/schemas/AgentVoiceConfigView"
                     },
                     "asr": {
-                      "$ref": "#/components/schemas/AgentAsrConfig"
+                      "$ref": "#/components/schemas/PublicAgentAsrConfig"
                     },
                     "conversation": {
                       "$ref": "#/components/schemas/AgentConversationConfig"
@@ -4000,6 +4047,43 @@
           },
           "401": {
             "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request forbidden -- authorization will not help",
             "headers": {},
             "content": {
               "application/json": {
@@ -5385,7 +5469,7 @@
     "/v1/agent/agents/{agent_id}/tests/run": {
       "post": {
         "summary": "Run Tests",
-        "description": "Start a batch that runs the agent's attached tests against its current\ndraft, one run per test and repeat. A simulation test repeats\n`simulation.repeat_count` times, and a `repeat_count` in the body repeats\nevery selected test that many times instead. A batch starts at most 1000\nruns. Runs are queued and finish in the background, simulations take\nminutes. Poll `GET /v1/agent/agents/{agent_id}/test-batches/{batch_id}`\nuntil `completed` is true, then gate on `pass_rate`, which leaves out\n`error` runs.",
+        "description": "Start a batch that runs the agent's attached tests against its current\ndraft, one run per test and repeat. A simulation test repeats\n`simulation.repeat_count` times, and a `repeat_count` in the body repeats\nevery selected test that many times instead. A batch starts at most 1000\nruns. Runs are queued and finish in the background, simulations take\nminutes. Poll `GET /v1/agent/agents/{agent_id}/test-batches/{batch_id}`\nuntil `completed` is true, then gate on `pass_rate`, which leaves out\n`error` runs.\n\nEach simulation run that ends `passed` or `failed` is billed: a platform\nfee per agent reply plus the LLM tokens of the agent, the simulated user\nand the judge. `error` runs are not billed. A batch with a simulation\ntest returns 402 when the account has no trial balance or API credit\nleft, and 403 when the team's agreement does not allow agent usage.",
         "security": [
           {
             "BearerAuth": []
@@ -5520,6 +5604,80 @@
           },
           "401": {
             "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "No payment -- see charging schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request forbidden -- authorization will not help",
             "headers": {},
             "content": {
               "application/json": {
@@ -18153,6 +18311,18 @@
             "default": null,
             "title": "Name"
           },
+          "end_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "End User Id"
+          },
           "status": {
             "enum": [
               "pending",
@@ -18410,6 +18580,33 @@
         "type": "object"
       },
       "JsonValue": {},
+      "AgentSessionAsrOverridesPayload": {
+        "additionalProperties": false,
+        "description": "Per-session subset of the agent config's asr section, same field names.",
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "enum": [
+                  "deepgram:nova-3",
+                  "elevenlabs:scribe_v2_realtime",
+                  "elevenlabs:scribe_v2_medical",
+                  "fish_audio:transcribe-1-pro-realtime"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Speech recognition model for this session, same values as the agent's `asr.model`. A model in preview is refused with 403 unless your team has access or the agent already uses it.",
+            "title": "Model"
+          }
+        },
+        "title": "AgentSessionAsrOverridesPayload",
+        "type": "object"
+      },
       "AgentSessionCreatePayload": {
         "additionalProperties": false,
         "properties": {
@@ -18514,6 +18711,7 @@
               }
             ],
             "default": null,
+            "description": "Your identifier for the end user, stored verbatim. Returned on session reads and webhooks, and filterable with `GET /v1/agent/sessions?end_user_id=`.",
             "title": "End User Id"
           },
           "metadata": {
@@ -18692,6 +18890,17 @@
             ],
             "default": null,
             "title": "Language"
+          },
+          "asr": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentSessionAsrOverridesPayload"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "title": "AgentSessionOverridesPayload",
@@ -19200,7 +19409,26 @@
               }
             ],
             "default": null,
+            "description": "dial_failed and refer_failed: the final SIP response code the carrier gave. Null when it gave none.",
             "title": "Sip Status"
+          },
+          "dial_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "busy",
+                  "no_answer",
+                  "failed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "dial_failed and refer_failed: why the transfer target could not be reached, classified from sip_status the same way as an outbound call's dial_status.",
+            "title": "Dial Status"
           },
           "decline_reason": {
             "anyOf": [
@@ -19212,7 +19440,25 @@
               }
             ],
             "default": null,
+            "description": "declined: the agent's summary of why the transfer target declined. Null when none was given. What they actually said is in messages.",
             "title": "Decline Reason"
+          },
+          "consult_end_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "transfer_target_hangup",
+                  "connection_lost"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "consult_closed: how the consult call ended before the caller was connected. Null when it cannot be told.",
+            "title": "Consult End Reason"
           },
           "hold_started_at": {
             "anyOf": [
@@ -19273,6 +19519,51 @@
             ],
             "default": null,
             "title": "Ended At"
+          },
+          "transferred_call_ended_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "merged and referred: when the call between the caller and the transfer target ended. Null while it is still on. A cold transfer waits for the carrier's call record (up to about an hour) and stays null on imported SIP numbers.",
+            "title": "Transferred Call Ended At"
+          },
+          "transferred_call_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "merged and referred: how long the caller talked with the transfer target. Warm: from ended_at to transferred_call_ended_at. Cold: the carrier's call record, 0 when the target never really answered.",
+            "title": "Transferred Call Duration Seconds"
+          },
+          "transferred_call_end_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "caller_hangup",
+                  "transfer_target_hangup",
+                  "conversation_timeout",
+                  "connection_lost"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "merged: how the call between the caller and the transfer target ended. caller_hangup: the caller hung up (on an outbound call, the person the agent called). transfer_target_hangup: the transfer target hung up. conversation_timeout: the call reached the agent's maximum call duration, counted from the start of the call. connection_lost: a line dropped, nobody hung up. Null when it cannot be told, and always null on a cold transfer.",
+            "title": "Transferred Call End Reason"
           },
           "messages": {
             "items": {
@@ -19726,7 +20017,8 @@
                 "first_message",
                 "system_prompt",
                 "voice_id",
-                "language"
+                "language",
+                "asr.model"
               ],
               "type": "string"
             },
@@ -19754,6 +20046,52 @@
           "updated_at"
         ],
         "title": "PublicAgentEntity",
+        "type": "object"
+      },
+      "AgentEchoGuardPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "web_voice": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Voice calls in a browser or app (web widget, SDK, test calls). Null uses the default (on).",
+            "title": "Web Voice"
+          },
+          "phone_inbound": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Inbound phone calls. Null uses the default (on).",
+            "title": "Phone Inbound"
+          },
+          "phone_outbound": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Outbound phone calls. Null uses the default (off).",
+            "title": "Phone Outbound"
+          }
+        },
+        "title": "AgentEchoGuardPatch",
         "type": "object"
       },
       "AgentKeypadInputPatch": {
@@ -20250,7 +20588,8 @@
                 "enum": [
                   "deepgram:nova-3",
                   "elevenlabs:scribe_v2_realtime",
-                  "elevenlabs:scribe_v2_medical"
+                  "elevenlabs:scribe_v2_medical",
+                  "fish_audio:transcribe-1-pro-realtime"
                 ],
                 "type": "string"
               },
@@ -20676,6 +21015,18 @@
               }
             ],
             "default": null
+          },
+          "echo_guard": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentEchoGuardPatch"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Echo guard. For the first 3 seconds after the agent first starts talking in a call, the caller cannot interrupt it and anything the caller says while the agent is talking is not heard. This stops the agent's own voice, echoing back from a speakerphone or laptop, from cutting it off. Per channel: true on, false off, null uses the default (on for web_voice and phone_inbound, off for phone_outbound). Channels you send replace the stored value, null on a channel resets it to the default, channels you leave out are kept. null resets every channel."
           }
         },
         "title": "PublicAgentConversationPatch",
@@ -21139,6 +21490,22 @@
             "default": null,
             "title": "Speed"
           },
+          "tts_model": {
+            "anyOf": [
+              {
+                "enum": [
+                  "s2.1-pro",
+                  "drama-3"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tts Model"
+          },
           "pronunciation_dictionary_ids": {
             "anyOf": [
               {
@@ -21407,7 +21774,8 @@
                     "first_message",
                     "system_prompt",
                     "voice_id",
-                    "language"
+                    "language",
+                    "asr.model"
                   ],
                   "type": "string"
                 },
@@ -21600,41 +21968,6 @@
         "title": "AgentAnalysisSummaryConfig",
         "type": "object"
       },
-      "AgentAsrConfig": {
-        "properties": {
-          "model": {
-            "default": "deepgram:nova-3",
-            "enum": [
-              "deepgram:nova-3",
-              "elevenlabs:scribe_v2_realtime",
-              "elevenlabs:scribe_v2_medical"
-            ],
-            "title": "Model",
-            "type": "string"
-          },
-          "multilingual": {
-            "default": false,
-            "title": "Multilingual",
-            "type": "boolean"
-          },
-          "strict_language": {
-            "default": false,
-            "description": "Enforces voice.speaking_language whatever multilingual says: speech recognized as another language reaches the agent as [unintelligible speech]. Language is detected per utterance, so a short or heavily accented phrase in the speaking language can occasionally be detected as another language and replaced too. With deepgram:nova-3, speech in another language is usually not transcribed at all. Only enable it when you explicitly need to stop the agent from understanding other languages.",
-            "title": "Strict Language",
-            "type": "boolean"
-          },
-          "keyterms": {
-            "items": {
-              "type": "string"
-            },
-            "maxItems": 50,
-            "title": "Keyterms",
-            "type": "array"
-          }
-        },
-        "title": "AgentAsrConfig",
-        "type": "object"
-      },
       "AgentConversationConfig": {
         "properties": {
           "max_duration_seconds": {
@@ -21751,9 +22084,67 @@
           },
           "keypad_input": {
             "$ref": "#/components/schemas/AgentKeypadInput"
+          },
+          "echo_guard": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentEchoGuard"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Echo guard. For the first 3 seconds after the agent first starts talking in a call, the caller cannot interrupt it and anything the caller says while the agent is talking is not heard. This stops the agent's own voice, echoing back from a speakerphone or laptop, from cutting it off. Per channel: true on, false off, null uses the default (on for web_voice and phone_inbound, off for phone_outbound)."
           }
         },
         "title": "AgentConversationConfig",
+        "type": "object"
+      },
+      "AgentEchoGuard": {
+        "description": "Echo guard per call channel: true on, false off, null uses the default.",
+        "properties": {
+          "web_voice": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Voice calls in a browser or app (web widget, SDK, test calls). Null uses the default (on).",
+            "title": "Web Voice"
+          },
+          "phone_inbound": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Inbound phone calls. Null uses the default (on).",
+            "title": "Phone Inbound"
+          },
+          "phone_outbound": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Outbound phone calls. Null uses the default (off).",
+            "title": "Phone Outbound"
+          }
+        },
+        "title": "AgentEchoGuard",
         "type": "object"
       },
       "AgentGuardrailsConfig": {
@@ -22286,6 +22677,15 @@
             "title": "Speed",
             "type": "number"
           },
+          "tts_model": {
+            "default": "s2.1-pro",
+            "enum": [
+              "s2.1-pro",
+              "drama-3"
+            ],
+            "title": "Tts Model",
+            "type": "string"
+          },
           "pronunciation_dictionary_ids": {
             "items": {
               "type": "string"
@@ -22295,6 +22695,43 @@
           }
         },
         "title": "AgentVoiceConfigView",
+        "type": "object"
+      },
+      "PublicAgentAsrConfig": {
+        "description": "The asr section as the public API reads it: without the console-only\nnoise cancellation and speaker label switches.",
+        "properties": {
+          "model": {
+            "default": "deepgram:nova-3",
+            "enum": [
+              "deepgram:nova-3",
+              "elevenlabs:scribe_v2_realtime",
+              "elevenlabs:scribe_v2_medical",
+              "fish_audio:transcribe-1-pro-realtime"
+            ],
+            "title": "Model",
+            "type": "string"
+          },
+          "multilingual": {
+            "default": false,
+            "title": "Multilingual",
+            "type": "boolean"
+          },
+          "strict_language": {
+            "default": false,
+            "description": "Enforces voice.speaking_language whatever multilingual says: speech recognized as another language reaches the agent as [unintelligible speech]. Language is detected per utterance, so a short or heavily accented phrase in the speaking language can occasionally be detected as another language and replaced too. With deepgram:nova-3, speech in another language is usually not transcribed at all. Only enable it when you explicitly need to stop the agent from understanding other languages.",
+            "title": "Strict Language",
+            "type": "boolean"
+          },
+          "keyterms": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Keyterms",
+            "type": "array"
+          }
+        },
+        "title": "PublicAgentAsrConfig",
         "type": "object"
       },
       "PublicAgentKnowledgeBaseConfig": {
@@ -22469,7 +22906,7 @@
             "$ref": "#/components/schemas/AgentVoiceConfigView"
           },
           "asr": {
-            "$ref": "#/components/schemas/AgentAsrConfig"
+            "$ref": "#/components/schemas/PublicAgentAsrConfig"
           },
           "conversation": {
             "$ref": "#/components/schemas/AgentConversationConfig"
@@ -23095,6 +23532,129 @@
         "title": "PublicAgentTestRun",
         "type": "object"
       },
+      "PublicAgentTestRunLLMCharge": {
+        "properties": {
+          "participant": {
+            "description": "Whose tokens: the agent, the simulated user, or the judge.",
+            "enum": [
+              "agent",
+              "simulated_user",
+              "judge"
+            ],
+            "title": "Participant",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "amount_usd": {
+            "description": "What these tokens charged, in USD.",
+            "title": "Amount Usd",
+            "type": "string"
+          },
+          "input": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentTestRunTokenCharge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "cache_read": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentTestRunTokenCharge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "cache_write_5m": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentTestRunTokenCharge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "cache_write_1h": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentTestRunTokenCharge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "output": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentTestRunTokenCharge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "participant",
+          "model",
+          "amount_usd"
+        ],
+        "title": "PublicAgentTestRunLLMCharge",
+        "type": "object"
+      },
+      "PublicAgentTestRunPlatformFee": {
+        "properties": {
+          "rate_usd": {
+            "description": "USD per agent reply.",
+            "title": "Rate Usd",
+            "type": "string"
+          },
+          "amount_usd": {
+            "description": "`agent_replies` times `rate_usd`.",
+            "title": "Amount Usd",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rate_usd",
+          "amount_usd"
+        ],
+        "title": "PublicAgentTestRunPlatformFee",
+        "type": "object"
+      },
+      "PublicAgentTestRunTokenCharge": {
+        "properties": {
+          "tokens": {
+            "title": "Tokens",
+            "type": "integer"
+          },
+          "amount_usd": {
+            "title": "Amount Usd",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tokens",
+          "amount_usd"
+        ],
+        "title": "PublicAgentTestRunTokenCharge",
+        "type": "object"
+      },
       "PublicAgentTestRunUsage": {
         "properties": {
           "agent_replies": {
@@ -23112,8 +23672,28 @@
               }
             ],
             "default": null,
-            "description": "LLM cost of the run in USD, null while any part is unpriced.",
+            "description": "What the run was charged in USD. `0` on a finished run that is not charged: runs that end in `error` and tests other than simulations. Null until the run's charge is settled.",
             "title": "Cost Usd"
+          },
+          "platform_fee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentTestRunPlatformFee"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The fee per agent reply. Null unless charged."
+          },
+          "llm": {
+            "description": "LLM tokens, one entry per participant and model, by token category. With `platform_fee` they add up to `cost_usd`. Empty unless charged.",
+            "items": {
+              "$ref": "#/components/schemas/PublicAgentTestRunLLMCharge"
+            },
+            "title": "Llm",
+            "type": "array"
           }
         },
         "title": "PublicAgentTestRunUsage",
@@ -24132,6 +24712,11 @@
             ],
             "default": null,
             "title": "Channel"
+          },
+          "world_context": {
+            "default": false,
+            "title": "World Context",
+            "type": "boolean"
           }
         },
         "required": [
@@ -25506,9 +26091,29 @@
           },
           "normalize": {
             "default": true,
-            "description": "Normalizes text for English and Chinese, improving stability for numbers.",
+            "description": "Rewrites numbers, dates, units and symbols as spoken words before synthesis, improving stability. Uses `language` when it is set and otherwise detects the language of each text chunk.",
             "title": "Normalize",
             "type": "boolean"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "maxLength": 35,
+                "pattern": "^[A-Za-z0-9_-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "BCP-47 language tag of the text, for example `en`, `es-MX` or `zh-CN`. Case-insensitive, and `_` is read as `-`. Used only by text normalization (how numbers, dates, units and symbols are spelled out before synthesis) and by word-timestamp alignment. It is not passed to the speech model and does not change the voice, accent or audio quality; a wrong tag only changes how those tokens are spelled out. Omit it, or send `auto` or an empty string, to detect the language per chunk. A tag without dedicated normalization rules skips normalization instead of failing. Without a region, Spanish follows Spain conventions; send `es-MX` for Mexican readings. When `normalize` is false it only affects word timestamps. For text that mixes languages, leave it unset.",
+            "examples": [
+              "en",
+              "es-MX",
+              "zh-CN"
+            ],
+            "title": "Language"
           },
           "format": {
             "default": "mp3",
@@ -25739,9 +26344,29 @@
           },
           "normalize": {
             "default": true,
-            "description": "Normalizes text for English and Chinese, improving stability for numbers.",
+            "description": "Rewrites numbers, dates, units and symbols as spoken words before synthesis, improving stability. Uses `language` when it is set and otherwise detects the language of each text chunk.",
             "title": "Normalize",
             "type": "boolean"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "maxLength": 35,
+                "pattern": "^[A-Za-z0-9_-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "BCP-47 language tag of the text, for example `en`, `es-MX` or `zh-CN`. Case-insensitive, and `_` is read as `-`. Used only by text normalization (how numbers, dates, units and symbols are spelled out before synthesis) and by word-timestamp alignment. It is not passed to the speech model and does not change the voice, accent or audio quality; a wrong tag only changes how those tokens are spelled out. Omit it, or send `auto` or an empty string, to detect the language per chunk. A tag without dedicated normalization rules skips normalization instead of failing. Without a region, Spanish follows Spain conventions; send `es-MX` for Mexican readings. When `normalize` is false it only affects word timestamps. For text that mixes languages, leave it unset.",
+            "examples": [
+              "en",
+              "es-MX",
+              "zh-CN"
+            ],
+            "title": "Language"
           },
           "format": {
             "default": "mp3",
