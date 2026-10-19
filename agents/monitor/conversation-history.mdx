@@ -213,9 +213,11 @@ Sessions on a [custom LLM](/agents/build/custom-llm) also carry `llm_endpoint_er
   "llm_endpoint_errors": [
     {
       "occurred_at": "2026-10-15T15:45:10Z",
+      "turn_id": 3,
       "type": "http_error",
+      "reason": null,
       "status_code": 502,
-      "message": "no tunnel",
+      "response_body": "{\"detail\":\"no tunnel\"}",
       "duration_ms": 812,
       "consecutive_failures": 1
     }
@@ -223,9 +225,13 @@ Sessions on a [custom LLM](/agents/build/custom-llm) also carry `llm_endpoint_er
 }
 ```
 
+- `turn_id` is the turn the failed reply belonged to. It uses the same numbering as `message` items.
 - `type` is `http_error`, `timeout`, `connection_error` or `invalid_response`. See [Failure behavior](/agents/build/custom-llm#failure-behavior). New types may be added.
+- `reason` is set on `connection_error` and `invalid_response` only. New reasons may be added.
+  - `connection_error`: `dns_failed`, `connection_refused`, `connection_reset`, `tls_failed`, `address_not_allowed` (an address the platform does not call) or `unknown`.
+  - `invalid_response`: `not_event_stream` (a streamed request got something else back), `stream_incomplete` (the stream ended with no `finish_reason`, usage or output), `empty_reply` (no text and no tool call) or `unknown`.
 - `status_code` is set on `http_error` only.
-- `message` is the start of your response body, or the cause of the failure. It is at most 300 characters, and your API key is masked.
+- `response_body` is the start of what your endpoint sent back, on `http_error` and `not_event_stream` only. It is at most 300 characters, and your API key is masked. It is `null` when the body was empty.
 - `duration_ms` is the time from the request to the response or the failure. It is `null` when it was not measured.
 - `consecutive_failures` counts failures in a row. The agent hangs up at the third.
 
