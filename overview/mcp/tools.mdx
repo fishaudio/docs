@@ -29,12 +29,12 @@ Long text may come back as several clips. How much text one call can take depend
 
 ## File uploads
 
-In clients that cannot upload files themselves, such as claude.ai, the agent gives you a link to upload the file from your browser. Anyone with the link can upload to it until it expires, so don't share it.
+Both tools return an upload link, and the agent then uploads the file to it. In clients that cannot upload files themselves, such as claude.ai, the agent gives you a link to upload the file from your browser instead. Anyone with the link can upload to it until it expires, so don't share it.
 
-| Tool                  | What it does                                                                                                                                   |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get_upload_url`      | Uploads a local file to temporary storage so the agent can pass it to another tool, for example a recording to transcribe or samples to clone. |
-| `create_media_upload` | Uploads an image, video, or audio file to your workspace as a generation input; `get_media_model` lists the files each model accepts.          |
+| Tool                  | What it does                                                                                                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get_upload_url`      | Creates a link for uploading a local file to temporary storage, so the agent can pass the file to another tool, for example a recording to transcribe or samples to clone. |
+| `create_media_upload` | Creates a link for uploading an image, video, or audio file to your workspace as a generation input; `get_media_model` lists the files each model accepts.                 |
 
 ## Images and video
 
