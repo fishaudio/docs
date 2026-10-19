@@ -66,6 +66,19 @@
                       "title": "Finished At",
                       "type": "string"
                     },
+                    "anchor_day": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "UTC day of month used for credit refreshes; clamp to the month's last day. Missing/null falls back to updated_at's UTC day.",
+                      "title": "Anchor Day"
+                    },
                     "stripe_subscription_id": {
                       "anyOf": [
                         {
@@ -24699,6 +24712,11 @@
             ],
             "default": null,
             "title": "Channel"
+          },
+          "world_context": {
+            "default": false,
+            "title": "World Context",
+            "type": "boolean"
           }
         },
         "required": [
