@@ -349,15 +349,12 @@ The platform sends one `POST` with a JSON body:
     "dialed_number": "+14155550100",
     "agent_id": "a1b2…",
     "phone_number_id": "7e9f…",
-    "twilio_call_sid": "CA5d3a…",
     "call_sid": "CA5d3a…"
   }
 }
 ```
 
 `caller_number` and `dialed_number` are E.164. `caller_number` is an empty string when the carrier withholds the caller's number, and `call_sid` is empty when the call did not come through a Twilio number.
-
-`twilio_call_sid` is deprecated. It carries the same value as `call_sid` and stays in the request. Read `call_sid` in new code.
 
 To match this request with the call, keep `call_sid`. Once the call is connected, `GET /v1/agent/sessions?call_sid=…` returns its session, and post-call webhooks carry the same value. This works only when `call_sid` is not empty, that is for calls through a Twilio number. During the call, webhook tools can send the session id with `{{system.session_id}}`. New fields can be added to this request, see [Forward compatibility](#forward-compatibility).
 
