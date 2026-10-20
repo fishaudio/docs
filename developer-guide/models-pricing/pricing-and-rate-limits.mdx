@@ -39,11 +39,11 @@ the same price. See [Migrate from S1](/developer-guide/models-pricing/migrate-fr
 
 ### Automatic Speech Recognition (ASR) Models
 
-| Model Name                           | Price (USD)          |
-| ------------------------------------ | -------------------- |
-| `transcribe-1-pro` (recommended)     | $0.36 / audio hour   |
-| `transcribe-1`                       | $0.36 / audio hour   |
-| `transcribe-stream-1` (Realtime ASR) | $0.36 / session hour |
+| Model Name                                    | Price (USD)          |
+| --------------------------------------------- | -------------------- |
+| `transcribe-1-pro` (recommended)              | $0.36 / audio hour   |
+| `transcribe-1`                                | $0.36 / audio hour   |
+| `transcribe-stream-1` (Realtime ASR, Preview) | $0.36 / session hour |
 
 For recordings, we recommend `transcribe-1-pro`, which handles multi-speaker conversations (speaker markers and speaker turns), long recordings, and inline emotion cues. Both file models cost the same and use the [Speech to Text API](/api-reference/endpoint/openapi-v1/speech-to-text). Send the `model: transcribe-1-pro` HTTP header to select Pro; a request whose `model` header is missing or not an exact match is served and billed as `transcribe-1`. See the [model comparison](/features/speech-to-text#choose-an-asr-model).
 

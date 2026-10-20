@@ -93,7 +93,7 @@ channels:
               enum:
                 - transcribe-stream-1
               default: transcribe-stream-1
-              description: Realtime speech-to-text model. Optional; `transcribe-stream-1` is the default and the only realtime model. The legacy name `transcribe-1-pro-realtime` reaches the same model.
+              description: Realtime speech-to-text model. Optional; `transcribe-stream-1` (Preview) is the default and the only realtime model. The legacy name `transcribe-1-pro-realtime` reaches the same model.
     description: |
       Realtime speech-to-text channel. Clients stream audio and receive
       transcripts turn by turn, with turn detection, optional live drafts and
@@ -101,7 +101,7 @@ channels:
 
       ## Connection Headers
       - `Authorization: Bearer <api_key>` - Required for authentication (see security section)
-      - `model: transcribe-stream-1` - Optional; the default
+      - `model: transcribe-stream-1` (Preview) - Optional; the default
 
       Every message in both directions is one MessagePack map in a binary
       frame, with a `type` field. Send `config` first, wait for
