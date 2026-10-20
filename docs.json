@@ -48,7 +48,14 @@
                   }
                 ]
               },
-              "features/speech-to-text",
+              {
+                "group": "Speech to Text",
+                "icon": "waveform",
+                "pages": [
+                  "features/speech-to-text",
+                  "features/speech-to-text/realtime"
+                ]
+              },
               "features/voice-design",
               "features/voice-cloning",
               "features/realtime-streaming",
@@ -188,7 +195,8 @@
                 "group": "Speech to Text",
                 "pages": [
                   "developer-guide/sdk-guide/cookbook/transcribe-to-captions",
-                  "developer-guide/sdk-guide/cookbook/batch-transcribe-with-language-hint"
+                  "developer-guide/sdk-guide/cookbook/batch-transcribe-with-language-hint",
+                  "developer-guide/sdk-guide/cookbook/realtime-transcription"
                 ]
               },
               {
@@ -203,7 +211,8 @@
                 "group": "Realtime Streaming",
                 "pages": [
                   "developer-guide/sdk-guide/cookbook/realtime-llm-to-speech",
-                  "developer-guide/sdk-guide/cookbook/voice-agent-loop"
+                  "developer-guide/sdk-guide/cookbook/voice-agent-loop",
+                  "developer-guide/sdk-guide/cookbook/realtime-voice-agent"
                 ]
               },
               {
@@ -313,7 +322,10 @@
               {
                 "group": "ASR (v1)",
                 "icon": "microphone",
-                "pages": ["api-reference/endpoint/openapi-v1/speech-to-text"]
+                "pages": [
+                  "api-reference/endpoint/openapi-v1/speech-to-text",
+                  "api-reference/endpoint/websocket/asr-realtime"
+                ]
               },
               {
                 "group": "Voice Design",

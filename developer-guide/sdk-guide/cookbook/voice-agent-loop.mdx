@@ -147,8 +147,16 @@ console.log("Agent:", reply);
 
 `reference_id` points the reply at a saved voice. Drop it to use the default voice, or clone the caller's voice from the same clip you just transcribed by passing `references` instead. See [Instant voice cloning](/developer-guide/sdk-guide/cookbook/instant-voice-cloning).
 
+<Tip>
+  This recipe handles one recorded utterance at a time. To listen to a live
+  conversation, with turn detection, interruptions and backchannels, see [Build
+  a realtime voice
+  agent](/developer-guide/sdk-guide/cookbook/realtime-voice-agent).
+</Tip>
+
 ## Related
 
 - [Speech-to-Text guide](/features/speech-to-text)
+- [Build a realtime voice agent](/developer-guide/sdk-guide/cookbook/realtime-voice-agent)
 - [Realtime: LLM tokens → speech](/developer-guide/sdk-guide/cookbook/realtime-llm-to-speech)
 - [Stream TTS to a file](/developer-guide/sdk-guide/cookbook/streaming-to-file)
