@@ -96,6 +96,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 | `warm_ring_timeout_seconds`    | Warm only: how long the human's phone rings before the transfer counts as unanswered, in whole seconds from 5 to 120. Default 30. See [Timeouts](#timeouts).                                                                                                                                                                                            |
 | `warm_confirm_timeout_seconds` | Warm `confirm` and `briefing` only: how long the agent waits after the human answers before giving up, in whole seconds from 10 to 300. Default 60. See [Timeouts](#timeouts).                                                                                                                                                                          |
 | `warm_human_detection`         | Warm `confirm` and `briefing` only: `true` makes the agent wait for the other side to speak and stop the transfer when voicemail or a phone menu answers. Default `false`. See [Waiting for a person to answer](#waiting-for-a-person-to-answer).                                                                                                       |
+| `on_failure`                   | What happens when the transfer doesn't connect, cold or warm: `action` is `return_to_agent` (default) or `end_call`, and `message` is an optional line for the agent to say. See [If the transfer fails](#if-the-transfer-fails).                                                                                                                       |
 
 Destination numbers must be E.164 and are limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list. A missing label, or two labels that differ only in case, is rejected the same way. There is no cap on the number of destinations, but every description is part of the agent's tool instructions on every turn, so keep the list to what a receptionist could hold in their head.
 
@@ -197,7 +198,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 
 The agent says its [announcement](#the-transfer-announcement) and, once that finishes playing, the call is handed to the carrier. The caller hears a dial tone while the destination rings; the agent drops out and its session ends at the handoff.
 
-If the handoff is refused (the destination is unreachable, or the number doesn't support transfers), the agent stays on the line, apologizes, and keeps helping. It can attempt the transfer again later.
+If the handoff is refused (the destination is unreachable, or the number doesn't support transfers), the agent stays on the line, apologizes, and keeps helping. It can attempt the transfer again later. You can have the agent end the call instead, see [If the transfer fails](#if-the-transfer-fails).
 
 ## What happens on a warm transfer
 
@@ -232,7 +233,7 @@ If the handoff is refused (the destination is unreachable, or the number doesn't
   </Step>
 </Steps>
 
-If the human cannot be reached, declines, or the consult call hits voicemail, the caller comes off hold and the agent apologizes and continues helping. To keep the agent from briefing a voicemail or a phone menu, turn on [Wait for a person to answer](#waiting-for-a-person-to-answer). It can retry if the caller asks. If the caller hangs up while on hold, the agent briefly tells the human what happened and ends the consult call.
+If the human cannot be reached, declines, or the consult call hits voicemail, the caller comes off hold and the transfer fails. By default the agent apologizes and continues helping, and it can retry if the caller asks. You can have the agent end the call instead, see [If the transfer fails](#if-the-transfer-fails). To keep the agent from briefing a voicemail or a phone menu, turn on [Wait for a person to answer](#waiting-for-a-person-to-answer). If the caller hangs up while on hold, the agent briefly tells the human what happened and ends the consult call.
 
 ### Customizing the briefing
 
@@ -277,22 +278,22 @@ These settings apply to each warm destination. In the console, they appear on th
 
 ### Timeouts
 
-| Console                       | API field                      | Range     | Default | What it does                                                                                                                                                                                                                                                                                                    |
-| ----------------------------- | ------------------------------ | --------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Ring timeout (seconds)**    | `warm_ring_timeout_seconds`    | 5 to 120  | 30      | How long the human's phone rings. When it runs out, the transfer counts as unanswered and the caller comes back to the agent. Set it shorter than the time your team's voicemail takes to pick up, so an unanswered call comes back instead of reaching voicemail.                                              |
-| **Confirm timeout (seconds)** | `warm_confirm_timeout_seconds` | 10 to 300 | 60      | `confirm` and `briefing` only. How long the agent waits, after the human answers, for the call to be taken. When it runs out, the agent ends the consult call and the caller comes back to the agent. The agent never cuts its briefing short, and the human always gets at least 10 seconds to reply after it. |
+| Console                       | API field                      | Range     | Default | What it does                                                                                                                                                                                                                                                                                                              |
+| ----------------------------- | ------------------------------ | --------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ring timeout (seconds)**    | `warm_ring_timeout_seconds`    | 5 to 120  | 30      | How long the human's phone rings. When it runs out, the transfer counts as unanswered and [fails](#if-the-transfer-fails). Set it shorter than the time your team's voicemail takes to pick up, so an unanswered call fails instead of reaching voicemail.                                                                |
+| **Confirm timeout (seconds)** | `warm_confirm_timeout_seconds` | 10 to 300 | 60      | `confirm` and `briefing` only. How long the agent waits, after the human answers, for the call to be taken. When it runs out, the agent ends the consult call and the transfer [fails](#if-the-transfer-fails). The agent never cuts its briefing short, and the human always gets at least 10 seconds to reply after it. |
 
 ### Waiting for a person to answer
 
 With **Wait for a person to answer** on, the agent says nothing after the human's line answers. It waits for the other side to speak, then works out what answered:
 
-| What answered                    | What happens                                                                                                                           |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| A person                         | The agent briefs them as usual.                                                                                                        |
-| Voicemail                        | The transfer stops, usually while the greeting is still playing, and the agent says nothing to it. The caller comes back to the agent. |
-| A phone menu (IVR)               | The same as voicemail.                                                                                                                 |
-| A hold queue, or nobody speaking | The agent keeps waiting until the confirm timeout.                                                                                     |
-| Only a name, then a pause        | The agent treats it as a person waiting for a reply and starts the briefing.                                                           |
+| What answered                    | What happens                                                                                                           |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| A person                         | The agent briefs them as usual.                                                                                        |
+| Voicemail                        | The transfer stops, usually while the greeting is still playing, and the agent says nothing to it. The transfer fails. |
+| A phone menu (IVR)               | The same as voicemail.                                                                                                 |
+| A hold queue, or nobody speaking | The agent keeps waiting until the confirm timeout.                                                                     |
+| Only a name, then a pause        | The agent treats it as a person waiting for a reply and starts the briefing.                                           |
 
 - It is off by default, and available for `confirm` and `briefing`. `direct` connects as soon as the human answers, so there is nothing to wait for.
 - Leave it off for lines where people can only be reached through a phone menu, because the menu stops the transfer.
@@ -321,6 +322,79 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 ```
 
 Since the destination list is replaced as a whole on every write, send every destination you want to keep.
+
+## If the transfer fails
+
+When a transfer doesn't connect, the caller comes back to the agent by default. You can have the agent end the call instead, for example when nobody else on the line can help. The choice is set on each destination and applies to cold and warm transfers.
+
+### What counts as a failed transfer
+
+| What happened                                                                                             | Mode                          | `outcome`            |
+| --------------------------------------------------------------------------------------------------------- | ----------------------------- | -------------------- |
+| The carrier refuses the handoff, or the destination doesn't answer while the caller is on the line        | Cold                          | `refer_failed`       |
+| The line is busy, the call is rejected, or nobody answers within the [ring timeout](#timeouts)            | Warm                          | `dial_failed`        |
+| Your team member says they can't take the call                                                            | Warm `confirm`                | `declined`           |
+| Nobody takes the call within the [confirm timeout](#timeouts)                                             | Warm `confirm` and `briefing` | `consult_timeout`    |
+| Voicemail or a phone menu answers, with [Wait for a person to answer](#waiting-for-a-person-to-answer) on | Warm `confirm` and `briefing` | `voicemail` or `ivr` |
+| Your team member hangs up, or the line drops, before the caller is connected                              | Warm                          | `consult_closed`     |
+| The caller and your team member can't be connected                                                        | Warm                          | `merge_failed`       |
+
+These are not failed transfers:
+
+- **The caller hangs up** during the transfer, including while it rings or while they are on hold. The call is over, so nothing else happens.
+- **Voicemail answers a warm `briefing` transfer** with Wait for a person to answer off. The agent briefs the voicemail and the caller is connected to it. Turn on [Wait for a person to answer](#waiting-for-a-person-to-answer) to prevent this.
+
+<Tip>
+  Set the [ring timeout](#timeouts) shorter than the time the destination's
+  voicemail takes to pick up. An unanswered call then fails instead of reaching
+  voicemail.
+</Tip>
+
+### What the caller hears
+
+| `action`                    | Without a message                                                                                           | With a message                                                 |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `return_to_agent` (default) | The agent briefly apologizes and keeps helping. It can try the transfer again if the caller asks.           | The agent says your message word for word, then keeps helping. |
+| `end_call`                  | The agent says one short sentence that it couldn't connect the caller and says goodbye. Then the call ends. | The agent says your message word for word. Then the call ends. |
+
+With `end_call`, the agent asks no questions and calls no tools before the call ends. The platform hangs up the call, so it doesn't depend on the agent deciding to. The session ends with `end_reason` `agent_hangup` (see [Status and end reason](/agents/monitor/conversation-history#status-and-end-reason)), and the failed attempt is still recorded in the [transfer results](#transfer-results).
+
+### In the console
+
+On each destination card, turn on **End the call if the transfer doesn't connect**. Leave it off to return the caller to the agent. The message can only be set through the API.
+
+### Through the API
+
+Set `on_failure` on the destination. Leave it out to keep the default. Since the destination list is replaced as a whole on every write, send every destination you want to keep.
+
+```bash End the call
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "conversation": {
+      "transfer_destinations": [
+        {
+          "label": "Support desk",
+          "phone_number": "+14155550123",
+          "mode": "warm",
+          "warm_connect": "confirm",
+          "on_failure": {
+            "action": "end_call",
+            "message": "Sorry, nobody from our team is available right now. Please call back during business hours. Goodbye."
+          }
+        }
+      ]
+    }
+  }'
+```
+
+| Field                | Description                                                                                                                                                                                                                                                                                                           |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `on_failure.action`  | `return_to_agent` (default) brings the caller back to the agent. `end_call` ends the call.                                                                                                                                                                                                                            |
+| `on_failure.message` | Optional. The line the agent says word for word after a failed transfer. At most 500 characters. Spaces at the start and end are removed. [Dynamic variables](/agents/build/dynamic-variables) are filled in when the session starts. A reference to an unknown system variable is rejected with `422` when you save. |
+
+Don't put a question in an `end_call` message, because the caller can't answer it.
 
 ## Caller ID on transfers
 
@@ -366,7 +440,7 @@ Every transfer attempt is recorded on the session, including the ones that faile
 - **In the console**: open the call from the **Conversations** page. Each attempt has a card in the timeline with the destination, the result and why a failed one failed. A connected transfer also shows how long the caller and your team member talked and how their call ended.
 - **Through the API**: each attempt is a `transfer` item in the session's `items`. See [Transfer items](/agents/monitor/conversation-history#transfer-items) for every field.
 
-A session with a successful transfer ends with `end_reason` `escalated`, however the call goes after the handoff. A failed attempt does not make the session `escalated`. What the agent does after a failure is described under [cold](#what-happens-on-a-cold-transfer) and [warm](#what-happens-on-a-warm-transfer) transfers.
+A session with a successful transfer ends with `end_reason` `escalated`, however the call goes after the handoff. A failed attempt does not make the session `escalated`. What the agent does after a failure is described under [If the transfer fails](#if-the-transfer-fails).
 
 ### Outcomes
 
