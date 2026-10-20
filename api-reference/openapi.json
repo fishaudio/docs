@@ -516,7 +516,7 @@
     "/v1/agent/sessions": {
       "get": {
         "summary": "List Agent Sessions",
-        "description": "List your team's sessions, newest first. Filter by agent, status, end\nreason, caller number, SIP Call-ID, end user ID, or creation time.\nPaginate with `cursor` (recommended; follow `next_cursor` while `has_more`\nis true) or with `page` for offset pagination with a `total` count. The\ntwo are mutually exclusive.",
+        "description": "List your team's sessions, newest first. Filter by agent, status, end\nreason, caller number, SIP Call-ID, end user ID, call_sid, or creation\ntime. Paginate with `cursor` (recommended; follow `next_cursor` while\n`has_more` is true) or with `page` for offset pagination with a `total`\ncount. The two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -653,6 +653,25 @@
               ],
               "default": null,
               "title": "End User Id"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "call_sid",
+            "description": "Exact-match carrier call id (Twilio's CallSid on inbound calls through a Twilio number), the call_sid the conversation_init request carries, for finding the session behind that request.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Call Sid"
             },
             "deprecated": false
           },
@@ -1553,6 +1572,18 @@
                       ],
                       "default": null,
                       "title": "Sip Call Id"
+                    },
+                    "call_sid": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Call Sid"
                     },
                     "timezone": {
                       "anyOf": [
@@ -3940,7 +3971,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default),\n`elevenlabs:scribe_v2_realtime`, `elevenlabs:scribe_v2_medical`, or\n`fish_audio:transcribe-1-pro-realtime` (Fish realtime recognition, which\nalso decides end of turn and whether the caller is interrupting; in\npreview, switching an agent onto it is 403 unless your team has access).\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default),\n`elevenlabs:scribe_v2_realtime`, `elevenlabs:scribe_v2_medical`, or\n`fish_audio:transcribe-stream-1` (Fish realtime recognition, which\nalso decides end of turn and whether the caller is interrupting; in\npreview, switching an agent onto it is 403 unless your team has access).\nIts former id `fish_audio:transcribe-1-pro-realtime` is still accepted\nand reads back as the current id.\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
         "security": [
           {
             "BearerAuth": []
@@ -18449,6 +18480,18 @@
             "default": null,
             "title": "Sip Call Id"
           },
+          "call_sid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Call Sid"
+          },
           "timezone": {
             "anyOf": [
               {
@@ -18591,7 +18634,7 @@
                   "deepgram:nova-3",
                   "elevenlabs:scribe_v2_realtime",
                   "elevenlabs:scribe_v2_medical",
-                  "fish_audio:transcribe-1-pro-realtime"
+                  "fish_audio:transcribe-stream-1"
                 ],
                 "type": "string"
               },
@@ -20589,7 +20632,7 @@
                   "deepgram:nova-3",
                   "elevenlabs:scribe_v2_realtime",
                   "elevenlabs:scribe_v2_medical",
-                  "fish_audio:transcribe-1-pro-realtime"
+                  "fish_audio:transcribe-stream-1"
                 ],
                 "type": "string"
               },
@@ -22706,7 +22749,7 @@
               "deepgram:nova-3",
               "elevenlabs:scribe_v2_realtime",
               "elevenlabs:scribe_v2_medical",
-              "fish_audio:transcribe-1-pro-realtime"
+              "fish_audio:transcribe-stream-1"
             ],
             "title": "Model",
             "type": "string"
