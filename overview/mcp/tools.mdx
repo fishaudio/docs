@@ -1,0 +1,104 @@
+---
+title: "MCP Tools"
+sidebarTitle: "Tools"
+description: "What each tool on the Fish Audio MCP server does, grouped by area"
+icon: "wrench"
+---
+
+These are the tools the [Fish Audio MCP server](/overview/mcp) exposes. Naming one in a prompt helps when you want to steer a step, for example "List my own voices with `search_voices`."
+
+The agent gets each tool's arguments from the server when your client connects. Costs are in [Credits](/overview/mcp#credits), and plan requirements in [Good to know](/overview/mcp#good-to-know).
+
+## Voices
+
+| Tool                 | What it does                                                                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `search_voices`      | Searches the public voice library, browses popular voices for a language, or lists your own workspace's voices (`self`).                               |
+| `get_voice`          | Shows one voice's description, languages, tags, popularity, and a sample.                                                                              |
+| `create_voice_clone` | Creates a voice from recordings of one speaker ([what makes a good sample](/features/voice-cloning)) once you confirm you have the rights to it. Free. |
+| `verify_voice_clone` | Finishes a clone that needs speaker verification, from a recording of the speaker reading a short passage Fish Audio provides.                         |
+
+## Speech and transcription
+
+Long text may come back as several clips. How much text one call can take depends on your plan, and `get_credit_balance` shows the limit.
+
+| Tool             | What it does                                                                                                                                                         |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `text_to_speech` | Speaks text with a voice, or the default voice for the language, and returns a permanent audio link.                                                                 |
+| `speech_to_text` | Transcribes audio from a direct HTTPS link to the file, such as one from `get_upload_url`; `pro` is the default and accepts a language hint, and `flash` costs less. |
+
+## File uploads
+
+Both tools return an upload link, and the agent then uploads the file to it. In clients that cannot upload files themselves, such as claude.ai, the agent gives you a link to upload the file from your browser instead. Anyone with the link can upload to it until it expires, so don't share it.
+
+| Tool                  | What it does                                                                                                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get_upload_url`      | Creates a link for uploading a local file to temporary storage, so the agent can pass the file to another tool, for example a recording to transcribe or samples to clone. |
+| `create_media_upload` | Creates a link for uploading an image, video, or audio file to your workspace as a generation input; `get_media_model` lists the files each model accepts.                 |
+
+## Images and video
+
+Jobs run in the background, and finished results also appear in your [image and video history](https://fish.audio/app/image-video/history/). The agent can use a result from the same workspace as the input to another generation, for example to animate an image it made or to lip-sync a video to `text_to_speech` audio, without downloading it.
+
+| Tool                        | What it does                                                                                                                                                                       |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_media_models`         | Lists the image and video models, what each can do (for example text-to-image, image edit, upscale, text-to-video, image-to-video, lip sync, or talking avatar), and their prices. |
+| `get_media_model`           | Shows one model's options, required inputs, and accepted files.                                                                                                                    |
+| `estimate_image_generation` | Prices and checks an image request, including your plan's limits. Free.                                                                                                            |
+| `estimate_image_edit`       | Prices and checks an image edit or upscale, including your plan's limits. Free.                                                                                                    |
+| `estimate_video_generation` | Prices and checks a video request, including your plan's limits. Free.                                                                                                             |
+| `generate_image`            | Submits the image request you approved.                                                                                                                                            |
+| `generate_image_edit`       | Submits the image edit or upscale you approved.                                                                                                                                    |
+| `generate_video`            | Submits the video request you approved.                                                                                                                                            |
+| `get_generation_status`     | Checks running jobs; finished jobs include their results.                                                                                                                          |
+| `get_generation_result`     | Shows the results and charges of one finished job.                                                                                                                                 |
+
+## Story Studio
+
+A project holds chapters, and chapters hold blocks (a paragraph or heading), each with its own voice. These tools edit the same projects as the [Story Studio editor](https://fish.audio/app/story-studio), and edits show up in an open editor. Importing and editing are free; audio [costs credits](/overview/mcp#credits), and the agent quotes it first.
+
+A block needs new audio when it has none or its text, voice, or settings changed. If a block is changed back to an earlier version, `studio_generate` reuses that audio for free. No tool deletes projects or chapters; delete them in the editor.
+
+| Tool                     | What it does                                                                                                                                                                                       |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `studio_help`            | Shows the Story Studio manual for agents, by topic.                                                                                                                                                |
+| `studio_list_projects`   | Lists your workspace's projects.                                                                                                                                                                   |
+| `studio_project`         | Shows one project's chapters, how many blocks in each still need audio, the voices in use, and the status of an import or export.                                                                  |
+| `studio_create_project`  | Creates a project from chapters and blocks the agent writes.                                                                                                                                       |
+| `studio_import_document` | Imports a document's text (a novel, script, or article) into a new project, splitting it into chapters, casting voices, and adding audio tags; the project is read-only until the import finishes. |
+| `studio_update_project`  | Changes the project's name, description, audio settings, room ambience, chapter order, and the default voice and model for new blocks.                                                             |
+| `studio_read_blocks`     | Reads a chapter or specific blocks, optionally with links to their audio, or shows a chapter as a script.                                                                                          |
+| `studio_find`            | Searches text across a project.                                                                                                                                                                    |
+| `studio_write_blocks`    | Edits, inserts, moves, or deletes blocks.                                                                                                                                                          |
+| `studio_create_chapter`  | Adds a chapter.                                                                                                                                                                                    |
+| `studio_update_chapter`  | Renames a chapter.                                                                                                                                                                                 |
+| `studio_recast_speaker`  | Switches every block that uses one voice to another voice.                                                                                                                                         |
+| `studio_enhance_text`    | Returns one block's text polished for speech, with numbers, dates, and symbols spelled out and audio tags added.                                                                                   |
+| `studio_generate`        | Generates audio for blocks, a chapter, or the whole project, only for the blocks that need it unless asked to redo one.                                                                            |
+| `studio_list_takes`      | Lists a block's earlier audio versions (takes).                                                                                                                                                    |
+| `studio_adopt_take`      | Switches a block back to an earlier take that still matches it. Free.                                                                                                                              |
+| `studio_export`          | Exports the project or chapters as MP3 or WAV, optionally with subtitles. The agent quotes the credits for blocks that still need audio and starts the export after you confirm.                   |
+
+## Asset library
+
+Your workspace's [Asset Library](https://fish.audio/app/assets) holds saved images, audio, and video in folders, plus avatars, which pair a portrait image with an optional default voice. These tools never delete anything; delete files in the web app.
+
+| Tool                      | What it does                                                                                                              |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `list_assets`             | Lists the files in a folder, or searches across the workspace.                                                            |
+| `get_asset`               | Shows one file's permanent link and a temporary download link.                                                            |
+| `save_asset`              | Saves a file uploaded with `create_media_upload`, or a finished image, video, or `text_to_speech` result, to the library. |
+| `update_asset`            | Renames or moves a file.                                                                                                  |
+| `list_asset_collections`  | Lists folders and avatars.                                                                                                |
+| `get_asset_collection`    | Shows one folder or avatar, including an avatar's portrait and default voice.                                             |
+| `create_asset_folder`     | Creates a folder.                                                                                                         |
+| `create_avatar`           | Creates an avatar; it makes no video itself, but the agent can use the avatar's portrait to make a talking-avatar video.  |
+| `update_asset_collection` | Renames or moves a folder, or changes an avatar's name, portrait, or default voice.                                       |
+
+## Account and feedback
+
+| Tool                 | What it does                                                                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `get_credit_balance` | Shows the team this connection uses, its plan and remaining credits, and how much text one speech call can take.                                             |
+| `list_my_workspaces` | Lists your workspaces in the team you connected.                                                                                                             |
+| `submit_feedback`    | Sends a short note about the tools to Fish Audio; agents are asked to send one when something is confusing or broken, so yours may do it without asking you. |
