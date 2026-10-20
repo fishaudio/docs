@@ -308,7 +308,7 @@ curl --request POST https://api.fish.audio/v1/tts \
 ```
 
 - **Default**: omit `language`, or send `"auto"` or an empty string, and the language is detected for each text chunk. This is the same behavior as before the field was added.
-- **Regional conventions**: Spanish without a region follows Spain conventions, so `$300` becomes "trescientos dólares" and decimals use a comma. Send `es-MX` for Mexican readings ("pesos", "punto"). For Traditional Chinese, send `zh-TW`, which uses its own rules.
+- **Regional conventions**: Spanish without a region follows Spain conventions, so `$300` becomes "trescientos dólares" and decimals use a comma. Send `es-MX` for Mexican readings ("pesos", "punto"). For Traditional Chinese, send `zh-TW`, which uses its own rules. Portuguese follows Brazilian conventions, with or without the `BR` region.
 - **Tags without rules**: a tag with no dedicated normalization rules skips normalization instead of failing. See [Supported normalization languages](#supported-normalization-languages).
 - **Mixed-language text**: leave `language` unset.
 - **`normalize: false`**: `language` then only affects word timestamps.
@@ -332,14 +332,16 @@ Text normalization has dedicated rules for the languages below. Tags match case-
 | French | `fr`, `fr-FR`, `fr-CA`, `fr-BE`, `fr-CH` |
 | German | `de`, `de-DE`, `de-AT`, `de-CH` |
 | Italian | `it`, `it-IT`, `it-CH` |
-| Portuguese | `pt` |
+| Portuguese (Brazil) | `pt`, `pt-BR` |
 | Russian | `ru`, `ru-RU` |
 | Arabic | `ar`, `ar-SA`, `ar-AE`, `ar-EG` |
+| Turkish | `tr`, `tr-TR` |
+| Tagalog (Filipino) | `tl`, `tl-PH`, `fil`, `fil-PH` |
 
 Each row has its own rules, so the tag you pick changes the readings. For example, with `es` or `es-ES`, `$300` is read as "trescientos dólares" and the `0.9` in `0.9%` as "cero coma nueve". With `es-MX`, they are read as "trescientos pesos" and "cero punto nueve". In the same way, `zh-TW` uses Traditional Chinese rules, not the Simplified Chinese ones.
 
-- Any other tag skips normalization, with no error, and the text is still synthesized as written. Today that includes `zh-HK`, `yue`, `pt-BR`, `pt-PT`, `es-419`, and `es-US`.
-- With `language` unset, the language of each chunk is auto-detected among the languages above. Chunks whose language can't be detected are synthesized without normalization.
+- Any other tag skips normalization, with no error, and the text is still synthesized as written. Today that includes `zh-HK`, `yue`, `pt-PT`, `es-419`, and `es-US`.
+- With `language` unset, the language of each chunk is auto-detected among the languages above. Chinese written mostly in Traditional characters uses the Traditional Chinese rules. Portuguese, Turkish, and Tagalog are detected only when the detection is confident, so set `language` for short texts in these languages. Chunks whose language can't be detected are synthesized without normalization.
 - The list grows over time as normalization rules are added.
 
 ## Going further
