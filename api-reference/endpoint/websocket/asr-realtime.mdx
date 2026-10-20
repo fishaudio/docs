@@ -36,7 +36,7 @@ model: transcribe-stream-1
 | Header          | Required | Description                                                                                                                                        |
 | --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Authorization` | Yes      | `Bearer <API key>`. Write the scheme exactly as `Bearer`, followed by a space and the key.                                                         |
-| `model`         | No       | `transcribe-stream-1`, the default and the only realtime model. The legacy name `transcribe-1-pro-realtime` reaches the same model.                |
+| `model`         | No       | `transcribe-stream-1` (Preview), the default and the only realtime model. The legacy name `transcribe-1-pro-realtime` reaches the same model.      |
 
 Each open connection counts against the same concurrency limit as your other API requests, from the moment it opens until it closes, even while you send no audio. See [Concurrent request limits](/developer-guide/models-pricing/pricing-and-rate-limits#concurrent-request-limits). A session cannot be resumed: a new connection is a new session.
 
