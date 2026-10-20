@@ -75,7 +75,7 @@ For speech to text, select the model with the `model` header on `POST /v1/asr`:
 - **`transcribe-1-pro`**: the recommended model, for everything from short clips to multi-speaker conversations (speaker markers and speaker turns) and long recordings, with inline emotion cues. Send `model: transcribe-1-pro` explicitly.
 - **`transcribe-1`**: general transcription of short recordings. A request whose `model` header is missing or not an exact match is served by this model.
 
-To transcribe live audio, `realtime-1` streams transcripts turn by turn over a WebSocket, with turn detection for voice agents. It is available through the API; see [Realtime Speech to Text](/features/speech-to-text/realtime).
+To transcribe live audio, `transcribe-stream-1` streams transcripts turn by turn over a WebSocket, with turn detection for voice agents. It is available through the API; see [Realtime Speech to Text](/features/speech-to-text/realtime).
 
 See [Models Overview](/developer-guide/models-pricing/models-overview) and [Choosing a Model](/developer-guide/models-pricing/choosing-a-model) for the full lineup and languages, and [Speech to Text](/features/speech-to-text#input-audio) for transcription formats and limits.
 

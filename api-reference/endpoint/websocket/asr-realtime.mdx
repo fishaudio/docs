@@ -24,13 +24,13 @@ This endpoint is separate from the realtime endpoints of the [compatible APIs](/
 ```text
 GET wss://api.fish.audio/v1/asr/realtime
 Authorization: Bearer <API key>
-model: realtime-1
+model: transcribe-stream-1
 ```
 
 | Header          | Required | Description                                                                                                                                        |
 | --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Authorization` | Yes      | `Bearer <API key>`. Write the scheme exactly as `Bearer`, followed by a space and the key.                                                         |
-| `model`         | No       | `realtime-1`, the default and the only realtime model. The legacy name `transcribe-1-pro-realtime` is still accepted. Any other value returns 400. |
+| `model`         | No       | `transcribe-stream-1`, the default and the only realtime model. The legacy name `transcribe-1-pro-realtime` is still accepted. Any other value returns 400. |
 
 Each open connection counts against the same concurrency limit as your other API requests, from the moment it opens until it closes, even while you send no audio. See [Concurrent request limits](/developer-guide/models-pricing/pricing-and-rate-limits#concurrent-request-limits). A session cannot be resumed: a new connection is a new session.
 
@@ -40,7 +40,7 @@ If the server refuses the upgrade, it answers with a plain HTTP response whose J
 
 | Status | Meaning                                                                                         | What to do                                            |
 | ------ | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| 400    | The `model` header names another model.                                                         | Send `realtime-1` or leave the header out.            |
+| 400    | The `model` header names another model.                                                         | Send `transcribe-stream-1` or leave the header out.   |
 | 401    | The API key is missing or invalid, or the `Authorization` header does not start with `Bearer `. | Check the key and the header.                         |
 | 402    | Insufficient API credit.                                                                        | Top up your balance.                                  |
 | 429    | Your team is at its concurrency limit, or the service is at capacity.                           | Retry with backoff. Honor `Retry-After` when present. |
@@ -94,7 +94,7 @@ Audio sent before `session_started` is not lost: once the session has started, t
   "results": { "drafts": true, "ignore_timestamps": false },
   "context": {
     "history": [{ "role": "assistant", "text": "Hi, how can I help?" }],
-    "terms": ["Fish Audio", "realtime-1"]
+    "terms": ["Fish Audio", "transcribe-stream-1"]
   },
   "client_reference_id": "call-8f2c"
 }
