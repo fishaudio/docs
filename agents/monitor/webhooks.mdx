@@ -92,7 +92,7 @@ The list is replaced as a whole on each update, so send every endpoint you want 
 
 ## Payload
 
-Every payload carries the `event` name and a `session` object with the session facts. Note the field names differ from the [sessions API](/agents/monitor/conversation-history), which uses `session_id` / `started_at` / `ended_at` for the same facts. `call.ended` adds `ended_reason`; `call.analyzed` adds the `analysis` entity; `phone_call.dial_finished` adds top-level `dial_status` and `answered_by`. The `call.ended` and `call.analyzed` examples show part of the session fields. The `phone_call.dial_finished` example shows all of them.
+Every payload carries the `event` name and a `session` object with the session facts. Note the field names differ from the [sessions API](/agents/monitor/conversation-history), which uses `session_id` / `started_at` / `ended_at` for the same facts. `call.ended` adds `ended_reason`; `call.analyzed` adds the `analysis` entity; `phone_call.dial_finished` adds top-level `dial_status` and `answered_by`. The `session` object is the same on every event. The `phone_call.dial_finished` example shows it in full, the others are shortened.
 
 <CodeGroup>
 
@@ -359,7 +359,7 @@ The platform sends one `POST` with a JSON body:
 
 `twilio_call_sid` is deprecated. It carries the same value as `call_sid` and stays in the request. Read `call_sid` in new code.
 
-The request carries no session id: the session is created after your endpoint answers. To match this request with the call, keep `call_sid`. Once the call is connected, `GET /v1/agent/sessions?call_sid=…` returns its session, and post-call webhooks carry the same value. This works only when `call_sid` is not empty, that is for calls through a Twilio number. During the call, webhook tools can send the session id with `{{system.session_id}}`. New fields can be added to this request, see [Forward compatibility](#forward-compatibility).
+To match this request with the call, keep `call_sid`. Once the call is connected, `GET /v1/agent/sessions?call_sid=…` returns its session, and post-call webhooks carry the same value. This works only when `call_sid` is not empty, that is for calls through a Twilio number. During the call, webhook tools can send the session id with `{{system.session_id}}`. New fields can be added to this request, see [Forward compatibility](#forward-compatibility).
 
 ### Response
 

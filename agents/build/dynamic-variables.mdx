@@ -186,10 +186,6 @@ On a web session the same prompt renders `The caller's number is "".`, and the a
 
 `system.today` is always ISO formatted, whatever the session language: in the system prompt the model reads it and speaks it in the session's language, while a fixed first message containing `{{system.today}}` is spoken verbatim as `2026-08-21`. A session that runs past midnight keeps its opening date. Template it, and `system.timezone`, when a request needs them explicitly, for example a webhook tool's query string; for the agent's own sense of time no variable is needed, see [World context](#world-context).
 
-### Session id
-
-`system.session_id` is filled in at call time, after the session receives its id. Send it from a [webhook tool](#in-webhook-tools) to tie each tool call to its session. Outside the agent, read the same id from the `POST /v1/agent/sessions` [response](/agents/deploy/authenticated-sessions), the SDK's `connect` event, or the `session` object in [webhooks](/agents/monitor/webhooks).
-
 ### In webhook tools
 
 System variables render wherever custom variables do, including [webhook tool](/agents/build/webhook-tools#argument-templating) requests: the URL, header values, and body template. In the URL the value is URL-encoded, like argument values: the leading `+` of an E.164 number travels as `%2B` and the `/` in a timezone name as `%2F`, both decoding back on your server.

@@ -37,7 +37,7 @@ In the Builder, open **Tools** and choose **Add tool → Webhook**. A tool creat
 
 ## Argument templating
 
-Reference any declared argument with `{{name}}`: in the URL, in header values, or in the body template. The platform substitutes the values the agent supplies before sending the request. [Dynamic variables](/agents/build/dynamic-variables#custom-variables-in-webhook-tools) work in the same places: your custom variables, such as a customer id returned by the inbound call webhook, and system variables such as `{{system.session_id}}`, `{{system.caller_number}}` or `{{system.today}}`. They are filled before the agent supplies any argument. An argument wins over a custom variable of the same name.
+Reference any declared argument with `{{name}}`: in the URL, in header values, or in the body template. The platform substitutes the values the agent supplies before sending the request. [Dynamic variables](/agents/build/dynamic-variables#custom-variables-in-webhook-tools) work in the same places: your custom variables, such as a customer id returned by the inbound call webhook, and system variables such as `{{system.session_id}}`, `{{system.caller_number}}` or `{{system.today}}`. They are filled when the session starts, before the agent supplies any argument. An argument wins over a custom variable of the same name.
 
 ```text Endpoint URL
 https://api.example.com/orders/{{order_number}}
