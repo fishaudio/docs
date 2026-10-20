@@ -30,7 +30,7 @@ model: transcribe-stream-1
 | Header          | Required | Description                                                                                                                                        |
 | --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Authorization` | Yes      | `Bearer <API key>`. Write the scheme exactly as `Bearer`, followed by a space and the key.                                                         |
-| `model`         | No       | `transcribe-stream-1`, the default and the only realtime model. The legacy name `transcribe-1-pro-realtime` is still accepted. Any other value returns 400. |
+| `model`         | No       | `transcribe-stream-1`, the default and the only realtime model. The legacy name `transcribe-1-pro-realtime` reaches the same model.                |
 
 Each open connection counts against the same concurrency limit as your other API requests, from the moment it opens until it closes, even while you send no audio. See [Concurrent request limits](/developer-guide/models-pricing/pricing-and-rate-limits#concurrent-request-limits). A session cannot be resumed: a new connection is a new session.
 
@@ -40,13 +40,12 @@ If the server refuses the upgrade, it answers with a plain HTTP response whose J
 
 | Status | Meaning                                                                                         | What to do                                            |
 | ------ | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| 400    | The `model` header names another model.                                                         | Send `transcribe-stream-1` or leave the header out.   |
 | 401    | The API key is missing or invalid, or the `Authorization` header does not start with `Bearer `. | Check the key and the header.                         |
 | 402    | Insufficient API credit.                                                                        | Top up your balance.                                  |
 | 429    | Your team is at its concurrency limit, or the service is at capacity.                           | Retry with backoff. Honor `Retry-After` when present. |
 | 503    | The service is restarting.                                                                      | Retry.                                                |
 
-The `101 Switching Protocols` response carries an `x-request-id` header, and so do the 400 (model), capacity 429 and 503 refusals. It is the same value as `request_id` in `session_started`, `error` and `session_done`. Log it, and include it when you contact support. Refusals for the key, balance and your concurrency limit (401, 402 and concurrency 429) happen before a session is assigned and carry no `x-request-id`.
+The `101 Switching Protocols` response carries an `x-request-id` header, and so do the capacity 429 and 503 refusals. It is the same value as `request_id` in `session_started`, `error` and `session_done`. Log it, and include it when you contact support. Refusals for the key, balance and your concurrency limit (401, 402 and concurrency 429) happen before a session is assigned and carry no `x-request-id`.
 
 ## Framing
 
