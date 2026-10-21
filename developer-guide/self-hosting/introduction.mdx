@@ -64,7 +64,7 @@ for the single-container platform.
 | ----------------------------------------- | ---------------------------- | ------------------------ | ------------------------ |
 | Text to speech over `POST /v1/tts`        | Included                     | Included                 | Included                 |
 | WebSocket streaming                       | Included                     | Included                 | Included                 |
-| Reference-voice requests (`reference_id`) | From pre-staged archives     | From pre-staged archives | From pre-staged archives |
+| Reference-voice requests (`reference_id`) | From local archives          | From local archives      | From local archives      |
 | Word and segment timestamps               | Optional, needs an extra GPU | Not included             | Not included             |
 | Horizontal scaling and autoscaling        | Included                     | Included                 | Not included             |
 | Prometheus metrics                        | Included                     | Included                 | Container logs only      |
@@ -139,7 +139,7 @@ configure.
     icon="key"
     href="/developer-guide/self-hosting/registry-access"
   >
-    Create a deploy token and authenticate Docker and Helm.
+    Create a deploy token, sign in, and download the license bundle.
   </Card>
   <Card
     title="Kubernetes deployment"

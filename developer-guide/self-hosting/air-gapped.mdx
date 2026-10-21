@@ -9,7 +9,8 @@ installs itself out of thin air: a Helm install pulls container images and the c
 from a registry, and the appliance needs its image on the host. An air-gapped
 deployment is about getting those artifacts across the boundary. The license bundle
 has to cross it too, and unlike an image it expires — plan a recurring transfer, not
-a one-off.
+a one-off. The reference voices you use have to cross too, copied in as archives:
+voice sync cannot reach Fish Audio from there.
 
 <Note>
   Fish Audio does this with you as part of an air-gapped delivery, and the step-by-step
@@ -22,7 +23,7 @@ a one-off.
 
 **The air-gapped All-in-One appliance** is the straightforward answer to a strict air
 gap: one image, moved to the disconnected host as a file and loaded there. Beyond the
-image, only the license bundle — and, in the external-weights modes, the weight
+image, the license bundle — and, in the external-weights modes, the weight
 fileset — has to be carried across. Its online counterpart cannot run air
 gapped: it authorises every request against Fish Audio.
 
