@@ -58,7 +58,7 @@ manage that layer.
 | Shared storage path         | Mounted at the same path on **every** node. See [Requirements](/developer-guide/self-hosting/requirements#shared-storage). |
 | GPU scheduling              | Tolerations and node selectors, if your GPU nodes are tainted or you run more than one GPU model.                          |
 | Metrics                     | The chart exposes Prometheus annotations and creates no ServiceMonitors, so an annotation-scraping Prometheus works as-is and kube-prometheus-stack needs a scrape config. |
-| Reference voices            | Requests carrying a `reference_id` resolve from a local archive, never from the network. One zip per voice, staged on shared storage before that traffic starts. |
+| Reference voices            | Requests carrying a `reference_id` resolve from a local archive, never from the network. One zip per voice on shared storage, staged by you or by the optional voice sync before that traffic starts. |
 | Replica counts              | Talk to your account team first. The shipped shape is what the delivery was sized and validated against.                  |
 
 Three Kubernetes Secrets have to exist before the install: registry credentials, the
