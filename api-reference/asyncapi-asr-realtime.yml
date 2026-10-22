@@ -589,6 +589,7 @@ components:
           - seq
           - turn_index
           - text
+          - settled_text
           - audio_ms
         properties:
           type:
@@ -602,6 +603,14 @@ components:
           text:
             type: string
             description: The whole turn so far. Replaces the previous draft. Not final.
+          settled_text:
+            type: string
+            description: |
+              The beginning of `text` that the server is confident will not
+              change; `text` always starts with it. Often empty, especially
+              early in a turn and in short turns. Within a turn it normally
+              only grows, but the server can occasionally revise it, so render
+              from the latest draft.
           language:
             type: string
             description: Optional. English name of the detected language.
@@ -619,13 +628,16 @@ components:
             type: integer
       description: |
         Live draft of the open turn, with `results.drafts: true`. Best effort,
-        at most every `draft_interval_ms`.
+        at most every `draft_interval_ms`. For live captions, show
+        `settled_text` as stable and the rest of `text` as tentative; take
+        the final text from `committed`.
       examples:
         - payload:
             type: draft
             seq: 4
             turn_index: 0
             text: what's the weather like
+            settled_text: ""
             language: English
             language_code: en
             audio_ms: 1800
