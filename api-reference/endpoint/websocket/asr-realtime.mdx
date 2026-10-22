@@ -287,24 +287,24 @@ A turn opened: voice activity began. It is sent shortly after voice activity beg
 
 ### `draft`
 
-| Field           | Type    | Description                                                                                |
-| --------------- | ------- | ------------------------------------------------------------------------------------------ |
-| `turn_index`    | integer | The turn.                                                                                  |
-| `text`          | string  | The whole turn so far. Not final.                                                          |
-| `settled_text`  | string  | The beginning of `text` that has settled. Can be empty. See [Settled text](#settled-text). |
-| `language`      | string  | Optional. The language's English name. See [Language](#language).                          |
-| `language_code` | string  | Optional. ISO 639-1 code. See [Language](#language).                                       |
-| `audio_ms`      | integer | The audio position the draft covers up to.                                                 |
+| Field           | Type    | Description                                                                                                            |
+| --------------- | ------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `turn_index`    | integer | The turn.                                                                                                              |
+| `text`          | string  | The whole turn so far. Not final.                                                                                      |
+| `settled_text`  | string  | The beginning of `text` that the server is confident will not change. Can be empty. See [Settled text](#settled-text). |
+| `language`      | string  | Optional. The language's English name. See [Language](#language).                                                      |
+| `language_code` | string  | Optional. ISO 639-1 code. See [Language](#language).                                                                   |
+| `audio_ms`      | integer | The audio position the draft covers up to.                                                                             |
 
 Each draft **replaces** the previous one for the turn. Drafts are best effort, sent at most every `draft_interval_ms`, and only with `results.drafts: true`. Turn them on for live captions; an agent that acts on `eager_end_of_turn` and `committed` does not need them. Drafts may pause during long background sounds and resume when `user_turn_taken` comes.
 
 #### Settled text
 
-`settled_text` is the beginning of the draft's `text` that the server is confident will not change. The draft's `text` always starts with it. The server extends it only when it is confident, so it trails `text` and is often empty, especially early in a turn; a short turn can end without any.
+`settled_text` is the beginning of the draft's `text` that the server is confident will not change. The draft's `text` always starts with it. The server extends it only when it is confident, so it trails `text` and is often empty, especially early in a turn and in short turns.
 
 Within a turn, `settled_text` normally only grows. Occasionally the server revises it, and a later draft's `settled_text` is shorter or empty. Always render from the latest draft.
 
-For live captions or live translation, treat `settled_text` as stable and the rest of `text` as tentative. The rest can start with a space. `eager_end_of_turn` and `committed` usually begin with the turn's last `settled_text`, but not always: take the final text from `committed`.
+For live captions or live translation, treat `settled_text` as stable and the rest of `text` as tentative. The rest can start with a space. `eager_end_of_turn` and `committed` usually begin with the last `settled_text` sent before them, but not always: take the final text from `committed`.
 
 ### `eager_end_of_turn`
 
