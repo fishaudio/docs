@@ -91,7 +91,7 @@ When your model returns a `lookup_order` tool call, the platform executes it and
 
 Reply to that request with the spoken answer as ordinary `delta.content` chunks ending in `finish_reason: "stop"`.
 
-Requests authenticate with `Authorization: Bearer <your API key>`. If your endpoint needs other headers, such as a Vercel deployment protection bypass, add them with [`headers`](#point-the-agent-at-your-endpoint). The endpoint must use `https` on a publicly reachable host, and must support function calling if the agent has tools configured.
+Requests authenticate with `Authorization: Bearer <your API key>`. If your endpoint needs other headers, add them with [`headers`](#point-the-agent-at-your-endpoint). The endpoint must use `https` on a publicly reachable host, and must support function calling if the agent has tools configured.
 
 ## Point the agent at your endpoint
 
@@ -125,7 +125,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
         "model": "persona-70b",
         "api_key": "sk-your-endpoint-key",
         "headers": {
-          "X-Custom-Header": "your-header-value"
+          "your-header-key": "your-header-value"
         }
       }
     }
