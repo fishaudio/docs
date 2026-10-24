@@ -120,8 +120,8 @@ Fetching a single version returns the full configuration as it was published. Be
   Version snapshots never echo credential secrets. Write-only fields (such as
   webhook secrets and tool authorization headers) return a `has_secret: true`
   marker instead of the value, and the custom LLM
-  [`api_key`](/agents/build/custom-llm) reads back as `null`, in every version
-  including historical ones.
+  [`api_key` and `headers`](/agents/build/custom-llm) read back as `null`, in
+  every version including historical ones.
 </Warning>
 
 ## Restore a previous version

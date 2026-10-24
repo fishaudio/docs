@@ -91,7 +91,7 @@ When your model returns a `lookup_order` tool call, the platform executes it and
 
 Reply to that request with the spoken answer as ordinary `delta.content` chunks ending in `finish_reason: "stop"`.
 
-Requests authenticate with `Authorization: Bearer <your API key>`. The endpoint must use `https` on a publicly reachable host, and must support function calling if the agent has tools configured.
+Requests authenticate with `Authorization: Bearer <your API key>`. If your endpoint needs other headers, add them with [`headers`](#point-the-agent-at-your-endpoint). The endpoint must use `https` on a publicly reachable host, and must support function calling if the agent has tools configured.
 
 ## Point the agent at your endpoint
 
@@ -110,7 +110,7 @@ To set it up in the console:
 - Whether it accepted the tools.
 - The time to first token.
 
-The saved endpoint appears under **Custom** in the selector. You can edit or remove it there. If you pick a platform model again, the endpoint and the stored key are removed.
+The saved endpoint appears under **Custom** in the selector. You can edit or remove it there. If you pick a platform model again, the endpoint, the stored key and any headers are removed.
 
 Through the API, set the `llm.custom` section on the agent's [configuration](/agents/build/configuration#configure-through-the-api):
 
@@ -123,7 +123,10 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
       "custom": {
         "base_url": "https://llm.example.com/v1",
         "model": "persona-70b",
-        "api_key": "sk-your-endpoint-key"
+        "api_key": "sk-your-endpoint-key",
+        "headers": {
+          "your-header-key": "your-header-value"
+        }
       }
     }
   }'
@@ -134,8 +137,11 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 | `base_url` | `https` only, publicly reachable host, no query string or fragment. A trailing `/chat/completions` is stripped. |
 | `model` | Sent to your endpoint verbatim as the request's `model` field. |
 | `api_key` | Sent to your endpoint as the `Authorization` bearer token. The field is write-only, so config and version reads return it as `null`. Omit it (or send `null`) on later patches to keep the stored key. |
+| `headers` | Optional. Extra headers sent on every request to your endpoint. Names are case-insensitive, and values are printable ASCII. You can't set headers the platform sends itself, such as `Authorization`, `Content-Type` or `Host`. Write-only like `api_key`: reads return `null`. Sending it replaces all stored headers, so include every header you want to keep. Omit it (or send `null`) to keep them; send `{}` to clear them. |
 
-Once [published](/agents/deploy/versions-publishing), every session of the agent generates on your endpoint, whether it starts from the web, a phone call, or a [preview call](/agents/test/preview-calls) in the Builder. Rotating the key works the same way as any other config change. Patch a new `api_key` into the draft, then publish; sessions started after the publish use the new key. Send `{ "llm": { "custom": null } }` to switch back to platform models.
+The console doesn't show or edit headers, so set them through the API. Saving the endpoint in the console keeps them, and **Run test** sends them while the base URL matches the saved one.
+
+Once [published](/agents/deploy/versions-publishing), every session of the agent generates on your endpoint, whether it starts from the web, a phone call, or a [preview call](/agents/test/preview-calls) in the Builder. Rotating the key or headers works the same way as any other config change. Patch the new values into the draft, then publish; sessions started after the publish use them. Send `{ "llm": { "custom": null } }` to switch back to platform models.
 
 ## Failure behavior
 
