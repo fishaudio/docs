@@ -21205,6 +21205,22 @@
             "default": null,
             "description": "Sent to your endpoint as the Authorization bearer token; write-only, reads return null. Required when introducing `custom`; omit to keep the stored key when updating.",
             "title": "Api Key"
+          },
+          "headers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Extra headers sent on every request to your endpoint, such as `x-vercel-protection-bypass`; write-only, reads return null. Omit to keep the stored headers, `{}` clears them.",
+            "title": "Headers"
           }
         },
         "required": [
@@ -22345,7 +22361,7 @@
         "type": "object"
       },
       "AgentLLMCustomConfigRedacted": {
-        "description": "Read entity: the stored api_key never leaves the collection.",
+        "description": "Read entity: the stored api_key and headers never leave the collection.",
         "properties": {
           "base_url": {
             "minLength": 1,
@@ -22360,6 +22376,11 @@
           "api_key": {
             "default": null,
             "title": "Api Key",
+            "type": "null"
+          },
+          "headers": {
+            "default": null,
+            "title": "Headers",
             "type": "null"
           }
         },
