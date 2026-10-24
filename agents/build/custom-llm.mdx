@@ -143,7 +143,26 @@ A custom LLM never silently falls back to a platform model, because a platform m
 
 - Each request gets one retry and a 10 second response cap.
 - When a generation still fails, the agent speaks a brief hold line and stays on the call.
-- After three consecutive failed generations the agent apologizes, hangs up, and the session ends with `end_reason: llm_endpoint_failure` (in the [sessions API](/agents/monitor/conversation-history#status-and-end-reason), the dashboard, and the `call.ended` webhook's `ended_reason`). Each failure also emits an `llm.endpoint_error` event on the session timeline.
+- After three consecutive failed generations the agent apologizes, hangs up, and the session ends with `end_reason: llm_endpoint_failure` (in the [sessions API](/agents/monitor/conversation-history#status-and-end-reason), the dashboard, and the `call.ended` webhook's `ended_reason`).
+
+### See what your endpoint returned
+
+Every failed generation is recorded, whether or not the call ended because of it. You can find them in three places:
+
+- **Conversations** in the dashboard shows each failure in the transcript, where it happened.
+- The [sessions API](/agents/monitor/conversation-history#llm-endpoint-errors) returns them as `llm_endpoint_errors`.
+- The [`call.ended` webhook](/agents/monitor/webhooks#payload) carries the same list.
+
+Each failure has a type:
+
+| `type`             | Meaning                                                                  |
+| ------------------ | ------------------------------------------------------------------------ |
+| `http_error`       | Your endpoint answered with a non-2xx status                             |
+| `timeout`          | No response within 10 seconds                                            |
+| `connection_error` | The request got no answer, for example a DNS, TLS or refused connection  |
+| `invalid_response` | A 2xx response that was not a usable reply, such as a broken stream      |
+
+For `http_error`, `response_body` holds the start of your response body, up to 300 characters. Your API key is masked. `connection_error` and `invalid_response` also carry a `reason`, such as `dns_failed` or `not_event_stream`. The lines the agent spoke in place of a reply have `fallback_reason: "llm_error"`.
 
 <Tip>
 Voice conversations are latency sensitive:

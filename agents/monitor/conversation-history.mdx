@@ -189,7 +189,7 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
 
 | `type`        | What it is                                                                                                                                                 |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `message`     | One utterance. `role` is `user` or `assistant` (system prompt content is never exposed). `turn_id` groups items belonging to the same conversational turn. |
+| `message`     | One utterance. `role` is `user` or `assistant` (system prompt content is never exposed). `turn_id` groups items belonging to the same conversational turn. `fallback_reason` is `"llm_error"` on a fixed line the agent spoke because its LLM failed, and `null` otherwise. |
 | `tool_call`   | A tool invocation as it started. `input` is a JSON string, stored in full with no truncation.                                                              |
 | `tool_result` | The paired outcome, matched by `call_id`. `status` is `completed` or `failed`. `latency_ms` is the execution time.                                         |
 | `transfer`    | One [call transfer](/agents/telephony/transfers) attempt, successful or not. See [Transfer items](#transfer-items).                                        |
@@ -202,6 +202,38 @@ Details worth knowing:
 - **Payloads**: `input` and `output` are JSON strings, symmetric with the live SDK events, so one parser covers both. `output` and `error` are stored up to 256 KB; beyond that the text is cut and `output_truncated` is `true`.
 - **Mid-call queries**: you can fetch an `active` session; you get the items persisted so far, and `analysis` is `null` until [post-call analysis](/agents/monitor/post-call-analysis) completes.
 - A `tool_call` without a matching `tool_result` means the execution never resolved.
+
+### LLM endpoint errors
+
+Sessions on a [custom LLM](/agents/build/custom-llm) also carry `llm_endpoint_errors`. It lists each failed generation of your endpoint, oldest first. It is empty when the agent runs on a platform model or your endpoint never failed.
+
+```json
+{
+  "end_reason": "llm_endpoint_failure",
+  "llm_endpoint_errors": [
+    {
+      "occurred_at": "2026-10-15T15:45:10Z",
+      "turn_id": 3,
+      "type": "http_error",
+      "reason": null,
+      "status_code": 502,
+      "response_body": "{\"detail\":\"no tunnel\"}",
+      "duration_ms": 812,
+      "consecutive_failures": 1
+    }
+  ]
+}
+```
+
+- `turn_id` is the turn the failed reply belonged to. It uses the same numbering as `message` items.
+- `type` is `http_error`, `timeout`, `connection_error` or `invalid_response`. See [Failure behavior](/agents/build/custom-llm#failure-behavior). New types may be added.
+- `reason` is set on `connection_error` and `invalid_response` only. New reasons may be added.
+  - `connection_error`: `dns_failed`, `connection_refused`, `connection_reset`, `tls_failed`, `address_not_allowed` (an address the platform does not call) or `unknown`.
+  - `invalid_response`: `not_event_stream` (a streamed request got something else back), `stream_incomplete` (the stream ended with no `finish_reason`, usage or output), `empty_reply` (no text and no tool call) or `unknown`.
+- `status_code` is set on `http_error` only.
+- `response_body` is the start of what your endpoint sent back, on `http_error` and `not_event_stream` only. It is at most 300 characters, and your API key is masked. It is `null` when the body was empty.
+- `duration_ms` is the time from the request to the response or the failure. It is `null` when it was not measured.
+- `consecutive_failures` counts failures in a row. The agent hangs up at the third.
 
 <Warning>
   `items` is a discriminated union on `type`, and it evolves additively. Ignore
