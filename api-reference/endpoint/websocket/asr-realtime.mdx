@@ -112,7 +112,6 @@ Audio sent before `session_started` is not lost: once the session has started, t
 | `turn_detection.eager`              | No       | `false`         | `true` sends [`eager_end_of_turn`](#eager_end_of_turn) in `auto` mode.                                                                                                    |
 | `turn_detection.silence_timeout_ms` | No       | Depends on mode | See [`silence_timeout_ms`](#silence_timeout_ms).                                                                                                                          |
 | `results.drafts`                    | No       | `false`         | `true` sends live [`draft`](#draft) messages.                                                                                                                             |
-| `results.draft_interval_ms`         | No       | `250`           | Minimum time between drafts. Smaller values count as 250.                                                                                                                 |
 | `results.ignore_timestamps`         | No       | `true`          | `false` adds word timings (`words`) to `committed`.                                                                                                                       |
 | `results.diarize`                   | No       | `true`          | `true`, `false` or `"auto"` (same as `true`); the strings `"true"` and `"false"` are accepted too. `false` removes speaker tags from the text. See [Speakers](#speakers). |
 | `results.vad_events`                | No       | `false`         | `true` sends [`vad`](#vad) messages.                                                                                                                                      |
@@ -296,7 +295,7 @@ A turn opened: voice activity began. It is sent shortly after voice activity beg
 | `language_code` | string  | Optional. ISO 639-1 code. See [Language](#language).                                                                   |
 | `audio_ms`      | integer | The audio position the draft covers up to.                                                                             |
 
-Each draft **replaces** the previous one for the turn. Drafts are best effort, sent at most every `draft_interval_ms`, and only with `results.drafts: true`. Turn them on for live captions; an agent that acts on `eager_end_of_turn` and `committed` does not need them. Drafts may pause during long background sounds and resume when `user_turn_taken` comes.
+Each draft **replaces** the previous one for the turn. Drafts are best effort and only sent with `results.drafts: true`. Turn them on for live captions; an agent that acts on `eager_end_of_turn` and `committed` does not need them. Drafts may pause during long background sounds and resume when `user_turn_taken` comes.
 
 #### Settled text
 

@@ -499,7 +499,6 @@ components:
                 silence_timeout_ms: 5000
               results:
                 drafts: true
-                draft_interval_ms: 250
                 ignore_timestamps: true
                 diarize: true
                 vad_events: false
@@ -627,10 +626,9 @@ components:
           audio_committed_ms:
             type: integer
       description: |
-        Live draft of the open turn, with `results.drafts: true`. Best effort,
-        at most every `draft_interval_ms`. For live captions, show
-        `settled_text` as stable and the rest of `text` as tentative; take
-        the final text from `committed`.
+        Live draft of the open turn, with `results.drafts: true`. Best effort.
+        For live captions, show `settled_text` as stable and the rest of
+        `text` as tentative; take the final text from `committed`.
       examples:
         - payload:
             type: draft
@@ -1161,11 +1159,6 @@ components:
           type: boolean
           default: false
           description: Send live `draft` messages.
-        draft_interval_ms:
-          type: integer
-          minimum: 0
-          default: 250
-          description: Minimum time between drafts. Smaller values count as 250.
         ignore_timestamps:
           type: boolean
           default: true
@@ -1222,10 +1215,6 @@ components:
         drafts:
           type: boolean
           description: Send live `draft` messages.
-        draft_interval_ms:
-          type: integer
-          minimum: 0
-          description: Minimum time between drafts. Smaller values count as 250.
         ignore_timestamps:
           type: boolean
           description: "`false` adds `words` with timings to `committed`."
