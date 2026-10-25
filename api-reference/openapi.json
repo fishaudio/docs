@@ -1749,6 +1749,13 @@
                         }
                       ],
                       "default": null
+                    },
+                    "llm_endpoint_errors": {
+                      "items": {
+                        "$ref": "#/components/schemas/AgentSessionLlmEndpointError"
+                      },
+                      "title": "Llm Endpoint Errors",
+                      "type": "array"
                     }
                   },
                   "required": [
@@ -19071,6 +19078,114 @@
         "title": "AgentSessionAnalysisResult",
         "type": "object"
       },
+      "AgentSessionLlmEndpointError": {
+        "description": "One failed reply from the customer's own LLM endpoint, after the\nplatform's single retry within the request.\n\n- http_error: the endpoint answered with a non-2xx status.\n- timeout: no response within the request timeout.\n- connection_error: the request got no answer. `reason` is dns_failed,\n  connection_refused, connection_reset, tls_failed, address_not_allowed\n  (an address the platform does not call) or unknown.\n- invalid_response: a 2xx response that was not a usable reply. `reason`\n  is not_event_stream (a streamed request answered with something else),\n  stream_incomplete (the stream ended without a finish_reason, usage or\n  output), empty_reply (no text and no tool call) or unknown.",
+        "properties": {
+          "occurred_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Occurred At"
+          },
+          "turn_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Turn Id"
+          },
+          "type": {
+            "enum": [
+              "http_error",
+              "timeout",
+              "connection_error",
+              "invalid_response"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "dns_failed",
+                  "connection_refused",
+                  "connection_reset",
+                  "tls_failed",
+                  "address_not_allowed",
+                  "not_event_stream",
+                  "stream_incomplete",
+                  "empty_reply",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reason"
+          },
+          "status_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status Code"
+          },
+          "response_body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Response Body"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Duration Ms"
+          },
+          "consecutive_failures": {
+            "title": "Consecutive Failures",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type",
+          "consecutive_failures"
+        ],
+        "title": "AgentSessionLlmEndpointError",
+        "type": "object"
+      },
       "AgentSessionMessageItem": {
         "description": "One transcript message; system messages never surface here.",
         "properties": {
@@ -19151,6 +19266,19 @@
             ],
             "default": null,
             "title": "Input Medium"
+          },
+          "fallback_reason": {
+            "anyOf": [
+              {
+                "const": "llm_error",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Fallback Reason"
           },
           "turn_id": {
             "anyOf": [
@@ -21205,6 +21333,22 @@
             "default": null,
             "description": "Sent to your endpoint as the Authorization bearer token; write-only, reads return null. Required when introducing `custom`; omit to keep the stored key when updating.",
             "title": "Api Key"
+          },
+          "headers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Extra headers sent on every request to your endpoint, such as `x-vercel-protection-bypass`; write-only, reads return null. Omit to keep the stored headers, `{}` clears them.",
+            "title": "Headers"
           }
         },
         "required": [
@@ -22345,7 +22489,7 @@
         "type": "object"
       },
       "AgentLLMCustomConfigRedacted": {
-        "description": "Read entity: the stored api_key never leaves the collection.",
+        "description": "Read entity: the stored api_key and headers never leave the collection.",
         "properties": {
           "base_url": {
             "minLength": 1,
@@ -22360,6 +22504,11 @@
           "api_key": {
             "default": null,
             "title": "Api Key",
+            "type": "null"
+          },
+          "headers": {
+            "default": null,
+            "title": "Headers",
             "type": "null"
           }
         },
@@ -23186,6 +23335,13 @@
             "default": false,
             "title": "Passed",
             "type": "boolean"
+          },
+          "llm_endpoint_errors": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSessionLlmEndpointError"
+            },
+            "title": "Llm Endpoint Errors",
+            "type": "array"
           }
         },
         "title": "AgentTestSimulationResult",
