@@ -217,7 +217,7 @@ Every Simulation field lives under `simulation`. An optional `conversation`, up 
 | Required tool calls               | `assertions.tool_calls`: `tool`, `params`, `min_calls`, `max_calls`                      |
 | Forbidden tools                   | `assertions.forbidden_tools`                                                             |
 | Ended by                          | `assertions.ended_by`: `agent`, `user`, `transfer`, or `any`                             |
-| Current date and time             | `world_context`: `true` or `false`, default `false`                                      |
+| Current date and time             | `context.current_time`: `true` or `false`, default `false`                               |
 | Repeat                            | `repeat_count`, 1 to 20                                                                  |
 
 Tools are referenced by `id`, `name`, and `type`, as in Tool tests, and integration tools use the `<provider_key>:<tool_name>` ids that [List Test Tools](/api-reference/endpoint/agent/list-test-tools) returns. Parameter conditions (`when` on a mock entry, `params` on a required call) map a parameter name to `{"type": "exact" | "regex" | "any", "value": "..."}`.

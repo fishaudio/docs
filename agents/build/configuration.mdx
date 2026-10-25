@@ -93,9 +93,13 @@ Turn it off if callers should be able to interrupt the agent within those 3 seco
 
 `conversation.timezone` is the default IANA timezone (like `Asia/Tokyo`) the agent uses for dates and times in conversation. Leave it empty for **automatic**: each session follows the caller's device or phone number, falling back to UTC. Set one when your agent serves a single region regardless of who calls. A per-session `timezone` on the [session request](/agents/build/time-timezone) overrides this. See [Time & timezone](/agents/build/time-timezone) for the full resolution order.
 
-### Time awareness
+## Context
 
-`conversation.world_context` (default `true`) is what makes the agent time-aware: every session learns today's date when it starts and the current time before each reply, in the timezone above. In the Builder this is the **Current date & time** toggle next to the time zone. Turn it off when the agent must not know the real date, for example a role-play set on a fictional date or a prompt that states its own. It is the default for every session on every channel, and the only switch for phone calls, which the platform creates without a session request. A per-session `world_context` on the [session request](/agents/deploy/authenticated-sessions) overrides it in either direction. See [Time & timezone](/agents/build/time-timezone#turn-it-off).
+The `context` section holds the facts the platform tells your agent on its own, one switch each. Guardrails constrain what the agent does, context switches add to what it knows.
+
+### Current date and time
+
+`context.current_time` (default `false`) tells the agent today's date when a session starts and the current time before every reply, in the agent's [timezone](#timezone). In the Builder this is the **Current date & time** toggle under the time zone. Turn it on for scheduling, reminders, or any prompt that says "tomorrow" or "next Tuesday". Leave it off when the prompt states its own date, for example a role-play set on a fictional day. Agents created before the switch existed have it on, which was their behavior. A session request's `context.current_time` overrides the agent's setting in either direction. See [Time & timezone](/agents/build/time-timezone).
 
 ## Autosave and publishing
 
@@ -142,8 +146,10 @@ curl --request GET "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
     "interruption_ignore_phrases": [],
     "echo_guard": null,
     "speculative_response": true,
-    "timezone": "",
-    "world_context": true
+    "timezone": ""
+  },
+  "context": {
+    "current_time": false
   }
 }
 ```
@@ -173,7 +179,8 @@ The response includes the draft's new `config_hash`. Values outside the document
 | `prompt` | System prompt and first-message settings | This page |
 | `voice` | Voice profile, text-to-speech model, speaking language, and expressive mode | [Voice & language](/agents/build/voice-language) |
 | `asr` | Speech recognition model, multilingual recognition, strict language, and recognition keyterms | [Voice & language](/agents/build/voice-language#speech-recognition-model) |
-| `conversation` | Call duration, turn-taking, interruption behavior, timezone, time awareness, and storage | This page; storage in [Conversation history](/agents/monitor/conversation-history#what-gets-stored) |
+| `conversation` | Call duration, turn-taking, interruption behavior, timezone, and storage | This page; storage in [Conversation history](/agents/monitor/conversation-history#what-gets-stored) |
+| `context` | Facts the platform tells the agent on its own, currently the current date and time | This page |
 | `tools` | Attached webhook tools and system tool switches | [Tools](/agents/build/tools) |
 | `knowledge_base` | Attached knowledge sources | [Knowledge base](/agents/build/knowledge-base) |
 | `analysis` | Post-call summary, data fields, and success criteria | [Post-call analysis](/agents/monitor/post-call-analysis) |
