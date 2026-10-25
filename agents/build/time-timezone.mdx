@@ -63,7 +63,11 @@ curl --request POST https://api.fish.audio/v1/agent/sessions \
 
 ## Turn it off
 
-Time awareness is on by default. To withhold both the date and the per-turn time from a session (for example a role-play agent set on a fictional date, or a test that must be reproducible), set `world_context: false` when creating the session:
+Time awareness is on by default. Turn it off when the agent must not know the real date and time: a role-play agent set on a fictional date, a prompt that states its own date, or a test that must be reproducible. Off means neither the opening date line nor the per-turn time is injected.
+
+**For the whole agent**, switch off **Current date & time** in the Builder (**Configuration**, next to the time zone) or set `conversation.world_context: false` through the [config API](/agents/build/configuration#time-awareness). This becomes the default for every session of the agent on every channel, and it is the only switch for phone calls, which the platform creates without a session request. Publish the agent for the change to reach live traffic.
+
+**For one session**, set `world_context` when creating it. An explicit value overrides the agent's setting in either direction: `false` withholds the date and time from a time-aware agent, `true` restores them for one session of an agent that has them off.
 
 <CodeGroup>
 ```bash API (curl)
