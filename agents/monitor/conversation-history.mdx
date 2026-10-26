@@ -76,7 +76,7 @@ Each row carries the session facts:
 
 ### Status and end reason
 
-`status` says whether a conversation happened: `completed` means a participant connected and the call is over (it is billed even if the runtime ended it), `failed` means nobody ever connected, `active` means it is in progress, `pending` means the session was created and no one has connected yet, and `unknown` means the platform temporarily lost track of a live call.
+`status` says whether a conversation happened: `completed` means the caller and an agent were both on the call and it is over (it is billed even if the runtime ended it), `failed` means no conversation took place (nobody connected, or the caller connected and no agent ever joined), `active` means it is in progress, `pending` means the session was created and no one has connected yet, and `unknown` means the platform temporarily lost track of a live call. On a `failed` session where the caller did connect, `started_at`, `ended_at` and `duration_seconds` describe how long they waited; nothing is billed.
 
 `end_reason` says why it ended. It is `null` while a session is live, for a short moment after it ends, and on sessions that predate the field.
 
@@ -87,8 +87,8 @@ Each row carries the session facts:
 | `escalated`            | `completed` | The call was transferred to a human. See [Transfer items](#transfer-items)       |
 | `conversation_timeout` | `completed` | The call reached its maximum duration                                            |
 | `heartbeat_timeout`    | `completed` | The agent runtime stopped responding mid-call                                    |
-| `agent_join_timeout`   | `completed` | The caller connected but no agent joined the call                                |
-| `internal_error`       | `completed` | The agent runtime hit an internal error                                          |
+| `agent_join_timeout`   | `failed`    | The caller connected but no agent joined the call                                |
+| `internal_error`       | `completed` | The agent runtime hit an internal error (`failed` when it failed before the conversation started) |
 | `llm_endpoint_failure` | `completed` | A [custom LLM](/agents/build/custom-llm) failed repeatedly and the agent hung up |
 | `room_join_timeout`    | `failed`    | The caller never connected before the join deadline                              |
 | `cancelled`            | `failed`    | The session was ended before anyone connected                                    |
