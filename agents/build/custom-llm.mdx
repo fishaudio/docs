@@ -76,6 +76,7 @@ A few things to note:
 - The first `system` message is the assembled prompt: your agent's [system prompt](/agents/build/configuration#system-prompt) with [dynamic variables](/agents/build/dynamic-variables) and [overrides](/agents/deploy/authenticated-sessions#overrides) applied, plus the platform's own context lines. A short `system` line carrying the current time is inserted before the latest user turn on every request.
 - `messages` carries the full transcript so far. Speech recognition output arrives as plain `user` text; your earlier replies come back as `assistant` messages.
 - `tools` is present only when the agent has tools configured. The `model`, `stream`, and `stream_options` fields are fixed; no `temperature` or `max_tokens` is sent, so apply your own defaults.
+- A tool whose parameters are [validated](/agents/build/webhook-tools#parameters-and-validation) arrives with `"strict": true` on its `function`, and its `parameters` in the shape OpenAI's strict function calling requires: every property listed in `required`, the optional ones made nullable, `additionalProperties: false`, and keywords strict mode does not accept (`minLength`, `maxLength`, `default`) removed. Honor the flag if your model supports it, ignore it otherwise. The platform checks each call against the tool's own schema before running it either way.
 
 When your model returns a `lookup_order` tool call, the platform executes it and immediately sends the next request with the call and its result appended to `messages`, everything else unchanged:
 

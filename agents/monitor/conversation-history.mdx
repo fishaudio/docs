@@ -165,6 +165,7 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
       "output": "{\"state\":\"shipped\"}",
       "output_truncated": false,
       "error": null,
+      "rejected_by": null,
       "latency_ms": 812,
       "created_at": "2026-07-22T09:14:07Z"
     },
@@ -202,6 +203,7 @@ Details worth knowing:
 - **Payloads**: `input` and `output` are JSON strings, symmetric with the live SDK events, so one parser covers both. `output` and `error` are stored up to 256 KB; beyond that the text is cut and `output_truncated` is `true`.
 - **Mid-call queries**: you can fetch an `active` session; you get the items persisted so far, and `analysis` is `null` until [post-call analysis](/agents/monitor/post-call-analysis) completes.
 - A `tool_call` without a matching `tool_result` means the execution never resolved.
+- **`rejected_by`**: on a `tool_result`, `"parameter_validation"` when the tool [validates its parameters](/agents/build/webhook-tools#parameters-and-validation) and refused the call before it ran, so `status` is `failed` and `error` is the rejection the model was shown. `null` for every other result, including a tool that ran and failed. New values may be added.
 
 ### LLM endpoint errors
 
