@@ -132,7 +132,8 @@ Custom variables also render inside [webhook tool](/agents/build/webhook-tools#a
 https://ehr.example.com/patients/{{patient_id}}/appointments?clinic={{clinic_id}}
 ```
 
-- In the URL the value is URL-encoded, like argument values. In header values and the body template it is inserted as is. Numbers render as written, booleans as `true` or `false`.
+- In the URL the value is URL-encoded, like argument values. In header values it is inserted as is. Numbers render as written, booleans as `true` or `false`.
+- In a JSON body, a value inside a string is JSON-escaped, like argument values. See [Values in a JSON body](/agents/build/webhook-tools#values-in-a-json-body).
 - When the tool declares an argument with the same name as a custom variable, the argument wins: that placeholder is filled from what the agent supplies.
 - A placeholder with no value renders as an empty string in the request, unlike in the prompt, where it stays visible.
 
