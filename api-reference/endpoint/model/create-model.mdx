@@ -11,3 +11,27 @@ iconType: "solid"
   requests. Let your HTTP client set the multipart `Content-Type` boundary
   automatically.
 </Warning>
+
+## Uploading voice files
+
+`type`, `title`, `train_mode`, and `voices` are required. Send each audio file
+as a `voices` form field, repeating the field to upload several clips.
+
+```bash curl
+curl --request POST https://api.fish.audio/model \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --form type=tts \
+  --form train_mode=fast \
+  --form title="My Voice" \
+  --form voices=@a.wav \
+  --form voices=@b.wav
+```
+
+To send your own transcripts, add one `texts` field per clip, in the same order
+as the `voices` fields. Omit `texts` and ASR runs on the uploaded audio instead.
+
+<Note>
+  `samples` is not a request field, so there is nothing to supply for it. It
+  appears only on the model returned by this endpoint, where it defaults to an
+  empty list and holds the preview clips once they exist.
+</Note>
