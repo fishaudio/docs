@@ -4,7 +4,7 @@ description: "Let the agent hand a phone call to a human: a cold carrier handoff
 icon: "phone-arrow-right"
 ---
 
-When a caller needs a person, the agent can transfer the call. Configure one or more destination numbers and the agent gains a built-in `_transfer_call` tool it invokes when the caller asks for a human or the request clearly needs one. With several destinations, the agent picks the one whose name and description best match the conversation, so a single number can act as a switchboard. Transfers apply to phone calls only.
+When a caller needs a person, the agent can transfer the call. Configure one or more destinations, phone numbers or [SIP endpoints](#transfer-to-a-sip-endpoint), and the agent gains a built-in `_transfer_call` tool it invokes when the caller asks for a human or the request clearly needs one. With several destinations, the agent picks the one whose name and description best match the conversation, so a single number can act as a switchboard. Transfers apply to phone calls only.
 
 Two modes decide what the handoff feels like:
 
@@ -23,7 +23,7 @@ Two modes decide what the handoff feels like:
 
 ### In the console
 
-On the agent's **Phone** page, under **Inbound calls**, turn on **Call transfer** and fill in each destination: a name, the phone number, when to transfer there, its [announcement](#the-transfer-announcement), and the mode. A **Warm** destination also gets a handoff choice and the [warm transfer settings](#warm-transfer-settings). With more than one destination, each needs a distinct name. Changes take effect on live calls after you [publish](/agents/deploy/versions-publishing).
+On the agent's **Phone** page, under **Inbound calls**, turn on **Call transfer** and fill in each destination: a name, the phone number or SIP URI, when to transfer there, its [announcement](#the-transfer-announcement), and the mode. A **Warm** destination also gets a handoff choice and the [warm transfer settings](#warm-transfer-settings). With more than one destination, each needs a distinct name. Changes take effect on live calls after you [publish](/agents/deploy/versions-publishing).
 
 ### Through the API
 
@@ -84,10 +84,12 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 
 | Field                          | Description                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `type`                         | Destination type; `phone` is the only value today and the default.                                                                                                                                                                                                                                                                                      |
+| `type`                         | `phone` (default) or `sip`. See [Transfer to a SIP endpoint](#transfer-to-a-sip-endpoint).                                                                                                                                                                                                                                                              |
 | `label`                        | Name for the destination, shown in the Builder and used by the agent to pick one. At most 64 characters. Required, and unique (case-insensitive), once there is more than one entry.                                                                                                                                                                    |
 | `description`                  | When to transfer here, in plain language ("Invoices, payments, account balance"). The agent reads it when choosing between destinations. At most 500 characters.                                                                                                                                                                                        |
-| `phone_number`                 | The destination in E.164 format, for example `+14155550123`.                                                                                                                                                                                                                                                                                            |
+| `phone_number`                 | `phone` only: the destination in E.164 format, for example `+14155550123`.                                                                                                                                                                                                                                                                              |
+| `sip_uri`                      | `sip` only: the endpoint's SIP URI, for example `sip:support@pbx.example.com`.                                                                                                                                                                                                                                                                          |
+| `headers`                      | `sip` only: custom SIP headers sent to the endpoint, as a map of names to values. Values can use [dynamic variables](/agents/build/dynamic-variables). See [Custom SIP headers](#custom-sip-headers).                                                                                                                                                   |
 | `mode`                         | `cold` (default) or `warm`; see the comparison above.                                                                                                                                                                                                                                                                                                   |
 | `warm_connect`                 | Warm only: `confirm` (default) briefs the human and waits for their go-ahead before connecting, `briefing` connects right after the briefing without asking, `direct` connects as soon as the human answers, with no briefing.                                                                                                                          |
 | `announcement_mode`            | The sentence the agent says right before transferring, cold or warm: `generated` (default) words it itself, `fixed` says `announcement_message`, `off` adds none. See [The transfer announcement](#the-transfer-announcement).                                                                                                                          |
@@ -97,7 +99,66 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 | `warm_confirm_timeout_seconds` | Warm `confirm` and `briefing` only: how long the agent waits after the human answers before giving up, in whole seconds from 10 to 300. Default 60. See [Timeouts](#timeouts).                                                                                                                                                                          |
 | `warm_human_detection`         | Warm `confirm` and `briefing` only: `true` makes the agent wait for the other side to speak and stop the transfer when voicemail or a phone menu answers. Default `false`. See [Waiting for a person to answer](#waiting-for-a-person-to-answer).                                                                                                       |
 
-Destination numbers must be E.164 and are limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list. A missing label, or two labels that differ only in case, is rejected the same way. There is no cap on the number of destinations, but every description is part of the agent's tool instructions on every turn, so keep the list to what a receptionist could hold in their head.
+Phone destinations must be E.164 and are limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list. A missing label, or two labels that differ only in case, is rejected the same way. There is no cap on the number of destinations, but every description is part of the agent's tool instructions on every turn, so keep the list to what a receptionist could hold in their head.
+
+## Transfer to a SIP endpoint
+
+A destination can be a SIP endpoint, such as your PBX or contact center, instead of a phone number. Set `type` to `sip` and put the address in `sip_uri`.
+
+```bash Request
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "conversation": {
+      "transfer_destinations": [
+        {
+          "label": "Support",
+          "type": "sip",
+          "sip_uri": "sip:support@pbx.example.com",
+          "mode": "warm",
+          "warm_connect": "direct",
+          "headers": {
+            "X-Account": "acct-{{account_id}}",
+            "X-Caller": "{{system.caller_number}}"
+          }
+        }
+      ]
+    }
+  }'
+```
+
+- The URI has the form `sip:user@host`. You can add a port and `;transport=udp`, `tcp` or `tls`. A `sips:` URI uses TLS.
+- The host must be a public domain name or IP address.
+- Leave passwords and headers out of the URI. Put custom headers in `headers`.
+- Cold transfers to a SIP endpoint must be enabled for your number.
+
+In the console, choose **SIP endpoint** as the destination type and enter the SIP URI.
+
+### Custom SIP headers
+
+Use `headers` to send call context to the endpoint, such as a customer id or a ticket number. Your PBX can use it to show the caller's record or to route the call.
+
+- Up to 20 headers per destination.
+- Names start with `X-`. They are case-insensitive, so each name can appear once.
+- `X-Fish-` names are reserved for headers the platform sets itself.
+- Values are 1 to 1024 printable ASCII characters.
+
+Values can use [dynamic variables](/agents/build/dynamic-variables), on their own or mixed with text, such as `acct-{{account_id}}`. Custom and system variables both work. They are filled in once, when the session starts.
+
+If a header can't be filled in, the agent can't use that destination for the call. Your other destinations still work. This happens when a value:
+
+- uses a variable that has no value and no default,
+- is empty after the variables are filled in, for example a withheld caller number,
+- contains characters outside printable ASCII, such as accented letters or Chinese characters,
+- is longer than 1024 characters.
+
+In the console, add the headers under **Custom SIP headers** on a SIP destination.
+
+How the headers reach the endpoint depends on the mode:
+
+- **Warm**: the consult call's INVITE carries them. If the number also has [termination headers](/agents/telephony/byo-sip#custom-sip-headers) or the call has [per-call SIP headers](/agents/telephony/outbound-calls#per-call-sip-headers), the destination's value wins when two names match.
+- **Cold**: the headers travel in the REFER. They reach the endpoint only if the system that receives the REFER copies them onto its new call. Twilio doesn't copy them. Use a warm transfer when the endpoint must get the headers.
 
 ## How the agent decides to transfer
 
