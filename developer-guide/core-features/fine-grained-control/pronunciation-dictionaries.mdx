@@ -195,7 +195,7 @@ Keys and values must be nonempty and must not contain `<|phoneme_start|>` or `<|
 
 Dictionaries are combined in the order you send them. When the same key appears more than once, the first entry wins. For overlapping matches, the earliest match in the text wins; if matches start at the same position, the longest key wins. Phoneme and alias rules are matched together under these rules, regardless of type. Replacements are applied during synthesis, and replacement values are not matched again, so an alias value that contains another key is not replaced a second time.
 
-Alias rules can change the billed length. Usage is billed on the original text plus the extra bytes of every alias expansion: each occurrence of an alias key that is replaced by longer text adds the difference, so a short key that expands into a long value is billed for the long value. Aliases that shorten the text do not reduce the billed length. Phoneme rules never change the billed length.
+Alias rules change the billed length. Usage is billed on the text that is actually synthesized, with alias replacements applied: an alias that expands a short key into a longer value is billed for the longer text, and an alias that shortens the text is billed for the shorter text. Keys that are not replaced, for example because a longer key matched first, do not change the billed length. Phoneme rules never change the billed length.
 
 <Note>
   If a dictionary ID or version ID cannot be resolved, the API skips that
