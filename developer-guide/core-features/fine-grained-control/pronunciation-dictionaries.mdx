@@ -6,7 +6,7 @@ icon: "book-open"
 
 ## Overview
 
-Pronunciation dictionaries are available in the [Fish Audio web app](https://fish.audio/app/pronunciation-dictionary) and the [TTS API](/api-reference/endpoint/openapi-v1/text-to-speech). Use them when the same names, brands, acronyms, or technical terms appear across many requests and you want consistent pronunciation without adding phoneme tags to every script.
+Pronunciation dictionaries are available in the [Fish Audio web app](https://fish.audio/app/pronunciation-dictionary) and the [TTS API](/api-reference/endpoint/openapi-v1/text-to-speech). Use them when the same names, brands, acronyms, or technical terms appear across many requests and you want consistent pronunciation without adding phoneme tags to every script, or when a term should always be read as different text.
 
 Create and publish a dictionary in the web app, then reference its dictionary ID and version ID in your TTS requests. For rules that only apply to one request, send an [inline dictionary](#inline-dictionaries) instead.
 
@@ -27,13 +27,14 @@ Use a pronunciation dictionary for:
 - Acronyms and technical terms such as `SQL`, `Kubernetes`, or internal project names.
 - Scripts where the same word list is reused across batches or episodes.
 - Homographs when a larger phrase can remove ambiguity, such as `read endpoint` versus `read yesterday`.
+- Abbreviations, symbols, or spellings that should be spoken as other words, such as `Dr.` read as `Doctor` or `km/h` read as `kilometers per hour`. Use an [alias rule](#rule-types) for these.
 
 Avoid broad entries for common words unless every occurrence should be read the same way. If pronunciation depends on context, use a longer phrase as the key or place a [phoneme tag](/developer-guide/core-features/fine-grained-control#phoneme-control) directly in the text.
 
 ## Create and Publish a Dictionary
 
 1. Sign in to [Pronunciation dictionary](https://fish.audio/app/pronunciation-dictionary) and select **New Dictionary**. Enter a name and an optional description, then select **Create Dictionary**.
-2. Select **Add a new rule**. Enter the written word or phrase in **Input** and its phoneme pronunciation in **Output**. Turn on **Case sensitive** if capitalization should affect matching.
+2. Select **Add a new rule**. Enter the written word or phrase in **Input**. Choose the rule type: **Phoneme** to enter its phoneme pronunciation in **Output**, or **Alias** to enter the replacement text that should be spoken instead. Turn on **Case sensitive** if capitalization should affect matching.
 3. Select a voice and model, then use **Play preview** on a rule to hear its pronunciation. Previewing a rule does not publish your edits.
 4. Select **Publish New Version** to save the rules as an immutable version.
 5. Open the dictionary's **More actions** menu and copy **Dictionary ID** and **Latest Version ID**. Use these as `id` and `version` in the [TTS request below](#use-a-published-dictionary).
@@ -48,7 +49,7 @@ Open **Version history** to inspect published versions and compare their rules.
 
 ### Import and Export Rules
 
-You can upload an existing `.pls`, `.xml`, or `.txt` file when creating a dictionary, or use **Import PLS** in the editor. Imported pronunciations must use the [phoneme formats below](#write-pronunciation-rules); importing a file does not convert IPA to Fish Audio phonemes.
+You can upload an existing `.pls`, `.xml`, or `.txt` file when creating a dictionary, or use **Import PLS** in the editor. In a PLS file, `<phoneme>` entries become phoneme rules and `<alias>` entries become alias rules. PLS files exported from Fish Audio before alias rules existed stored every rule as `<alias>`; they still import as phoneme rules. Imported pronunciations must use one of the [phoneme formats below](#phoneme-values). IPA values are imported as written, with one pair of surrounding `/` delimiters removed; importing a file does not convert between formats, so IPA rules only take effect on models that accept IPA.
 
 For a `.txt` file, put one rule on each line, separating the input and output with a comma or tab:
 
@@ -57,23 +58,50 @@ Kubernetes,K UW2 B ER0 N EH1 T IY0 Z
 SQL,EH1 S K Y UW1 EH1 L
 ```
 
-Text imports default to case-insensitive matching. Review the rules, preview them, and publish any changes before using the version in TTS. To export a published dictionary as a PLS file, select **Download** from its **More actions** menu.
+Text imports create phoneme rules and default to case-insensitive matching. Review the rules, preview them, and publish any changes before using the version in TTS. To export a published dictionary as a PLS file, select **Download** from its **More actions** menu.
 
 ## Write Pronunciation Rules
 
-Each rule maps the written text (`key`, shown as **Input** in the web app) to a phoneme pronunciation (`value`, shown as **Output**):
+Each rule maps the written text (`key`, shown as **Input** in the web app) to a `value` (shown as **Output**). The rule's `type` decides what the value means:
 
 ```json
 {
   "key": "Kubernetes",
   "value": "K UW2 B ER0 N EH1 T IY0 Z",
-  "case_sensitive": false
+  "case_sensitive": false,
+  "type": "phoneme"
 }
 ```
 
+### Rule Types
+
+| `type`              | `value` is             | During synthesis, the key is replaced by                      |
+| ------------------- | ---------------------- | ------------------------------------------------------------- |
+| `phoneme` (default) | A phoneme string       | The phonemes, read exactly as written                         |
+| `alias`             | Plain replacement text | The replacement text, read like any other text in the request |
+
+`type` is optional and defaults to `phoneme`, so rules created before alias rules existed keep working unchanged. Use `alias` when a term should be spoken as different words rather than with a specific pronunciation:
+
+```json
+{
+  "key": "km/h",
+  "value": "kilometers per hour",
+  "case_sensitive": false,
+  "type": "alias"
+}
+```
+
+Alias values go through the same text normalization as the rest of the request, so numbers, dates, and symbols in a value are read the same way they would be in the input text.
+
+### Keys
+
 `key` is a literal substring to match in the TTS input, not a regular expression or a whole-word pattern. Use the spelling, spacing, and punctuation you expect in the text. A short key can also match inside a longer word, so include enough context to avoid unintended replacements.
 
-`value` is the phoneme string that should replace the key during synthesis. Do not include `<|phoneme_start|>` or `<|phoneme_end|>`; the synthesis pipeline wraps dictionary values internally.
+`case_sensitive` defaults to `false`, which ignores ASCII capitalization when matching. Set it to `true` when a rule should only match the exact capitalization you entered. Managed dictionaries reject duplicate keys; when case sensitivity is off, keys that differ only by case count as duplicates.
+
+### Phoneme Values
+
+For a `phoneme` rule, `value` is the phoneme string that should replace the key during synthesis. Do not include `<|phoneme_start|>` or `<|phoneme_end|>`; the synthesis pipeline wraps phoneme values internally.
 
 Use the same phoneme notation as manual phoneme control:
 
@@ -82,8 +110,7 @@ Use the same phoneme notation as manual phoneme control:
 | [English](/developer-guide/core-features/fine-grained-control/english)   | CMU Arpabet                              | `K UW2 B ER0 N EH1 T IY0 Z` |
 | [Chinese](/developer-guide/core-features/fine-grained-control/chinese)   | Tone-number pinyin                       | `chong2`                    |
 | [Japanese](/developer-guide/core-features/fine-grained-control/japanese) | OpenJTalk-style romaji with pitch digits | `ha0shi1ga0`                |
-
-`case_sensitive` defaults to `false`, which ignores ASCII capitalization when matching. Set it to `true` when a rule should only match the exact capitalization you entered. Managed dictionaries reject duplicate keys; when case sensitivity is off, keys that differ only by case count as duplicates.
+| Any language, on drama-3 models                                          | IPA                                      | `kuːbərˈnɛtiːz`             |
 
 ## Use a Published Dictionary
 
@@ -137,6 +164,11 @@ Pass inline dictionaries directly in a TTS request when the rules are request-sp
           "key": "DynamoDB",
           "value": "D AY1 N AH0 M OW0 D IY1 B IY1",
           "case_sensitive": false
+        },
+        {
+          "key": "k8s",
+          "value": "Kubernetes",
+          "type": "alias"
         }
       ]
     }
@@ -159,9 +191,11 @@ Send pronunciation dictionaries with `application/json` or `application/msgpack`
 | Characters per `key`     | 256     |
 | Characters per `value`   | 1,024   |
 
-Keys and values must be nonempty and must not contain `<|phoneme_start|>` or `<|phoneme_end|>` markers.
+Keys and values must be nonempty and must not contain `<|phoneme_start|>` or `<|phoneme_end|>` markers. Alias rules have extra limits: an alias `key` cannot start or end with whitespace and cannot contain control characters, `<|`, `|>`, `(`, `)`, `[`, or `]`, and an alias `value` cannot contain `<|` or `|>`.
 
-Dictionaries are combined in the order you send them. When the same key appears more than once, the first entry wins. For overlapping matches, the earliest match in the text wins; if matches start at the same position, the longest key wins. Replacements are applied during synthesis, and replacement values are not matched again.
+Dictionaries are combined in the order you send them. When the same key appears more than once, the first entry wins. For overlapping matches, the earliest match in the text wins; if matches start at the same position, the longest key wins. Phoneme and alias rules are matched together under these rules, regardless of type. Replacements are applied during synthesis, and replacement values are not matched again, so an alias value that contains another key is not replaced a second time.
+
+Alias rules change the billed length. Usage is billed on the text that is actually synthesized, with alias replacements applied: an alias that expands a short key into a longer value is billed for the longer text, and an alias that shortens the text is billed for the shorter text. Keys that are not replaced, for example because a longer key matched first, do not change the billed length. Phoneme rules never change the billed length.
 
 <Note>
   If a dictionary ID or version ID cannot be resolved, the API skips that
@@ -173,7 +207,8 @@ Dictionaries are combined in the order you send them. When the same key appears 
 ## Practical Tips
 
 - Write `key` as the listener-facing surface form, not as a regex or pattern.
-- Write `value` as phonemes only, without marker tokens.
+- For phoneme rules, write `value` as phonemes only, without marker tokens.
+- For alias rules, write `value` as the text a listener should hear; use a phoneme rule when you need to control how a word is pronounced.
 - Use narrow keys for context-sensitive words; use phrase keys when a single word is ambiguous.
 - Keep dictionaries scoped by product, customer, language, or domain so broad rules do not surprise unrelated scripts.
 - Test a new dictionary version with representative text before using it in production traffic.
