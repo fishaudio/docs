@@ -127,7 +127,7 @@ operations:
 
       **Message Sequence:**
       1. Client sends `config` once, as the first message, within 10 seconds of connecting
-      2. Client streams `audio` after `session_started`, 80–100 ms per message
+      2. Client streams `audio` after `session_started`, 20–40 ms per message for live audio
       3. Client can send `finalize`, `configure`, `context_add`, `keepalive` and `agent_speaking` at any time
       4. Client sends `audio_done` when there is no more audio
 
@@ -253,8 +253,10 @@ components:
               nothing in them is transcribed or counted as received audio.
               Any length; an odd trailing byte waits for the next message.
       description: |
-        Audio in the format from `config`. Send it after `session_started`;
-        80–100 ms per message is a good size. A message can be at most 1 MiB.
+        Audio in the format from `config`. Send it after `session_started`.
+        Anything from 20 to 100 ms of audio per message works, and smaller
+        messages give lower latency; for live audio, 20–40 ms per message is a
+        good size. A message can be at most 1 MiB.
       examples:
         - payload:
             type: audio

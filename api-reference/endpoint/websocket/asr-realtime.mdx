@@ -126,7 +126,7 @@ A value of the wrong type for `ignore_timestamps`, or a `diarize` value other th
 
 Send 16-bit little-endian PCM, mono, at one of the listed sample rates. Other encodings (such as μ-law, A-law or Opus) and stereo audio are `unsupported_audio`; decode phone audio in μ-law or A-law to 16-bit PCM first, and send it at 8000 Hz as is. Audio at 16000 Hz is used as is; every other rate is converted on the server, so you never need to resample. The conversion adds at most about 20 ms of delay. Every `*_ms` value is in milliseconds of your audio, whatever its rate.
 
-An `audio` message can hold any number of bytes; an odd trailing byte waits for the next message. Send 80–100 ms of audio per message. A message can be at most 1 MiB, which holds 65.5 seconds of audio at 8 kHz or 10.9 seconds at 48 kHz.
+An `audio` message can hold any number of bytes; an odd trailing byte waits for the next message. Anything from 20 to 100 ms of audio per message works and gives the same results, but each result waits for the message that carries its audio, so smaller messages give lower latency. For live audio, 20–40 ms per message is a good size. A message can be at most 1 MiB, which holds 65.5 seconds of audio at 8 kHz or 10.9 seconds at 48 kHz.
 
 #### Turn detection modes
 
@@ -174,7 +174,7 @@ The default, the allowed range (inclusive) and the meaning depend on the mode:
 
 Audio in the format from `config`. `data` must be MessagePack `bin` holding the raw PCM bytes. Do not base64-encode the audio, and do not send it as a string or an array of numbers. If you do, you receive a recoverable `invalid_request`, and those messages are dropped: nothing in them is transcribed or counted as received audio.
 
-Send audio after `session_started` (see [`config`](#config) for audio sent earlier). For live audio, send it as it is captured; 80–100 ms per message is a good size. You can send faster than real time, for example from a file: the server accepts it and reads it at a bounded rate, and results keep following the audio.
+Send audio after `session_started` (see [`config`](#config) for audio sent earlier). For live audio, send it as it is captured, 20–40 ms per message (see [Audio format](#audio-format)). If your client batches small writes (Nagle's algorithm), turn that off with `TCP_NODELAY`; browsers and common WebSocket libraries already send each message right away. You can send faster than real time, for example from a file: the server accepts it and reads it at a bounded rate, and results keep following the audio.
 
 ### `finalize`
 
