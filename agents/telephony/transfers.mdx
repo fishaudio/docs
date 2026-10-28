@@ -120,7 +120,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
           "warm_connect": "direct",
           "headers": {
             "X-Account": "acct-{{account_id}}",
-            "X-Caller": "{{system.caller_number}}"
+            "X-Line": "{{system.dialed_number}}"
           }
         }
       ]
