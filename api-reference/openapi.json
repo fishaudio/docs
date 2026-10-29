@@ -16300,6 +16300,30 @@
           },
           {
             "in": "query",
+            "name": "visibility",
+            "description": "Visibility to filter workspace models; ignored unless self is True",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "public",
+                    "unlist",
+                    "private"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Visibility"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
             "name": "licensed",
             "description": "If True, only voices licensed by Fish Audio (rights secured from the voice owner) are returned; ignored if self is True",
             "required": false,
@@ -20574,6 +20598,13 @@
             "default": null,
             "title": "Sip Uri"
           },
+          "headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Headers",
+            "type": "object"
+          },
           "description": {
             "default": "",
             "title": "Description",
@@ -21432,6 +21463,18 @@
             ],
             "default": null,
             "title": "Manipulation"
+          },
+          "pre_tool_speech": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pre Tool Speech"
           }
         },
         "title": "PublicAgentGuardrailsPatch",
@@ -22540,6 +22583,11 @@
             "default": false,
             "title": "Manipulation",
             "type": "boolean"
+          },
+          "pre_tool_speech": {
+            "default": false,
+            "title": "Pre Tool Speech",
+            "type": "boolean"
           }
         },
         "title": "AgentGuardrailsConfig",
@@ -22872,6 +22920,13 @@
             ],
             "default": null,
             "title": "Sip Uri"
+          },
+          "headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Headers",
+            "type": "object"
           },
           "description": {
             "default": "",
