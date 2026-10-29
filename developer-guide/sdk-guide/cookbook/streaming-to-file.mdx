@@ -14,6 +14,8 @@ import Prerequisites from "/snippets/prerequisites.mdx";
 
 For long text, use [`stream()`](/api-reference/sdk/python/resources#stream) and write each chunk as it arrives instead of holding the whole file in memory.
 
+Install the Python SDK first: `pip install fish-audio-sdk`.
+
 <CodeGroup>
 ```python Synchronous
 from fishaudio import FishAudio
@@ -21,7 +23,7 @@ from fishaudio import FishAudio
 client = FishAudio()
 
 with open("output.mp3", "wb") as f:
-    for chunk in client.tts.stream(text="A very long passage of text..."):
+    for chunk in client.tts.stream(text="A very long passage of text...", model="s2.1-pro-free"):
         f.write(chunk)
 ```
 
@@ -31,7 +33,7 @@ from fishaudio import AsyncFishAudio
 
 async def main():
     async with AsyncFishAudio() as client:
-        audio_stream = await client.tts.stream(text="A very long passage of text...")
+        audio_stream = await client.tts.stream(text="A very long passage of text...", model="s2.1-pro-free")
         with open("output.mp3", "wb") as f:
             async for chunk in audio_stream:
                 f.write(chunk)
@@ -49,7 +51,7 @@ const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 // chunk as it arrives, so you never hold the whole file in memory.
 const stream = await client.textToSpeech.convert(
   { text: "A very long passage of text...", format: "mp3" },
-  "s2-pro"
+  "s2.1-pro-free"
 );
 
 const file = createWriteStream("output.mp3");
@@ -65,7 +67,7 @@ file.end();
 If you just want the full bytes, call `.collect()`:
 
 ```python
-audio = client.tts.stream(text="Hello!").collect()  # -> bytes
+audio = client.tts.stream(text="Hello!", model="s2.1-pro-free").collect()  # -> bytes
 ```
 
 <Tip>

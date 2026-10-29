@@ -14,6 +14,8 @@ import Prerequisites from "/snippets/prerequisites.mdx";
 
 Pass a [`ReferenceAudio`](/api-reference/sdk/python/types#referenceaudio-objects) (raw audio bytes + an exact transcript) on the `convert` call. Nothing is saved server-side; the clone applies to that request only.
 
+Install the Python SDK first: `pip install fish-audio-sdk`.
+
 <CodeGroup>
 ```python Synchronous
 from fishaudio import FishAudio
@@ -29,6 +31,7 @@ with open("reference.wav", "rb") as f:
             audio=f.read(),
             text="Exact transcript of what is said in reference.wav.",
         )],
+        model="s2.1-pro-free",
     )
 
 save(audio, "cloned.mp3")
@@ -49,6 +52,7 @@ async def main():
                     audio=f.read(),
                     text="Exact transcript of what is said in reference.wav.",
                 )],
+                model="s2.1-pro-free",
             )
     save(audio, "cloned.mp3")
 
@@ -77,7 +81,7 @@ const stream = await client.textToSpeech.convert(
     ],
     format: "mp3",
   },
-  "s2-pro",
+  "s2.1-pro-free",
 );
 
 const chunks = [];

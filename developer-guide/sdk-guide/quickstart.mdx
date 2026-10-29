@@ -49,15 +49,15 @@ from fishaudio.utils import save
 
 client = FishAudio()  # reads FISH_API_KEY
 
-audio = client.tts.convert(text="Hello from Fish Audio!")
+audio = client.tts.convert(text="Hello from Fish Audio!", model="s2.1-pro-free")  # free model
 save(audio, "output.mp3")
 ```
 
-```typescript JavaScript
+```javascript JavaScript
 import { FishAudioClient, play } from "fish-audio";
 
 const client = new FishAudioClient(); // reads FISH_API_KEY
-const audio = await client.textToSpeech.convert({ text: "Hello from Fish Audio!" });
+const audio = await client.textToSpeech.convert({ text: "Hello from Fish Audio!" }, "s2.1-pro-free"); // free model
 await play(audio);
 ```
 </CodeGroup>
@@ -66,7 +66,7 @@ Run it, and you'll have `output.mp3` (Python) or local playback (JavaScript).
 
 <Tip>
   Want async in Python? Every method mirrors onto `AsyncFishAudio`: `async with
-  AsyncFishAudio() as client: audio = await client.tts.convert(text="...")`.
+  AsyncFishAudio() as client: audio = await client.tts.convert(text="...", model="s2.1-pro-free")`.
 </Tip>
 
 ## Next steps

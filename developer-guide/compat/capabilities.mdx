@@ -165,7 +165,7 @@ const resp = await client.audio.speech.create({
 
 ```bash curl
 curl https://api.fish.audio/compat/v1/audio/speech \
-  -H "Authorization: Bearer $FISH_AUDIO_API_KEY" \
+  -H "Authorization: Bearer $FISH_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model": "fish-audio/s2.1-pro",
        "input": "Hello from Fish Audio!",
@@ -216,7 +216,7 @@ const resp = await client.audio.speech.create(
 
 ```bash curl
 curl https://api.fish.audio/compat/v1/audio/speech \
-  -H "Authorization: Bearer $FISH_AUDIO_API_KEY" \
+  -H "Authorization: Bearer $FISH_API_KEY" \
   -H "Content-Type: application/json" \
   -H "X-Fish-Latency: normal" \
   -H "X-Fish-Mp3-Bitrate: 64" \

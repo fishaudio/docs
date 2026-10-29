@@ -14,6 +14,8 @@ import Prerequisites from "/snippets/prerequisites.mdx";
 
 Set `self_only=False` on [`voices.list()`](/api-reference/sdk/python/resources#list) to search the public [Voice Library](/features/manage-voices) instead of only your own models. The response carries `total` (matches across all pages) and `items` (this page). Pick a result's `id` and pass it straight to [`tts.convert()`](/api-reference/sdk/python/resources#convert) as `reference_id`.
 
+Install the Python SDK first: `pip install fish-audio-sdk`.
+
 <CodeGroup>
 ```python Python
 from fishaudio import FishAudio
@@ -35,6 +37,7 @@ for voice in page.items:
 audio = client.tts.convert(
     text="Speaking with a voice I found in the public library.",
     reference_id=reference_id,
+    model="s2.1-pro-free",
 )
 save(audio, "out.mp3")
 ```
@@ -63,7 +66,7 @@ const stream = await client.textToSpeech.convert(
     reference_id: referenceId,
     format: "mp3",
   },
-  "s2-pro"
+  "s2.1-pro-free"
 );
 
 const chunks = [];
