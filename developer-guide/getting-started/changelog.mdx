@@ -4,6 +4,16 @@ description: "Complete release history and version updates for all Fish Audio pr
 icon: "clock-rotate-left"
 rss: true
 ---
+<Update label="transcribe-1 retirement" description="October 29, 2026" tags={["Fish Audio"]}>
+  ## transcribe-1 retirement
+
+  `transcribe-1` is deprecated and will be retired on December 31, 2026, together with S1. After that date, the requests it serves are served by `transcribe-1-pro` and billed as `transcribe-1-pro`, at the same price. This includes requests with no `model` header, or one that does not match exactly, and requests through the OpenAI-, Groq-, OpenRouter-, and ElevenLabs-compatible endpoints.
+
+  To migrate, send the `model: transcribe-1-pro` header on `POST /v1/asr`. For plain transcripts without speaker markers or event cues, also send `diarize=false` and `tag_audio_events=false`.
+
+  [Migrate from transcribe-1](/developer-guide/models-pricing/migrate-from-transcribe-1) | [Model deprecations](/developer-guide/models-pricing/deprecations)
+</Update>
+
 <Update label="More normalization languages" description="October 20, 2026" tags={["Fish Audio"]}>
   ## More normalization languages
 
