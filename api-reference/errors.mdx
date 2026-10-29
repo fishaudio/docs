@@ -30,6 +30,8 @@ Some endpoints add fields. For example, `transcribe-1-pro` speech-to-text errors
 
 Retry `429` and `5xx` with exponential backoff. Don't retry other `4xx` codes; they won't succeed without a change to the request.
 
+Install the Python SDK first: `pip install fish-audio-sdk`.
+
 ```python
 import time
 from fishaudio import FishAudio
