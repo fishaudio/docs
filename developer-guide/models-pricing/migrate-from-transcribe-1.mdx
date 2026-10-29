@@ -1,0 +1,106 @@
+---
+title: "Migrate from transcribe-1"
+sidebarTitle: "Migrate from transcribe-1"
+description: "transcribe-1 will be retired on December 31, 2026. Move your speech-to-text requests from transcribe-1 to transcribe-1-pro."
+icon: "arrow-right-arrow-left"
+---
+
+import Support from "/snippets/support.mdx";
+
+This guide is for you if your speech-to-text requests are served by `transcribe-1`. That includes requests you did not explicitly send to `transcribe-1`:
+
+- `POST /v1/asr` requests with no `model` header, or with a value that is not an exact, lowercase match, such as `Transcribe-1-Pro`.
+- The Python and JavaScript SDKs, when you don't set the `model` header.
+- The OpenAI-, Groq-, and OpenRouter-compatible transcription endpoints, with `fish-audio/transcribe-1` or an alias such as `whisper-1`, `gpt-4o-transcribe`, or `whisper-large-v3`.
+- The ElevenLabs-compatible speech-to-text endpoint, which ignores `model_id`.
+- OpenAI Realtime-compatible transcription sessions opened with `?intent=transcription` and no `model`, or with `fish-audio/transcribe-1`.
+
+## What is changing
+
+`transcribe-1` is deprecated and will be retired on December 31, 2026. After that date, every request that `transcribe-1` serves today is served by `transcribe-1-pro`. Requests keep working, and no error is returned.
+
+We recommend that you switch to `transcribe-1-pro` before then, so you can test your transcripts on your own schedule.
+
+## What happens if you do nothing
+
+After December 31, 2026, your requests are served by `transcribe-1-pro` and billed as `transcribe-1-pro`. Both models cost $0.36 / audio hour, so your cost does not change. See [Pricing & Rate Limits](/developer-guide/models-pricing/pricing-and-rate-limits).
+
+Your transcripts can still change, because `transcribe-1-pro` returns more than `transcribe-1` by default:
+
+- `text` can include speaker markers such as `<|speaker:0|>` when more than one person speaks.
+- `text` can include emotion and vocal-event cues such as `[laughter]`.
+- With timestamps requested, the response also includes `speaker_turns`.
+- Error bodies add `code` and `request_id` to `status` and `message`.
+
+The steps below cover each of these changes.
+
+## Migrate to transcribe-1-pro
+
+### Send the `model` header
+
+Select the model with the `model` HTTP header, and send `model: transcribe-1-pro`, in lowercase, with every request. `model` is not a form or body field.
+
+<CodeGroup>
+
+```bash curl
+curl --request POST https://api.fish.audio/v1/asr \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "model: transcribe-1-pro" \
+  --form audio=@speech.wav
+```
+
+```python Python
+from fishaudio import FishAudio
+from fishaudio.core import RequestOptions
+
+client = FishAudio()  # reads FISH_API_KEY
+
+with open("speech.wav", "rb") as f:
+    result = client.asr.transcribe(
+        audio=f.read(),
+        request_options=RequestOptions(
+            additional_headers={"model": "transcribe-1-pro"}
+        ),
+    )
+
+print(result.text)
+```
+
+```typescript JavaScript
+const res = await fishAudio.speechToText.convert(
+  { audio: myAudio },
+  { headers: { model: "transcribe-1-pro" } }
+);
+console.log(res.text);
+```
+
+</CodeGroup>
+
+### Keep plain transcripts, if you need them
+
+If your code expects `text` without speaker markers or event cues, send `diarize=false` and `tag_audio_events=false`:
+
+```bash
+curl --request POST https://api.fish.audio/v1/asr \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "model: transcribe-1-pro" \
+  --form audio=@speech.wav \
+  --form diarize=false \
+  --form tag_audio_events=false
+```
+
+The Python and JavaScript SDKs can't send `diarize` or `tag_audio_events`. If you need plain transcripts, call `POST /v1/asr` directly, as above, or remove the markers and cues from `text` in your code.
+
+To use the speaker markers instead, see [Multi-speaker conversations](/features/speech-to-text#multi-speaker-conversations) and [Emotion and vocal-event cues](/features/speech-to-text#emotion-and-vocal-event-cues).
+
+### If you use a compatible endpoint
+
+The OpenAI-, Groq-, OpenRouter-, and ElevenLabs-compatible endpoints, and OpenAI Realtime-compatible transcription sessions, keep working after December 31, 2026, and their requests are served by `transcribe-1-pro`. You don't need to change the model name you send.
+
+These endpoints don't accept `diarize` or `tag_audio_events`. If your application needs plain transcripts, or you want to control speaker markers and event cues, move to the native [Speech to Text API](/features/speech-to-text) with `model: transcribe-1-pro`, and test before December 31, 2026.
+
+### Check your error handling
+
+`transcribe-1-pro` errors are JSON with `status`, `message`, `code`, and `request_id`. Code that reads only `status` and `message` keeps working; to branch on the cause, use `code`. See [Errors](/features/speech-to-text#errors).
+
+<Support />
