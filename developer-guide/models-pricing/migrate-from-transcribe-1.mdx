@@ -66,12 +66,17 @@ with open("speech.wav", "rb") as f:
 print(result.text)
 ```
 
-```typescript JavaScript
-const res = await fishAudio.speechToText.convert(
-  { audio: myAudio },
+```javascript JavaScript
+import { FishAudioClient } from "fish-audio";
+import { readFile } from "fs/promises";
+
+const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
+
+const result = await client.speechToText.convert(
+  { audio: new File([await readFile("speech.wav")], "speech.wav") },
   { headers: { model: "transcribe-1-pro" } }
 );
-console.log(res.text);
+console.log(result.text);
 ```
 
 </CodeGroup>
