@@ -27,7 +27,7 @@ This guide will walk you through generating your first text-to-speech audio with
 
 ## Your First TTS Request
 
-Choose your preferred method to generate speech:
+The examples on this page use the free [`s2.1-pro-free`](/developer-guide/models-pricing/models-overview) model, so they work on a new account before you add any API credit. Choose your preferred method to generate speech:
 
 <Tabs>
   <Tab title="cURL">
@@ -95,8 +95,11 @@ Choose your preferred method to generate speech:
         # Initialize with your API key
         client = FishAudio()  # reads FISH_API_KEY
 
-        # Generate speech
-        audio = client.tts.convert(text="Hello! Welcome to Fish Audio.")
+        # Generate speech with the free model
+        audio = client.tts.convert(
+            text="Hello! Welcome to Fish Audio.",
+            model="s2.1-pro-free",
+        )
         save(audio, "welcome.mp3")
 
         print("✓ Audio saved to welcome.mp3")
@@ -147,9 +150,11 @@ Choose your preferred method to generate speech:
 
         const fishAudio = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 
-        const audio = await fishAudio.textToSpeech.convert({
-          text: "Hello, world!",
-        });
+        // The second argument is the model: s2.1-pro-free is free to use
+        const audio = await fishAudio.textToSpeech.convert(
+          { text: "Hello, world!" },
+          "s2.1-pro-free",
+        );
 
         const buffer = Buffer.from(await new Response(audio).arrayBuffer());
         await writeFile("welcome.mp3", buffer);
@@ -190,7 +195,7 @@ Choose your preferred method to generate speech:
 | Status | Likely cause | Fix |
 |---|---|---|
 | `401` | Invalid or missing API key | Check `FISH_API_KEY` and your key on [API Keys](https://fish.audio/app/api-keys). |
-| `402` | Out of credits | Top up on [Billing](https://fish.audio/app/billing). |
+| `402` | No API credit for the model you called | On a $0 balance, use the model `s2.1-pro-free`. For paid models, add API credit on [API Billing](https://fish.audio/app/developers/billing/). |
 | `400` | Bad `reference_id` / parameters | Verify the voice id; read the error `message`. |
 | `429` | Rate limit | Wait and retry with backoff. |
 
@@ -228,7 +233,7 @@ Then generate speech with your chosen voice:
     curl -X POST https://api.fish.audio/v1/tts \
       -H "Authorization: Bearer $FISH_API_KEY" \
       -H "Content-Type: application/json" \
-      -H "model: s2-pro" \
+      -H "model: s2.1-pro-free" \
       -d '{
         "text": "This is a custom voice from Fish Audio! You can explore hundreds of different voices on the platform, or even create your own.",
         "reference_id": "'"$REFERENCE_ID"'",
@@ -249,7 +254,8 @@ Then generate speech with your chosen voice:
     # Generate speech with custom voice
     audio = client.tts.convert(
         text="This is a custom voice from Fish Audio! You can explore hundreds of different voices on the platform, or even create your own.",
-        reference_id=os.environ.get("REFERENCE_ID")
+        reference_id=os.environ.get("REFERENCE_ID"),
+        model="s2.1-pro-free",
     )
     save(audio, "custom_voice.mp3")
     ```
@@ -262,10 +268,13 @@ Then generate speech with your chosen voice:
 
     const fishAudio = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 
-    const audio = await fishAudio.textToSpeech.convert({
-      text: "This is a custom voice from Fish Audio! You can explore hundreds of different voices on the platform, or even create your own.",
-      reference_id: process.env.REFERENCE_ID,
-    });
+    const audio = await fishAudio.textToSpeech.convert(
+      {
+        text: "This is a custom voice from Fish Audio! You can explore hundreds of different voices on the platform, or even create your own.",
+        reference_id: process.env.REFERENCE_ID,
+      },
+      "s2.1-pro-free",
+    );
 
     const buffer = Buffer.from(await new Response(audio).arrayBuffer());
     await writeFile("custom_voice.mp3", buffer);

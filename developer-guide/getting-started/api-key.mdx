@@ -10,13 +10,13 @@ Everything you build with Fish Audio (the API, the Python library, JavaScript) a
 
 <Steps>
   <Step title="Sign up">
-    Go to [fish.audio/auth/signup](https://fish.audio/auth/signup), create an account, and verify your email.
+    [Sign up on fish.audio](https://fish.audio/auth/?redirect=/app/developers/&utm_source=docs&utm_medium=api-key-page&utm_content=sign-up), create an account, and verify your email.
   </Step>
-  <Step title="Open the API Keys page">
-    Sign in and open [fish.audio/app/api-keys](https://fish.audio/app/api-keys).
+  <Step title="Open the Developer Dashboard">
+    Sign in and open the [Developer Dashboard](https://fish.audio/auth/?redirect=/app/developers/&utm_source=docs&utm_medium=api-key-page&utm_content=get-api-key).
   </Step>
   <Step title="Create a key">
-    Click **Create New Key**, give it a descriptive name (and an expiration if you want), then **copy the key and store it securely**.
+    Click **Create API Key**, give it a descriptive name (and an expiration if you want), then **copy the key and store it securely**.
 
     <Warning>Never commit your API key to version control or share it publicly.</Warning>
   </Step>
@@ -40,7 +40,7 @@ from fishaudio import FishAudio
 from fishaudio.utils import save
 
 client = FishAudio()  # reads FISH_API_KEY
-audio = client.tts.convert(text="Hello from Fish Audio!")
+audio = client.tts.convert(text="Hello from Fish Audio!", model="s2.1-pro-free")  # free model
 save(audio, "hello.mp3")
 ```
 
@@ -48,7 +48,7 @@ save(audio, "hello.mp3")
 curl --request POST https://api.fish.audio/v1/tts \
   --header "Authorization: Bearer $FISH_API_KEY" \
   --header "Content-Type: application/json" \
-  --header "model: s2-pro" \
+  --header "model: s2.1-pro-free" \
   --data '{ "text": "Hello from Fish Audio!", "format": "mp3" }' \
   --output hello.mp3
 ```
