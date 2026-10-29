@@ -10,7 +10,7 @@ icon: "book"
 Import and initialize the client:
 
 ```typescript
-import { FishAudioClient } from "fish-audio";
+import { FishAudioClient, type Backends } from "fish-audio";
 const fishAudio = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 ```
 
@@ -20,7 +20,7 @@ const fishAudio = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 Generate speech from text.
 
 ```typescript
-const audio = await fishAudio.textToSpeech.convert({ text: "Hello" }, "s2.1-pro-free");
+const audio = await fishAudio.textToSpeech.convert({ text: "Hello" }, "s2.1-pro-free" as Backends);
 ```
 
 Parameters: `request` (TTSRequest), `model?` (Backends) <br />
@@ -31,7 +31,7 @@ Realtime streaming TTS over WebSocket.
 
 ```typescript
 async function* textStream() { yield "Hello, "; yield "world!"; }
-const conn = await fishAudio.textToSpeech.convertRealtime({ text: "" }, textStream(), "s2.1-pro-free");
+const conn = await fishAudio.textToSpeech.convertRealtime({ text: "" }, textStream(), "s2.1-pro-free" as Backends);
 ```
 
 Parameters: `request` (TTSRequest with `text: ""`), `textStream` (`AsyncIterable<string>`), `backend?` (Backends) <br />
