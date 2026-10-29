@@ -29,6 +29,7 @@ client = FishAudio()
 audio = client.tts.convert(
     text="Thank you for calling. Press one to speak with an agent.",
     config=TTSConfig(format="wav", sample_rate=8000),
+    model="s2.1-pro-free",
 )
 
 save(audio, "out.wav")
@@ -45,6 +46,7 @@ async def main():
         audio = await client.tts.convert(
             text="Thank you for calling. Press one to speak with an agent.",
             config=TTSConfig(format="wav", sample_rate=8000),
+            model="s2.1-pro-free",
         )
     save(audio, "out.wav")
 
@@ -63,7 +65,7 @@ const stream = await client.textToSpeech.convert(
     format: "wav",
     sample_rate: 8000,
   },
-  "s2-pro"
+  "s2.1-pro-free"
 );
 
 const chunks = [];
@@ -79,6 +81,7 @@ The output is a mono 8 kHz WAV, the standard for G.711 PCM telephony. For a head
 audio = client.tts.convert(
     text="Thank you for calling. Press one to speak with an agent.",
     config=TTSConfig(format="pcm", sample_rate=8000),
+    model="s2.1-pro-free",
 )
 ```
 
@@ -86,7 +89,7 @@ audio = client.tts.convert(
 curl --request POST https://api.fish.audio/v1/tts \
   --header "Authorization: Bearer $FISH_API_KEY" \
   --header "Content-Type: application/json" \
-  --header "model: s2-pro" \
+  --header "model: s2.1-pro-free" \
   --data '{ "text": "Thank you for calling. Press one to speak with an agent.", "format": "wav", "sample_rate": 8000 }' \
   --output out.wav
 ```

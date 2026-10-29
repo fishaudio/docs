@@ -31,6 +31,7 @@ with open("reference.wav", "rb") as f:
             audio=f.read(),
             text="Exact transcript of what is said in reference.wav.",
         )],
+        model="s2.1-pro-free",
     )
 
 save(audio, "cloned.mp3")
@@ -51,6 +52,7 @@ async def main():
                     audio=f.read(),
                     text="Exact transcript of what is said in reference.wav.",
                 )],
+                model="s2.1-pro-free",
             )
     save(audio, "cloned.mp3")
 
@@ -79,7 +81,7 @@ const stream = await client.textToSpeech.convert(
     ],
     format: "mp3",
   },
-  "s2-pro",
+  "s2.1-pro-free",
 );
 
 const chunks = [];

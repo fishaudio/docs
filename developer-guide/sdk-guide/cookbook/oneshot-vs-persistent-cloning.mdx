@@ -36,6 +36,7 @@ with open("reference.wav", "rb") as f:
             audio=f.read(),
             text="Exact transcript of what is said in reference.wav.",
         )],
+        model="s2.1-pro-free",
     )
 
 save(audio, "oneshot.mp3")
@@ -56,6 +57,7 @@ async def main():
                     audio=f.read(),
                     text="Exact transcript of what is said in reference.wav.",
                 )],
+                model="s2.1-pro-free",
             )
     save(audio, "oneshot.mp3")
 
@@ -83,7 +85,7 @@ const stream = await client.textToSpeech.convert(
     ],
     format: "mp3",
   },
-  "s2-pro"
+  "s2.1-pro-free"
 );
 
 const chunks = [];
@@ -117,7 +119,7 @@ save(audio, "persistent.mp3")
 Already have a trained voice id? Skip training and pass it directly:
 
 ```python
-audio = client.tts.convert(text="Hello again.", reference_id="<voice-id>")
+audio = client.tts.convert(text="Hello again.", reference_id="<voice-id>", model="s2.1-pro-free")
 ```
 
 ## Which to choose

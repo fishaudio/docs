@@ -49,7 +49,7 @@ from fishaudio.exceptions import (
 client = FishAudio()
 
 try:
-    audio = client.tts.convert(text="Hello!", reference_id="maybe-missing")
+    audio = client.tts.convert(text="Hello!", reference_id="maybe-missing", model="s2.1-pro-free")
 except AuthenticationError:
     print("Invalid API key")
 except RateLimitError:
@@ -70,7 +70,7 @@ from fishaudio.exceptions import RateLimitError, APIError, FishAudioError
 async def main():
     async with AsyncFishAudio() as client:
         try:
-            audio = await client.tts.convert(text="Hello!")
+            audio = await client.tts.convert(text="Hello!", model="s2.1-pro-free")
         except RateLimitError:
             print("Rate limited: back off and retry")
         except APIError as e:
@@ -96,7 +96,7 @@ client = FishAudio()
 def convert_with_retry(text: str, max_retries: int = 3) -> bytes:
     for attempt in range(max_retries):
         try:
-            return client.tts.convert(text=text)
+            return client.tts.convert(text=text, model="s2.1-pro-free")
         except (RateLimitError, ServerError):
             if attempt == max_retries - 1:
                 raise
@@ -126,6 +126,7 @@ from fishaudio.core.request_options import RequestOptions
 
 audio = client.tts.convert(
     text="Hello!",
+    model="s2.1-pro-free",
     request_options=RequestOptions(timeout=15.0, additional_headers={"X-Trace": "abc"}),
 )
 ```

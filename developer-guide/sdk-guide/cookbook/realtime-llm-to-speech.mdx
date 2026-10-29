@@ -28,7 +28,7 @@ def llm_tokens():
     for token in ["The ", "first ", "move ", "sets ", "everything ", "in ", "motion."]:
         yield token
 
-audio_stream = client.tts.stream_websocket(llm_tokens(), reference_id="<voice-id>")
+audio_stream = client.tts.stream_websocket(llm_tokens(), reference_id="<voice-id>", model="s2.1-pro-free")
 play(audio_stream)  # or: for chunk in audio_stream: send_to_client(chunk)
 ```
 
@@ -42,7 +42,7 @@ async def llm_tokens():
 
 async def main():
     async with AsyncFishAudio() as client:
-        audio_stream = client.tts.stream_websocket(llm_tokens())
+        audio_stream = client.tts.stream_websocket(llm_tokens(), model="s2.1-pro-free")
         with open("out.mp3", "wb") as f:
             async for chunk in audio_stream:
                 f.write(chunk)

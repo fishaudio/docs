@@ -37,6 +37,7 @@ for voice in page.items:
 audio = client.tts.convert(
     text="Speaking with a voice I found in the public library.",
     reference_id=reference_id,
+    model="s2.1-pro-free",
 )
 save(audio, "out.mp3")
 ```
@@ -65,7 +66,7 @@ const stream = await client.textToSpeech.convert(
     reference_id: referenceId,
     format: "mp3",
   },
-  "s2-pro"
+  "s2.1-pro-free"
 );
 
 const chunks = [];
