@@ -1,0 +1,32 @@
+---
+title: "Models"
+description: "The models you can self-host, and where their requirements differ"
+icon: "cubes"
+---
+
+Each model is delivered on its own: its own Helm chart, All-in-One images, versions,
+and deployment guide. Your agreement grants each model separately, and **Developer →
+Self Host** lists the ones your team can install. The rest of this section applies to
+every model; this page covers where they differ.
+
+## At a glance
+
+| Model    | Request header    | GPU types                | GPUs per deployment                                               |
+| -------- | ----------------- | ------------------------ | ----------------------------------------------------------------- |
+| S2.1 Pro | `model: s2.1-pro` | H100, H200, or B300      | Two; one in the All-in-One's Single-GPU mode, at lower throughput |
+| Drama 3  | `model: drama-3`  | H200 or B300 recommended | At least two or three, depending on the GPU                       |
+
+## S2.1 Pro
+
+- **The first start compiles for your GPU.** The result is cached on shared storage on
+  Helm, and on the volume on the All-in-One, so later starts are quicker. Moving to a
+  different GPU type compiles once more.
+- **Timestamps offline.** A Helm install without internet access copies the timestamp
+  model onto shared storage before turning timestamps on; the deployment runbook has the
+  step.
+
+## Drama 3
+
+[Drama 3](/features/text-to-speech/drama-3) is a much larger model than S2.1 Pro and
+needs more resources, GPUs above all; your deployment guide has the sizing. For a GPU
+other than H200 or B300, check with Fish Audio before you plan around it.

@@ -10,100 +10,49 @@ dashboard.
 
 ## The Self Host page
 
-Sign in to fish.audio and open **Developer → Self Host**. The page opens with
-**Before you start** — the platforms and modes your team is granted, with the
-prerequisites it checks. If it is empty, or reports that self-host deployment
-is not enabled, contact your account manager. Then five steps:
-
-1. **Deploy token** — create the credential the install commands authenticate with.
-2. **Sign in** — one registry login with that token.
-3. **License** — download the certificate and key bundle the deployment needs
-   before it will serve, at first install and at every renewal. Some contracts
-   bind it to specific GPUs — have the card UUIDs ready when you request it.
-4. **Install** — pick your mode and version; the download commands are built for
-   your team, with the registry host, artifact references, and the version you pick
-   already filled in. The same step downloads the **deployment guide** for that
-   version — the runbook or guide the other pages here refer to. See
-   [Releases](/developer-guide/self-hosting/enterprise-releases) for how versions work.
-5. **Test voices** — get your team's voices and Fish Audio's official voices onto the
-   deployment, by voice sync or by hand, then make a request with one to confirm it
-   works.
-
-<Note>
-  The registry host, the artifact references, and the versions available to you are
-  specific to your team and are shown only in the dashboard. Copy them from the Self
-  Host page.
-</Note>
+Sign in to fish.audio and open **Developer → Self Host**. It takes your team from a
+deploy token and the license to the model you pick, the environment it needs, and
+install commands for the version you pick, with the registry host and artifact
+references filled in. The install step also downloads that version's **deployment
+guide**: the Helm deployment runbook or the All-in-One guide that the other pages here
+refer to. Each
+model has its own versions, and a deployment stays on its version until you install
+another. If the page says self-hosting is not enabled, or nothing has been granted to
+your team yet, contact your account manager.
 
 ## Prerequisites
 
 - Self-hosting enabled for your team under an enterprise agreement.
 - A fish.audio account that is a member of that team.
-- Docker, and Helm 3.8 or newer for the OCI chart commands.
+- Docker for the All-in-One, and for mirroring images into an air-gapped cluster;
+  Helm 3.8 or newer for the Kubernetes chart.
 
-## Create a deploy token
+## Deploy tokens
 
-<Steps>
-  <Step title="Open the Deploy token step">
-    On **Developer → Self Host**, select **Create Deploy Token**.
-  </Step>
-  <Step title="Name it for where it will be used">
-    Use a name that identifies the consumer, such as `prod-cluster` or `ci-mirror`. The
-    name appears in the token list alongside the creation date and last-used time.
-  </Step>
-  <Step title="Copy the token immediately">
-    The token value is shown once, at creation. Store it in your secret manager before
-    closing the dialog. If you lose it, rotate the token to issue a new one.
-  </Step>
-</Steps>
+Create one token per consumer, such as a production cluster, a staging cluster, or a CI
+mirror, and name it after that consumer. The value is shown once: store it in your
+secret manager, not in values files or version control. A team holds up to five tokens,
+and they carry the team's grants rather than their creator's.
 
-A team can hold up to five deploy tokens at a time. Tokens carry the grants of the team
-that owns them, not of the person who created them, and follow those grants as they
-change, so there is no token to recreate when your entitlement is updated.
+Docker, Helm, and the cluster's image pull secret all sign in with your account email
+and the token.
 
-Authenticate with your account email as the username and the deploy token as the
-password. Docker, Helm, and the cluster's image pull secret all use the same pair; the
-exact commands are on the Self Host page and in the deployment runbook.
-
-## Managing tokens
-
-| Action    | Effect                                                                                                                                   |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Rotate    | Issues a new token value and invalidates the old one immediately. Update every consumer before rotating, or new pods will fail to pull.  |
-| Delete    | Revokes the token immediately. Any deployment still using it stops pulling images. Running pods keep running until they are rescheduled. |
-| Last used | Shows when the token last authenticated, which identifies tokens that are safe to retire.                                                |
-
-Recommended practice:
-
-- Issue one token per consumer (production cluster, staging cluster, CI mirror) so a
-  single revocation never takes down more than one of them.
-- Store tokens in your secret manager, not in values files or version control.
-- Rotate on your normal credential schedule and whenever someone with access to a token
-  leaves the team.
+Rotating or deleting a token revokes the old value at once. Running pods keep running,
+but new pulls fail until every consumer has a valid token. To switch with no gap,
+create a second token, move every consumer to it, then delete the old one. The token
+list shows when each token was last used, so you can retire the ones nothing uses.
 
 ## The license
 
-The license is the product permit: every platform and billing mode needs one to
-run, and it is separate from how usage is billed. Fish Audio issues the
-license against your contract, and the dashboard's License step is
-where you download the bundle — a certificate (`license.crt`) and key
-(`license.key`) that the deployment mounts, as its guide's License section
-shows. Some contracts bind the license to specific GPU UUIDs; the dashboard
-shows the binding.
+The license is the product permit: every platform and billing mode needs one. Download
+the bundle, `license.crt` and `license.key`, from the License step on the Self Host
+page; some contracts bind it to specific GPUs, so have their UUIDs ready. Without it, the services never come up.
+Once it expires, they refuse requests (403) until a renewed one is in place. The
+dashboard shows the current expiry.
 
-The two failure modes are worth knowing before they happen. **Missing**, the
-services never come up. **Expired**, they start but refuse every request with a
-license error (403) until the renewed bundle is in place.
-
-**Validity and renewal.** The certificate carries a validity window bounded by
-your contract term; the dashboard shows the current expiry. Renewals are driven
-by Fish Audio: before the expiry, settle the period's invoice — and, on offline
-billing, send the usage ledger for reconciliation — and a renewed license is
-issued. A renewal replaces only `license.crt`, in place, and the running
-services reload it without a restart; only a bundle that carries a new key
-needs one. The Helm-side mechanics are in
-[License renewal](/developer-guide/self-hosting/operations#license-renewal);
-the All-in-One's are in its deployment guide.
+Before the expiry, settle the period's invoice and, on offline billing, send the usage
+ledger; Fish Audio then issues the renewed bundle. Your deployment guide shows how to
+apply it.
 
 ## Next step
 
