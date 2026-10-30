@@ -152,6 +152,19 @@ A custom LLM never silently falls back to a platform model, because a platform m
 - When a generation still fails, the agent speaks a brief hold line and stays on the call.
 - After three consecutive failed generations the agent apologizes, hangs up, and the session ends with `end_reason: llm_endpoint_failure` (in the [sessions API](/agents/monitor/conversation-history#status-and-end-reason), the dashboard, and the `call.ended` webhook's `ended_reason`).
 
+### Empty replies
+
+Sometimes the agent should say nothing for a turn, for example while an IVR menu plays or after the caller asks it to hold. To stay silent, your endpoint returns `200` with a normal event stream that finishes without any text and without tool calls.
+
+- The agent says nothing for that turn. The call or [simulation test](/agents/test/agent-tests) continues.
+- This is not a failed generation. The agent plays no hold line, and nothing is recorded in `llm_endpoint_errors`.
+
+This applies only after the conversation has started. These empty replies still count as failures:
+
+- An empty reply when the agent generates its first message.
+- A non-streaming JSON response with empty content.
+- A reply marked as a refusal, with a `refusal` delta or `finish_reason: "content_filter"`.
+
 ### See what your endpoint returned
 
 Every failed generation is recorded, whether or not the call ended because of it. You can find them in three places:
