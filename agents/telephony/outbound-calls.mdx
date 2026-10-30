@@ -126,6 +126,110 @@ Calls from [imported BYO numbers](/agents/telephony/byo-sip) dial out through yo
 
 Numbers that live on the platform can never be dialed, so an agent cannot call another agent's number.
 
+## Calls before your team has paid
+
+Until your team has paid for Fish Audio, purchased numbers can only call numbers your team has [verified](#verify-a-number). Calls to any other number are refused with `403 outbound_requires_credit`.
+
+Your team counts as paid once any of these is true:
+
+- You have bought API credit at least once. This still counts after the balance is spent.
+- You have a paid subscription.
+- Your team is billed by invoice under a contract.
+
+Free credit and trials do not count.
+
+- [Imported BYO numbers](/agents/telephony/byo-sip) are not restricted. They dial out through your own trunk.
+- Once your team has paid, purchased numbers can call any [allowed destination](#allowed-destinations).
+
+### Verify a number
+
+Verifying proves that your team controls the number. You get a one-time code by text message or by phone call. Use a phone call for numbers that cannot receive texts, such as landlines.
+
+Verify numbers in the console. Sending a code needs a reCAPTCHA check in the browser, so you cannot request codes with an API key alone.
+
+<Steps>
+  <Step title="Call the number">
+    On the agent's **Phone** page, open **Outbound calls** and place a call to the number. If the number is not verified yet, a window opens and asks you to verify it.
+  </Step>
+  <Step title="Request a code">
+    Under **Get the code by**, pick **Text message** or **Phone call**. Click **Verify this number**.
+  </Step>
+  <Step title="Enter the code">
+    Type the code you received. For a phone call, answer and press a key when the call asks you to. The call then reads out the code.
+  </Step>
+  <Step title="The call goes out">
+    Once the code is accepted, the console places your call again.
+  </Step>
+</Steps>
+
+The window also links to adding credits or subscribing. Do that to call any number without verifying it.
+
+- The code is valid for 10 minutes.
+- Five wrong codes cancel the pending code. Request a new one after that.
+- Sending codes is rate limited per number and per team.
+- The number must be an [allowed destination](#allowed-destinations).
+- Numbers that live on the platform cannot be verified.
+- Verified numbers belong to the team. Every agent and number in the team can call them.
+- A team can have up to 10 verified numbers. [Remove one](#manage-verified-numbers) to add another.
+
+### Manage verified numbers
+
+List and remove verified numbers over the API.
+
+List your team's verified numbers:
+
+```bash
+curl https://api.fish.audio/v1/agent/verified-phone-numbers \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+```json
+{
+  "verified_phone_numbers": [
+    {
+      "verified_phone_number_id": "3f9a1c0e7b2d4e8f9a6b5c4d3e2f1a0b",
+      "phone_number": "+14155550123",
+      "verified_by": "YOUR_USER_ID",
+      "verified_at": "2026-01-15T10:02:41Z"
+    }
+  ],
+  "third_party_calls_allowed": false
+}
+```
+
+`third_party_calls_allowed` is `true` once your team has paid. Then you can call numbers outside the list. While it is `false`, the restriction applies.
+
+Remove a number:
+
+```bash
+curl --request DELETE https://api.fish.audio/v1/agent/verified-phone-numbers/3f9a1c0e7b2d4e8f9a6b5c4d3e2f1a0b \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+The request returns `204`.
+
+### Verification errors
+
+Verification errors carry a `reason`, like phone-call errors:
+
+| Status | Reason                                                                          | Cause                                                                                |
+| ------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `400`  | `recaptcha_failed`                                                              | The reCAPTCHA check failed or no token was sent. Request the code in the console.    |
+| `404`  | `verification_not_found`                                                        | No pending code for this number, or the code expired. Request a new one.             |
+| `404`  | `verified_phone_number_not_found`                                               | The verified number doesn't exist or isn't your team's.                              |
+| `409`  | `phone_already_verified`                                                        | The number is already on your team's list.                                           |
+| `409`  | `verified_numbers_limit_reached`                                                | Your team has 10 verified numbers. Remove one first.                                 |
+| `422`  | `phone_number_invalid`                                                          | The number is not valid E.164, or codes cannot be delivered to it.                   |
+| `422`  | `destination_invalid`, `destination_not_allowed`, `premium_destination_blocked` | The number is not an [allowed destination](#allowed-destinations).                   |
+| `422`  | `self_call_blocked`                                                             | The number lives on the platform. It cannot be verified.                             |
+| `422`  | `phone_number_cannot_receive_sms`                                               | The number cannot receive texts. Get the code by phone call instead.                 |
+| `422`  | `phone_verification_blocked`                                                    | Codes cannot be sent to this number.                                                 |
+| `422`  | `verification_code_invalid`                                                     | The code is wrong. The message says how many attempts are left.                      |
+| `429`  | `verification_rate_limited`                                                     | Too many codes requested. Try again later.                                           |
+| `429`  | `verification_attempts_exceeded`                                                | Too many wrong codes. Request a new one.                                             |
+| `502`  | `recaptcha_unavailable`                                                         | The reCAPTCHA check is temporarily unavailable. No code was sent. Try again shortly. |
+| `503`  | `phone_verification_unavailable`                                                | Phone verification is temporarily unavailable. Try again later.                      |
+
 ## Errors
 
 Unlike most [Agents API errors](/api-reference/agent-errors), phone-call errors carry a machine-readable `reason` alongside the `message`:
@@ -142,6 +246,7 @@ Unlike most [Agents API errors](/api-reference/agent-errors), phone-call errors 
 | ------ | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `402`  | `insufficient_credit`                                                                                | Out of API credit; top up first.                                                                                                 |
 | `403`  | `outbound_disabled`                                                                                  | Outbound calling is switched off for this workspace.                                                                             |
+| `403`  | `outbound_requires_credit`                                                                           | Your team has not paid yet and the destination is not verified. See [calls before your team has paid](#calls-before-your-team-has-paid). |
 | `404`  | `number_not_found`, `agent_not_found`                                                                | The id doesn't exist, isn't yours, or the number was released.                                                                   |
 | `409`  | `agent_not_published`                                                                                | [Publish](/agents/deploy/versions-publishing) the agent first.                                                                   |
 | `409`  | `idempotency_key_conflict`                                                                           | A request with this key is still in flight; back off and retry the same request.                                                 |
