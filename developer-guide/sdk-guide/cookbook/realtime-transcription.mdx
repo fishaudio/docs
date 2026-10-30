@@ -284,7 +284,7 @@ The clip ends mid-sentence, so the last turn is committed by `audio_done`. Draft
 - **`draft`** is the whole turn so far, and replaces the previous draft. Drafts come only with `results.drafts: true`; use them for live captions.
 - **`user_turn_taken`** says the server judged that the user is taking their turn, rather than noise or someone else nearby.
 - **`eager_end_of_turn`** comes with `turn_detection.eager: true` when the turn has probably ended. Its text equals the final transcript unless `turn_resumed` follows, so an agent can start its reply early.
-- **`committed`** is the final transcript of the turn. `user_turn: false` marks a non-user turn, such as background noise or a short acknowledgement while your agent is speaking. Speaker tags such as `<|speaker:0|>` are stable within the session; strip them and trim the text, or send `results.diarize: false`. Text can also contain [sound tags](/api-reference/endpoint/websocket/asr-realtime#sound-tags) such as `[laughter]`. `language_code` is omitted when the text is too short to tell, as for "Uh-huh." above.
+- **`committed`** is the final transcript of the turn. `user_turn: false` marks a non-user turn, such as background noise or a short acknowledgement while your agent is speaking. Speaker tags such as `<|speaker:0|>` are stable within the session; strip them and trim the text, or send `results.diarize: false`. Text can also contain [sound tags](/api-reference/endpoint/websocket/asr-realtime#sound-tags) such as `[laughter]`; strip them too, or send `results.tag_audio_events: false`. `language_code` is omitted when the text is too short to tell, as for "Uh-huh." above.
 - **`session_done`** follows `audio_done`, and the server then closes the connection with code 1000.
 
 Ignore message types and fields you do not know: new ones can be added. Every message is described in the [WebSocket reference](/api-reference/endpoint/websocket/asr-realtime#server-messages).
@@ -403,7 +403,10 @@ registerProcessor("pcm16", Pcm16);`;
   // Speaker tags and sound tags out, whitespace collapsed.
   const strip = text =>
     (text || "")
-      .replace(/<\|[^|]*\|>|\[[^\[\]]*\]/g, "")
+      .replace(
+        /<\|[^|]*\|>|\[[^\[\]]*\]|\uFF3B[^\uFF3B\uFF3D]*\uFF3D|\u3010[^\u3010\u3011]*\u3011/g,
+        ""
+      )
       .replace(/\s+/g, " ")
       .trim();
   let ws,

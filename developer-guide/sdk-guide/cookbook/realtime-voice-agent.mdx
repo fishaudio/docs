@@ -72,7 +72,8 @@ import websockets
 
 URL = "wss://api.fish.audio/v1/asr/realtime"
 CHUNK_MS = 40  # ms of audio per message; 20-40 ms suits live audio
-TAGS = re.compile(r"<\|[^|]*\|>|\[[^\[\]]*\]")  # speaker tags such as <|speaker:0|>, sound tags such as [laughter]
+# Speaker tags such as <|speaker:0|>; sound tags such as [laughter], also in full-width brackets.
+TAGS = re.compile(r"<\|[^|]*\|>|\[[^\[\]]*\]|\uFF3B[^\uFF3B\uFF3D]*\uFF3D|\u3010[^\u3010\u3011]*\u3011")
 T0 = time.monotonic()
 
 
@@ -233,7 +234,7 @@ The recipe keeps a reply's full text in its history even when the user interrupt
 
 ## Decide when to answer
 
-Answer a turn when `committed.user_turn` is `true` and its text, without speaker tags and [sound tags](/api-reference/endpoint/websocket/asr-realtime#sound-tags), is not empty. Do not decide by `reason`: a turn can end for several reasons, and non-user turns end with `eot` too. If `user_turn` is ever missing, treat it as `true`.
+Answer a turn when `committed.user_turn` is `true` and its text, without speaker tags and [sound tags](/api-reference/endpoint/websocket/asr-realtime#sound-tags) (already removed with `results.diarize: false` and `results.tag_audio_events: false`), is not empty. Do not decide by `reason`: a turn can end for several reasons, and non-user turns end with `eot` too. If `user_turn` is ever missing, treat it as `true`.
 
 A turn with `user_turn: false` is not the user talking to your agent: usually background noise, a TV or another person nearby (`turn_kind: "other"`), or an acknowledgement while your agent was speaking (`turn_kind: "backchannel"`). Its text can be shown dimmed in a transcript, or left out.
 
