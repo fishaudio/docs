@@ -198,7 +198,7 @@ Send 16-bit little-endian PCM, mono, at 8000, 12000, 16000, 22050, 24000, 32000,
 
 ### Speakers
 
-Transcripts contain speaker tags such as `<|speaker:0|>`, stable within a session. Strip them, or send `results.diarize: false` for plain text. Whitespace right after a tag can vary, so trim the text after you strip the tags. Transcripts can also contain sound tags such as `[laughter]` or `[pause]`; see [Sound tags](/api-reference/endpoint/websocket/asr-realtime#sound-tags).
+Transcripts contain speaker tags such as `<|speaker:0|>`, stable within a session. Strip them, or send `results.diarize: false` for plain text. Whitespace right after a tag can vary, so trim the text after you strip the tags. Transcripts can also contain sound tags such as `[laughter]` or `[pause]`. Strip them too, or send `results.tag_audio_events: false` to remove them; see [Sound tags](/api-reference/endpoint/websocket/asr-realtime#sound-tags).
 
 ### Keys and browsers
 

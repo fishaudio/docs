@@ -503,6 +503,7 @@ components:
                 drafts: true
                 ignore_timestamps: true
                 diarize: true
+                tag_audio_events: true
                 vad_events: false
                 eot_events: false
             limits:
@@ -780,7 +781,7 @@ components:
             type: integer
           text:
             type: string
-            description: The final transcript of the turn. Can contain speaker tags such as `<|speaker:0|>` and sound tags such as `[laughter]`. Can be empty.
+            description: The final transcript of the turn. Can contain speaker tags such as `<|speaker:0|>` (unless `results.diarize` is `false`) and sound tags such as `[laughter]` (unless `results.tag_audio_events` is `false`). Can be empty.
           words:
             type: array
             items:
@@ -1175,6 +1176,10 @@ components:
                 - "false"
           default: true
           description: Speaker tags in the text. `auto` is the same as `true`; `false` removes them. The strings `"true"` and `"false"` are accepted too.
+        tag_audio_events:
+          type: boolean
+          default: true
+          description: Sound tags such as `[laughter]` in the text; `false` removes them. Only `true` or `false`.
         vad_events:
           type: boolean
           default: false
@@ -1229,6 +1234,9 @@ components:
                 - "true"
                 - "false"
           description: Speaker tags in the text. `auto` is the same as `true`; `false` removes them. The strings `"true"` and `"false"` are accepted too.
+        tag_audio_events:
+          type: boolean
+          description: Sound tags such as `[laughter]` in the text; `false` removes them. Only `true` or `false`.
         vad_events:
           type: boolean
           description: Send `vad` messages.

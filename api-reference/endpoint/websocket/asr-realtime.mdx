@@ -114,13 +114,14 @@ Audio sent before `session_started` is not lost: once the session has started, t
 | `results.drafts`                    | No       | `false`         | `true` sends live [`draft`](#draft) messages.                                                                                                                             |
 | `results.ignore_timestamps`         | No       | `true`          | `false` adds word timings (`words`) to `committed`.                                                                                                                       |
 | `results.diarize`                   | No       | `true`          | `true`, `false` or `"auto"` (same as `true`); the strings `"true"` and `"false"` are accepted too. `false` removes speaker tags from the text. See [Speakers](#speakers). |
+| `results.tag_audio_events`          | No       | `true`          | `false` removes sound tags such as `[laughter]` from the text. See [Sound tags](#sound-tags).                                                                             |
 | `results.vad_events`                | No       | `false`         | `true` sends [`vad`](#vad) messages.                                                                                                                                      |
 | `results.eot_events`                | No       | `false`         | `true` sends [`eot_prob`](#eot_prob) messages.                                                                                                                            |
 | `context.history`                   | No       | `[]`            | Earlier conversation, oldest first: up to 32 items of `{ "role": "user" \| "assistant", "text": str }`, each up to 2,000 characters.                                      |
 | `context.terms`                     | No       | `[]`            | Up to 100 terms of up to 32 characters each: names, products and jargon to recognize.                                                                                     |
 | `client_reference_id`               | No       |                 | Your own ID for the session, up to 256 characters. It is recorded with the session and not sent back.                                                                     |
 
-A value of the wrong type for `ignore_timestamps`, or a `diarize` value other than those listed, is `invalid_config`. So is an unknown field, including a misspelled one; the error's `message` names the field. `invalid_config` closes the connection with 4400. Send only the fields listed here: not every other field is refused, so check `session_started.config`, which shows the settings in effect.
+A value of the wrong type for `ignore_timestamps` or `tag_audio_events` (both take only `true` or `false`), or a `diarize` value other than those listed, is `invalid_config`. So is an unknown field, including a misspelled one; the error's `message` names the field. `invalid_config` closes the connection with 4400. Send only the fields listed here: not every other field is refused, so check `session_started.config`, which shows the settings in effect.
 
 #### Audio format
 
@@ -201,7 +202,7 @@ Change settings during the session. `turn_detection`, `results` and `context` ta
 
 `audio` is fixed for the session: to change the audio format, open a new session. A `configure` with an unknown field, with an `audio` that differs from the session's, or with `context.history` gets `configured` with `ok: false`, and nothing in it is applied. An `audio` identical to the session's is accepted. As with `config`, send only the fields listed here; `configured.config` shows the settings in effect.
 
-- A change to `ignore_timestamps` or `diarize` applies to turns that open after `configured`. A turn that is already open keeps the settings it started with, so its `eager_end_of_turn` and `committed` always agree.
+- A change to `ignore_timestamps`, `diarize` or `tag_audio_events` applies to turns that open after `configured`. A turn that is already open keeps the settings it started with, so its `eager_end_of_turn` and `committed` always agree.
 - When `mode` changes to or from `auto`, the server first settles its turn decisions on the audio already sent, so `configured` can take a few seconds.
 - A turn's `user_turn` status follows the mode it opened in: a turn opened in `vad` or `manual` mode is always a user turn and gets no `user_turn_taken`. How an open turn ends follows the current mode.
 - Switching away from `auto` settles an open turn that has no `user_turn_taken` yet: it becomes a user turn (`user_turn_taken` is sent) if there was speech in about the last second; otherwise it is committed at once with `user_turn: false`.
@@ -413,6 +414,7 @@ Sent after `audio_done`, just before the server closes the connection with 1000.
 - Every `draft` has `settled_text`, possibly empty, and the draft's `text` starts with it.
 - `language` and `language_code` are both present or both absent.
 - `committed.words` is present exactly when `ignore_timestamps` was `false` when the turn opened and the commit is not degraded.
+- With `tag_audio_events` `false` when the turn opened, no text of the turn contains an opening tag bracket (`[`, U+FF3B or U+3010).
 
 ## Why a turn ended
 
@@ -434,19 +436,26 @@ In every mode:
 
 ## Speakers
 
-`text` can contain speaker tags `<|speaker:N|>` (N = 0, 1, ...). Numbers are stable within a session and start over in a new one. Strip the tags if you only need the words, or send `results.diarize: false` to get text without them. With `diarize: false`, whitespace in the text, line breaks included, is collapsed to single spaces and trimmed; sound tags stay (see [Sound tags](#sound-tags)).
+`text` can contain speaker tags `<|speaker:N|>` (N = 0, 1, ...). Numbers are stable within a session and start over in a new one. Strip the tags if you only need the words, or send `results.diarize: false` to get text without them. With `diarize: false`, whitespace in the text, line breaks included, is collapsed to single spaces and trimmed; sound tags stay unless `tag_audio_events` is `false` (see [Sound tags](#sound-tags)).
 
 Whitespace right after a speaker tag is not significant and can vary, for example `<|speaker:0|>Can you` or `<|speaker:0|> Can you`. To get each speaker's text, split the text on the tags, then trim each segment. If you only need the words, remove the tags, then trim the text and collapse runs of whitespace into one space.
 
 ## Sound tags
 
-`text` can contain sound tags in square brackets, such as `[laughter]`, `[laughs]`, `[sighs]` or `[pause]`, in every turn detection mode and whether `diarize` is on or off. The set is open: a tag can be any short description, sometimes several words long. A turn's text can be a tag alone. Language detection ignores tags.
+`text` can contain sound tags in square brackets, such as `[laughter]`, `[laughs]`, `[sighs]` or `[pause]`, in every turn detection mode and whether `diarize` is on or off. The set is open: a tag can be any short description, sometimes several words long or in the language of the speech. A tag can also come in full-width square brackets (U+FF3B and U+FF3D) or lenticular brackets (U+3010 and U+3011) instead of `[` and `]`. A turn's text can be a tag alone.
 
-Tags are sounds, not words. Strip them when you need only the words, for example for search, word counts, or deciding whether there is anything to answer: remove every match of the regular expression `\[[^\[\]]*\]`, then trim the text and collapse runs of whitespace into one space. If you keep them for a language model, tell it that they are sounds, and do not answer a turn that holds only tags.
+Tags are sounds, not words. Strip them when you need only the words, for example for search, word counts, or deciding whether there is anything to answer: remove every match of the regular expression `\[[^\[\]]*\]|\uFF3B[^\uFF3B\uFF3D]*\uFF3D|\u3010[^\u3010\u3011]*\u3011`, then trim the text and collapse runs of whitespace into one space. If you keep them for a language model, tell it that they are sounds, and do not answer a turn that holds only tags.
+
+Or send `results.tag_audio_events: false` to get no sound tags at all. Every tag, in any of the three kinds of brackets and whatever is inside it, is then removed from every text of the turn (`draft`, `eager_end_of_turn` and `committed`), as are the `words` entries that belong to a tag, and whitespace is collapsed and trimmed as with `diarize: false`:
+
+- An opening bracket is closed only by its own kind: `[` by `]`, U+FF3B by U+FF3D, U+3010 by U+3011. A closing bracket ends the tag of the nearest opening bracket of its kind that is still open, and everything between them is removed with it, brackets of the other kinds included. A tag inside a tag of the same kind goes with the outer one. A closing bracket with no opening bracket of its kind open before it is ordinary text and stays.
+- An opening bracket that nothing closes depends on the message. In a `draft` it is taken for the start of a tag that is still being written: it and the rest of that draft, speaker tags included, are not shown until a later draft closes it. In `eager_end_of_turn` and `committed`, the turn's final text, only that bracket is removed: the text after it is shown, and its `words` are kept.
+
+Speaker tags still depend on `diarize` alone. A turn that holds only tags still gets its `committed`, without a language, and with a `text` that is empty with `diarize: false`, or holds only the turn's speaker tags with `diarize` on.
 
 ## Language
 
-`draft`, `eager_end_of_turn` and `committed` carry the language of their own `text`. Use `language_code` (ISO 639-1) in your code; `language` is its English name, for display, with the same names as [`POST /v1/asr`](/api-reference/endpoint/openapi-v1/speech-to-text). The language is detected from that message's text alone, ignoring speaker tags, sound tags and interjections such as "okay", "hmm" or "uh". It is one of:
+`draft`, `eager_end_of_turn` and `committed` carry the language of their own `text`. Use `language_code` (ISO 639-1) in your code; `language` is its English name, for display, with the same names as [`POST /v1/asr`](/api-reference/endpoint/openapi-v1/speech-to-text). The language is detected from that message's text alone, ignoring speaker tags, sound tags in `[` and `]`, and interjections such as "okay", "hmm" or "uh". With `tag_audio_events: false`, the label can also reflect text that is not shown: the rest of a draft after an unclosed opening bracket, the inside of a tag that holds another tag, or a tag in full-width or lenticular brackets. It is one of:
 
 `ar`, `zh`, `cs`, `da`, `nl`, `en`, `fi`, `fr`, `de`, `el`, `hi`, `hu`, `id`, `it`, `ja`, `ko`, `mk`, `ms`, `fa`, `pl`, `pt`, `ro`, `ru`, `es`, `sv`, `tl`, `th`, `tr`, `vi`.
 
@@ -454,7 +463,7 @@ Both fields are omitted when the text is empty, too short to tell or ambiguous. 
 
 ## Degraded commits
 
-If the final pass for a turn fails, you receive `error` with `engine_error` and `recoverable: true`, and then a `committed` with `degraded: true`. Its `text` and language are those of the turn's last draft (empty and without a language when the turn had no draft, as with `results.drafts: false`), and it has no `words`. The session continues.
+If the final pass for a turn fails, you receive `error` with `engine_error` and `recoverable: true`, and then a `committed` with `degraded: true`. Its `text` and language are those of the turn's last draft (empty and without a language when the turn had no draft, as with `results.drafts: false`), and it has no `words`. With `tag_audio_events: false`, an unclosed opening bracket in that draft is handled as in any `committed`: only the bracket is removed, so the text after it, and its language, can appear even if that draft showed none. The session continues.
 
 ## Errors and close codes
 
