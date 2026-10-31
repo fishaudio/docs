@@ -21,11 +21,11 @@ online or offline; the container logs which at startup.
 ## What it cannot do
 
 The appliance runs one inference worker and one vocoder, on the cards its model
-takes — see [Models](/developer-guide/self-hosting/models). It does not
-autoscale or add workers on more GPUs or nodes, and it does not include timestamp
-alignment, so it returns no word or segment timings. For elastic or higher-throughput
-deployments, use the [Kubernetes chart](/developer-guide/self-hosting/kubernetes), which
-scales replicas across all GPUs and nodes.
+takes — see [Models](/developer-guide/self-hosting/models). It does not include
+timestamp alignment, so it returns no word or segment timings. A container does not scale
+itself: for more capacity, run more containers behind your own load balancer. To scale
+workers and vocoders separately, use the
+[Kubernetes chart](/developer-guide/self-hosting/kubernetes).
 
 ## What running it involves
 

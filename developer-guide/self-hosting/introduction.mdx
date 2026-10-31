@@ -26,14 +26,14 @@ audio formats, and voice behavior match what you already build against.
 Each model ships on two platforms. Your agreement decides which ones your team gets,
 and in which modes; **Developer → Self Host** shows them.
 
-|            | Helm (Kubernetes)                                                 | All-in-One (Docker)                                              |
-| ---------- | ----------------------------------------------------------------- | ---------------------------------------------------------------- |
-| What it is | The model's chart, installed on your cluster                      | One container on a single machine                                |
-| Best for   | Production clusters and elastic capacity                          | Evaluation, fixed-size appliances, strict air gaps               |
-| Scaling    | Replicas across GPUs and nodes, with optional autoscaling         | None: one worker and one vocoder                                 |
-| Metrics    | Prometheus metrics from the speech services                       | API metrics only, at `/metrics`                                  |
-| Timestamps | Optional, where available                                         | Not included                                                     |
-| Guide      | [Kubernetes deployment](/developer-guide/self-hosting/kubernetes) | [All-in-One container](/developer-guide/self-hosting/all-in-one) |
+|            | Helm (Kubernetes)                                                 | All-in-One (Docker)                                                              |
+| ---------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| What it is | The model's chart, installed on your cluster                      | One container on a single machine                                                |
+| Best for   | Production clusters and elastic capacity                          | Evaluation, fixed-size appliances, strict air gaps                               |
+| Scaling    | Replicas across GPUs and nodes, with optional autoscaling         | Add containers behind your own load balancer; each is one worker and one vocoder |
+| Metrics    | Prometheus metrics from the speech services                       | API metrics only, at `/metrics`                                                  |
+| Timestamps | Optional, where available                                         | Not included                                                                     |
+| Guide      | [Kubernetes deployment](/developer-guide/self-hosting/kubernetes) | [All-in-One container](/developer-guide/self-hosting/all-in-one)                 |
 
 The GPUs each model needs are on [Models](/developer-guide/self-hosting/models). On
 either platform, ingress, DNS, TLS, external load balancing, and network allowlists
