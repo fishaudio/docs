@@ -88,7 +88,7 @@ The SDKs do not wrap this endpoint; you connect with any WebSocket client and ex
     `session_started`.
   </Step>
   <Step title="Stream audio">
-    Send `audio` messages with 16-bit mono PCM, 80–100 ms each, as you capture
+    Send `audio` messages with 16-bit mono PCM, 20–40 ms each, as you capture
     it.
   </Step>
   <Step title="Read the transcript">
@@ -188,7 +188,7 @@ Measured on the production service with synthetic speech:
 - `eager_end_of_turn` arrives about 0.6 seconds after the speaker stops.
 - `committed` arrives about 1.1 seconds after the speaker stops.
 
-Your network and how you send audio add to these times. Send audio as you capture it, in 80–100 ms messages.
+Your network and how you send audio add to these times. Each result also waits for the message that carries its audio, on average half a message: about 50 ms with 100 ms messages and 20 ms with 40 ms messages. Send audio as you capture it, in 20–40 ms messages.
 
 ## Implementation details
 

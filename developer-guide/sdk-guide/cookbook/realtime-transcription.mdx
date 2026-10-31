@@ -31,7 +31,7 @@ You also need a 16-bit PCM mono WAV file, at 8000, 12000, 16000, 22050, 24000, 3
 
 ## Recipe
 
-The script connects to `wss://api.fish.audio/v1/asr/realtime`, sends a `config` message, waits for `session_started`, and then streams the file in 100 ms messages at real-time speed, as a live microphone would. It prints every message the server sends until the session ends.
+The script connects to `wss://api.fish.audio/v1/asr/realtime`, sends a `config` message, waits for `session_started`, and then streams the file in 40 ms messages at real-time speed, as a live microphone would. It prints every message the server sends until the session ends.
 
 <CodeGroup>
 
@@ -53,7 +53,7 @@ import msgpack
 import websockets
 
 URL = "wss://api.fish.audio/v1/asr/realtime"
-CHUNK_MS = 100  # 80-100 ms of audio per message
+CHUNK_MS = 40  # ms of audio per message; 20-40 ms suits live audio
 
 
 def pack(message):
@@ -134,7 +134,7 @@ import { encode, decode } from "@msgpack/msgpack";
 import WebSocket from "ws";
 
 const URL = "wss://api.fish.audio/v1/asr/realtime";
-const CHUNK_MS = 100; // 80-100 ms of audio per message
+const CHUNK_MS = 40; // ms of audio per message; 20-40 ms suits live audio
 
 // Read a 16-bit mono PCM WAV file: its sample rate and its samples.
 function readWav(path) {
@@ -378,10 +378,10 @@ if __name__ == "__main__":
     decode,
   } from "https://cdn.jsdelivr.net/npm/@msgpack/msgpack@3.1.2/+esm";
 
-  // Runs on the audio thread: float samples in, 16-bit PCM out, ~100 ms per message.
+  // Runs on the audio thread: float samples in, 16-bit PCM out, 40 ms per message.
   const WORKLET = `
 class Pcm16 extends AudioWorkletProcessor {
-  constructor() { super(); this.size = Math.round(sampleRate / 10); this.buf = new Int16Array(this.size); this.n = 0; }
+  constructor() { super(); this.size = Math.round(sampleRate / 25); this.buf = new Int16Array(this.size); this.n = 0; }
   process([input]) {
     const ch = input[0] || [];
     for (let i = 0; i < ch.length; i++) {
@@ -491,7 +491,7 @@ registerProcessor("pcm16", Pcm16);`;
 Install `aiohttp`, put both files in one folder, run `python relay.py`, and open `http://localhost:8080`.
 
 - The page captures audio at the device's own sample rate and sends that rate in `config`; the server converts it, so the page does not resample. The rate must be one of the supported rates.
-- An `AudioWorklet` converts the samples to 16-bit PCM and posts about 100 ms per message.
+- An `AudioWorklet` converts the samples to 16-bit PCM and posts 40 ms per message.
 - **Stop** sends `audio_done`, so the server commits the last turn before it closes the connection.
 - The relay forwards the API's close code to the page. In production, add your own user authentication, per-user session limits and input checks to the relay.
 
