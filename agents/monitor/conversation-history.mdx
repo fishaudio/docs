@@ -190,7 +190,7 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
 
 | `type`        | What it is                                                                                                                                                 |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `message`     | One utterance. `role` is `user` or `assistant` (system prompt content is never exposed). `turn_id` groups items belonging to the same conversational turn. `fallback_reason` is `"llm_error"` on a fixed line the agent spoke because its LLM failed, and `null` otherwise. `answered_by_model` is set on `assistant` messages: the model that wrote the reply, the agent's own or an [LLM fallback](/agents/build/llm-fallback). `null` on `user` items and on sessions from before the field existed. |
+| `message`     | One utterance. `role` is `user` or `assistant` (system prompt content is never exposed). `turn_id` groups items belonging to the same conversational turn. `fallback_reason` is `"llm_error"` on a fixed line the agent spoke because its LLM failed, and `null` otherwise. `answered_by_model` names the model that wrote an `assistant` message, the agent's own or an [LLM fallback](/agents/build/llm-fallback). It is `null` on `user` items and on sessions from before the field existed. |
 | `tool_call`   | A tool invocation as it started. `input` is a JSON string, stored in full with no truncation.                                                              |
 | `tool_result` | The paired outcome, matched by `call_id`. `status` is `completed` or `failed`. `latency_ms` is the execution time.                                         |
 | `transfer`    | One [call transfer](/agents/telephony/transfers) attempt, successful or not. See [Transfer items](#transfer-items).                                        |
@@ -239,7 +239,7 @@ Sessions on a [custom LLM](/agents/build/custom-llm) also carry `llm_endpoint_er
 
 ### LLM fallbacks
 
-Sessions on a configured [LLM fallback](/agents/build/llm-fallback) also carry `llm_fallbacks`: one entry per reply that moved from one model to another, oldest first. It's empty when the agent's own model answered every reply.
+`llm_fallbacks` lists every reply that moved to another model, oldest first. See [LLM Fallback](/agents/build/llm-fallback). It is empty when the agent's own model answered every reply.
 
 ```json
 {
@@ -256,7 +256,7 @@ Sessions on a configured [LLM fallback](/agents/build/llm-fallback) also carry `
 ```
 
 - `turn_id` is the turn the reply belonged to, the same numbering as `message` items.
-- `from` and `to` each name a model, in the same shape as the agent's `llm.model` or `llm.custom`: either `{ "model": "<platform model id>" }` or `{ "custom": { "base_url": "…", "model": "…" } }` (never an endpoint's key).
+- `from` and `to` each name a model. A platform model is `{ "model": "<platform model id>" }`. A custom endpoint is `{ "custom": { "base_url": "…", "model": "…" } }`. The endpoint's key is never included.
 - `reason` is one of:
 
   | `reason` | Meaning |
@@ -264,9 +264,9 @@ Sessions on a configured [LLM fallback](/agents/build/llm-fallback) also carry `
   | `error` | The model's provider returned an error. |
   | `timeout` | No reply within the platform's own time limit (outside `manual` mode). |
   | `ttft_timeout` | No first token within the model's `ttft_timeout_ms`. |
-  | `total_timeout` | The reply, nothing of it spoken yet, didn't finish within the model's `total_timeout_ms`. |
-  | `empty` | The model's response stream broke off with no output and no end signal. A reply the model finished with nothing in it is the agent staying silent, not a fallback. |
-  | `kick_in` | Running in parallel, the fallback's reply was used because the agent's own model had no first token within `kick_in_ms`. |
+  | `total_timeout` | The reply did not finish within the model's `total_timeout_ms` and nothing was spoken yet. |
+  | `empty` | The response stream broke off with no output and no end signal. A reply that finished normally with nothing in it is the agent staying silent. That is not a fallback. |
+  | `kick_in` | The fallback ran in parallel and its reply was used. The agent's own model had no first token within `kick_in_ms`. |
 
   New reasons may be added.
 
