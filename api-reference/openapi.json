@@ -950,7 +950,7 @@
       },
       "post": {
         "summary": "Create Agent Session",
-        "description": "Start a conversation session with an agent and receive a join token for the\nsession transport (currently LiveKit WebRTC). Authenticate with an API key to\nstart sessions with any agent in your team; without credentials only agents\npublished as public are reachable, and the request `Origin` must match the\nagent's allowed origins.\n\n`language` (and `overrides.language`) accepts `en`, `ja`, `zh`, `ko`, `es`,\n`fr`, `de`, `pt`, `it`, `nl`; anything else is 422. Omit it to use the agent's configured\nspeaking language.\n\n`overrides.asr.model` picks the speech recognition model for this session,\nnested like the agent config's `asr` section and with the same values as\n`asr.model`. It needs an API key.",
+        "description": "Start a conversation session with an agent and receive a join token for the\nsession transport (currently LiveKit WebRTC). Authenticate with an API key to\nstart sessions with any agent in your team; without credentials only agents\npublished as public are reachable, and the request `Origin` must match the\nagent's allowed origins.\n\n`language` (and `overrides.language`) accepts `en`, `ja`, `zh`, `ko`, `es`,\n`fr`, `de`, `pt`, `it`, `nl`; anything else is 422. Omit it to use the agent's configured\nspeaking language.\n\n`overrides.asr.model` picks the speech recognition model for this session,\nnested like the agent config's `asr` section and with the same values as\n`asr.model`. It needs an API key.\n\n`overrides.llm.fallback` replaces the agent's `llm.fallback` for this\nsession, with the same shape and rules; each `custom` model needs its\n`api_key`. It needs an API key and `llm.fallback` in the agent's\n`overrides_allowed`.",
         "security": [
           {
             "BearerAuth": []
@@ -1488,7 +1488,8 @@
                         "api_key",
                         "dashboard",
                         "public",
-                        "phone"
+                        "phone",
+                        "whatsapp"
                       ],
                       "title": "Source",
                       "type": "string"
@@ -1755,6 +1756,13 @@
                         "$ref": "#/components/schemas/AgentSessionLlmEndpointError"
                       },
                       "title": "Llm Endpoint Errors",
+                      "type": "array"
+                    },
+                    "llm_fallbacks": {
+                      "items": {
+                        "$ref": "#/components/schemas/AgentSessionLlmFallback"
+                      },
+                      "title": "Llm Fallbacks",
                       "type": "array"
                     }
                   },
@@ -2780,7 +2788,8 @@
                           "system_prompt",
                           "voice_id",
                           "language",
-                          "asr.model"
+                          "asr.model",
+                          "llm.fallback"
                         ],
                         "type": "string"
                       },
@@ -3056,7 +3065,8 @@
                           "system_prompt",
                           "voice_id",
                           "language",
-                          "asr.model"
+                          "asr.model",
+                          "llm.fallback"
                         ],
                         "type": "string"
                       },
@@ -3296,7 +3306,8 @@
                           "system_prompt",
                           "voice_id",
                           "language",
-                          "asr.model"
+                          "asr.model",
+                          "llm.fallback"
                         ],
                         "type": "string"
                       },
@@ -3797,7 +3808,7 @@
                       "type": "string"
                     },
                     "config_hash": {
-                      "description": "Content hash of the draft; equal to a version's config_hash when the draft has no unpublished changes.",
+                      "description": "Opaque content hash of this configuration as stored. On a draft it is the config_hash the next publish gives the version, so it equals the live version's config_hash when nothing is unpublished. Pass it to Publish Agent as expected_config_hash.",
                       "title": "Config Hash",
                       "type": "string"
                     },
@@ -3805,7 +3816,7 @@
                       "$ref": "#/components/schemas/AgentPromptConfig"
                     },
                     "voice": {
-                      "$ref": "#/components/schemas/AgentVoiceConfigView"
+                      "$ref": "#/components/schemas/PublicAgentVoiceConfig"
                     },
                     "asr": {
                       "$ref": "#/components/schemas/PublicAgentAsrConfig"
@@ -3982,7 +3993,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default),\n`elevenlabs:scribe_v2_realtime`, `elevenlabs:scribe_v2_medical`, or\n`fish_audio:transcribe-stream-1` (Fish realtime recognition, which\nalso decides end of turn and whether the caller is interrupting).\nIts former id `fish_audio:transcribe-1-pro-realtime` is still accepted\nand reads back as the current id.\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default),\n`elevenlabs:scribe_v2_realtime`, `elevenlabs:scribe_v2_medical`, or\n`fish_audio:transcribe-stream-1` (Fish realtime recognition, which\nalso decides end of turn and whether the caller is interrupting).\nIts former id `fish_audio:transcribe-1-pro-realtime` is still accepted\nand reads back as the current id.\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null. `llm.fallback` sets what the agent tries after its\nmodel fails: `platform` (default), `manual` (`models` in order, 1 to 3)\nor `off`. In `manual`, each model and `primary` (the agent's own model)\ntake optional `ttft_timeout_ms` (500-30000, default 5000 ms, i.e. 5\nseconds, when not set) and `total_timeout_ms` (1000-120000, at least\n`ttft_timeout_ms` when both are set, no limit when not set), and the\nfirst model can set\n`parallel.kick_in_ms` (300-10000, default 1500) to run alongside the\nagent's own model.\n\nThe response is the draft as stored, which can differ from the request:\n- Every field comes back. Omitted fields keep their value or default.\n- `asr.keyterms` and `voice.pronunciation_dictionary_ids` are trimmed\n  and de-duplicated in order. `tool_ids` is de-duplicated in order.\n- A tool that was archived drops out of `tool_ids` at the next tools\n  write.\n- `conversation.interruption_ignore_phrases` collapses inner spaces and\n  drops case-insensitive duplicates.\n- `conversation.timezone`, transfer phone numbers and transfer text\n  fields are trimmed.\n- `conversation.eagerness` and `conversation.response_wait_ms` move\n  together. The wait wins when both are sent, and the tier is derived\n  from it.\n- `conversation.response_max_wait_ms: 0` reads back as `null`\n  (automatic).\n- `knowledge_base.enabled` becomes `true` when you attach sources and\n  omit it.\n- `llm.custom.base_url` drops a trailing `/` and `/chat/completions`.\n  `llm.custom.model` is trimmed. Setting `llm.custom` resets `llm.model`\n  to the platform default.\n- Secrets read back as `has_secret`, and `llm.custom.api_key` as `null`.\n- `voice` also returns `keyterms`, `multilingual_asr` and `asr_model`\n  copied from `asr`. They are deprecated.\n- `config_hash` and `updated_at` are set by the server.\n\nCompare against this response, or against `config_hash`, rather than the\nrequest body. Publishing never rewrites these values.",
         "security": [
           {
             "BearerAuth": []
@@ -4024,7 +4035,7 @@
                       "type": "string"
                     },
                     "config_hash": {
-                      "description": "Content hash of the draft; equal to a version's config_hash when the draft has no unpublished changes.",
+                      "description": "Opaque content hash of this configuration as stored. On a draft it is the config_hash the next publish gives the version, so it equals the live version's config_hash when nothing is unpublished. Pass it to Publish Agent as expected_config_hash.",
                       "title": "Config Hash",
                       "type": "string"
                     },
@@ -4032,7 +4043,7 @@
                       "$ref": "#/components/schemas/AgentPromptConfig"
                     },
                     "voice": {
-                      "$ref": "#/components/schemas/AgentVoiceConfigView"
+                      "$ref": "#/components/schemas/PublicAgentVoiceConfig"
                     },
                     "asr": {
                       "$ref": "#/components/schemas/PublicAgentAsrConfig"
@@ -4329,7 +4340,7 @@
     "/v1/agent/agents/{agent_id}/publish": {
       "post": {
         "summary": "Publish Agent",
-        "description": "Freeze the current draft into an immutable version (version_number\nauto-increments) and make it the live configuration for new sessions. If\nthe draft already matches the live version, return that version unchanged.\nThe body is optional; the title and description label a newly created\nversion for audit and rollback.",
+        "description": "Freeze the current draft into an immutable version and make it the live\nconfiguration for new sessions. Each new version gets the next\nversion_number. If the draft already matches the live version, no version\nis created and the live version comes back with `created: false`.\n\nThe response describes what was published:\n- `version_number` and `config_hash` identify the version.\n- `config` is the configuration exactly as published. Check your\n  read-back against it, not against the request you sent.\n- `created` tells whether this call made a new version.\n\nPublishing copies the draft as it is stored. It does not change any field.\nWrites do normalize some values, see Update Draft Config.\n\nThe body is optional:\n- `expected_config_hash` publishes only while the draft still has that\n  config_hash. Take it from Get Draft Config or Update Draft Config. On a\n  mismatch the call returns 409 with `reason: \"draft_changed\"` and the\n  draft's current `config_hash`. Nothing is written.\n- `config` applies draft changes first, in the same shape as Update Draft\n  Config. The changes and the publish are one atomic step. If either fails,\n  the draft stays as it was.\n- With both, `expected_config_hash` is checked against the draft before\n  `config` is applied.\n- `version_title` and `version_description` label a new version.",
         "security": [
           {
             "BearerAuth": []
@@ -4392,12 +4403,23 @@
                       "format": "date-time",
                       "title": "Published At",
                       "type": "string"
+                    },
+                    "config": {
+                      "$ref": "#/components/schemas/PublicAgentConfigEntity",
+                      "description": "The immutable configuration snapshot this version pinned at publish time."
+                    },
+                    "created": {
+                      "description": "Whether this call created a new version. False when the draft already matched the live version, which is returned unchanged.",
+                      "title": "Created",
+                      "type": "boolean"
                     }
                   },
                   "required": [
                     "version_number",
                     "config_hash",
-                    "published_at"
+                    "published_at",
+                    "config",
+                    "created"
                   ],
                   "type": "object"
                 }
@@ -4617,6 +4639,19 @@
                     "type": "string",
                     "maxLength": 2000,
                     "description": "Optional longer note for audit and rollback context."
+                  },
+                  "expected_config_hash": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "description": "Publish only while the draft has this config_hash. Otherwise 409 with reason `draft_changed` and nothing is written."
+                  },
+                  "config": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/PublicAgentConfigPatchPayload"
+                      }
+                    ],
+                    "description": "Draft changes to apply before publishing, same shape as Update Draft Config. The write and the publish succeed or fail together."
                   }
                 }
               }
@@ -4922,7 +4957,7 @@
     "/v1/agent/agents/{agent_id}/versions/{version_number}": {
       "get": {
         "summary": "Get Agent Version",
-        "description": "One published version with its full frozen configuration snapshot —\nincluding the current live version. Secrets inside the snapshot are\nredacted the same way as the draft config.",
+        "description": "One published version with its full frozen configuration snapshot —\nincluding the current live version. Secrets inside the snapshot are\nredacted the same way as the draft config. The snapshot equals the draft\nit froze, except `config.updated_at`, which is the publish time.",
         "security": [
           {
             "BearerAuth": []
@@ -12446,7 +12481,8 @@
                       "enum": [
                         "livekit",
                         "twilio",
-                        "sip"
+                        "sip",
+                        "whatsapp"
                       ],
                       "title": "Provider",
                       "type": "string"
@@ -12996,7 +13032,8 @@
                       "enum": [
                         "livekit",
                         "twilio",
-                        "sip"
+                        "sip",
+                        "whatsapp"
                       ],
                       "title": "Provider",
                       "type": "string"
@@ -13369,7 +13406,8 @@
                       "enum": [
                         "livekit",
                         "twilio",
-                        "sip"
+                        "sip",
+                        "whatsapp"
                       ],
                       "title": "Provider",
                       "type": "string"
@@ -18494,7 +18532,8 @@
               "api_key",
               "dashboard",
               "public",
-              "phone"
+              "phone",
+              "whatsapp"
             ],
             "title": "Source",
             "type": "string"
@@ -18722,6 +18761,256 @@
         "type": "object"
       },
       "JsonValue": {},
+      "AgentLLMCustomPayload": {
+        "additionalProperties": false,
+        "description": "Write model: full base_url policy + caps; stored values come only from here.",
+        "properties": {
+          "base_url": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Base Url",
+            "type": "string"
+          },
+          "model": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "api_key": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Sent to your endpoint as the Authorization bearer token; write-only, reads return null. Required when introducing `custom`; omit to keep the stored key when updating.",
+            "title": "Api Key"
+          },
+          "headers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Extra headers sent on every request to your endpoint, such as `x-vercel-protection-bypass`. Reads return the stored map. Omit to keep the stored headers, `{}` clears them.",
+            "title": "Headers"
+          }
+        },
+        "required": [
+          "base_url",
+          "model"
+        ],
+        "title": "AgentLLMCustomPayload",
+        "type": "object"
+      },
+      "AgentLLMFallbackModelPayload": {
+        "additionalProperties": false,
+        "description": "One fallback, write model: `model` or `custom`, under the same rules as\nllm.model / llm.custom.",
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "enum": [
+                  "google/gemini-3.5-flash-lite",
+                  "google/gemini-3.6-flash",
+                  "google/gemini-3.8-flash",
+                  "google/gemini-3.6-flash-priority",
+                  "google/gemini-3.8-flash-priority",
+                  "google/gemini-2.5-flash",
+                  "google/gemma-4-26b-a4b-it",
+                  "anthropic/claude-haiku-4.5",
+                  "anthropic/claude-sonnet-4.6",
+                  "anthropic/claude-opus-5.5",
+                  "anthropic/claude-fable-5.1",
+                  "openai/gpt-5.6-luna",
+                  "openai/gpt-6-luna",
+                  "openai/gpt-5",
+                  "openai/gpt-6.1-sol",
+                  "openai/gpt-6-astra",
+                  "openai/gpt-4o",
+                  "openai/gpt-4.1"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Model"
+          },
+          "custom": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentLLMCustomPayload"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "A customer endpoint, with the same rules as `llm.custom`. Omit `api_key` to keep the stored key of the fallback with the same `base_url` and `model`."
+          },
+          "ttft_timeout_ms": {
+            "anyOf": [
+              {
+                "maximum": 30000,
+                "minimum": 500,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Milliseconds the model gets to start its reply (first text or tool call). Past it, the reply moves to the next fallback model. Not set: defaults to 5000 ms (5 seconds).",
+            "title": "Ttft Timeout Ms"
+          },
+          "total_timeout_ms": {
+            "anyOf": [
+              {
+                "maximum": 120000,
+                "minimum": 1000,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Milliseconds the model gets to finish its reply. Past it, a reply nothing of which was spoken yet moves to the next fallback model; one already being spoken fails like any failed reply. At least `ttft_timeout_ms` when both are set. Not set: no limit.",
+            "title": "Total Timeout Ms"
+          },
+          "parallel": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentLLMParallelPayload"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "First entry only: request this model together with the agent's own model. Both requests bill their tokens."
+          }
+        },
+        "title": "AgentLLMFallbackModelPayload",
+        "type": "object"
+      },
+      "AgentLLMFallbackPayload": {
+        "additionalProperties": false,
+        "description": "Replaces the whole fallback: `mode` and `models` travel together.",
+        "properties": {
+          "mode": {
+            "enum": [
+              "platform",
+              "manual",
+              "off"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "models": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AgentLLMFallbackModelPayload"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Fallback models in order, 1 to 3. Only with mode `manual`.",
+            "title": "Models"
+          },
+          "primary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentLLMTimeoutsPayload"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The agent's own model's timeouts. Only with mode `manual`."
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "AgentLLMFallbackPayload",
+        "type": "object"
+      },
+      "AgentLLMParallelPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "kick_in_ms": {
+            "default": 1500,
+            "description": "The agent's own model keeps the reply if its first token comes within this many milliseconds; past it, this fallback's reply is used. The other request is cancelled.",
+            "maximum": 10000,
+            "minimum": 300,
+            "title": "Kick In Ms",
+            "type": "integer"
+          }
+        },
+        "title": "AgentLLMParallelPayload",
+        "type": "object"
+      },
+      "AgentLLMTimeoutsPayload": {
+        "additionalProperties": false,
+        "description": "The agent's own model's timeouts, write model. Unset ttft_timeout_ms =\n5000 ms (5 seconds); unset total_timeout_ms = no limit. The two are compared\nonly when both are set.",
+        "properties": {
+          "ttft_timeout_ms": {
+            "anyOf": [
+              {
+                "maximum": 30000,
+                "minimum": 500,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Milliseconds the model gets to start its reply (first text or tool call). Past it, the reply moves to the next fallback model. Not set: defaults to 5000 ms (5 seconds).",
+            "title": "Ttft Timeout Ms"
+          },
+          "total_timeout_ms": {
+            "anyOf": [
+              {
+                "maximum": 120000,
+                "minimum": 1000,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Milliseconds the model gets to finish its reply. Past it, a reply nothing of which was spoken yet moves to the next fallback model; one already being spoken fails like any failed reply. At least `ttft_timeout_ms` when both are set. Not set: no limit.",
+            "title": "Total Timeout Ms"
+          }
+        },
+        "title": "AgentLLMTimeoutsPayload",
+        "type": "object"
+      },
       "AgentSessionAsrOverridesPayload": {
         "additionalProperties": false,
         "description": "Per-session subset of the agent config's asr section, same field names.",
@@ -18938,6 +19227,26 @@
         "title": "AgentSessionCreatePayload",
         "type": "object"
       },
+      "AgentSessionLlmOverridesPayload": {
+        "additionalProperties": false,
+        "description": "Per-session subset of the agent config's llm section, same field names.",
+        "properties": {
+          "fallback": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentLLMFallbackPayload"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Replaces the agent's `llm.fallback` for this session, same shape and rules. Each `custom` entry needs its `api_key`."
+          }
+        },
+        "title": "AgentSessionLlmOverridesPayload",
+        "type": "object"
+      },
       "AgentSessionOverridesPayload": {
         "additionalProperties": false,
         "description": "Wire twin of @fishaudio/agent-protocol `SessionOverrides` (session.ts).\n\nEvery field must be allow-listed in Agent.overrides_allowed; unauthorized\nfields fail session creation loudly rather than being silently dropped.",
@@ -19071,6 +19380,17 @@
               }
             ],
             "default": null
+          },
+          "llm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentSessionLlmOverridesPayload"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "title": "AgentSessionOverridesPayload",
@@ -19198,6 +19518,24 @@
         "title": "AgentSessionAnalysisResult",
         "type": "object"
       },
+      "AgentSessionLlmCustomRef": {
+        "properties": {
+          "base_url": {
+            "title": "Base Url",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          }
+        },
+        "required": [
+          "base_url",
+          "model"
+        ],
+        "title": "AgentSessionLlmCustomRef",
+        "type": "object"
+      },
       "AgentSessionLlmEndpointError": {
         "description": "One failed reply from the customer's own LLM endpoint, after the\nplatform's single retry within the request.\n\n- http_error: the endpoint answered with a non-2xx status.\n- timeout: no response within the request timeout.\n- connection_error: the request got no answer. `reason` is dns_failed,\n  connection_refused, connection_reset, tls_failed, address_not_allowed\n  (an address the platform does not call) or unknown.\n- invalid_response: a 2xx response that was not a usable reply. `reason`\n  is not_event_stream (a streamed request answered with something else),\n  stream_incomplete (the stream ended without a finish_reason, usage or\n  output), empty_reply (no text and no tool call) or unknown.",
         "properties": {
@@ -19306,6 +19644,90 @@
         "title": "AgentSessionLlmEndpointError",
         "type": "object"
       },
+      "AgentSessionLlmFallback": {
+        "description": "One move of a reply to another model.\n\n- error: the model failed the request.\n- timeout: no reply within the platform's own time limit (outside manual;\n  in manual every model has a first-token limit, 5 seconds when not set).\n- ttft_timeout: no first token within the model's `ttft_timeout_ms`.\n- total_timeout: the reply, nothing of it spoken yet, not finished within\n  the model's `total_timeout_ms`.\n- empty: the model's response stream broke off with no output and no end\n  signal (a provider failure). A reply the model finished with nothing in\n  it is the agent staying silent, not a fallback.\n- kick_in: running in parallel, the first fallback's reply was used\n  because the agent's own model had no first token within `kick_in_ms`.",
+        "properties": {
+          "occurred_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Occurred At"
+          },
+          "turn_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Turn Id"
+          },
+          "from": {
+            "$ref": "#/components/schemas/AgentSessionLlmModelRef"
+          },
+          "to": {
+            "$ref": "#/components/schemas/AgentSessionLlmModelRef"
+          },
+          "reason": {
+            "enum": [
+              "error",
+              "timeout",
+              "ttft_timeout",
+              "total_timeout",
+              "empty",
+              "kick_in"
+            ],
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "reason"
+        ],
+        "title": "AgentSessionLlmFallback",
+        "type": "object"
+      },
+      "AgentSessionLlmModelRef": {
+        "description": "A model as the agent config names it: a platform model id in `model`,\nor a customer endpoint in `custom` (never its key).",
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Model"
+          },
+          "custom": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentSessionLlmCustomRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "title": "AgentSessionLlmModelRef",
+        "type": "object"
+      },
       "AgentSessionMessageItem": {
         "description": "One transcript message; system messages never surface here.",
         "properties": {
@@ -19399,6 +19821,17 @@
             ],
             "default": null,
             "title": "Fallback Reason"
+          },
+          "answered_by_model": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentSessionLlmModelRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "turn_id": {
             "anyOf": [
@@ -20327,7 +20760,8 @@
                 "system_prompt",
                 "voice_id",
                 "language",
-                "asr.model"
+                "asr.model",
+                "llm.fallback"
               ],
               "type": "string"
             },
@@ -21570,6 +22004,146 @@
         "title": "PublicAgentLLMCustomConfig",
         "type": "object"
       },
+      "PublicAgentLLMFallback": {
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "enum": [
+              "platform",
+              "manual",
+              "off"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "models": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PublicAgentLLMFallbackModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Fallback models in order, 1 to 3. Only with mode `manual`.",
+            "title": "Models"
+          },
+          "primary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentLLMTimeoutsPayload"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The agent's own model's timeouts. Only with mode `manual`."
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "PublicAgentLLMFallback",
+        "type": "object"
+      },
+      "PublicAgentLLMFallbackModel": {
+        "additionalProperties": false,
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "enum": [
+                  "google/gemini-3.5-flash-lite",
+                  "google/gemini-3.6-flash",
+                  "google/gemini-3.8-flash",
+                  "google/gemini-3.6-flash-priority",
+                  "google/gemini-3.8-flash-priority",
+                  "google/gemini-2.5-flash",
+                  "google/gemma-4-26b-a4b-it",
+                  "anthropic/claude-haiku-4.5",
+                  "anthropic/claude-sonnet-4.6",
+                  "anthropic/claude-opus-5.5",
+                  "anthropic/claude-fable-5.1",
+                  "openai/gpt-5.6-luna",
+                  "openai/gpt-6-luna",
+                  "openai/gpt-5",
+                  "openai/gpt-6.1-sol",
+                  "openai/gpt-6-astra",
+                  "openai/gpt-4o",
+                  "openai/gpt-4.1"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Model"
+          },
+          "custom": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentLLMCustomConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "A customer endpoint, with the same rules as `llm.custom`. Omit `api_key` to keep the stored key of the fallback with the same `base_url` and `model`."
+          },
+          "ttft_timeout_ms": {
+            "anyOf": [
+              {
+                "maximum": 30000,
+                "minimum": 500,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Milliseconds the model gets to start its reply (first text or tool call). Past it, the reply moves to the next fallback model. Not set: defaults to 5000 ms (5 seconds).",
+            "title": "Ttft Timeout Ms"
+          },
+          "total_timeout_ms": {
+            "anyOf": [
+              {
+                "maximum": 120000,
+                "minimum": 1000,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Milliseconds the model gets to finish its reply. Past it, a reply nothing of which was spoken yet moves to the next fallback model; one already being spoken fails like any failed reply. At least `ttft_timeout_ms` when both are set. Not set: no limit.",
+            "title": "Total Timeout Ms"
+          },
+          "parallel": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentLLMParallelPayload"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "First entry only: request this model together with the agent's own model. Both requests bill their tokens."
+          }
+        },
+        "title": "PublicAgentLLMFallbackModel",
+        "type": "object"
+      },
       "PublicAgentLLMPatch": {
         "additionalProperties": false,
         "properties": {
@@ -21616,6 +22190,18 @@
             ],
             "default": null,
             "description": "Your own OpenAI-compatible endpoint; mutually exclusive with `model`, explicit null reverts to the platform model."
+          },
+          "fallback": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicAgentLLMFallback"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "What the agent tries after its model fails. `platform` (default): the platform's built-in fallback for platform models, none for `custom`. `manual`: `models` in order. `off`: no other model. Replaces the whole fallback; null means `platform`."
           }
         },
         "title": "PublicAgentLLMPatch",
@@ -22176,7 +22762,8 @@
                     "system_prompt",
                     "voice_id",
                     "language",
-                    "asr.model"
+                    "asr.model",
+                    "llm.fallback"
                   ],
                   "type": "string"
                 },
@@ -22728,6 +23315,9 @@
               }
             ],
             "default": null
+          },
+          "fallback": {
+            "$ref": "#/components/schemas/AgentLLMFallbackRedacted"
           }
         },
         "title": "AgentLLMConfigRedacted",
@@ -22772,6 +23362,174 @@
           "model"
         ],
         "title": "AgentLLMCustomConfigRedacted",
+        "type": "object"
+      },
+      "AgentLLMFallbackModelRedacted": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "enum": [
+                  "google/gemini-3.5-flash-lite",
+                  "google/gemini-3.6-flash",
+                  "google/gemini-3.8-flash",
+                  "google/gemini-3.6-flash-priority",
+                  "google/gemini-3.8-flash-priority",
+                  "google/gemini-2.5-flash",
+                  "google/gemma-4-26b-a4b-it",
+                  "anthropic/claude-haiku-4.5",
+                  "anthropic/claude-sonnet-4.6",
+                  "anthropic/claude-opus-5.5",
+                  "anthropic/claude-fable-5.1",
+                  "openai/gpt-5.6-luna",
+                  "openai/gpt-6-luna",
+                  "openai/gpt-5",
+                  "openai/gpt-6.1-sol",
+                  "openai/gpt-6-astra",
+                  "openai/gpt-4o",
+                  "openai/gpt-4.1"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Model"
+          },
+          "custom": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentLLMCustomConfigRedacted"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "ttft_timeout_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ttft Timeout Ms"
+          },
+          "total_timeout_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Total Timeout Ms"
+          },
+          "parallel": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentLLMParallel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "title": "AgentLLMFallbackModelRedacted",
+        "type": "object"
+      },
+      "AgentLLMFallbackRedacted": {
+        "properties": {
+          "mode": {
+            "default": "platform",
+            "enum": [
+              "platform",
+              "manual",
+              "off"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "models": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AgentLLMFallbackModelRedacted"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Models"
+          },
+          "primary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentLLMTimeouts"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "title": "AgentLLMFallbackRedacted",
+        "type": "object"
+      },
+      "AgentLLMParallel": {
+        "properties": {
+          "kick_in_ms": {
+            "default": 1500,
+            "title": "Kick In Ms",
+            "type": "integer"
+          }
+        },
+        "title": "AgentLLMParallel",
+        "type": "object"
+      },
+      "AgentLLMTimeouts": {
+        "description": "How long one model gets per reply (manual only), read model.",
+        "properties": {
+          "ttft_timeout_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ttft Timeout Ms"
+          },
+          "total_timeout_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Total Timeout Ms"
+          }
+        },
+        "title": "AgentLLMTimeouts",
         "type": "object"
       },
       "AgentOutboundConfig": {
@@ -23058,8 +23816,84 @@
         "title": "AgentVariablesConfig",
         "type": "object"
       },
-      "AgentVoiceConfigView": {
-        "description": "Read shape of the voice section. The ASR fields that moved to the asr\nsection stay mirrored here, deprecated, so clients written before the split\nkeep reading them.",
+      "PublicAgentAsrConfig": {
+        "description": "The asr section as the public API reads it: without the console-only\nnoise cancellation and speaker label switches.",
+        "properties": {
+          "model": {
+            "default": "deepgram:nova-3",
+            "enum": [
+              "deepgram:nova-3",
+              "elevenlabs:scribe_v2_realtime",
+              "elevenlabs:scribe_v2_medical",
+              "fish_audio:transcribe-stream-1"
+            ],
+            "title": "Model",
+            "type": "string"
+          },
+          "multilingual": {
+            "default": false,
+            "title": "Multilingual",
+            "type": "boolean"
+          },
+          "strict_language": {
+            "default": false,
+            "description": "Enforces voice.speaking_language whatever multilingual says: speech recognized as another language reaches the agent as [unintelligible speech]. Language is detected per utterance, so a short or heavily accented phrase in the speaking language can occasionally be detected as another language and replaced too. With deepgram:nova-3, speech in another language is usually not transcribed at all. Only enable it when you explicitly need to stop the agent from understanding other languages.",
+            "title": "Strict Language",
+            "type": "boolean"
+          },
+          "keyterms": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Keyterms",
+            "type": "array"
+          }
+        },
+        "title": "PublicAgentAsrConfig",
+        "type": "object"
+      },
+      "PublicAgentKnowledgeBaseConfig": {
+        "properties": {
+          "enabled": {
+            "default": false,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "knowledge_source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Knowledge Source Ids",
+            "type": "array"
+          }
+        },
+        "title": "PublicAgentKnowledgeBaseConfig",
+        "type": "object"
+      },
+      "PublicAgentToolsConfig": {
+        "properties": {
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "tool_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tool Ids",
+            "type": "array"
+          },
+          "system_tools": {
+            "$ref": "#/components/schemas/AgentSystemToolsConfig"
+          }
+        },
+        "title": "PublicAgentToolsConfig",
+        "type": "object"
+      },
+      "PublicAgentVoiceConfig": {
+        "description": "The voice section as the public API reads it: without the console-only\nsentence buffering switch.",
         "properties": {
           "voice_id": {
             "default": "b347db033a6549378b48d00acb0d06cd",
@@ -23154,83 +23988,7 @@
             "type": "array"
           }
         },
-        "title": "AgentVoiceConfigView",
-        "type": "object"
-      },
-      "PublicAgentAsrConfig": {
-        "description": "The asr section as the public API reads it: without the console-only\nnoise cancellation and speaker label switches.",
-        "properties": {
-          "model": {
-            "default": "deepgram:nova-3",
-            "enum": [
-              "deepgram:nova-3",
-              "elevenlabs:scribe_v2_realtime",
-              "elevenlabs:scribe_v2_medical",
-              "fish_audio:transcribe-stream-1"
-            ],
-            "title": "Model",
-            "type": "string"
-          },
-          "multilingual": {
-            "default": false,
-            "title": "Multilingual",
-            "type": "boolean"
-          },
-          "strict_language": {
-            "default": false,
-            "description": "Enforces voice.speaking_language whatever multilingual says: speech recognized as another language reaches the agent as [unintelligible speech]. Language is detected per utterance, so a short or heavily accented phrase in the speaking language can occasionally be detected as another language and replaced too. With deepgram:nova-3, speech in another language is usually not transcribed at all. Only enable it when you explicitly need to stop the agent from understanding other languages.",
-            "title": "Strict Language",
-            "type": "boolean"
-          },
-          "keyterms": {
-            "items": {
-              "type": "string"
-            },
-            "maxItems": 50,
-            "title": "Keyterms",
-            "type": "array"
-          }
-        },
-        "title": "PublicAgentAsrConfig",
-        "type": "object"
-      },
-      "PublicAgentKnowledgeBaseConfig": {
-        "properties": {
-          "enabled": {
-            "default": false,
-            "title": "Enabled",
-            "type": "boolean"
-          },
-          "knowledge_source_ids": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Knowledge Source Ids",
-            "type": "array"
-          }
-        },
-        "title": "PublicAgentKnowledgeBaseConfig",
-        "type": "object"
-      },
-      "PublicAgentToolsConfig": {
-        "properties": {
-          "enabled": {
-            "default": true,
-            "title": "Enabled",
-            "type": "boolean"
-          },
-          "tool_ids": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Tool Ids",
-            "type": "array"
-          },
-          "system_tools": {
-            "$ref": "#/components/schemas/AgentSystemToolsConfig"
-          }
-        },
-        "title": "PublicAgentToolsConfig",
+        "title": "PublicAgentVoiceConfig",
         "type": "object"
       },
       "PublicAgentWebhooksConfig": {
@@ -23300,54 +24058,6 @@
         "title": "PublicPostCallWebhook",
         "type": "object"
       },
-      "PublicAgentVersionSummary": {
-        "properties": {
-          "version_number": {
-            "title": "Version Number",
-            "type": "integer"
-          },
-          "version_title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Version Title"
-          },
-          "version_description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Version Description"
-          },
-          "config_hash": {
-            "title": "Config Hash",
-            "type": "string"
-          },
-          "published_at": {
-            "format": "date-time",
-            "title": "Published At",
-            "type": "string"
-          }
-        },
-        "required": [
-          "version_number",
-          "config_hash",
-          "published_at"
-        ],
-        "title": "PublicAgentVersionSummary",
-        "type": "object"
-      },
       "PublicAgentConfigEntity": {
         "properties": {
           "agent_id": {
@@ -23355,7 +24065,7 @@
             "type": "string"
           },
           "config_hash": {
-            "description": "Content hash of the draft; equal to a version's config_hash when the draft has no unpublished changes.",
+            "description": "Opaque content hash of this configuration as stored. On a draft it is the config_hash the next publish gives the version, so it equals the live version's config_hash when nothing is unpublished. Pass it to Publish Agent as expected_config_hash.",
             "title": "Config Hash",
             "type": "string"
           },
@@ -23363,7 +24073,7 @@
             "$ref": "#/components/schemas/AgentPromptConfig"
           },
           "voice": {
-            "$ref": "#/components/schemas/AgentVoiceConfigView"
+            "$ref": "#/components/schemas/PublicAgentVoiceConfig"
           },
           "asr": {
             "$ref": "#/components/schemas/PublicAgentAsrConfig"
@@ -23418,6 +24128,54 @@
           "updated_at"
         ],
         "title": "PublicAgentConfigEntity",
+        "type": "object"
+      },
+      "PublicAgentVersionSummary": {
+        "properties": {
+          "version_number": {
+            "title": "Version Number",
+            "type": "integer"
+          },
+          "version_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Version Title"
+          },
+          "version_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Version Description"
+          },
+          "config_hash": {
+            "title": "Config Hash",
+            "type": "string"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version_number",
+          "config_hash",
+          "published_at"
+        ],
+        "title": "PublicAgentVersionSummary",
         "type": "object"
       },
       "AgentTestAssertionResult": {
@@ -25927,7 +26685,8 @@
             "enum": [
               "livekit",
               "twilio",
-              "sip"
+              "sip",
+              "whatsapp"
             ],
             "title": "Provider",
             "type": "string"
