@@ -190,7 +190,7 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
 
 | `type`        | What it is                                                                                                                                                 |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `message`     | One utterance. `role` is `user` or `assistant` (system prompt content is never exposed). `turn_id` groups items belonging to the same conversational turn. `fallback_reason` is `"llm_error"` on a fixed line the agent spoke because its LLM failed, and `null` otherwise. |
+| `message`     | One utterance. `role` is `user` or `assistant` (system prompt content is never exposed). `turn_id` groups items belonging to the same conversational turn. `fallback_reason` is `"llm_error"` on a fixed line the agent spoke because its LLM failed, and `null` otherwise. `answered_by_model` is set on `assistant` messages: the model that wrote the reply, the agent's own or an [LLM fallback](/agents/build/llm-fallback). `null` on `user` items and on sessions from before the field existed. |
 | `tool_call`   | A tool invocation as it started. `input` is a JSON string, stored in full with no truncation.                                                              |
 | `tool_result` | The paired outcome, matched by `call_id`. `status` is `completed` or `failed`. `latency_ms` is the execution time.                                         |
 | `transfer`    | One [call transfer](/agents/telephony/transfers) attempt, successful or not. See [Transfer items](#transfer-items).                                        |
@@ -236,6 +236,39 @@ Sessions on a [custom LLM](/agents/build/custom-llm) also carry `llm_endpoint_er
 - `response_body` is the start of what your endpoint sent back, on `http_error` and `not_event_stream` only. It is at most 300 characters, and your API key is masked. It is `null` when the body was empty.
 - `duration_ms` is the time from the request to the response or the failure. It is `null` when it was not measured.
 - `consecutive_failures` counts failures in a row. The agent hangs up at the third.
+
+### LLM fallbacks
+
+Sessions on a configured [LLM fallback](/agents/build/llm-fallback) also carry `llm_fallbacks`: one entry per reply that moved from one model to another, oldest first. It's empty when the agent's own model answered every reply.
+
+```json
+{
+  "llm_fallbacks": [
+    {
+      "occurred_at": "2026-10-15T15:45:10Z",
+      "turn_id": 3,
+      "from": { "model": "gpt-5.1" },
+      "to": { "custom": { "base_url": "https://llm.example.com/v1", "model": "backup-70b" } },
+      "reason": "ttft_timeout"
+    }
+  ]
+}
+```
+
+- `turn_id` is the turn the reply belonged to, the same numbering as `message` items.
+- `from` and `to` each name a model, in the same shape as the agent's `llm.model` or `llm.custom`: either `{ "model": "<platform model id>" }` or `{ "custom": { "base_url": "…", "model": "…" } }` (never an endpoint's key).
+- `reason` is one of:
+
+  | `reason` | Meaning |
+  |---|---|
+  | `error` | The model's provider returned an error. |
+  | `timeout` | No reply within the platform's own time limit (outside `manual` mode). |
+  | `ttft_timeout` | No first token within the model's `ttft_timeout_ms`. |
+  | `total_timeout` | The reply, nothing of it spoken yet, didn't finish within the model's `total_timeout_ms`. |
+  | `empty` | The model's response stream broke off with no output and no end signal. A reply the model finished with nothing in it is the agent staying silent, not a fallback. |
+  | `kick_in` | Running in parallel, the fallback's reply was used because the agent's own model had no first token within `kick_in_ms`. |
+
+  New reasons may be added.
 
 <Warning>
   `items` is a discriminated union on `type`, and it evolves additively. Ignore

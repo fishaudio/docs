@@ -1,0 +1,135 @@
+---
+title: "LLM Fallback"
+description: "Switch to another model mid-call when the agent's own model is slow or fails"
+icon: "route"
+---
+
+Every reply tries the agent's own model first — the one set in `llm.model` or `llm.custom` on the [configuration](/agents/build/configuration). Fallback decides what happens next when that attempt doesn't produce a spoken reply: the provider returns an error, the model takes too long, or its response stream breaks off with nothing in it. Instead of the call going silent, the platform retries the reply on another model.
+
+A fallback switch only ever affects the reply that failed. The agent's own model is tried again on the next turn.
+
+## Modes
+
+`llm.fallback.mode` picks the behavior:
+
+| Mode | Behavior |
+|---|---|
+| `platform` (default) | The platform's own failover chain for platform models. A [custom LLM](/agents/build/custom-llm) gets no fallback in this mode. The chain is maintained by the platform and may change without notice. |
+| `manual` | Only the models you list in `llm.fallback.models`, tried in order. |
+| `off` | No model switch. A failed reply goes to the agent's normal [failure handling](/agents/build/custom-llm#failure-behavior) instead. |
+
+`manual` is how you choose exactly which models back up the agent, in what order, and with what timing.
+
+## Configure manual fallback
+
+Set `llm.fallback` on the agent's draft configuration through [`PATCH /v1/agent/agents/{agent_id}/config`](/agents/build/configuration#configure-through-the-api), same as any other `llm` field:
+
+```bash
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "llm": {
+      "fallback": {
+        "mode": "manual",
+        "models": [
+          {
+            "model": "gpt-5.1",
+            "parallel": { "kick_in_ms": 1200 }
+          },
+          {
+            "custom": {
+              "base_url": "https://llm.example.com/v1",
+              "model": "backup-70b",
+              "api_key": "sk-your-endpoint-key"
+            },
+            "ttft_timeout_ms": 4000,
+            "total_timeout_ms": 15000
+          }
+        ],
+        "primary": { "ttft_timeout_ms": 3000 }
+      }
+    }
+  }'
+```
+
+Changes take effect for new sessions after you [publish](/agents/deploy/versions-publishing), like every other `llm` field.
+
+### `models`
+
+1 to 3 entries, tried in the order you list them. Each entry is one of:
+
+| Field | Content |
+|---|---|
+| `model` | A platform model id, the same values as `llm.model`. |
+| `custom` | Your own OpenAI-compatible endpoint: `base_url`, `model`, `api_key`. Same rules as [`llm.custom`](/agents/build/custom-llm#point-the-agent-at-your-endpoint), except fallback endpoints don't take `headers`. |
+
+Send exactly one of `model` or `custom` per entry, or the request is `422`. The main model and every entry in `models`, and the entries in `models` against each other, must all be different models or endpoints — a duplicate is `422` too.
+
+A custom main model (`llm.custom`) can fall back to platform models in `manual` mode. The reverse also works: a platform main model can list a custom endpoint as a fallback.
+
+`api_key` is write-only: reads and version snapshots return it as `null`. Omit it on a later patch to keep the stored key for that `base_url` and `model`.
+
+### Timeouts
+
+Each entry in `models`, and `primary` for the agent's own model, can set:
+
+| Field | Range | Default | Meaning |
+|---|---|---|---|
+| `ttft_timeout_ms` | 500–30,000 | 5000 | Milliseconds to the first token (or tool call). Past it, the reply moves to the next fallback. |
+| `total_timeout_ms` | 1,000–120,000 | no limit | Milliseconds to finish the reply. If nothing has been spoken yet, the reply moves to the next fallback; if playback already started, it's treated as a failed reply instead. Must be at least `ttft_timeout_ms` when both are set. |
+
+Latency numbers above are starting points, not thresholds to tune against — a shorter `ttft_timeout_ms` reaches a fallback sooner but also risks switching away from a model that was about to answer.
+
+### Run a fallback in parallel
+
+The first entry in `models` can set `parallel.kick_in_ms` (300–10,000, default 1500): the platform requests the agent's own model and this fallback at the same time. If the main model hasn't produced a first token by `kick_in_ms`, the fallback's reply is used and the other request is cancelled. Only the first entry can set `parallel` — a later entry setting it is `422`.
+
+Parallel trades cost for latency: both requests bill their own tokens, whichever one is used.
+
+## What triggers a switch
+
+A reply moves to the next model on:
+
+- A provider error.
+- No first token within `ttft_timeout_ms` (or the platform's own limit outside `manual`).
+- `total_timeout_ms` reached before anything was spoken.
+- The response stream breaking off with no output at all.
+
+## What doesn't switch
+
+- **The agent choosing silence.** A model that finishes normally with an empty reply is the agent staying quiet on purpose, not a failure — nothing switches.
+- **A reply already playing.** Once the caller has started hearing the answer, a problem finishing it is handled as a failed reply, not a model switch.
+
+Every mode keeps the platform's own multi-channel redundancy for the same model — retrying the identical model on another channel — underneath whatever fallback chain you configure.
+
+## Per-session override
+
+A session can replace the agent's fallback configuration for just that conversation. See [`overrides.llm.fallback`](/agents/deploy/authenticated-sessions#overrides).
+
+## See which model answered
+
+The session detail endpoint reports every switch and which model wrote each reply. See [Conversation History](/agents/monitor/conversation-history#llm-fallbacks).
+
+The console's **Conversations** view shows the same thing: each switch in the timeline, and which model answered each turn.
+
+## Billing
+
+Each reply is billed by the model that actually answered it, at that model's own rate. A reply from a [custom LLM](/agents/build/custom-llm#point-the-agent-at-your-endpoint) endpoint, main model or fallback, carries no LLM charge. The whole call is free of LLM charges only when the main model and every configured fallback are free.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card title="Custom LLM" icon="brain-circuit" href="/agents/build/custom-llm">
+    Point the agent, or a fallback entry, at your own endpoint.
+  </Card>
+  <Card title="Configuration" icon="sliders" href="/agents/build/configuration">
+    Where `llm.fallback` sits among the rest of the agent's settings.
+  </Card>
+  <Card title="Authenticated sessions" icon="server" href="/agents/deploy/authenticated-sessions#overrides">
+    Override the fallback configuration for a single session.
+  </Card>
+  <Card title="Conversation history" icon="clock-rotate-left" href="/agents/monitor/conversation-history#llm-fallbacks">
+    Inspect every switch after the call.
+  </Card>
+</CardGroup>
