@@ -6,8 +6,6 @@ icon: "whatsapp"
 
 People who already message your business on WhatsApp can call it there too. Connect the WhatsApp Business number from your own Meta app, bind an agent, and the agent answers WhatsApp voice calls to that number. The number stays in your WhatsApp Business Account, Meta keeps delivering the calls, and on Fish Audio each call bills as an ordinary agent session: no monthly rental, no phone surcharge, no transfer fees.
 
-This first release covers inbound voice calls. WhatsApp messages are not handled yet, and the platform does not place WhatsApp calls.
-
 ## How it works
 
 When someone calls your WhatsApp Business number, Meta sends a call event to Fish Audio's webhook. The platform accepts the call, connects its audio to a session, and hands it to the agent bound to the number, which greets the caller within a few seconds. From there it behaves like an [inbound call](/agents/telephony/inbound-calls): the session shows up in [Conversation history](/agents/monitor/conversation-history) with `source: "whatsapp"`, the [inbound call webhook](/agents/monitor/webhooks#inbound-call-webhook) runs before the first reply, and post-call webhooks and analysis follow as usual. Either side can hang up; the session ends with `user_hangup` or `agent_hangup`.
@@ -86,8 +84,7 @@ The **verify token** is generated for your account and shown next to it.
     save**. Meta verifies the URL immediately.
   </Step>
   <Step title="Subscribe to calls">
-    Under **Webhook fields**, subscribe to `calls`. You can subscribe to
-    `messages` as well, for the upcoming messaging support.
+    Under **Webhook fields**, subscribe to `calls`.
   </Step>
 </Steps>
 
