@@ -61,6 +61,12 @@ A `409` means the number is already on the platform; a `502` means the provider 
   See [Bring your own number](/agents/telephony/byo-sip).
 </Note>
 
+<Note>
+  A WhatsApp Business number is connected in the console from your own Meta
+  app and then listed here with `provider: "whatsapp"`. See [WhatsApp
+  Business Calling](/agents/telephony/whatsapp).
+</Note>
+
 ## List your numbers
 
 Returns your team's phone numbers across its workspaces, newest first; each carries its `workspace_id`.
@@ -90,7 +96,7 @@ curl https://api.fish.audio/v1/agent/phone-numbers \
 | ----------------- | ---------------------------------------------------------------- |
 | `phone_number_id` | Unique identifier; use it in URL paths                           |
 | `phone_number`    | The number in E.164 format                                       |
-| `provider`        | Telephony provider backing the number                            |
+| `provider`        | `twilio`, `sip`, or `whatsapp`, the provider backing the number  |
 | `label`           | Free-form label you assign                                       |
 | `agent_id`        | The agent that answers calls to this number; `null` when unbound |
 | `status`          | `provisioning`, `active`, or `error`                             |
