@@ -4663,7 +4663,7 @@
     "/v1/agent/agents/{agent_id}/versions": {
       "get": {
         "summary": "List Agent Versions",
-        "description": "The publish history, newest first. The highest version_number is what live\nsessions run. Compare a version's config_hash with the draft's to detect\nunpublished changes.",
+        "description": "The publish history, newest first. The highest version_number is what live\nsessions run. Compare a version's config_hash with the draft's to detect\nunpublished changes. A version published before a change in how the hash\nis computed keeps the hash it froze with; a publish that finds the draft\nunchanged realigns the live version's hash instead of creating an\nidentical version. Superseded versions keep their frozen hash.",
         "security": [
           {
             "BearerAuth": []
