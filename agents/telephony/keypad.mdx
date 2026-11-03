@@ -9,7 +9,7 @@ Callers can use their phone keypad in two ways:
 - **Keypad menu**: on inbound calls, before the agent's first reply, the agent plays a short menu ("For appointments, press 1"), takes one key press or a spoken option, and stores the choice in a [dynamic variable](/agents/build/dynamic-variables). The system prompt, first message, transfers, and webhook tools can act on it. It replaces a separate phone menu in front of the agent, so callers reach the agent without a second hop and a second greeting.
 - **Keypad input**: during inbound and outbound phone calls, digits the caller types, such as a member ID ending with `#`, reach the agent as one message.
 
-Both are off by default and only apply to phone calls.
+Both are off by default and only apply to phone calls; [WhatsApp calls](/agents/telephony/whatsapp) carry no key presses.
 
 ## Keypad menu
 
@@ -141,7 +141,7 @@ Don't greet the caller again. Confirm they want {{department}} and ask how you c
 
 #### Sessions without the menu
 
-Outbound calls, web and API sessions, preview calls, and agent tests skip the menu. There the variable renders like any other custom variable, from its [default value](/agents/build/dynamic-variables#default-values) and then `on_missing`. Give the menu's variable a default, usually the same as the fallback value, so these sessions read well. Without one, `on_missing: reject` rejects them.
+Outbound calls, [WhatsApp calls](/agents/telephony/whatsapp), web and API sessions, preview calls, and agent tests skip the menu. There the variable takes the menu's fallback value, so texts that mention it read well. Without a fallback value it renders like any other custom variable, from its [default value](/agents/build/dynamic-variables#default-values) and then `on_missing`; with neither, `on_missing: reject` rejects the session.
 
 ### See what callers chose
 
