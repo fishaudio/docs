@@ -27,7 +27,7 @@ Compared with phone calls, a WhatsApp call has no telephone-network leg, so:
 - A Meta app with the **WhatsApp** product added, and access to its App Dashboard. You need the app's **App ID** and **App secret**.
 - A WhatsApp Business Account (WABA) with a phone number registered for the Cloud API: the **WhatsApp Business Account ID** and the number's **Phone number ID**.
 - A **System User access token** for that app with the `whatsapp_business_management` and `whatsapp_business_messaging` permissions.
-- Calling enabled on the number. The connection turns it on for you, but Meta only allows calling on numbers whose business has completed Business Verification. A number Meta refuses still connects, with calling off and Meta's reason recorded on it.
+- Calling enabled on the number. The import turns it on for you; Meta grants it once the business has completed Business Verification. A number Meta declines still connects, with calling off and Meta's reason kept on the number (shown on its status badge, and as `status_detail` over the API).
 - Team owner or admin role in the console.
 
 ## Connect the number
@@ -70,8 +70,11 @@ A `422` means Meta refused the credentials: a wrong App secret, a token that bel
 
 Meta delivers call events to a callback URL that you configure once per app. The panel that opens after the import shows both values, and you can reopen it any time from the number's row menu as **Verify configuration**:
 
-- **Callback URL**: `https://api.fish.audio/webhooks/whatsapp`
-- **Verify token**: a value generated for your account
+```text Callback URL
+https://api.fish.audio/webhooks/whatsapp
+```
+
+The **verify token** is generated for your account and shown next to it.
 
 <Steps>
   <Step title="Open the webhook settings">
@@ -92,7 +95,7 @@ The badge on the panel reads **Pending** until Meta's verification reaches the p
 
 ## Answer calls
 
-Bind an agent to the number from its row menu, the same way as for any phone number. The agent must be [published](/agents/deploy/versions-publishing). A call is declined, and no session is created, when the number has no agent, the agent is unpublished, calling is off on the number, or the team has no credit left.
+Bind an agent to the number from its row menu, the same way as for any phone number. The agent must be [published](/agents/deploy/versions-publishing). A call is declined, and no session is created, when the number has no agent, the agent is unpublished, calling is off on the number, the number is not active, or the team has no credit left.
 
 Callers see the call ring and get answered within a few seconds. The session's `caller_number` is the caller's WhatsApp number in E.164 format and `dialed_number` is your business number, so [dynamic variables](/agents/build/dynamic-variables), the inbound call webhook, and your own records all line up.
 
@@ -100,7 +103,7 @@ Callers see the call ring and get answered within a few seconds. The session's `
 
 - **Bind, unbind, label**: as for any number, from the row menu or with [`PATCH /v1/agent/phone-numbers/{phone_number_id}`](/agents/telephony/phone-numbers#bind-or-unbind-an-agent).
 - **A second number on the same account**: import it the same way; it joins the account already holding the WhatsApp Business Account. One WhatsApp Business Account connects to one workspace.
-- **Release**: from the row menu or with `DELETE /v1/agent/phone-numbers/{phone_number_id}`. The number stays yours at Meta. Releasing the account's last number also disconnects the account and unsubscribes your app from its webhooks. If you connect the number again later, it keeps the same verify token, so nothing changes in your Meta app.
+- **Release**: from the row menu or with `DELETE /v1/agent/phone-numbers/{phone_number_id}`. The number stays yours at Meta. Releasing the account's last number also disconnects the account and unsubscribes your app from its webhooks. If the same workspace connects the number again later, it keeps the same verify token, so nothing changes in your Meta app.
 
 The number counts toward your team's phone number quota like any other.
 
@@ -120,7 +123,7 @@ The public API has no endpoint for connecting a WhatsApp number; the connection 
 | Import returns `409`                              | The number is already connected, or the WhatsApp Business Account is connected to another workspace. Release it there first.                                                                                                                                                |
 | The badge stays **Pending**                       | Meta has not verified the callback yet: check the callback URL and the verify token in your Meta app and click **Verify and save** again. A first call verifies the account as well.                                                                                       |
 | Calls are declined or never ring the agent        | The number has an agent bound and the agent is published; calling is on for the number (Meta refuses it on businesses without Business Verification); your Meta app is subscribed to the `calls` webhook field; the team has credit.                                       |
-| The WhatsApp app shows no call button for the number | Calling is off on the number at Meta. Meta only enables it for verified businesses.                                                                                                                                                                                         |
+| The WhatsApp app shows no call button for the number | Meta declined to enable calling when the number was connected; the reason is on the number's status badge. Calling needs a business that has completed Business Verification.                                                                                     |
 
 ## Going further
 
