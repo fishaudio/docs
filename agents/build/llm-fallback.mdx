@@ -122,8 +122,6 @@ A reply moves to the next model on:
 - **The agent choosing silence.** A model that finishes normally with an empty reply is the agent staying quiet on purpose. Nothing switches.
 - **A reply already playing.** Once the caller hears the answer, a problem finishing it counts as a failed reply.
 
-In every mode the platform keeps its own redundancy for the same model: the identical model retried on another channel. Your fallback chain sits on top of that.
-
 ## Per-session override
 
 A session can replace the agent's fallback configuration for that conversation only. See [`overrides.llm.fallback`](/agents/deploy/authenticated-sessions#overrides).
