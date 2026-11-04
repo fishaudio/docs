@@ -152,6 +152,7 @@ Unknown fields (top-level or inside `overrides`) are rejected with `422`.
 | `language`             | the code of one of the [52 supported languages](/agents/build/voice-language#speaking-language) | Pins
  the conversation language, taking precedence over the configured [speaking language](/agents/build/voice-language#speaking-language).                                                                        |
 | `asr.model`            | one of the [speech recognition models](/agents/build/voice-language#speech-recognition-model) | The model that transcribes the caller, in place of the agent's `asr.model`. Nested like the agent's `asr` configuration: `"asr": { "model": "deepgram:nova-3" }`. |
+| `llm.fallback`         | object, same shape as the agent's [`llm.fallback`](/agents/build/llm-fallback) | Replaces the agent's fallback configuration for this session. Each `custom` entry carries its own `api_key`. Needs an API key session and `llm.fallback` in the agent's `overrides_allowed`. |
 
 ```json
 {
@@ -160,6 +161,22 @@ Unknown fields (top-level or inside `overrides`) are rejected with `422`.
     "first_message": "Welcome back, {{name}}, picking up where we left off.",
     "voice_id": "802e3bc2b27e49c2995d23ef70e6ac89",
     "language": "ja"
+  }
+}
+```
+
+`llm.fallback` is nested one level deeper. It has the same shape as the agent's own [`llm.fallback`](/agents/build/llm-fallback):
+
+```json
+{
+  "agent_id": "YOUR_AGENT_ID",
+  "overrides": {
+    "llm": {
+      "fallback": {
+        "mode": "manual",
+        "models": [{ "model": "google/gemini-3.6-flash" }]
+      }
+    }
   }
 }
 ```

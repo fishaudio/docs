@@ -146,7 +146,9 @@ Once [published](/agents/deploy/versions-publishing), every session of the agent
 
 ## Failure behavior
 
-A custom LLM never silently falls back to a platform model, because a platform model answering with the wrong persona and no memory would be worse than a failed turn.
+By default (`llm.fallback` at `platform`), a custom LLM never falls back to another model. A platform model answering with the wrong persona and no memory would be worse than a failed turn.
+
+To opt in, set `llm.fallback.mode` to `manual` and list the models to try when your endpoint fails. Platform models and other endpoints both work. Your endpoint can also be a fallback entry for another agent. See [LLM Fallback](/agents/build/llm-fallback).
 
 - Each request gets one retry and a 10 second response cap.
 - When a generation still fails, the agent speaks a brief hold line and stays on the call.
