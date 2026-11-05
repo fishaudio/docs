@@ -21,9 +21,9 @@ The setting doesn't affect the live call: transcript events still stream to conn
 
 ### Data retention
 
-On teams with Zero Data Retention, each agent deletes session content after a set period, counted from the end of the call. Choose the period under your agent's **Settings** in the console. Your agreement may set the longest period allowed. Teams without Zero Data Retention keep session content.
+On teams with Zero Data Retention, each agent deletes session content after a set period, counted from the end of the call. Choose the period under your agent's **Settings** in the console (team owners and admins only). Your agreement may cap the period. A session keeps the period its agent had when the session started. Shortening the period also applies to past sessions.
 
-When the period ends, the transcript, recordings, post-call analysis, keypad menu, and caller details (`name`, `end_user_id`, `caller_number`, and `metadata`) are deleted. Status, timing, and billing facts are kept. [Get a session](#get-a-session) then returns the session without its timeline, and the [recording endpoint](#download-recordings) returns `410`.
+When the period ends, the transcript, recordings, post-call analysis, keypad menu, dynamic variables, and caller details (`name`, `end_user_id`, `caller_number`, and `metadata`) are deleted. Status, timing, and billing facts are kept. [Get a session](#get-a-session) then returns the session with `content_purged_at` set and no timeline, and the [recording endpoint](#download-recordings) returns `410`.
 
 ## List sessions
 
