@@ -10,7 +10,7 @@ This is a server-side API: authenticate with your API key. The client SDKs delib
 
 ## What gets stored
 
-The session record (status, timing, caller attribution, name, `end_user_id`, and `metadata`) and the conversation transcript are always kept for production sessions. Audio recording is a per-agent choice, on by default: set `conversation.record_audio` in the console under your agent's **Settings** or in the `conversation` section of the [config API](/agents/build/configuration#configure-through-the-api), with a per-session override on the [session request](/agents/deploy/authenticated-sessions). Recording off means there is no audio to download.
+The session record (status, timing, caller attribution, name, `end_user_id`, and `metadata`) and the conversation transcript are kept for production sessions, subject to [data retention](#data-retention). Audio recording is a per-agent choice, on by default: set `conversation.record_audio` in the console under your agent's **Settings** or in the `conversation` section of the [config API](/agents/build/configuration#configure-through-the-api), with a per-session override on the [session request](/agents/deploy/authenticated-sessions). Recording off means there is no audio to download.
 
 The setting doesn't affect the live call: transcript events still stream to connected clients in real time.
 
@@ -18,6 +18,12 @@ The setting doesn't affect the live call: transcript events still stream to conn
   Recording defaults to on. Call-recording laws vary by jurisdiction. Make sure
   callers are informed and consent where required before going live.
 </Warning>
+
+### Data retention
+
+On teams with Zero Data Retention, each agent deletes session content after a set period, counted from the end of the call. Choose the period under your agent's **Settings** in the console. Your agreement may set the longest period allowed. Teams without Zero Data Retention keep session content.
+
+When the period ends, the transcript, recordings, post-call analysis, keypad menu, and caller details (`name`, `end_user_id`, `caller_number`, and `metadata`) are deleted. Status, timing, and billing facts are kept. [Get a session](#get-a-session) then returns the session without its timeline, and the [recording endpoint](#download-recordings) returns `410`.
 
 ## List sessions
 
