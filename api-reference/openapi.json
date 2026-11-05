@@ -27230,20 +27230,30 @@
       },
       "PronunciationItem": {
         "additionalProperties": false,
-        "description": "A single key/value entry in a pronunciation dictionary. The inference engine replaces every occurrence of `key` in the request text with the phoneme form `value` during synthesis.",
+        "description": "A single key/value entry in a pronunciation dictionary. The inference engine replaces every occurrence of `key` in the request text with `value` during synthesis. With the default `type: \"phoneme\"` the value is spoken as a phonetic form; with `type: \"alias\"` it is substituted as plain text.",
         "properties": {
           "key": {
-            "description": "Source substring to match. Pure substring match — no tokenization, no regex. Overlapping matches resolve leftmost-longest. For CJK text include enough context to disambiguate.",
+            "description": "Source substring to match. Pure substring match — no tokenization, no regex. Overlapping matches resolve leftmost-longest. For CJK text include enough context to disambiguate. For `type: \"alias\"` the key must not start or end with whitespace and must not contain control characters, `<`, `>`, `(`, `)`, `[` or `]`.",
             "maxLength": 256,
             "minLength": 1,
             "title": "Key",
             "type": "string"
           },
           "value": {
-            "description": "Phonetic representation that replaces the key during synthesis. Dictionary authors should NOT include the `<|phoneme_start|>` / `<|phoneme_end|>` markers themselves; the inference engine wraps the value with those markers internally so the body is treated as phonemes rather than orthographic text. Requests whose key or value contain either marker are rejected.",
+            "description": "Replacement for the key during synthesis. For `type: \"phoneme\"` this is a phonetic representation; dictionary authors should NOT include the `<|phoneme_start|>` / `<|phoneme_end|>` markers themselves, because the inference engine wraps the value with those markers internally so the body is treated as phonemes rather than orthographic text. For `type: \"alias\"` this is plain text substituted verbatim (then normalized with the rest of the request text) and must not contain `<|` or `|>`. Requests whose key or value contain either phoneme marker are rejected.",
             "maxLength": 1024,
             "minLength": 1,
             "title": "Value",
+            "type": "string"
+          },
+          "type": {
+            "default": "phoneme",
+            "description": "How `value` replaces `key`. `phoneme` (default) speaks the value as a phonetic form. `alias` substitutes the literal text, which then goes through the same text normalization as the rest of the request. Omitted or `null` means `phoneme`, so existing dictionaries and clients keep their behaviour. Any other value is rejected. Usage is billed on the text actually synthesized, with alias replacements counted: an alias that expands a key is billed for the longer text, one that shortens it is billed for the shorter text; phoneme rules never change billing.",
+            "enum": [
+              "phoneme",
+              "alias"
+            ],
+            "title": "Type",
             "type": "string"
           },
           "case_sensitive": {
@@ -27538,7 +27548,7 @@
                 "type": "array"
               },
               {
-                "description": "Inline form: list of literal pronunciation dictionaries. Each dictionary carries an `items` array of `{key, value, case_sensitive?}` entries.",
+                "description": "Inline form: list of literal pronunciation dictionaries. Each dictionary carries an `items` array of `{key, value, type?, case_sensitive?}` entries.",
                 "items": {
                   "$ref": "#/components/schemas/PronunciationDictionaryInline"
                 },
@@ -27550,7 +27560,7 @@
               }
             ],
             "default": null,
-            "description": "Optional list of up to 3 pronunciation dictionaries to apply during synthesis. Provide either references to platform-managed dictionaries OR inline literal dictionaries (the two forms are mutually exclusive in a single request). The server resolves and merges the dictionaries, then forwards the full merged dictionary to the inference engine, which performs the substitution. Matching is plain substring matching, leftmost-longest, and case-insensitive unless an entry sets `case_sensitive`. Missing or unresolvable references are silently dropped — the request still succeeds. Use `application/json` or `application/msgpack` content-type; nested arrays are not representable in `multipart/form-data`.",
+            "description": "Optional list of up to 3 pronunciation dictionaries to apply during synthesis. Provide either references to platform-managed dictionaries OR inline literal dictionaries (the two forms are mutually exclusive in a single request). The server resolves and merges the dictionaries, then forwards the full merged dictionary to the inference engine, which performs the substitution. Each entry sets `type` to `phoneme` (default: the value is spoken as a phonetic form) or `alias` (plain text replacement). Usage is billed on the text actually synthesized, with alias replacements counted: an alias that expands a key is billed for the longer text, one that shortens it is billed for the shorter text; phoneme rules never change billing. Matching is plain substring matching, leftmost-longest, and case-insensitive unless an entry sets `case_sensitive`. Missing or unresolvable references are silently dropped — the request still succeeds. Use `application/json` or `application/msgpack` content-type; nested arrays are not representable in `multipart/form-data`.",
             "title": "Pronunciation Dictionary"
           }
         },
@@ -27791,7 +27801,7 @@
                 "type": "array"
               },
               {
-                "description": "Inline form: list of literal pronunciation dictionaries. Each dictionary carries an `items` array of `{key, value, case_sensitive?}` entries.",
+                "description": "Inline form: list of literal pronunciation dictionaries. Each dictionary carries an `items` array of `{key, value, type?, case_sensitive?}` entries.",
                 "items": {
                   "$ref": "#/components/schemas/PronunciationDictionaryInline"
                 },
@@ -27803,7 +27813,7 @@
               }
             ],
             "default": null,
-            "description": "Optional list of up to 3 pronunciation dictionaries to apply during synthesis. Provide either references to platform-managed dictionaries OR inline literal dictionaries (the two forms are mutually exclusive in a single request). The server resolves and merges the dictionaries, then forwards the full merged dictionary to the inference engine, which performs the substitution. Matching is plain substring matching, leftmost-longest, and case-insensitive unless an entry sets `case_sensitive`. Missing or unresolvable references are silently dropped — the request still succeeds. Use `application/json` or `application/msgpack` content-type; nested arrays are not representable in `multipart/form-data`.",
+            "description": "Optional list of up to 3 pronunciation dictionaries to apply during synthesis. Provide either references to platform-managed dictionaries OR inline literal dictionaries (the two forms are mutually exclusive in a single request). The server resolves and merges the dictionaries, then forwards the full merged dictionary to the inference engine, which performs the substitution. Each entry sets `type` to `phoneme` (default: the value is spoken as a phonetic form) or `alias` (plain text replacement). Usage is billed on the text actually synthesized, with alias replacements counted: an alias that expands a key is billed for the longer text, one that shortens it is billed for the shorter text; phoneme rules never change billing. Matching is plain substring matching, leftmost-longest, and case-insensitive unless an entry sets `case_sensitive`. Missing or unresolvable references are silently dropped — the request still succeeds. Use `application/json` or `application/msgpack` content-type; nested arrays are not representable in `multipart/form-data`.",
             "title": "Pronunciation Dictionary"
           }
         },
