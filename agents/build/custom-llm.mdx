@@ -156,7 +156,7 @@ To opt in, set `llm.fallback.mode` to `manual` and list the models to try when y
 
 ### See what your endpoint returned
 
-Every failed generation is recorded, whether or not the call ended because of it. You can find them in three places:
+Every failed request to your endpoint is recorded. This holds when a fallback model answered instead and when the call ended because of it. You can find them in three places:
 
 - **Conversations** in the dashboard shows each failure in the transcript, where it happened.
 - The [sessions API](/agents/monitor/conversation-history#llm-endpoint-errors) returns them as `llm_endpoint_errors`.
