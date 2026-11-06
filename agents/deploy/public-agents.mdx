@@ -107,6 +107,7 @@ Public-mode failures surface as `FishAgentError` codes on `AgentSession.start()`
 | ------------------------ | -------------------------------------------------------------------------- |
 | `agent_not_public`       | The agent's public switch is off.                                          |
 | `origin_forbidden`       | The page's origin is not in `allowed_origins` (HTTP `403`).                |
+| `insufficient_credit`    | The agent owner's account has no Agent credit left (HTTP `402`). Top up to resume. |
 | `session_request_failed` | Other creation failures, for example the agent has no published version.   |
 
 ## When to use session tokens instead
