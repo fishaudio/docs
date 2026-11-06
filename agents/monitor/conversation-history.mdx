@@ -207,7 +207,7 @@ Details worth knowing:
 
 ### LLM endpoint errors
 
-Sessions on a [custom LLM](/agents/build/custom-llm) also carry `llm_endpoint_errors`. It lists each failed generation of your endpoint, oldest first. It is empty when the agent runs on a platform model or your endpoint never failed.
+Sessions that call a [custom LLM](/agents/build/custom-llm) also carry `llm_endpoint_errors`. This includes agents that use your endpoint as an [LLM fallback](/agents/build/llm-fallback). It lists each failed request to your endpoint, oldest first. A retried reply can add two entries. It is empty when the agent never called your endpoint or your endpoint never failed.
 
 ```json
 {
@@ -235,7 +235,8 @@ Sessions on a [custom LLM](/agents/build/custom-llm) also carry `llm_endpoint_er
 - `status_code` is set on `http_error` only.
 - `response_body` is the start of what your endpoint sent back, on `http_error` and `not_event_stream` only. It is at most 300 characters, and your API key is masked. It is `null` when the body was empty.
 - `duration_ms` is the time from the request to the response or the failure. It is `null` when it was not measured.
-- `consecutive_failures` counts failures in a row. The agent hangs up at the third.
+- `consecutive_failures` counts your endpoint's failures in a row. It resets when your endpoint answers.
+- Without a fallback, the agent hangs up at the third failure. With an [LLM fallback](/agents/build/llm-fallback), a reply the fallback model answers keeps the call going, so `consecutive_failures` can go past three.
 
 ### LLM fallbacks
 
