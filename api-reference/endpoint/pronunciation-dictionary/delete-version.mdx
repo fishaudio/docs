@@ -1,0 +1,9 @@
+---
+openapi: delete /v1/pronunciation-dictionaries/{dictionary_id}/versions/{version_id}
+title: "Delete Version"
+description: "Delete a published version of a pronunciation dictionary"
+icon: "trash-can"
+iconType: "solid"
+---
+
+The latest version cannot be deleted; this returns 409. Publish a new version first if you need to retire it.

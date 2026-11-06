@@ -8,7 +8,7 @@ icon: "book-open"
 
 Pronunciation dictionaries are available in the [Fish Audio web app](https://fish.audio/app/pronunciation-dictionary) and the [TTS API](/api-reference/endpoint/openapi-v1/text-to-speech). Use them when the same names, brands, acronyms, or technical terms appear across many requests and you want consistent pronunciation without adding phoneme tags to every script, or when a term should always be read as different text.
 
-Create and publish a dictionary in the web app, then reference its dictionary ID and version ID in your TTS requests. For rules that only apply to one request, send an [inline dictionary](#inline-dictionaries) instead.
+Create and publish a dictionary in the web app or [with the API](#manage-dictionaries-with-the-api), then reference its dictionary ID and version ID in your TTS requests. For rules that only apply to one request, send an [inline dictionary](#inline-dictionaries) instead.
 
 <Card
   title="Open pronunciation dictionaries"
@@ -59,6 +59,36 @@ SQL,EH1 S K Y UW1 EH1 L
 ```
 
 Text imports create phoneme rules and default to case-insensitive matching. Review the rules, preview them, and publish any changes before using the version in TTS. To export a published dictionary as a PLS file, select **Download** from its **More actions** menu.
+
+## Manage Dictionaries with the API
+
+Everything the web app does with dictionaries is also available through the [pronunciation dictionary API](/api-reference/endpoint/pronunciation-dictionary/list-dictionaries), authenticated with your [API key](/developer-guide/getting-started/api-key). An API key works on the dictionaries of the team it belongs to.
+
+Create a dictionary, then publish its first version. The response of each call includes an `id`:
+
+```bash
+curl --request POST https://api.fish.audio/v1/pronunciation-dictionaries \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{"name": "Product names"}'
+
+curl --request POST https://api.fish.audio/v1/pronunciation-dictionaries/YOUR_DICTIONARY_ID/versions \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "expected_latest_version_id": null,
+    "items": [
+      { "key": "Kubernetes", "value": "K UW2 B ER0 N EH1 T IY0 Z" },
+      { "key": "k8s", "value": "Kubernetes", "type": "alias" }
+    ]
+  }'
+```
+
+The `id` of the dictionary and the `id` of the new version are the `id` and `version` you send in [TTS requests](#use-a-published-dictionary).
+
+- A version holds the complete rule list. To change rules, publish a new version with every rule it should contain; published versions never change.
+- Set `expected_latest_version_id` to the dictionary's current `latest_version_id` (`null` for the first version). If someone published in the meantime, the request returns 409: fetch the new latest version, merge its rules with your changes, and publish again.
+- Deleting a version is not possible for the latest version of a dictionary.
 
 ## Write Pronunciation Rules
 
