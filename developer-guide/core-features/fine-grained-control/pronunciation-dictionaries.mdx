@@ -87,7 +87,7 @@ curl --request POST https://api.fish.audio/v1/pronunciation-dictionaries/YOUR_DI
 The `id` of the dictionary and the `id` of the new version are the `id` and `version` you send in [TTS requests](#use-a-published-dictionary).
 
 - A version holds the complete rule list. To change rules, publish a new version with every rule it should contain; published versions never change.
-- Set `expected_latest_version_id` to the dictionary's current `latest_version_id` (`null` for the first version). If someone published in the meantime, the request returns 409.
+- Set `expected_latest_version_id` to the dictionary's current `latest_version_id` (`null` for the first version). If someone published in the meantime, the request returns 409: fetch the new latest version, merge its rules with your changes, and publish again.
 - Deleting a version is not possible for the latest version of a dictionary.
 
 ## Write Pronunciation Rules
