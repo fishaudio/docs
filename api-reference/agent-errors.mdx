@@ -61,7 +61,7 @@ Two quirks worth coding around:
 | `Agent is not public`                                                                  | Anonymous session/widget request against an agent whose public switch is off.                                         |
 | `Origin header is required for public agents`                                          | Anonymous request without an `Origin` header. Browsers send it automatically, curl must set it.                      |
 | `Origin not allowed`                                                                   | The page's origin is not on the agent's [allowed origins](/agents/deploy/public-agents#origin-matching).              |
-| `Agent is unavailable`                                                                 | The agent's owner can't serve public sessions right now; visitors deliberately can't tell why.                        |
+| `Agent is unavailable`                                                                 | The agent's owner can't serve public sessions right now for a reason other than credit (that is `402`); visitors deliberately can't tell why. |
 | `Phone number limit reached for this team (N)`                                         | The team holds its maximum of live numbers; release one first.                                                        |
 
 ## 404: anti-enumeration
@@ -81,7 +81,7 @@ The recording endpoint adds one more meaning: `Recording not found` on a real se
 
 ## Billing and rate limits
 
-Exactly two endpoints charge before acting, and both can return `402 Out of API credit`: [`POST /v1/agent/sessions`](/api-reference/endpoint/agent/create-agent-session) (API-key callers) and [`POST /v1/agent/phone-numbers`](/api-reference/endpoint/agent/purchase-phone-number) (the first rental day). Anonymous public sessions never see `402`. An out-of-credit owner surfaces to visitors as `403 Agent is unavailable`. Usage is settled after each call and never fails a request.
+Exactly two endpoints charge before acting, and both can return `402 Out of API credit`: [`POST /v1/agent/sessions`](/api-reference/endpoint/agent/create-agent-session) (API-key and anonymous public callers alike) and [`POST /v1/agent/phone-numbers`](/api-reference/endpoint/agent/purchase-phone-number) (the first rental day). A public session whose agent owner is out of credit gets the same `402`, which the [Web SDK](/agents/deploy/web-sdk#errors) reports as `insufficient_credit`. Usage is settled after each call and never fails a request.
 
 `429` applies only to anonymous session creation on [public agents](/agents/deploy/public-agents), in fixed per-minute windows per agent and per client IP. API-key traffic is not rate limited on this surface; your backend is the gate.
 
