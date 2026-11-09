@@ -151,7 +151,8 @@ The platform fills a handful of `{{system.*}}` placeholders itself, on every ses
 | `system.timezone` | The session's resolved IANA timezone, for example `Asia/Tokyo` | `UTC` when nothing resolves. Always equals the session's `timezone` field; see [which timezone a session uses](/agents/build/time-timezone#which-timezone-a-session-uses). |
 | `system.today` | Today's date in that timezone, ISO 8601 `YYYY-MM-DD` | The calendar date at session creation. There is no `system.now`; see [Current date and time](#current-date-and-time). |
 | `system.language` | The session language code, one of the [52 supported languages](/agents/build/voice-language#speaking-language) | The `language` [override](/agents/deploy/authenticated-sessions#overrides) when the request carries one, otherwise the agent's [speaking language](/agents/build/voice-language#speaking-language). |
-| `system.caller_number` | The human party's number, E.164 | Inbound: the caller (empty if withheld or not a valid E.164 number). Outbound: the number you dialed. Empty on non-phone sessions. |
+| `system.caller_number` | The human party's number, E.164 | Inbound: the caller (empty if the carrier withheld the number, for example `anonymous` or one of Twilio's placeholder numbers, or it is not a valid E.164 number). Outbound: the number you dialed. Empty on non-phone sessions. |
+| `system.caller_id_withheld` | `"true"` or `"false"` (text, like every system variable) | `"true"` when an inbound caller's number was withheld, `"false"` for an inbound call with a number, an outbound call, and a WhatsApp call. Empty on non-phone sessions. See [Phone numbers](#phone-numbers). |
 | `system.caller_number_spoken` | The same number written for speech, for example `+1; 4 1 5; 5 5 5; 0 1 2 3` | Use it wherever the agent should say the number out loud; see [Reading a number out loud](#reading-a-number-out-loud). Empty whenever `system.caller_number` is empty. |
 | `system.dialed_number` | Your workspace number, E.164 | Inbound: the number that was called. Outbound: the number the call was placed from. Empty on non-phone sessions. |
 | `system.session_id` | The session's id, for example `sess_5f3e…` | Send it from a [webhook tool](#in-webhook-tools) to tie each tool call to its session. Outside the agent, the same id is in the `POST /v1/agent/sessions` [response](/agents/deploy/authenticated-sessions), the SDK's `connect` event, and `session.id` in [post-call webhooks](/agents/monitor/webhooks), and [`GET /v1/agent/sessions/{session_id}`](/agents/monitor/conversation-history#get-a-session) accepts it. |
@@ -162,7 +163,7 @@ Write `{{system.caller_number}}` where the number must stay a plain E.164 string
 
 ### Phone numbers
 
-The phone numbers are the session's `caller_number` and `dialed_number` fields as shown in [session history](/agents/telephony/inbound-calls#phone-sessions-in-history). Only a value that is a well-formed E.164 number reaches the agent: anything else the carrier sends as the caller id (for example an `anonymous` marker) renders as an empty string, while the history field keeps the raw value. On every session that is not a phone call (web, text, preview, agent tests) both render as an empty string, never as literal `{{system.caller_number}}` text, so one agent can serve web and phone with the same prompt.
+The phone numbers are the session's `caller_number` and `dialed_number` fields as shown in [session history](/agents/telephony/inbound-calls#phone-sessions-in-history). Only a value that is a well-formed E.164 number reaches the agent: anything else the carrier sends as the caller id (for example an `anonymous` marker) renders as an empty string, and the session record stores the same empty value, not the carrier's original text. On every session that is not a phone call (web, text, preview, agent tests) both render as an empty string, never as literal `{{system.caller_number}}` text, so one agent can serve web and phone with the same prompt.
 
 Write the prompt so it also reads well when the number is empty:
 
@@ -181,6 +182,30 @@ confirm the last four digits before discussing the account.
 ```
 
 On a web session the same prompt renders `The caller's number is "".`, and the agent asks for a number. To look the caller up in your own systems, template the number into a [webhook tool](#in-webhook-tools) instead of relying on the model to repeat it.
+
+#### Withheld caller ID
+
+A caller can hide their number. The carrier then sends no digits (`anonymous`, `restricted`, an empty value) or one of the placeholder numbers Twilio uses when it has none: `266696687`, `7378742833`, `86282452253`, `2562533`, `8656696` and `464`. All of these count as withheld: `system.caller_number` and `system.caller_number_spoken` are empty, and `system.caller_id_withheld` is `"true"`. An empty `system.caller_number` alone does not tell you why, since it is also empty on non-phone sessions; `system.caller_id_withheld` does, because it is `"true"` only when a caller on a phone call hid their number.
+
+When the number is withheld, the agent cannot match the caller to a customer record by number, so have it ask who is calling:
+
+```text System prompt
+The caller's number is "{{system.caller_number}}". Number withheld: {{system.caller_id_withheld}}.
+If the number is withheld, do not look the caller up by number: ask for their full
+name and date of birth first, then use the lookup tool with those. Otherwise
+look them up by the number.
+```
+
+On an inbound call with a hidden number the model sees:
+
+```text Rendered
+The caller's number is "". Number withheld: true.
+If the number is withheld, do not look the caller up by number: ask for their full
+name and date of birth first, then use the lookup tool with those. Otherwise
+look them up by the number.
+```
+
+The same flag reaches your systems as `caller_id_withheld` in the [inbound call webhook](/agents/monitor/webhooks#inbound-call-webhook), on the [session record](/agents/monitor/conversation-history), and in the [post-call webhooks](/agents/monitor/webhooks#payload).
 
 ### Date and timezone
 
