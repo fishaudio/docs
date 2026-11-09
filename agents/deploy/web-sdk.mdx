@@ -111,7 +111,7 @@ When the session ends, `disconnect` fires with a reason (also available as `sess
 | `agent_hangup`         | The agent ended the call: the hang-up [system tool](/agents/build/system-tools), a workflow end node, or an idle hangup                                          |
 | `conversation_timeout` | The session reached the agent's [maximum duration](/agents/build/configuration#call-duration)                                                                    |
 | `escalated`            | The call was transferred to a human                                                                                                                              |
-| `internal_error`       | The agent runtime itself failed and closed the call, for example its process was stopped for exceeding its memory limit (from 0.5.0)                              |
+| `internal_error`       | The agent runtime itself failed and closed the call, for example its process was stopped for exceeding its memory limit (from 1.0.0)                              |
 | `connection_lost`      | The connection dropped and could not be recovered, the agent never joined, or the call ended before the server could say why                                     |
 
 Every reason except `connection_lost` comes from the server: it sends the protocol's [`session.ended` event](/agents/deploy/protocol#session-ended) just before tearing the call down, and the values match `end_reason` on the [session record](/agents/monitor/conversation-history#status-and-end-reason), so your client and your backend agree about how a session ended. This needs `@fishaudio/agent-client` 0.3.0 or later; older clients infer the reason from the disconnect and report every server-side end as `agent_hangup`.
