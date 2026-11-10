@@ -950,7 +950,7 @@
       },
       "post": {
         "summary": "Create Agent Session",
-        "description": "Start a conversation session with an agent and receive a join token for the\nsession transport (currently LiveKit WebRTC). Authenticate with an API key to\nstart sessions with any agent in your team; without credentials only agents\npublished as public are reachable, and the request `Origin` must match the\nagent's allowed origins.\n\n`language` (and `overrides.language`) accepts `en`, `ja`, `zh`, `ko`, `es`,\n`fr`, `de`, `pt`, `it`, `nl`; anything else is 422. Omit it to use the agent's configured\nspeaking language.\n\n`overrides.asr.model` picks the speech recognition model for this session,\nnested like the agent config's `asr` section and with the same values as\n`asr.model`. It needs an API key.\n\n`overrides.llm.fallback` replaces the agent's `llm.fallback` for this\nsession, with the same shape and rules; each `custom` model needs its\n`api_key`. It needs an API key and `llm.fallback` in the agent's\n`overrides_allowed`.",
+        "description": "Start a conversation session with an agent and receive a join token for the\nsession transport (currently LiveKit WebRTC). Authenticate with an API key to\nstart sessions with any agent in your team; without credentials only agents\npublished as public are reachable, and the request `Origin` must match the\nagent's allowed origins.\n\n`language` (and `overrides.language`) accepts `en`, `ja`, `zh`, `ko`, `es`,\n`fr`, `de`, `pt`, `it`, `nl`; anything else is 422. Omit it to use the agent's configured\nspeaking language.\n\n`overrides.asr.model` picks the speech recognition model for this session,\nnested like the agent config's `asr` section and with the same values as\n`asr.model`. It needs an API key.\n\n`overrides.llm.fallback` replaces the agent's `llm.fallback` for this\nsession, with the same shape and rules; each `custom` model needs its\n`api_key`. It needs an API key and `llm.fallback` in the agent's\n`overrides_allowed`.\n\nWhen every concurrent line of your plan is in use the answer is 429 with\n`code: concurrency_limit_exceeded`, a `retry_after` in seconds and a\n`Retry-After` header. Add lines or enable burst on the Agent plan to\nraise the limit.",
         "security": [
           {
             "BearerAuth": []
@@ -3993,7 +3993,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default),\n`elevenlabs:scribe_v2_realtime`, `elevenlabs:scribe_v2_medical`, or\n`fish_audio:transcribe-stream-1` (Fish realtime recognition, which\nalso decides end of turn and whether the caller is interrupting).\nIts former id `fish_audio:transcribe-1-pro-realtime` is still accepted\nand reads back as the current id.\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best.\n`voice.background_sound` sets a looping ambience the worker mixes under\nthe agent's voice: `preset` is `off` (default) or one of `office`,\n`call_center`, `restaurant`, `cafe`, `city_street`, `phone_line`, `phone_line_digital`,\n`custom`. `volume` (0-1, default 0.15) is the\nambience's gain relative to the voice. `custom_asset_id` names a clip\nuploaded through `POST /v1/agent/background-sounds`; required with\n`preset: \"custom\"`, refused otherwise (422). Replaces the whole object;\nan explicit null resets it to off. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null. `llm.fallback` sets what the agent tries after its\nmodel fails: `platform` (default), `manual` (`models` in order, 1 to 3)\nor `off`. In `manual`, each model and `primary` (the agent's own model)\ntake optional `ttft_timeout_ms` (500-30000, default 5000 ms, i.e. 5\nseconds, when not set) and `total_timeout_ms` (1000-120000, at least\n`ttft_timeout_ms` when both are set, no limit when not set), and the\nfirst model can set\n`parallel.kick_in_ms` (300-10000, default 1500) to run alongside the\nagent's own model.\n\nThe response is the draft as stored, which can differ from the request:\n- Every field comes back. Omitted fields keep their value or default.\n- `asr.keyterms` and `voice.pronunciation_dictionary_ids` are trimmed\n  and de-duplicated in order. `tool_ids` is de-duplicated in order.\n- A tool that was archived drops out of `tool_ids` at the next tools\n  write.\n- `conversation.interruption_ignore_phrases` collapses inner spaces and\n  drops case-insensitive duplicates.\n- `conversation.timezone`, transfer phone numbers and transfer text\n  fields are trimmed.\n- `conversation.eagerness` and `conversation.response_wait_ms` move\n  together. The wait wins when both are sent, and the tier is derived\n  from it.\n- `conversation.response_max_wait_ms: 0` reads back as `null`\n  (automatic).\n- `knowledge_base.enabled` becomes `true` when you attach sources and\n  omit it.\n- `llm.custom.base_url` drops a trailing `/` and `/chat/completions`.\n  `llm.custom.model` is trimmed. Setting `llm.custom` resets `llm.model`\n  to the platform default.\n- Secrets read back as `has_secret`, and `llm.custom.api_key` as `null`.\n- `voice` also returns `keyterms`, `multilingual_asr` and `asr_model`\n  copied from `asr`. They are deprecated.\n- `config_hash` and `updated_at` are set by the server.\n\nCompare against this response, or against `config_hash`, rather than the\nrequest body. Publishing never rewrites these values.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default),\n`elevenlabs:scribe_v2_realtime`, `elevenlabs:scribe_v2_medical`, or\n`fish_audio:transcribe-stream-1` (Fish realtime recognition, which\nalso decides end of turn and whether the caller is interrupting).\nIts former id `fish_audio:transcribe-1-pro-realtime` is still accepted\nand reads back as the current id.\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best.\n`voice.background_sound` sets a looping ambience the worker mixes under\nthe agent's voice: `preset` is `off` (default) or one of `office`,\n`call_center`, `restaurant`, `cafe`, `city_street`, `phone_line`, `phone_line_digital`,\n`custom`. `volume` (0-1, default 0.15) is the\nambience's gain relative to the voice. `custom_asset_id` names a clip\nuploaded through `POST /v1/agent/background-sounds`; required with\n`preset: \"custom\"`, refused otherwise (422). Replaces the whole object;\nan explicit null resets it to off. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null. `llm.fallback` sets what the agent tries after its\nmodel fails: `platform` (default), `manual` (`models` in order, 1 to 3)\nor `off`. In `manual`, each model and `primary` (the agent's own model)\ntake optional `ttft_timeout_ms` (500-30000, default 5000 ms, i.e. 5\nseconds, when not set) and `total_timeout_ms` (1000-120000, at least\n`ttft_timeout_ms` when both are set, no limit when not set), and the\nfirst model can set\n`parallel.kick_in_ms` (300-10000, default 1500) to run alongside the\nagent's own model.\n\nThe response is the draft as stored, which can differ from the request:\n- Every field comes back. Omitted fields keep their value or default.\n- `asr.keyterms` and `voice.pronunciation_dictionary_ids` are trimmed\n  and de-duplicated in order. `tool_ids` is de-duplicated in order.\n- A tool that was archived drops out of `tool_ids` at the next tools\n  write.\n- `conversation.interruption_ignore_phrases` collapses inner spaces and\n  drops case-insensitive duplicates.\n- `conversation.timezone`, transfer phone numbers and transfer text\n  fields are trimmed.\n- `conversation.eagerness` and `conversation.response_wait_ms` move\n  together. The wait wins when both are sent, and the tier is derived\n  from it.\n- `conversation.response_max_wait_ms: 0` reads back as `null`\n  (automatic).\n- `knowledge_base.enabled` becomes `true` when you attach sources and\n  omit it.\n- `llm.custom.base_url` drops a trailing `/` and `/chat/completions`.\n  `llm.custom.model` is trimmed. Setting `llm.custom` resets `llm.model`\n  to the platform default.\n- Secrets read back as `has_secret`, and `llm.custom.api_key` as `null`.\n- `voice.live3_voice` becomes `null` when you set `voice.voice_id`\n  without it: on `live3` the agent then speaks the voice you picked.\n  Switching `voice.engine` to `live3` sets an empty `voice.live3_voice`\n  to `Clara` only while `voice.voice_id` is still the default voice\n  and the patch sets neither.\n- `voice` also returns `keyterms`, `multilingual_asr` and `asr_model`\n  copied from `asr`. They are deprecated.\n- `config_hash` and `updated_at` are set by the server.\n\nCompare against this response, or against `config_hash`, rather than the\nrequest body. Publishing never rewrites these values.",
         "security": [
           {
             "BearerAuth": []
@@ -8644,7 +8644,7 @@
       },
       "post": {
         "summary": "Create Tool",
-        "description": "Create a workspace tool. `tool_type: webhook` calls your HTTP endpoint\nduring conversations; `tool_type: client` is executed by your own frontend\nthrough the SDK (no URL). Describe the call with `parameters` (a JSON\nSchema object, checked at call time under `parameter_mode: strict`) or\nthe older `arguments` list (every argument a required string, unchecked).\nAttach it to agents via the agent config's `tools.tool_ids`. Credential\nheaders (authorization_bearer / authorization_basic) are write-only and\nread back as `has_secret`.",
+        "description": "Create a workspace tool. `tool_type: webhook` calls your HTTP endpoint\nduring conversations; `tool_type: client` is executed by your own frontend\nthrough the SDK (no URL). Describe the call with `parameters` (a JSON\nSchema object, checked at call time under `parameter_mode: strict`) or\nthe older `arguments` list (every argument a required string, unchecked).\nAttach it to agents via the agent config's `tools.tool_ids`. Credential\nheaders (authorization_bearer / authorization_basic, and custom headers\nwhose name looks like a credential, such as `X-Api-Key` or\n`X-Webhook-Token`) are write-only and\nread back as `has_secret`.",
         "security": [
           {
             "BearerAuth": []
@@ -8800,6 +8800,10 @@
                       "title": "Execution Mode",
                       "type": "string"
                     },
+                    "pre_tool_speech": {
+                      "$ref": "#/components/schemas/AgentToolPreToolSpeech",
+                      "description": "What the caller hears as this tool starts, when the agent's own reply has not said anything yet. `auto` (the default for a new tool): the platform decides for each call whether a line is worth saying, and the model writes the line when one is said. `static`: the agent says `message` as written (required, one language). `off`: nothing (what a tool created before this field reads as). Applies to blocking webhook tools and to client tools with `expects_response: true`. It is stored but not used for other tools."
+                    },
                     "signing": {
                       "$ref": "#/components/schemas/AgentWebhookToolSigningStatus",
                       "description": "Request signing state. Secrets are write-only: rotate returns the new one once."
@@ -8951,7 +8955,7 @@
     "/v1/agent/tools/{tool_id}": {
       "get": {
         "summary": "Get Tool",
-        "description": "Fetch one tool's full definition. Credential header values are never\nreturned — each credential header reports `has_secret` instead.",
+        "description": "Fetch one tool's full definition. Credential header values are never\nreturned — each credential header (including a custom header whose name\nlooks like a credential) reports `has_secret` instead.",
         "security": [
           {
             "BearerAuth": []
@@ -9109,6 +9113,10 @@
                       ],
                       "title": "Execution Mode",
                       "type": "string"
+                    },
+                    "pre_tool_speech": {
+                      "$ref": "#/components/schemas/AgentToolPreToolSpeech",
+                      "description": "What the caller hears as this tool starts, when the agent's own reply has not said anything yet. `auto` (the default for a new tool): the platform decides for each call whether a line is worth saying, and the model writes the line when one is said. `static`: the agent says `message` as written (required, one language). `off`: nothing (what a tool created before this field reads as). Applies to blocking webhook tools and to client tools with `expects_response: true`. It is stored but not used for other tools."
                     },
                     "signing": {
                       "$ref": "#/components/schemas/AgentWebhookToolSigningStatus",
@@ -9420,6 +9428,10 @@
                       ],
                       "title": "Execution Mode",
                       "type": "string"
+                    },
+                    "pre_tool_speech": {
+                      "$ref": "#/components/schemas/AgentToolPreToolSpeech",
+                      "description": "What the caller hears as this tool starts, when the agent's own reply has not said anything yet. `auto` (the default for a new tool): the platform decides for each call whether a line is worth saying, and the model writes the line when one is said. `static`: the agent says `message` as written (required, one language). `off`: nothing (what a tool created before this field reads as). Applies to blocking webhook tools and to client tools with `expects_response: true`. It is stored but not used for other tools."
                     },
                     "signing": {
                       "$ref": "#/components/schemas/AgentWebhookToolSigningStatus",
@@ -22392,6 +22404,7 @@
                   "google/gemini-3.5-flash-lite-priority",
                   "google/gemini-2.5-flash",
                   "google/gemma-4-26b-a4b-it",
+                  "z-ai/glm-5.3-flash",
                   "anthropic/claude-haiku-4.5",
                   "anthropic/claude-sonnet-4.6",
                   "anthropic/claude-opus-5.5",
@@ -22400,6 +22413,7 @@
                   "openai/gpt-6-luna",
                   "openai/gpt-5",
                   "openai/gpt-6.1-sol",
+                  "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
                   "openai/gpt-4o",
                   "openai/gpt-4.1"
@@ -22583,7 +22597,8 @@
                   "deepgram:nova-3",
                   "elevenlabs:scribe_v2_realtime",
                   "elevenlabs:scribe_v2_medical",
-                  "fish_audio:transcribe-stream-1"
+                  "fish_audio:transcribe-stream-1",
+                  "fish_audio:transcribe-stream-1-dev"
                 ],
                 "type": "string"
               },
@@ -24434,7 +24449,7 @@
               }
             ],
             "default": null,
-            "description": "Outbound phone calls. Null uses the default (off).",
+            "description": "Outbound phone calls. True on a new agent. Null uses the default (off).",
             "title": "Phone Outbound"
           }
         },
@@ -24622,6 +24637,7 @@
               }
             ],
             "default": null,
+            "description": "Destination in E.164, for type `phone`. Calls through a number bought on the platform can only be transferred to the supported countries. A number in another country is dialed by your own carrier, so it needs an imported SIP number: any imported number for a cold transfer, one with termination configured for a warm transfer. Without such a number in the team the write is rejected. On a call through any other number the destination is left out, and the agent cannot transfer to it.",
             "title": "Phone Number"
           },
           "sip_uri": {
@@ -24671,6 +24687,20 @@
             "default": "",
             "title": "Warm Briefing Instructions",
             "type": "string"
+          },
+          "warm_briefing_speed": {
+            "anyOf": [
+              {
+                "maximum": 2,
+                "minimum": 0.5,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Warm Briefing Speed"
           },
           "warm_ring_timeout_seconds": {
             "default": 30,
@@ -24949,7 +24979,8 @@
                   "deepgram:nova-3",
                   "elevenlabs:scribe_v2_realtime",
                   "elevenlabs:scribe_v2_medical",
-                  "fish_audio:transcribe-stream-1"
+                  "fish_audio:transcribe-stream-1",
+                  "fish_audio:transcribe-stream-1-dev"
                 ],
                 "type": "string"
               },
@@ -25435,7 +25466,7 @@
               }
             ],
             "default": null,
-            "description": "Echo guard. For the first 3 seconds after the agent first starts talking in a call, the caller cannot interrupt it and anything the caller says while the agent is talking is not heard. This stops the agent's own voice, echoing back from a speakerphone or laptop, from cutting it off. Per channel: true on, false off, null uses the default (on for web_voice and phone_inbound, off for phone_outbound). Channels you send replace the stored value, null on a channel resets it to the default, channels you leave out are kept. null resets every channel."
+            "description": "Echo guard. For the first 3 seconds after the agent first starts talking in a call, the caller cannot interrupt it and anything the caller says while the agent is talking is not heard. This stops the agent's own voice, echoing back from a speakerphone or laptop, from cutting it off. Per channel: true on, false off, null uses the default (on for web_voice and phone_inbound, off for phone_outbound). A new agent is created with phone_outbound set to true, so it starts with every channel on. Channels you send replace the stored value, null on a channel resets it to the default, channels you leave out are kept. null resets every channel."
           }
         },
         "title": "PublicAgentConversationPatch",
@@ -25670,6 +25701,7 @@
                   "google/gemini-3.5-flash-lite-priority",
                   "google/gemini-2.5-flash",
                   "google/gemma-4-26b-a4b-it",
+                  "z-ai/glm-5.3-flash",
                   "anthropic/claude-haiku-4.5",
                   "anthropic/claude-sonnet-4.6",
                   "anthropic/claude-opus-5.5",
@@ -25678,6 +25710,7 @@
                   "openai/gpt-6-luna",
                   "openai/gpt-5",
                   "openai/gpt-6.1-sol",
+                  "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
                   "openai/gpt-4o",
                   "openai/gpt-4.1"
@@ -25764,6 +25797,7 @@
                   "google/gemini-3.5-flash-lite-priority",
                   "google/gemini-2.5-flash",
                   "google/gemma-4-26b-a4b-it",
+                  "z-ai/glm-5.3-flash",
                   "anthropic/claude-haiku-4.5",
                   "anthropic/claude-sonnet-4.6",
                   "anthropic/claude-opus-5.5",
@@ -25772,6 +25806,7 @@
                   "openai/gpt-6-luna",
                   "openai/gpt-5",
                   "openai/gpt-6.1-sol",
+                  "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
                   "openai/gpt-4o",
                   "openai/gpt-4.1"
@@ -26098,6 +26133,51 @@
             ],
             "default": null,
             "title": "Tts Model"
+          },
+          "engine": {
+            "anyOf": [
+              {
+                "enum": [
+                  "fish_tts",
+                  "live3"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Speech engine. live3 (the default for new agents) puts the Fish full-duplex speech model on the call: it listens while it speaks and takes turns on its own. English only: sessions in another language run on fish_tts. fish_tts speaks the model's text through Fish TTS in the agent's voice, and is what agents from before the engine existed run. asr.model reads fish_audio:transcribe-stream-1 while the engine is live3, and switching to live3 turns asr.multilingual on unless the same patch sets it. An agent still on the default voice_id also starts voice.live3_voice on Clara at the switch, when none is stored and the same patch sets neither. An agent with a voice of its own keeps speaking it.",
+            "title": "Engine"
+          },
+          "live3_prompt": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "live3 only. The situation the speech model speaks in: P2 (phone support), DT (drive-thru) or AIR (airline). Empty: the default. Ignored on fish_tts.",
+            "title": "Live3 Prompt"
+          },
+          "live3_voice": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "live3 only. One of the speech model's own voices by name (Clara, Nora, Owen, Marco, Milo, Jonah, Harper, Patricia, and for the DT situation Maddie, Ethan, Tyler, Brianna). New agents start on Clara. Empty: the agent's voice_id when the engine can use it, else Clara. Setting voice_id clears it unless the same patch sets it too. Ignored on fish_tts, which speaks voice_id.",
+            "title": "Live3 Voice"
           },
           "effect": {
             "anyOf": [
@@ -26815,7 +26895,7 @@
               }
             ],
             "default": null,
-            "description": "Echo guard. For the first 3 seconds after the agent first starts talking in a call, the caller cannot interrupt it and anything the caller says while the agent is talking is not heard. This stops the agent's own voice, echoing back from a speakerphone or laptop, from cutting it off. Per channel: true on, false off, null uses the default (on for web_voice and phone_inbound, off for phone_outbound)."
+            "description": "Echo guard. For the first 3 seconds after the agent first starts talking in a call, the caller cannot interrupt it and anything the caller says while the agent is talking is not heard. This stops the agent's own voice, echoing back from a speakerphone or laptop, from cutting it off. Per channel: true on, false off, null uses the default (on for web_voice and phone_inbound, off for phone_outbound). A new agent is created with phone_outbound set to true, so it starts with every channel on."
           }
         },
         "title": "AgentConversationConfig",
@@ -26860,7 +26940,7 @@
               }
             ],
             "default": null,
-            "description": "Outbound phone calls. Null uses the default (off).",
+            "description": "Outbound phone calls. True on a new agent. Null uses the default (off).",
             "title": "Phone Outbound"
           }
         },
@@ -26999,6 +27079,7 @@
               "google/gemini-3.5-flash-lite-priority",
               "google/gemini-2.5-flash",
               "google/gemma-4-26b-a4b-it",
+              "z-ai/glm-5.3-flash",
               "anthropic/claude-haiku-4.5",
               "anthropic/claude-sonnet-4.6",
               "anthropic/claude-opus-5.5",
@@ -27007,6 +27088,7 @@
               "openai/gpt-6-luna",
               "openai/gpt-5",
               "openai/gpt-6.1-sol",
+              "openai/gpt-6.1-terra",
               "openai/gpt-6-astra",
               "openai/gpt-4o",
               "openai/gpt-4.1"
@@ -27087,6 +27169,7 @@
                   "google/gemini-3.5-flash-lite-priority",
                   "google/gemini-2.5-flash",
                   "google/gemma-4-26b-a4b-it",
+                  "z-ai/glm-5.3-flash",
                   "anthropic/claude-haiku-4.5",
                   "anthropic/claude-sonnet-4.6",
                   "anthropic/claude-opus-5.5",
@@ -27095,6 +27178,7 @@
                   "openai/gpt-6-luna",
                   "openai/gpt-5",
                   "openai/gpt-6.1-sol",
+                  "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
                   "openai/gpt-4o",
                   "openai/gpt-4.1"
@@ -27375,6 +27459,7 @@
               }
             ],
             "default": null,
+            "description": "Destination in E.164, for type `phone`. Calls through a number bought on the platform can only be transferred to the supported countries. A number in another country is dialed by your own carrier, so it needs an imported SIP number: any imported number for a cold transfer, one with termination configured for a warm transfer. Without such a number in the team the write is rejected. On a call through any other number the destination is left out, and the agent cannot transfer to it.",
             "title": "Phone Number"
           },
           "sip_uri": {
@@ -27424,6 +27509,20 @@
             "default": "",
             "title": "Warm Briefing Instructions",
             "type": "string"
+          },
+          "warm_briefing_speed": {
+            "anyOf": [
+              {
+                "maximum": 2,
+                "minimum": 0.5,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Warm Briefing Speed"
           },
           "warm_ring_timeout_seconds": {
             "default": 30,
@@ -27535,7 +27634,8 @@
               "deepgram:nova-3",
               "elevenlabs:scribe_v2_realtime",
               "elevenlabs:scribe_v2_medical",
-              "fish_audio:transcribe-stream-1"
+              "fish_audio:transcribe-stream-1",
+              "fish_audio:transcribe-stream-1-dev"
             ],
             "title": "Model",
             "type": "string"
@@ -27603,10 +27703,10 @@
         "type": "object"
       },
       "PublicAgentVoiceConfig": {
-        "description": "The voice section as the public API reads it: without the console-only\nsentence buffering switch and speech engine preview.",
+        "description": "The voice section as the public API reads it: without the console-only\nsentence buffering switch and live-3 playout.",
         "properties": {
           "voice_id": {
-            "default": "b347db033a6549378b48d00acb0d06cd",
+            "default": "9a9cf47702da476aa4629e2506d4a857",
             "title": "Voice Id",
             "type": "string"
           },
@@ -27689,6 +27789,44 @@
             ],
             "title": "Tts Model",
             "type": "string"
+          },
+          "engine": {
+            "default": "fish_tts",
+            "description": "Speech engine. live3 (the default for new agents) puts the Fish full-duplex speech model on the call: it listens while it speaks and takes turns on its own. English only: sessions in another language run on fish_tts. fish_tts speaks the model's text through Fish TTS in the agent's voice, and is what agents from before the engine existed run. asr.model reads fish_audio:transcribe-stream-1 while the engine is live3, and switching to live3 turns asr.multilingual on unless the same patch sets it. An agent still on the default voice_id also starts voice.live3_voice on Clara at the switch, when none is stored and the same patch sets neither. An agent with a voice of its own keeps speaking it.",
+            "enum": [
+              "fish_tts",
+              "live3"
+            ],
+            "title": "Engine",
+            "type": "string"
+          },
+          "live3_prompt": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_-]{1,64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "live3 only. The situation the speech model speaks in: P2 (phone support), DT (drive-thru) or AIR (airline). Empty: the default. Ignored on fish_tts.",
+            "title": "Live3 Prompt"
+          },
+          "live3_voice": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_-]{1,64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "live3 only. One of the speech model's own voices by name (Clara, Nora, Owen, Marco, Milo, Jonah, Harper, Patricia, and for the DT situation Maddie, Ethan, Tyler, Brianna). New agents start on Clara. Empty: the agent's voice_id when the engine can use it, else Clara. Setting voice_id clears it unless the same patch sets it too. Ignored on fish_tts, which speaks voice_id.",
+            "title": "Live3 Voice"
           },
           "effect": {
             "default": "none",
@@ -29000,6 +29138,32 @@
         "title": "PublicAgentToolSummary",
         "type": "object"
       },
+      "AgentToolPreToolSpeech": {
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "enum": [
+              "auto",
+              "off",
+              "static"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "message": {
+            "default": "",
+            "description": "What to say. Required, and only used, when `mode` is `static`.",
+            "maxLength": 500,
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "AgentToolPreToolSpeech",
+        "type": "object"
+      },
       "AgentWebhookArgumentPayload": {
         "properties": {
           "name": {
@@ -29224,6 +29388,18 @@
             ],
             "title": "Execution Mode",
             "type": "string"
+          },
+          "pre_tool_speech": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentToolPreToolSpeech"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "What the caller hears as this tool starts, when the agent's own reply has not said anything yet. `auto` (the default for a new tool): the platform decides for each call whether a line is worth saying, and the model writes the line when one is said. `static`: the agent says `message` as written (required, one language). `off`: nothing (what a tool created before this field reads as). Applies to blocking webhook tools and to client tools with `expects_response: true`. It is stored but not used for other tools."
           }
         },
         "required": [
@@ -29297,12 +29473,12 @@
               }
             ],
             "default": null,
-            "description": "Header value; null for credential kinds (authorization_bearer / authorization_basic), which are write-only.",
+            "description": "Header value; null for write-only headers: the credential kinds (authorization_bearer / authorization_basic) and custom headers whose name looks like a credential (containing auth, token, secret, password, cookie, signature, credential, bearer, jwt, api-key or a standalone key).",
             "title": "Value"
           },
           "has_secret": {
             "default": false,
-            "description": "Whether a credential value is stored; the value itself is never returned.",
+            "description": "Whether a write-only header has a stored value; the value itself is never returned.",
             "title": "Has Secret",
             "type": "boolean"
           }
@@ -29541,6 +29717,18 @@
             ],
             "default": null,
             "title": "Execution Mode"
+          },
+          "pre_tool_speech": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentToolPreToolSpeech"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "What the caller hears as this tool starts, when the agent's own reply has not said anything yet. `auto` (the default for a new tool): the platform decides for each call whether a line is worth saying, and the model writes the line when one is said. `static`: the agent says `message` as written (required, one language). `off`: nothing (what a tool created before this field reads as). Applies to blocking webhook tools and to client tools with `expects_response: true`. It is stored but not used for other tools."
           }
         },
         "title": "PublicAgentToolUpdatePayload",
