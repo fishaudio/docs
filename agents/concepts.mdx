@@ -102,7 +102,7 @@ Except [preview calls](/agents/test/preview-calls), which are ephemeral and neve
 An agent speaks in one of two ways, set by its [text-to-speech model](/agents/build/voice-language#text-to-speech-model). In both, speech recognition transcribes the caller and the LLM writes the reply from your prompt, tools, and knowledge sources. They differ in how the reply is spoken.
 
 - **Cascade** (Drama 3, S2.1 Pro): a text-to-speech model speaks the reply. The agent listens while the caller talks and speaks once they finish.
-- **Full duplex** ([Live 3](/agents/build/voice-language#live-3-full-duplex)): one speech model listens while it speaks and decides when to talk. It says "mm-hmm" while the caller talks and "Okay," when they finish, then speaks the reply.
+- **Full duplex** ([Live 3](/agents/build/voice-language#live-3-full-duplex)): one speech model listens while it speaks and decides when to talk. It backchannels naturally while the caller talks and acknowledges when they finish, then speaks the reply.
 
 |                   | Cascade                                                       | Full duplex                                                  |
 | ----------------- | ------------------------------------------------------------- | ------------------------------------------------------------ |
