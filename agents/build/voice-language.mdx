@@ -140,7 +140,7 @@ The model applies to everything the agent speaks in voice and phone sessions. As
 
 Your agent's instructions and tools still decide what the agent says. Live 3 decides when and how it is said.
 
-New agents start on Live 3 with the Clara voice. To switch an existing agent, pick **Live 3** in the **Text-to-speech model** selector, or set `voice.engine` to `live3` via the API:
+New agents start on Live 3 with the Clara voice. To create one with another Live 3 voice or situation, pass the same `voice` fields in `config` on [Create agent](/api-reference/endpoint/agent/create-agent). To switch an existing agent, pick **Live 3** in the **Text-to-speech model** selector, or set `voice.engine` to `live3` via the API:
 
 <CodeGroup>
 ```bash API (curl)
@@ -164,12 +164,14 @@ To switch back, pick Drama 3 or S2.1 Pro in the selector, or set `voice.engine` 
 
 #### Voices
 
-Live 3 has its own voices, listed with samples under **Live 3 voices** in the Builder's voice picker. Set one via the API with `voice.live3_voice`:
+Live 3 has its own voices. The Builder's voice picker lists the ones that fit the current [situation prompt](#situation-prompt) under **Live 3 voices**, with samples. Set one via the API with `voice.live3_voice`:
 
 | Situation | Voices |
 |---|---|
 | All | `Clara` (default), `Nora`, `Harper`, `Patricia`, `Owen`, `Marco`, `Milo`, `Jonah` |
 | Drive-thru only | `Maddie`, `Brianna`, `Ethan`, `Tyler` |
+
+The drive-thru voices need `voice.live3_prompt` set to `DT`. With any other situation, including the default, Live 3 doesn't start and the session speaks through the text-to-speech model.
 
 You can also pick a Voice Library voice or one of your clones. Setting `voice_id` clears `voice.live3_voice` unless the same request sets it. Live 3 recreates the voice from a sample, so it sounds close to, but not exactly like, the same voice on Drama 3 or S2.1 Pro. If Live 3 can't use the voice, the session speaks as Clara.
 
@@ -179,7 +181,7 @@ You can also pick a Voice Library voice or one of your clones. Setting `voice_id
 
 | Value | Situation |
 |---|---|
-| empty (default) | The engine's default |
+| empty (default) | Phone support, same as `P2` |
 | `P2` | Phone support |
 | `DT` | Drive-thru |
 | `AIR` | Airline |
