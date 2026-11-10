@@ -130,6 +130,49 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 
 The model applies to everything the agent speaks in voice and phone sessions. As with every voice setting, the change lands in the draft: publish to roll it out.
 
+### Live 3 (full duplex)
+
+**Live 3** is Fish Audio's full-duplex speech model. Instead of rendering the agent's text with a text-to-speech model, Live 3 runs the spoken side of the call itself: it keeps listening while it speaks and decides on its own when to acknowledge, wait, respond, or stop.
+
+- **Backchannels:** while the caller reads out a phone number in chunks, it answers with a quick "mm-hmm" and waits for the rest instead of cutting in.
+- **Interruptions:** a "yeah" or "mm-hmm" from the caller doesn't stop it, but a real interjection such as "Wait, actually..." does.
+- **Corrections:** when the caller changes their mind mid-order, it follows along without answering too early.
+
+Your agent's instructions and tools still decide what the agent says. Live 3 decides when it is said.
+
+<Note>
+  Live 3 speaks English only. Set the agent's [speaking language](#speaking-language) to English.
+</Note>
+
+To turn it on, open the **Text-to-speech model** selector in the Builder's voice section and pick **Live 3**. If you don't see it, contact us to enable Live 3 for your team. You can still change the agent's voice as usual. To turn it on via the API, set `voice.engine` to `live3`:
+
+<CodeGroup>
+```bash API (curl)
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "voice": {
+      "engine": "live3",
+      "live3_prompt": "P2"
+    }
+  }'
+```
+</CodeGroup>
+
+`voice.live3_prompt` sets the situation the model speaks in, which tunes its pacing, backchannels, and turn-taking. In the Builder it is the **live-3 situation prompt** selector, shown once Live 3 is on.
+
+| Value | Situation |
+|---|---|
+| empty (default) | The engine's default |
+| `P2` | Phone support |
+| `DT` | Drive-thru |
+| `AIR` | Airline |
+
+With Live 3 on, speech recognition is fixed to `fish_audio:transcribe-stream-1` (see [Speech recognition model](#speech-recognition-model)) and [multilingual recognition](#multilingual-recognition) starts on. You can turn multilingual recognition off. `voice.live3_prompt` is ignored when Live 3 is off. To switch back to text-to-speech, pick a text-to-speech model in the selector, or set `voice.engine` to `fish_tts`.
+
+Live 3 conversations bill at their own per-minute rate. See [Pricing](/agents/pricing).
+
 ## Speech recognition model
 
 **Speech recognition** picks the model that transcribes what callers say (`asr.model` on the wire). Latency is the typical wait from the caller's last word to the transcript. The agent starts its reply after that.
