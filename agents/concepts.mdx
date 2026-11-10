@@ -97,6 +97,23 @@ A session is one conversation between one user and one agent. Sessions start fro
 
 Except [preview calls](/agents/test/preview-calls), which are ephemeral and never enter history, every session appears in [Conversation history](/agents/monitor/conversation-history) and `/v1/agent/sessions` (with its transcript, and its recording when the agent [records audio](/agents/monitor/conversation-history#what-gets-stored)) and can trigger [post-call analysis](/agents/monitor/post-call-analysis) when configured.
 
+## Cascade vs. full duplex
+
+An agent speaks in one of two ways, set by its [text-to-speech model](/agents/build/voice-language#text-to-speech-model). In both, speech recognition transcribes the caller and the LLM writes the reply from your prompt, tools, and knowledge sources. They differ in how the reply is spoken.
+
+- **Cascade** (Drama 3, S2.1 Pro): a text-to-speech model speaks the reply. The agent listens while the caller talks and speaks once they finish.
+- **Full duplex** ([Live 3](/agents/build/voice-language#live-3-full-duplex)): one speech model listens while it speaks and decides when to talk. It says "mm-hmm" while the caller talks and "Okay," when they finish, then speaks the reply.
+
+|                   | Cascade                                                       | Full duplex                                                  |
+| ----------------- | ------------------------------------------------------------- | ------------------------------------------------------------ |
+| Models            | Drama 3, S2.1 Pro                                             | Live 3                                                       |
+| Turn-taking       | Takes turns: listens, then speaks                             | Listens while it speaks, and acknowledges the caller         |
+| Languages         | All 52 speaking languages                                     | English. Sessions in other languages use the cascade         |
+| Voices            | Any Voice Library voice, including your clones                | Live 3's own voices, or a Voice Library voice                |
+| Delivery controls | Speaking speed, expressive mode, pronunciation dictionaries  | Set by the model, tuned with a situation prompt              |
+
+New agents start on Live 3. Switch to the cascade for languages other than English, for the closest match to a cloned voice, or for control over delivery.
+
 ## Deleting resources
 
 Deletion is immediate and, from the console, cannot be undone: a deleted agent disappears from lists, the Builder, and all API responses. The same applies to tools, knowledge sources, and tests.
