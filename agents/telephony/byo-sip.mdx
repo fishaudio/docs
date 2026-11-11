@@ -120,7 +120,7 @@ Set both when your carrier supports it.
     outbound traffic does not come from fixed IPs, so Twilio IP access control
     lists cannot authorize it.
   </Step>
-  <Step title="Allow transfers (optional)">
+  <Step title="Allow transfers (optional)" id="twilio-allow-transfers">
     For [cold transfers](/agents/telephony/transfers), enable **Call Transfer
     (SIP REFER)** in the trunk's settings and also allow transfers to the PSTN.
     If transfers are limited to SIP destinations, Twilio rejects every transfer
@@ -154,7 +154,7 @@ The number object reports this as `supports_outbound`. Place calls with the same
 
 Imported numbers don't have the [caller ID choice](/agents/telephony/transfers#caller-id-on-transfers) that bought numbers have. Instead:
 
-- **Cold transfers** show whatever your carrier sends. On Twilio, you set this on the trunk with **Caller ID for Transfer Target** (see the [Twilio steps](#twilio-elastic-sip-trunking) above).
+- **Cold transfers** show whatever your carrier sends. On Twilio, you set this on the trunk with **Caller ID for Transfer Target** (see [Allow transfers](#twilio-allow-transfers) in the Twilio steps above).
 - **Warm transfers** always show your imported number.
 
 ### Custom SIP headers
