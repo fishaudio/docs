@@ -198,7 +198,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 
 The agent says its [announcement](#the-transfer-announcement) and, once that finishes playing, the call is handed to the carrier. The caller hears a dial tone while the destination rings; the agent drops out and its session ends at the handoff.
 
-If the handoff is refused (the destination is unreachable, or the number doesn't support transfers), the agent stays on the line, apologizes, and keeps helping. It can attempt the transfer again later. You can have the agent end the call instead, see [If the transfer fails](#if-the-transfer-fails).
+If the handoff is refused (the destination is unreachable, or the number doesn't support transfers), the agent stays on the line, apologizes, and keeps helping. It can attempt the transfer again later. To end the call instead, see [If the transfer fails](#if-the-transfer-fails).
 
 ## What happens on a warm transfer
 
@@ -233,7 +233,7 @@ If the handoff is refused (the destination is unreachable, or the number doesn't
   </Step>
 </Steps>
 
-If the human cannot be reached, declines, or the consult call hits voicemail, the caller comes off hold and the transfer fails. By default the agent apologizes and continues helping, and it can retry if the caller asks. You can have the agent end the call instead, see [If the transfer fails](#if-the-transfer-fails). To keep the agent from briefing a voicemail or a phone menu, turn on [Wait for a person to answer](#waiting-for-a-person-to-answer). If the caller hangs up while on hold, the agent briefly tells the human what happened and ends the consult call.
+If the human cannot be reached, declines, or the consult call hits voicemail, the caller comes off hold and the transfer fails. By default the agent apologizes and continues helping. It can retry if the caller asks. To end the call instead, see [If the transfer fails](#if-the-transfer-fails). To keep the agent from briefing a voicemail or a phone menu, turn on [Wait for a person to answer](#waiting-for-a-person-to-answer). If the caller hangs up while on hold, the agent briefly tells the human what happened and ends the consult call.
 
 ### Customizing the briefing
 
@@ -325,7 +325,7 @@ Since the destination list is replaced as a whole on every write, send every des
 
 ## If the transfer fails
 
-When a transfer doesn't connect, the caller comes back to the agent by default. You can have the agent end the call instead, for example when nobody else on the line can help. The choice is set on each destination and applies to cold and warm transfers.
+When a transfer doesn't connect, the caller comes back to the agent by default. You can have the agent end the call instead. Set this on each destination. It applies to cold and warm transfers.
 
 ### What counts as a failed transfer
 
@@ -357,11 +357,16 @@ These are not failed transfers:
 | `return_to_agent` (default) | The agent briefly apologizes and keeps helping. It can try the transfer again if the caller asks.           | The agent says your message word for word, then keeps helping. |
 | `end_call`                  | The agent says one short sentence that it couldn't connect the caller and says goodbye. Then the call ends. | The agent says your message word for word. Then the call ends. |
 
-With `end_call`, the agent asks no questions and calls no tools before the call ends. The platform hangs up the call, so it doesn't depend on the agent deciding to. The session ends with `end_reason` `agent_hangup` (see [Status and end reason](/agents/monitor/conversation-history#status-and-end-reason)), and the failed attempt is still recorded in the [transfer results](#transfer-results).
+With `end_call`:
+
+- The agent asks no questions and calls no tools before the call ends.
+- The platform hangs up the call. It does not depend on the agent deciding to.
+- The session ends with `end_reason` `agent_hangup`. See [Status and end reason](/agents/monitor/conversation-history#status-and-end-reason).
+- The failed attempt is still recorded in the [transfer results](#transfer-results).
 
 ### In the console
 
-On each destination card, turn on **End the call if the transfer doesn't connect**. Leave it off to return the caller to the agent. The message can only be set through the API.
+On each destination card, turn on **End the call if the transfer doesn't connect**. Leave it off to return the caller to the agent. To set a message, use the API.
 
 ### Through the API
 
@@ -389,12 +394,17 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   }'
 ```
 
-| Field                | Description                                                                                                                                                                                                                                                                                                                                     |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `on_failure.action`  | `return_to_agent` (default) brings the caller back to the agent. `end_call` ends the call.                                                                                                                                                                                                                                                      |
-| `on_failure.message` | Optional. The line the agent says word for word after a failed transfer. Spaces at the start and end are removed. [Dynamic variables](/agents/build/dynamic-variables) are filled in when the session starts, and anything past 500 characters is then cut off. A reference to an unknown system variable is rejected with `422` when you save. |
+| Field                | Description                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------ |
+| `on_failure.action`  | `return_to_agent` (default) brings the caller back to the agent. `end_call` ends the call. |
+| `on_failure.message` | Optional. The line the agent says word for word after a failed transfer.                   |
 
-Don't put a question in an `end_call` message, because the caller can't answer it.
+About the message:
+
+- Spaces at the start and end are removed.
+- [Dynamic variables](/agents/build/dynamic-variables) are filled in when the session starts. Anything past 500 characters is then cut off.
+- A reference to an unknown system variable is rejected with `422` when you save.
+- Don't put a question in an `end_call` message. The caller can't answer it.
 
 ## Caller ID on transfers
 
