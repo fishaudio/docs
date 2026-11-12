@@ -72,6 +72,8 @@ A placeholder is resolved in this order: the value supplied for the session, the
 | `empty`            | Renders as empty text                                                                       |
 | `reject`           | Session creation fails with `422 Missing dynamic variables: ...` and an inbound call is not connected |
 
+A [transfer destination's phone number](/agents/telephony/transfers#choosing-the-number-per-call) is the exception. When it has no value and no default, `on_missing` does not apply: the call is never rejected, and only that destination is skipped for the call.
+
 Set both in the **Dynamic variables** sheet of the agent's Configuration page (the **Default values** link under the system prompt), or through the `variables` section of the config API. The defaults map replaces as a whole on every update, and names follow the same rules as `dynamic_variables`:
 
 ```bash

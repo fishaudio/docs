@@ -97,7 +97,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 | `warm_confirm_timeout_seconds` | Warm `confirm` and `briefing` only: how long the agent waits after the human answers before giving up, in whole seconds from 10 to 300. Default 60. See [Timeouts](#timeouts).                                                                                                                                                                          |
 | `warm_human_detection`         | Warm `confirm` and `briefing` only: `true` makes the agent wait for the other side to speak and stop the transfer when voicemail or a phone menu answers. Default `false`. See [Waiting for a person to answer](#waiting-for-a-person-to-answer).                                                                                                       |
 
-A literal destination number must be E.164 and is limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list. A number that contains a `{{variable}}` is saved as a template instead of being checked as a number: it can be at most 100 characters, and a `{{system.*}}` variable it names must exist, otherwise it is rejected the same way. A missing label, or two labels that differ only in case, is rejected the same way. There is no cap on the number of destinations, but every description is part of the agent's tool instructions on every turn, so keep the list to what a receptionist could hold in their head.
+A literal destination number must be E.164 and is limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list. A number that contains a `{{variable}}` is saved as a template instead of being checked as a number: it can be at most 100 characters, and a `{{system.*}}` variable it names must exist, otherwise it is rejected the same way. A variable name must start with a letter and use only letters, digits and underscores (`oncall_number`, or a `system.` name), and spaces just inside the braces are allowed. Anything else, such as `{{on-call}}` or `{{1st}}`, is not a variable: the value is checked as a literal number and rejected. A missing label, or two labels that differ only in case, is rejected the same way. There is no cap on the number of destinations, but every description is part of the agent's tool instructions on every turn, so keep the list to what a receptionist could hold in their head.
 
 ## How the agent decides to transfer
 
@@ -219,6 +219,8 @@ The value comes from the call itself:
   }
 }
 ```
+
+In an [agent test](/agents/test/agent-tests), no inbound call webhook is called. The test uses its own dynamic variables and the agent's default values, so to try a transfer to a destination whose number is a variable, give that variable a value in the test's dynamic variables (`dynamic_variables` over the API) or set a default for it on the agent. Otherwise the destination does not exist in that test.
 
 The value must be an E.164 string with the leading `+`. Only surrounding whitespace is trimmed; the number is not reformatted. `"+14155550199"` works, while `"(415) 555-0199"`, `"415-555-0199"` and the JSON number `14155550199` (which renders without the `+`) do not.
 
