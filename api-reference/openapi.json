@@ -1649,6 +1649,18 @@
                       "default": null,
                       "title": "Caller Number"
                     },
+                    "caller_id_withheld": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Caller Id Withheld"
+                    },
                     "dialed_number": {
                       "anyOf": [
                         {
@@ -22347,6 +22359,18 @@
             "default": null,
             "title": "Caller Number"
           },
+          "caller_id_withheld": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Caller Id Withheld"
+          },
           "dialed_number": {
             "anyOf": [
               {
@@ -27268,7 +27292,7 @@
       "AgentLLMConfigRedacted": {
         "properties": {
           "model": {
-            "default": "openai/gpt-4.1",
+            "default": "openai/gpt-6.1-terra-fast",
             "enum": [
               "google/gemini-3.5-flash-lite",
               "google/gemini-3.6-flash",
