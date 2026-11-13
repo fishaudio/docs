@@ -87,7 +87,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 | `type`                         | Destination type; `phone` is the only value today and the default.                                                                                                                                                                                                                                                                                      |
 | `label`                        | Name for the destination, shown in the Builder and used by the agent to pick one. At most 64 characters. Required, and unique (case-insensitive), once there is more than one entry.                                                                                                                                                                    |
 | `description`                  | When to transfer here, in plain language ("Invoices, payments, account balance"). The agent reads it when choosing between destinations. At most 500 characters.                                                                                                                                                                                        |
-| `phone_number`                 | The destination in E.164 format, for example `+14155550123`.                                                                                                                                                                                                                                                                                            |
+| `phone_number`                 | The destination: a number in E.164 format, for example `+14155550123`, or a [dynamic variable](/agents/build/dynamic-variables) such as `{{oncall_number}}` that is filled in for each call. See [Choosing the number per call](#choosing-the-number-per-call).                                                                                         |
 | `mode`                         | `cold` (default) or `warm`; see the comparison above.                                                                                                                                                                                                                                                                                                   |
 | `warm_connect`                 | Warm only: `confirm` (default) briefs the human and waits for their go-ahead before connecting, `briefing` connects right after the briefing without asking, `direct` connects as soon as the human answers, with no briefing.                                                                                                                          |
 | `announcement_mode`            | The sentence the agent says right before transferring, cold or warm: `generated` (default) words it itself, `fixed` says `announcement_message`, `off` adds none. See [The transfer announcement](#the-transfer-announcement).                                                                                                                          |
@@ -97,7 +97,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 | `warm_confirm_timeout_seconds` | Warm `confirm` and `briefing` only: how long the agent waits after the human answers before giving up, in whole seconds from 10 to 300. Default 60. See [Timeouts](#timeouts).                                                                                                                                                                          |
 | `warm_human_detection`         | Warm `confirm` and `briefing` only: `true` makes the agent wait for the other side to speak and stop the transfer when voicemail or a phone menu answers. Default `false`. See [Waiting for a person to answer](#waiting-for-a-person-to-answer).                                                                                                       |
 
-Destination numbers must be E.164 and are limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list. A missing label, or two labels that differ only in case, is rejected the same way. There is no cap on the number of destinations, but every description is part of the agent's tool instructions on every turn, so keep the list to what a receptionist could hold in their head.
+A literal destination number must be E.164 and is limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list. A number that contains a `{{variable}}` is saved as a template instead of being checked as a number: it can be at most 100 characters, and a `{{system.*}}` variable it names must exist, otherwise it is rejected the same way. A variable name must start with a letter and use only letters, digits and underscores (`oncall_number`, or a `system.` name), and spaces just inside the braces are allowed. Anything else, such as `{{on-call}}` or `{{1st}}`, is not a variable: the value is checked as a literal number and rejected. A missing label, or two labels that differ only in case, is rejected the same way. There is no cap on the number of destinations, but every description is part of the agent's tool instructions on every turn, so keep the list to what a receptionist could hold in their head.
 
 ## How the agent decides to transfer
 
@@ -192,6 +192,47 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   --header "Content-Type: application/json" \
   --data '{ "conversation": { "transfer_refuse_questions": false } }'
 ```
+
+## Choosing the number per call
+
+When the right person to call changes often, such as an on-call rotation, don't republish the agent for every change. Put a [dynamic variable](/agents/build/dynamic-variables) in the destination's `phone_number` and supply the number for each call:
+
+```json
+{
+  "label": "On-call engineer",
+  "description": "Production incidents outside office hours",
+  "phone_number": "{{oncall_number}}",
+  "mode": "warm"
+}
+```
+
+The value comes from the call itself:
+
+- **Inbound calls**: your [inbound call webhook](/agents/monitor/webhooks#inbound-call-webhook) returns it in `dynamic_variables`.
+- **Outbound calls**: pass it in `dynamic_variables` on the [outbound call request](/agents/telephony/outbound-calls#request-fields).
+- **Neither supplies it**: the default value you set for that variable on the agent is used (see [Default values](/agents/build/dynamic-variables#default-values)). This is the fallback number: it applies when the webhook times out, fails, or leaves the variable out. There is no separate fallback field.
+
+```json Inbound call webhook response
+{
+  "dynamic_variables": {
+    "oncall_number": "+14155550199"
+  }
+}
+```
+
+In an [agent test](/agents/test/agent-tests), no inbound call webhook is called. The test uses its own dynamic variables and the agent's default values, so to try a transfer to a destination whose number is a variable, give that variable a value in the test's dynamic variables (`dynamic_variables` over the API) or set a default for it on the agent. Otherwise the destination does not exist in that test.
+
+The value must be an E.164 string with the leading `+`. Only surrounding whitespace is trimmed; the number is not reformatted. `"+14155550199"` works, while `"(415) 555-0199"`, `"415-555-0199"` and the JSON number `14155550199` (which renders without the `+`) do not.
+
+### When no valid number can be filled in
+
+The number is checked after it is filled in, with the same rules as a literal one: it must be E.164, and its country must be in the same supported list a literal number is checked against (the transfer card in the console shows it). If the call has no valid number, that call skips the destination and the rest of the list works as usual. This happens when:
+
+- the variable has no value from the call and no default, whatever the agent's `on_missing` setting (a missing transfer number never rejects the call);
+- the value is not a valid E.164 number, or its country is not supported;
+- a placeholder is still unfilled after substitution.
+
+The skipped destination is not offered to the agent on that call, so if the caller asks for it, the agent can only say it can't transfer. The next call fills the number in again from scratch. Give the variable a default that is a real number if callers should always have somewhere to go.
 
 ## What happens on a cold transfer
 
