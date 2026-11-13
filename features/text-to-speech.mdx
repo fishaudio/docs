@@ -339,11 +339,13 @@ Text normalization has dedicated rules for the languages below. Tags match case-
 | Arabic | `ar`, `ar-SA`, `ar-AE`, `ar-EG` |
 | Turkish | `tr`, `tr-TR` |
 | Tagalog (Filipino) | `tl`, `tl-PH`, `fil`, `fil-PH` |
+| Swedish | `sv`, `sv-SE`, `sv-FI` |
+| Malay | `ms`, `ms-MY` |
 
 Each row has its own rules, so the tag you pick changes the readings. For example, with `es` or `es-ES`, `$300` is read as "trescientos dólares" and the `0.9` in `0.9%` as "cero coma nueve". With `es-MX`, they are read as "trescientos pesos" and "cero punto nueve". In the same way, `zh-TW` uses Traditional Chinese rules, not the Simplified Chinese ones.
 
-- Any other tag skips normalization, with no error, and the text is still synthesized as written. Today that includes `zh-HK`, `yue`, `pt-PT`, `es-419`, and `es-US`.
-- With `language` unset, the language of each chunk is auto-detected among the languages above. Chinese written mostly in Traditional characters uses the Traditional Chinese rules. Portuguese, Turkish, and Tagalog are detected only when the detection is confident, so set `language` for short texts in these languages. Chunks whose language can't be detected are synthesized without normalization.
+- Any other tag skips normalization, with no error, and the text is still synthesized as written. Today that includes `zh-HK`, `yue`, `pt-PT`, `es-419`, `es-US`, and `id`.
+- With `language` unset, the language of each chunk is auto-detected among the languages above. Chinese written mostly in Traditional characters uses the Traditional Chinese rules. Portuguese, Turkish, Tagalog, and Malay are detected only when the detection is confident, so set `language` for short texts in these languages. Malay is close to Indonesian, so many longer Malay sentences are missed as well, and a missed sentence can have its numbers read with another language's rules; set `language` to `ms` for all Malay text. Chunks whose language can't be detected are synthesized without normalization.
 - The list grows over time as normalization rules are added.
 
 ## Going further
