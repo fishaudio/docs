@@ -513,6 +513,105 @@
         ]
       }
     },
+    "/apikey/revoke": {
+      "post": {
+        "summary": "Revoke publicly exposed API keys",
+        "description": "Anyone holding an API key's plaintext can permanently revoke it here.\nNo authentication is required; Authorization headers are ignored.\nValid requests always return the same empty 202, whether or not any\nkey matched. The creator and shared team's owner receive a security\nnotice. Invalid bodies return 422; each IP is limited to 60 requests\nper hour (429). Source and URL are logged for attribution only.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeCredentials"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Request accepted, processing continues off-line",
+            "headers": {}
+          },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The user has sent too many requests in a given amount of time (\"rate limiting\")",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "OpenAPI"
+        ]
+      }
+    },
     "/v1/agent/sessions": {
       "get": {
         "summary": "List Agent Sessions",
@@ -13824,7 +13923,7 @@
       },
       "delete": {
         "summary": "Release Phone Number",
-        "description": "Release a number back to the provider's inventory and stop its daily\nbilling. This is irreversible: anyone — including other platforms — can\nbuy the number afterwards, so callers who saved it may reach a stranger.\nThe number disappears from this API immediately.",
+        "description": "Release a number back to the provider's inventory and stop its daily\nbilling. This is irreversible: anyone — including other platforms — can\nbuy the number afterwards, so callers who saved it may reach a stranger.\nThe number disappears from this API immediately. 409 while a SIP config\nupdate of an imported number is still running, retry shortly.",
         "security": [
           {
             "BearerAuth": []
@@ -13887,6 +13986,43 @@
           },
           "404": {
             "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request conflict",
             "headers": {},
             "content": {
               "application/json": {
@@ -21948,6 +22084,51 @@
       }
     },
     "schemas": {
+      "RevokeCredentials": {
+        "properties": {
+          "credentials": {
+            "items": {
+              "maxLength": 256,
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Credentials",
+            "type": "array"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          }
+        },
+        "required": [
+          "credentials"
+        ],
+        "title": "RevokeCredentials",
+        "type": "object"
+      },
       "AgentSessionKeypadMenu": {
         "description": "How the keypad menu of an inbound phone call ended. `outcome` is\n`selected` when the caller chose an option, `no_input` or `no_match`\nwhen no attempt got a valid choice (the last one had no input, or input\nmatching no option), and `skipped` when the menu could not run (a resumed\nconversation or no SIP caller). `value` is what the menu variable\nreceived: the chosen option's value, or the fallback value when the\ncaller never made a valid choice.",
         "properties": {
@@ -22409,6 +22590,7 @@
                   "anthropic/claude-sonnet-4.6",
                   "anthropic/claude-opus-5.5",
                   "anthropic/claude-fable-5.1",
+                  "anthropic/claude-fable-5.2",
                   "openai/gpt-5.6-luna",
                   "openai/gpt-6-luna",
                   "openai/gpt-5",
@@ -22416,7 +22598,12 @@
                   "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
                   "openai/gpt-4o",
-                  "openai/gpt-4.1"
+                  "openai/gpt-4.1",
+                  "openai/gpt-5.6-luna-fast",
+                  "openai/gpt-6-luna-fast",
+                  "openai/gpt-6.1-terra-fast",
+                  "openai/gpt-6.1-sol-fast",
+                  "openai/gpt-6-astra-fast"
                 ],
                 "type": "string"
               },
@@ -25706,6 +25893,7 @@
                   "anthropic/claude-sonnet-4.6",
                   "anthropic/claude-opus-5.5",
                   "anthropic/claude-fable-5.1",
+                  "anthropic/claude-fable-5.2",
                   "openai/gpt-5.6-luna",
                   "openai/gpt-6-luna",
                   "openai/gpt-5",
@@ -25713,7 +25901,12 @@
                   "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
                   "openai/gpt-4o",
-                  "openai/gpt-4.1"
+                  "openai/gpt-4.1",
+                  "openai/gpt-5.6-luna-fast",
+                  "openai/gpt-6-luna-fast",
+                  "openai/gpt-6.1-terra-fast",
+                  "openai/gpt-6.1-sol-fast",
+                  "openai/gpt-6-astra-fast"
                 ],
                 "type": "string"
               },
@@ -25802,6 +25995,7 @@
                   "anthropic/claude-sonnet-4.6",
                   "anthropic/claude-opus-5.5",
                   "anthropic/claude-fable-5.1",
+                  "anthropic/claude-fable-5.2",
                   "openai/gpt-5.6-luna",
                   "openai/gpt-6-luna",
                   "openai/gpt-5",
@@ -25809,7 +26003,12 @@
                   "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
                   "openai/gpt-4o",
-                  "openai/gpt-4.1"
+                  "openai/gpt-4.1",
+                  "openai/gpt-5.6-luna-fast",
+                  "openai/gpt-6-luna-fast",
+                  "openai/gpt-6.1-terra-fast",
+                  "openai/gpt-6.1-sol-fast",
+                  "openai/gpt-6-astra-fast"
                 ],
                 "type": "string"
               },
@@ -27069,7 +27268,7 @@
       "AgentLLMConfigRedacted": {
         "properties": {
           "model": {
-            "default": "google/gemini-3.6-flash",
+            "default": "openai/gpt-4.1",
             "enum": [
               "google/gemini-3.5-flash-lite",
               "google/gemini-3.6-flash",
@@ -27084,6 +27283,7 @@
               "anthropic/claude-sonnet-4.6",
               "anthropic/claude-opus-5.5",
               "anthropic/claude-fable-5.1",
+              "anthropic/claude-fable-5.2",
               "openai/gpt-5.6-luna",
               "openai/gpt-6-luna",
               "openai/gpt-5",
@@ -27091,7 +27291,12 @@
               "openai/gpt-6.1-terra",
               "openai/gpt-6-astra",
               "openai/gpt-4o",
-              "openai/gpt-4.1"
+              "openai/gpt-4.1",
+              "openai/gpt-5.6-luna-fast",
+              "openai/gpt-6-luna-fast",
+              "openai/gpt-6.1-terra-fast",
+              "openai/gpt-6.1-sol-fast",
+              "openai/gpt-6-astra-fast"
             ],
             "title": "Model",
             "type": "string"
@@ -27174,6 +27379,7 @@
                   "anthropic/claude-sonnet-4.6",
                   "anthropic/claude-opus-5.5",
                   "anthropic/claude-fable-5.1",
+                  "anthropic/claude-fable-5.2",
                   "openai/gpt-5.6-luna",
                   "openai/gpt-6-luna",
                   "openai/gpt-5",
@@ -27181,7 +27387,12 @@
                   "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
                   "openai/gpt-4o",
-                  "openai/gpt-4.1"
+                  "openai/gpt-4.1",
+                  "openai/gpt-5.6-luna-fast",
+                  "openai/gpt-6-luna-fast",
+                  "openai/gpt-6.1-terra-fast",
+                  "openai/gpt-6.1-sol-fast",
+                  "openai/gpt-6-astra-fast"
                 ],
                 "type": "string"
               },
@@ -27703,7 +27914,7 @@
         "type": "object"
       },
       "PublicAgentVoiceConfig": {
-        "description": "The voice section as the public API reads it: without the console-only\nsentence buffering switch and live-3 playout.",
+        "description": "The voice section as the public API reads it: without the console-only\nsentence buffering switch, live-3 playout and live-3 self-ASR model.",
         "properties": {
           "voice_id": {
             "default": "9a9cf47702da476aa4629e2506d4a857",
