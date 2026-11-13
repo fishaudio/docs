@@ -131,7 +131,7 @@ A call from an [imported BYO number](/agents/telephony/byo-sip) dials out throug
 
 | `dial_sip_status` | What it usually means                                                                                                                                                                         |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `403`             | The trunk refused the call: the termination credentials or source addresses are not accepted, or the trunk is not allowed to call that destination.                                           |
+| `403`             | The trunk refused the call: the termination credentials or source addresses are not accepted, the trunk does not accept the caller ID, or the trunk is not allowed to call that destination.  |
 | `404`, `484`      | The number does not exist or is incomplete.                                                                                                                                                   |
 | `503`             | The trunk had no capacity for the call. A common cause is starting calls faster than the trunk's calls-per-second limit. Start calls at a steadier rate or have your carrier raise the limit. |
 
