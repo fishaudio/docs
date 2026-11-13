@@ -22,12 +22,14 @@ The agent gets each tool's arguments and full description from the server when y
 
 ## Speech and transcription
 
-Long text may come back as several clips. How much text one call can take depends on your plan, and `get_credit_balance` shows the limit.
+Long text may come back as several clips. How much text one call can take depends on your plan, and `get_credit_balance` shows the limit. A long text can take minutes: after about 45 seconds `text_to_speech` returns a task id, and `get_speech` returns the audio when it is ready. If a call's response is lost, `list_speech_history` finds it, so the agent does not pay for it twice.
 
-| Tool             | What it does                                                                                                                           | Read-only | Charges credits |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------- | --------------- |
-| `text_to_speech` | Generate speech audio from text with one Fish Audio voice, or a multi-speaker dialogue with several, and return a permanent audio URL. |           | Yes             |
-| `speech_to_text` | Transcribe speech audio to text.                                                                                                       |           | Yes             |
+| Tool                  | What it does                                                                                                                                      | Read-only | Charges credits |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | --------------- |
+| `text_to_speech`      | Generate speech audio from text with one Fish Audio voice, or a multi-speaker dialogue with several, and return a permanent audio URL.            |           | Yes             |
+| `get_speech`          | Check a `text_to_speech` generation by its task_id.                                                                                               | Yes       |                 |
+| `list_speech_history` | List your recent speech generations in this workspace, newest first, with each one's status, the start of its text and, once done, its audio_url. | Yes       |                 |
+| `speech_to_text`      | Transcribe speech audio to text.                                                                                                                  |           | Yes             |
 
 ## Sound effects
 
