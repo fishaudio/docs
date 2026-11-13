@@ -29,6 +29,16 @@ Long text may come back as several clips. How much text one call can take depend
 | `text_to_speech` | Generate speech audio from text with one Fish Audio voice, or a multi-speaker dialogue with several, and return a permanent audio URL. |           | Yes             |
 | `speech_to_text` | Transcribe speech audio to text.                                                                                                       |           | Yes             |
 
+## Sound effects
+
+Effects are queued: `generate_sound_effect` returns task ids, and `get_audio_task` returns the audio when it is ready.
+
+| Tool                    | What it does                                                                                     | Read-only | Charges credits |
+| ----------------------- | ------------------------------------------------------------------------------------------------ | --------- | --------------- |
+| `generate_sound_effect` | Generate a sound effect (ambience, foley, impacts; not speech or music) from a text description. |           | Yes             |
+| `get_audio_task`        | Check a sound effect from `generate_sound_effect` by its task_id.                                | Yes       |                 |
+| `search_sound_effects`  | Search the Fish Audio sound effect library: free, ready-made clips with an audio_url each.       | Yes       |                 |
+
 ## File uploads
 
 Both tools return an upload link, and the agent then uploads the file to it. In clients that cannot upload files themselves, such as claude.ai, the agent gives you a link to upload the file from your browser instead. Anyone with the link can upload to it until it expires, so don't share it.
