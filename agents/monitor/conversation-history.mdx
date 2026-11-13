@@ -92,7 +92,7 @@ Each row carries the session facts:
 | `llm_endpoint_failure` | `completed` | A [custom LLM](/agents/build/custom-llm) failed repeatedly and the agent hung up |
 | `room_join_timeout`    | `failed`    | The caller never connected before the join deadline                              |
 | `cancelled`            | `failed`    | The session was ended before anyone connected                                    |
-| `dial_failed`          | `failed`    | An outbound call was not answered; `dial_status` has the detail                  |
+| `dial_failed`          | `failed`    | An outbound call was not answered; `dial_status` and `dial_sip_status` have the detail |
 
 The same values appear on the [`call.ended` webhook](/agents/monitor/webhooks) and in the dashboard, so the three surfaces never disagree about a session.
 
