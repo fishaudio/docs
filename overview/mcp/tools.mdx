@@ -13,12 +13,16 @@ The agent gets each tool's arguments and full description from the server when y
 
 ## Voices
 
-| Tool                 | What it does                                                                                                                                                                                                                                | Read-only | Charges credits |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | --------------- |
-| `search_voices`      | Search public voices (TTS models) on Fish Audio, or list your own with self=true (includes private and team-shared voices).                                                                                                                 | Yes       |                 |
-| `get_voice`          | Get details of one Fish Audio voice by its id: description, languages, tags, popularity stats, a sample audio URL and a default demo text.                                                                                                  | Yes       |                 |
-| `create_voice_clone` | Clone a voice from sample audio and get a voice usable with `text_to_speech`.                                                                                                                                                               |           |                 |
-| `verify_voice_clone` | Complete speaker verification for a voice clone that returned verification_required: the actual speaker records themselves reading the exact prompt sentence, the recording is uploaded (use `get_upload_url`), and its URL is passed here. |           |                 |
+`design_voice` makes a voice from a text description and returns samples to listen to, and `save_designed_voice` keeps the one you pick. Designing is free during the current promotion on paid plans, up to 100 times a day.
+
+| Tool                  | What it does                                                                                                                                                                                                                                | Read-only | Charges credits |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | --------------- |
+| `search_voices`       | Search public voices (TTS models) on Fish Audio, or list your own with self=true (includes private and team-shared voices).                                                                                                                 | Yes       |                 |
+| `get_voice`           | Get details of one Fish Audio voice by its id: description, languages, tags, popularity stats, a sample audio URL and a default demo text.                                                                                                  | Yes       |                 |
+| `create_voice_clone`  | Clone a voice from sample audio and get a voice usable with `text_to_speech`.                                                                                                                                                               |           |                 |
+| `verify_voice_clone`  | Complete speaker verification for a voice clone that returned verification_required: the actual speaker records themselves reading the exact prompt sentence, the recording is uploaded (use `get_upload_url`), and its URL is passed here. |           |                 |
+| `design_voice`        | Design a new voice from a text description and get 2 samples to listen to.                                                                                                                                                                  |           |                 |
+| `save_designed_voice` | Save a sample from `design_voice` as a voice usable with `text_to_speech`.                                                                                                                                                                  |           |                 |
 
 ## Speech and transcription
 
