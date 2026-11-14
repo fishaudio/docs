@@ -55,7 +55,7 @@ Every model has a per-token cost. For now the conversation rate covers it for th
 
 Every other model is billed on token usage. Prices are expressed in USD per 1 million tokens, with separate rates for input tokens, output tokens, and cached input. These rates are determined by the LLM providers and may change. Refer to the provider's documentation for current pricing.
 
-What a minute costs on such a model therefore depends on your agent: how long the system prompt and retrieved knowledge are, how much conversation history the model re-reads on every turn, how often it is called, and how verbose its replies are. The Builder shows an estimated per-minute figure next to each token-billed model, computed from your current prompt and typical agent behavior. The estimate does not account for prompt caching, and actual charges are based on token usage.
+What a minute costs on such a model therefore depends on your agent: how long the system prompt and retrieved knowledge are, how much conversation history the model re-reads on every turn, how often it is called, and how verbose its replies are. The Builder shows an estimated per-minute figure next to each token-billed model, computed from your current prompt and typical agent behavior. The estimate assumes the prompt caching a typical agent gets on that model, and actual charges are based on token usage.
 
 After a conversation, each message in the dashboard's conversation view shows its model requests and token cost. A [custom LLM](/agents/build/custom-llm) endpoint carries no LLM charge.
 
