@@ -111,6 +111,7 @@ When the session ends, `disconnect` fires with a reason (also available as `sess
 | `agent_hangup`         | The agent ended the call: the hang-up [system tool](/agents/build/system-tools), a workflow end node, or an idle hangup                                          |
 | `conversation_timeout` | The session reached the agent's [maximum duration](/agents/build/configuration#call-duration)                                                                    |
 | `escalated`            | The call was transferred to a human                                                                                                                              |
+| `llm_endpoint_failure` | The LLM could not answer and the agent hung up after apologizing: a [custom LLM](/agents/build/custom-llm) failed repeatedly, or the model's provider kept refusing the content |
 | `internal_error`       | The agent runtime itself failed and closed the call, for example its process was stopped for exceeding its memory limit (from 1.0.0)                              |
 | `connection_lost`      | The connection dropped and could not be recovered, the agent never joined, or the call ended before the server could say why                                     |
 
