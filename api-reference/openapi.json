@@ -23324,7 +23324,7 @@
         "type": "object"
       },
       "AgentSessionLlmEndpointError": {
-        "description": "One failed reply from the customer's own LLM endpoint, after the\nplatform's single retry within the request, or one reply the model's\nprovider refused (a platform model's included).\n\n- http_error: the endpoint answered with a non-2xx status.\n- timeout: no response within the request timeout.\n- connection_error: the request got no answer. `reason` is dns_failed,\n  connection_refused, connection_reset, tls_failed, address_not_allowed\n  (an address the platform does not call) or unknown.\n- invalid_response: a 2xx response that was not a usable reply. `reason`\n  is not_event_stream (a streamed request answered with something else),\n  stream_incomplete (the stream ended without a finish_reason, usage or\n  output), empty_reply (no text and no tool call), refused (the model's\n  provider finished the reply as a refusal, a content filter or a policy\n  block: `response_body` is what it said) or unknown.",
+        "description": "One failed reply from the customer's own LLM endpoint, after the\nplatform's single retry within the request.\n\n- http_error: the endpoint answered with a non-2xx status.\n- timeout: no response within the request timeout.\n- connection_error: the request got no answer. `reason` is dns_failed,\n  connection_refused, connection_reset, tls_failed, address_not_allowed\n  (an address the platform does not call) or unknown.\n- invalid_response: a 2xx response that was not a usable reply. `reason`\n  is not_event_stream (a streamed request answered with something else),\n  stream_incomplete (the stream ended without a finish_reason, usage or\n  output), empty_reply (no text and no tool call) or unknown.",
         "properties": {
           "occurred_at": {
             "anyOf": [
@@ -23372,7 +23372,6 @@
                   "not_event_stream",
                   "stream_incomplete",
                   "empty_reply",
-                  "refused",
                   "unknown"
                 ],
                 "type": "string"
