@@ -120,6 +120,7 @@ A reply moves to the next model on:
 ## What doesn't switch
 
 - **The agent choosing silence.** A model that finishes normally with an empty reply is the agent staying quiet on purpose. Nothing switches.
+- **A refusal.** When the model's provider ends the reply as a refusal, such as a content filter or a content policy block, the next model is not asked. The agent retries once, then asks the caller to repeat, and hangs up after three in a row with `end_reason: llm_endpoint_failure`. Each refusal is listed in [`llm_endpoint_errors`](/agents/monitor/conversation-history#llm-endpoint-errors) with `reason: refused`.
 - **A reply already playing.** Once the caller hears the answer, a problem finishing it counts as a failed reply.
 
 ## Per-session override
