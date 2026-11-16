@@ -166,10 +166,6 @@ components:
                   - 44100
                   - 48000
                 description: Agent output PCM sample rate in Hz (defaults to `sample_rate`).
-              noise_cancel:
-                type: boolean
-                default: true
-                description: Denoise caller audio before speech recognition.
           turns:
             type: object
             description: Conversational turn detection settings (`/v1/duplex/converse` only).
@@ -215,7 +211,6 @@ components:
             audio:
               encoding: pcm_s16le
               sample_rate: 24000
-              noise_cancel: true
             turns:
               eager: true
               backchannel: true
@@ -409,13 +404,6 @@ components:
                 type: integer
               output_sample_rate:
                 type: integer
-          noise_cancel:
-            type: object
-            properties:
-              on:
-                type: boolean
-              delay_ms:
-                type: integer
       examples:
         - payload:
             seq: 0
@@ -439,9 +427,6 @@ components:
               encoding: pcm_s16le
               sample_rate: 24000
               output_sample_rate: 24000
-            noise_cancel:
-              on: true
-              delay_ms: 20
     ServerAudio:
       name: audio
       title: audio
