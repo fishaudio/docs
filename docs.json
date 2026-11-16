@@ -59,6 +59,7 @@
               "features/voice-design",
               "features/voice-cloning",
               "features/realtime-streaming",
+              "features/duplex-api",
               "features/manage-voices"
             ]
           },
@@ -291,6 +292,10 @@
             ]
           },
           {
+            "group": "Duplex API (Preview)",
+            "pages": ["api-reference/endpoint/websocket/duplex-api-converse"]
+          },
+          {
             "group": "REST API",
             "pages": [
               {
@@ -448,9 +453,7 @@
               {
                 "group": "Phone Calls",
                 "icon": "phone-arrow-up-right",
-                "pages": [
-                  "api-reference/endpoint/agent/create-phone-call"
-                ]
+                "pages": ["api-reference/endpoint/agent/create-phone-call"]
               }
             ]
           },
@@ -762,6 +765,22 @@
     {
       "source": "/developer-guide/self-hosting/running-inference",
       "destination": "/developer-guide/self-hosting/introduction"
+    },
+    {
+      "source": "/features/realtime-agent",
+      "destination": "/features/duplex-api"
+    },
+    {
+      "source": "/features/live-api",
+      "destination": "/features/duplex-api"
+    },
+    {
+      "source": "/api-reference/endpoint/websocket/realtime-converse",
+      "destination": "/api-reference/endpoint/websocket/duplex-api-converse"
+    },
+    {
+      "source": "/api-reference/endpoint/websocket/live-api-converse",
+      "destination": "/api-reference/endpoint/websocket/duplex-api-converse"
     }
   ],
   "footer": {
