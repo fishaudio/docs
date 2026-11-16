@@ -44,8 +44,6 @@ The agent's voice is a **voice model id** (`voice_id`): the same ids used as `re
 - **Library voices**: Ready-made public voices. Find ids in the [Voice Library](/features/manage-voices).
 - **Your cloned voices**: [Clone a voice](/features/voice-cloning) once, then use its model id as your agent's voice.
 
-An agent on [Live 3](#live-3-full-duplex) can instead speak one of [Live 3's own voices](#voices). Those are set by name in the same field, and a name is not a `reference_id`.
-
 ## Set the voice via API
 
 Voice settings live in the `voice` section of the agent's configuration. Patches are partial: only the fields you send change, and the result is saved to the draft:
@@ -152,7 +150,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   --data '{
     "voice": {
       "engine": "live3",
-      "voice_id": "clara"
+      "live3_voice": "Clara"
     }
   }'
 ```
@@ -166,26 +164,16 @@ To switch back, pick Drama 3 or S2.1 Pro in the selector, or set `voice.engine` 
 
 #### Voices
 
-Live 3 has its own voices. The Builder's voice picker lists the ones that fit the current [situation prompt](#situation-prompt) under **Live 3 voices**, with samples. Set one via the API by its name in `voice.voice_id`:
+Live 3 has its own voices. The Builder's voice picker lists the ones that fit the current [situation prompt](#situation-prompt) under **Live 3 voices**, with samples. Set one via the API with `voice.live3_voice`:
 
 | Situation | Voices |
 |---|---|
-| All | `clara` (default), `nora`, `harper`, `patricia`, `owen`, `marco`, `milo`, `jonah` |
-| Drive-thru only | `maddie`, `brianna`, `ethan`, `tyler` |
-
-The names work only while `voice.engine` is `live3`: on `fish_tts` a name is rejected with `422`. While the agent speaks one of these voices, `voice.voice_id` reads back as the name.
+| All | `Clara` (default), `Nora`, `Harper`, `Patricia`, `Owen`, `Marco`, `Milo`, `Jonah` |
+| Drive-thru only | `Maddie`, `Brianna`, `Ethan`, `Tyler` |
 
 The drive-thru voices need `voice.live3_prompt` set to `DT`. With any other situation, including the default, Live 3 doesn't start and the session speaks through the text-to-speech model.
 
-Each Live 3 voice has a Voice Library counterpart. When a session of an agent on one of these voices speaks through the text-to-speech model instead (another speaking language, or Live 3 unavailable), it uses that counterpart, so the caller hears a voice close to the same one.
-
-You can also pick a Voice Library voice or one of your clones: set `voice.voice_id` to its id. Live 3 recreates the voice from a sample, so it sounds close to, but not exactly like, the same voice on Drama 3 or S2.1 Pro. If Live 3 can't use the voice, the session speaks as `clara`.
-
-Switching `voice.engine` to `fish_tts` returns `voice.voice_id` to the agent's Voice Library voice, and switching back to `live3` restores the Live 3 voice.
-
-<Note>
-  `voice.live3_voice` is deprecated. It still accepts and reads back a Live 3 voice by its capitalized name (`Clara`), but new integrations should use `voice.voice_id`.
-</Note>
+You can also pick a Voice Library voice or one of your clones. Setting `voice_id` clears `voice.live3_voice` unless the same request sets it. Live 3 recreates the voice from a sample, so it sounds close to, but not exactly like, the same voice on Drama 3 or S2.1 Pro. If Live 3 can't use the voice, the session speaks as Clara.
 
 #### Situation prompt
 
