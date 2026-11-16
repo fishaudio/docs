@@ -92,7 +92,9 @@ export function CallButton() {
 
 <Note>
   Call `startSession` from a user gesture (such as a click handler) so the
-  browser allows microphone capture and audio playback.
+  browser allows microphone capture and audio playback. The page must be served
+  over `https` or opened on `localhost`: see [Microphone
+  access](/agents/deploy/web-sdk#microphone-access).
 </Note>
 
 ### Connect to a private agent
@@ -101,11 +103,12 @@ For agents that are not public, your backend creates the session with your API k
 
 ```tsx
 const res = await fetch("/api/voice-session", { method: "POST" });
+if (!res.ok) throw new Error(`Could not create a session (HTTP ${res.status})`);
 const sessionToken = await res.json();
 await startSession({ sessionToken });
 ```
 
-See [Authenticated sessions](/agents/deploy/authenticated-sessions) for the backend side. `startSession` accepts the same options as `AgentSession.start` in the [Web SDK](/agents/deploy/web-sdk#options), including [`clientTools`](/agents/build/client-tools). Session settings such as [`overrides`](/agents/deploy/authenticated-sessions#overrides) and `dynamicVariables` apply when you connect with an `agentId`; with a `sessionToken`, your backend sets them in its session-creation request instead.
+Fetch a new token for every call: it is valid for about 5 minutes and works once. See [Authenticated sessions](/agents/deploy/authenticated-sessions) for the backend side and the [token lifetime](/agents/deploy/authenticated-sessions#token-lifetime). `startSession` accepts the same options as `AgentSession.start` in the [Web SDK](/agents/deploy/web-sdk#options), including [`clientTools`](/agents/build/client-tools). Session settings such as [`overrides`](/agents/deploy/authenticated-sessions#overrides) and `dynamicVariables` apply when you connect with an `agentId`; with a `sessionToken`, your backend sets them in its session-creation request instead.
 
 ### Next.js
 
@@ -133,21 +136,32 @@ export async function POST() {
 ```tsx app/call-button.tsx
 "use client";
 
+import { useState } from "react";
 import { useConversation } from "@fishaudio/agent-react";
 
 export function CallButton() {
   const { startSession, status } = useConversation();
 
+  const [error, setError] = useState<string | null>(null);
+
   const start = async () => {
-    const sessionToken = await fetch("/api/voice-session", { method: "POST" })
-      .then(r => r.json());
-    await startSession({ sessionToken });
+    setError(null);
+    try {
+      const res = await fetch("/api/voice-session", { method: "POST" });
+      if (!res.ok) throw new Error(`Could not create a session (HTTP ${res.status})`);
+      await startSession({ sessionToken: await res.json() });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not start the call");
+    }
   };
 
   return (
-    <button disabled={status === "connecting"} onClick={start}>
-      Start call
-    </button>
+    <>
+      <button disabled={status === "connecting"} onClick={start}>
+        Start call
+      </button>
+      {error && <p role="alert">{error}</p>}
+    </>
   );
 }
 ```
@@ -167,9 +181,9 @@ const conversation = useConversation({
 });
 
 const start = async () => {
-  const sessionToken = await fetch("/api/voice-session", { method: "POST" })
-    .then(r => r.json());
-  await conversation.startSession({ sessionToken });
+  const res = await fetch("/api/voice-session", { method: "POST" });
+  if (!res.ok) throw new Error(`Could not create a session (HTTP ${res.status})`);
+  await conversation.startSession({ sessionToken: await res.json() });
 };
 ```
 

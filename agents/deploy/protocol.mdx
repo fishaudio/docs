@@ -39,11 +39,16 @@ curl --request POST https://api.fish.audio/v1/agent/sessions \
   "max_duration_seconds": 1800,
   "transport": "livekit",
   "livekit_url": "wss://...",
-  "token": "<participant JWT>"
+  "token": "<participant JWT>",
+  "join_url": "https://fish.audio/agents/join#..."
 }
 ```
 
 The response is a discriminated union on `transport`. The `livekit` arm carries `livekit_url` and `token`: [connect](https://docs.livekit.io/home/client/connect/) a LiveKit-compatible WebRTC client with them before `expires_at` (the join deadline), then [publish your microphone track and subscribe](https://docs.livekit.io/home/client/tracks/) to the agent's audio track.
+
+- `expires_at` is about 5 minutes after creation, and the token joins once. See [Token lifetime](/agents/deploy/authenticated-sessions#token-lifetime).
+- Check for a `201` before you read the body. An error response has no `transport`.
+- `join_url` opens the same session in a browser. Use it to hear the agent before your client is ready. A custom client ignores it.
 
 <Warning>
   If you receive a `transport` value you don't recognize, fail with an explicit

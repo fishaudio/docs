@@ -48,6 +48,7 @@ import { AgentSession } from "@fishaudio/agent-client";
 // Your backend calls POST /v1/agent/sessions and returns the
 // response body. Pass it to the SDK as-is.
 const resp = await fetch("/api/voice-session", { method: "POST" });
+if (!resp.ok) throw new Error(`Could not create a session (HTTP ${resp.status})`);
 const sessionToken = await resp.json();
 
 const session = await AgentSession.start({ sessionToken });
@@ -56,6 +57,15 @@ const session = await AgentSession.start({ sessionToken });
 </CodeGroup>
 
 `start()` resolves once the realtime connection is up and rejects with a [`FishAgentError`](#errors) if session creation, the microphone permission, or the connection fails. Call it from a user gesture (a click handler): browsers only grant the microphone and audio playback inside one.
+
+A session token is valid for about 5 minutes and works once, so fetch a new one for every call, right before `start()`. See [Token lifetime](/agents/deploy/authenticated-sessions#token-lifetime).
+
+### Microphone access
+
+Browsers give a page the microphone only in a secure context:
+
+- Serve the page over `https`, or open it on `localhost` during development.
+- A plain `http` address such as a LAN IP (`http://192.168.1.20:5173`) does not get the microphone. To test from another device, serve the page over `https`.
 
 ### Options
 
@@ -279,7 +289,11 @@ Failures surface as `FishAgentError`: thrown from `AgentSession.start()` when th
   provider or infrastructure details are never sent to the browser.
 </Note>
 
-```javascript Handle errors
+The same handling fits both modes. With a `sessionToken`, check your backend's response before you pass it on: an error body is not a session token.
+
+<CodeGroup>
+
+```javascript Public agent
 import { AgentSession, FishAgentError } from "@fishaudio/agent-client";
 
 try {
@@ -293,6 +307,26 @@ try {
   }
 }
 ```
+
+```javascript Private agent
+import { AgentSession, FishAgentError } from "@fishaudio/agent-client";
+
+try {
+  const resp = await fetch("/api/voice-session", { method: "POST" });
+  if (!resp.ok) throw new Error(`Could not create a session (HTTP ${resp.status})`);
+
+  const session = await AgentSession.start({ sessionToken: await resp.json() });
+  session.on("error", err => console.warn("session error:", err.code));
+} catch (err) {
+  if (err instanceof FishAgentError && err.code === "mic_permission_denied") {
+    showMicHelp();
+  } else {
+    showRetry(err); // fetch a new token for the next attempt
+  }
+}
+```
+
+</CodeGroup>
 
 ## End the session
 

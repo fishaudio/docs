@@ -77,8 +77,8 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
 
         Each publish creates an immutable version with an auto-incremented `version_number`.
       </Step>
-      <Step title="Create a session">
-        From your backend, exchange your API key for a short-lived session token. This is the credential the browser uses to join the call. Your API key never leaves your server.
+      <Step title="Create a session and talk to it">
+        Create a session with your API key. The response is a short-lived session token for one conversation.
 
         ```bash Create a session
         curl --request POST https://api.fish.audio/v1/agent/sessions \
@@ -96,13 +96,21 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
           "max_duration_seconds": 1800,
           "transport": "livekit",
           "livekit_url": "wss://...",
-          "token": "<participant token>"
+          "token": "<participant token>",
+          "join_url": "https://fish.audio/agents/join#..."
         }
         ```
 
-        Return this response to your frontend as-is. `expires_at` is the deadline for joining the call.
+        Open `join_url` in your browser, start the call, and allow the microphone. You are now talking to your agent.
+
+        - The token and the link are valid for about 5 minutes. `expires_at` is the exact deadline for joining.
+        - The link carries the token, and the token works once. To talk again, create another session.
+        - Every call to this endpoint creates a new session.
+        - A session that no client joins ends as [`failed`](/agents/monitor/conversation-history#status-and-end-reason).
       </Step>
-      <Step title="Connect from the browser">
+      <Step title="Connect from your own app">
+        In your own app, the client SDK takes the place of `join_url`. Your backend creates the session, so your API key never leaves your server. It returns the response to your frontend as-is, and the frontend passes it to the SDK.
+
         Install the client SDK:
 
         ```bash Install
@@ -115,7 +123,7 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
         import { AgentSession } from "@fishaudio/agent-client";
 
         // sessionToken: the JSON response from POST /v1/agent/sessions,
-        // fetched from your backend
+        // fetched from your backend right before the call
         const session = await AgentSession.start({
           sessionToken,
           callbacks: {
@@ -128,10 +136,12 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
         await session.end();
         ```
 
-        Start talking. You hear the agent reply and both sides of the conversation arrive as transcript events. See the [Web SDK](/agents/deploy/web-sdk) for the full event and method surface, or the [React SDK](/agents/deploy/react-sdk) for hooks.
+        Both sides of the conversation arrive as transcript events. Each call needs its own session, so fetch a new token for every call. See the [Web SDK](/agents/deploy/web-sdk) for the full event and method surface, or the [React SDK](/agents/deploy/react-sdk) for hooks.
       </Step>
       <Step title="Put it together">
         A complete local setup is one backend route that creates the session with your API key, and a page that starts the call. The frontend is served by Vite, which also proxies `/api` to the backend so the browser never sees your key.
+
+        The backend route creates a new session for every call. These sessions are separate from the one you created with curl.
 
         ```bash Install
         npm init -y
@@ -145,22 +155,27 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
         const app = express();
 
         app.post("/api/voice-session", async (req, res) => {
-          const upstream = await fetch("https://api.fish.audio/v1/agent/sessions", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${process.env.FISH_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              agent_id: process.env.AGENT_ID,
-              timezone: "Asia/Tokyo", // your user's IANA timezone
-            }),
-          });
-          if (!upstream.ok) {
-            console.error("session creation failed:", upstream.status);
-            return res.status(502).json({ error: "session_unavailable" });
+          try {
+            const upstream = await fetch("https://api.fish.audio/v1/agent/sessions", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${process.env.FISH_API_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                agent_id: process.env.AGENT_ID,
+                timezone: "Asia/Tokyo", // your user's IANA timezone
+              }),
+            });
+            if (!upstream.ok) {
+              console.error("session creation failed:", upstream.status, await upstream.text());
+              return res.status(502).json({ error: "session_unavailable" });
+            }
+            res.json(await upstream.json());
+          } catch (error) {
+            console.error("session creation failed:", error);
+            res.status(502).json({ error: "session_unavailable" });
           }
-          res.json(await upstream.json());
         });
 
         app.listen(3001, () => console.log("backend on http://localhost:3001"));
@@ -191,22 +206,38 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
 
         let session;
 
+        const reset = () => {
+          startButton.disabled = false;
+          endButton.disabled = true;
+        };
+
         // Start from a click: browsers only grant the microphone and
         // audio playback inside a user gesture.
         startButton.onclick = async () => {
-          const sessionToken = await fetch("/api/voice-session", { method: "POST" })
-            .then((r) => r.json());
-
-          session = await AgentSession.start({
-            sessionToken,
-            callbacks: {
-              onUserTranscript: ({ text, final }) => final && log("You: " + text),
-              onAgentResponse: ({ text }) => log("Agent: " + text),
-              onDisconnect: ({ reason }) => log("Call ended: " + reason),
-            },
-          });
           startButton.disabled = true;
-          endButton.disabled = false;
+          try {
+            // A new session for every call: a session token works once.
+            const response = await fetch("/api/voice-session", { method: "POST" });
+            if (!response.ok) {
+              throw new Error("the backend answered HTTP " + response.status);
+            }
+            session = await AgentSession.start({
+              sessionToken: await response.json(),
+              callbacks: {
+                onUserTranscript: ({ text, final }) => final && log("You: " + text),
+                onAgentResponse: ({ text }) => log("Agent: " + text),
+                onError: (error) => log("Error: " + error.code),
+                onDisconnect: ({ reason }) => {
+                  log("Call ended: " + reason);
+                  reset();
+                },
+              },
+            });
+            endButton.disabled = session.status === "ended";
+          } catch (error) {
+            log("Could not start the call: " + (error.code ? error.code + ": " : "") + error.message);
+            reset();
+          }
         };
 
         endButton.onclick = () => session?.end();
@@ -218,6 +249,10 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
         FISH_API_KEY=your_key AGENT_ID=your_agent_id node server.mjs
         npx vite
         ```
+
+        <Note>
+        Open the page on `localhost` or over `https`. Browsers do not give a page the microphone on a plain `http` address such as a LAN IP (`http://192.168.1.20:5173`).
+        </Note>
 
         Every request and response on this path is in the [Agents API reference](/api-reference/endpoint/agent/create-agent-session). For production, keep the same shape: your backend owns the API key and returns session tokens, and the SDK runs in the page.
       </Step>

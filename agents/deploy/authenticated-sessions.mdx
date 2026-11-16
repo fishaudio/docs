@@ -40,6 +40,8 @@ Your backend exchanges your API key for a single-conversation token.
   </Step>
 </Steps>
 
+Create the session when the user starts the call. The token is valid for about 5 minutes and works once: see [Token lifetime](#token-lifetime).
+
 <CodeGroup>
 ```bash API (curl)
 curl --request POST https://api.fish.audio/v1/agent/sessions \
@@ -99,17 +101,31 @@ def create_voice_session(end_user_id: str, name: str, timezone: str) -> dict:
 
 `timezone` overrides the agent's configured timezone for this session, so the agent speaks in your user's local date and time. The default is UTC: see [Time & timezone](/agents/build/time-timezone).
 
-On the client, fetch the token from your backend and pass it to the SDK unchanged:
+<Tip>
+  To try a session before you write a client, run the curl request and open the
+  `join_url` from the response in your browser.
+</Tip>
+
+On the client, fetch the token from your backend and pass it to the SDK unchanged. Check that your backend answered with a token before you hand the body to the SDK:
 
 ```javascript Browser
 import { AgentSession } from "@fishaudio/agent-client";
 
-const sessionToken = await fetch("/api/voice-session", { method: "POST" }).then(r =>
-  r.json()
-);
-
-const session = await AgentSession.start({ sessionToken });
+// Run this from a click handler, once per call.
+async function startCall() {
+  try {
+    const response = await fetch("/api/voice-session", { method: "POST" });
+    if (!response.ok) {
+      throw new Error(`Could not create a session (HTTP ${response.status})`);
+    }
+    return await AgentSession.start({ sessionToken: await response.json() });
+  } catch (error) {
+    showCallFailed(error); // your UI
+  }
+}
 ```
+
+`start()` rejects with a [`FishAgentError`](/agents/deploy/web-sdk#errors) when the token, the microphone, or the connection fails.
 
 More on what the SDK can do once connected is in the [Web SDK](/agents/deploy/web-sdk) reference.
 
@@ -194,23 +210,29 @@ Everything else on the request is not an override: `dynamic_variables`, `timezon
   "max_duration_seconds": 1800,
   "transport": "livekit",
   "livekit_url": "wss://example.livekit.cloud",
-  "token": "<participant token>"
+  "token": "<participant token>",
+  "join_url": "https://fish.audio/agents/join#..."
 }
 ```
 
 | Field                  | Description                                                                                                 |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `session_id`           | The session's id. Use it later to look up the [conversation record](/agents/monitor/conversation-history). |
-| `expires_at`           | Deadline for the client to connect. Create the token right before starting, not ahead of time.              |
+| `expires_at`           | Deadline for the client to connect, about 5 minutes after creation. See [Token lifetime](#token-lifetime).  |
 | `max_duration_seconds` | Hard cap on session length.                                                                                 |
 | `transport`            | Which transport the SDK uses for this session; `livekit` today.                                             |
 | `livekit_url`, `token` | Connection details for that transport, consumed by the SDK.                                                 |
+| `join_url`             | A link that opens this session in the browser, for trying it without writing a client. It carries the token, so anyone with the link can join this one session. |
 
 Treat the response as opaque and pass it to `start()` unmodified. If the SDK does not recognize the `transport` value, it fails fast with an `unsupported_transport` error asking you to upgrade the SDK.
 
 ## Token lifetime
 
+- A session token is valid for **about 5 minutes** after creation. `expires_at` is the exact deadline for the client to connect.
 - A session token is **single-use**: `start()` consumes it once to establish the conversation.
+- `join_url` carries the same token. It has the same deadline, and it works once.
+- Every call to `POST /v1/agent/sessions` creates a new session. Create it when the user starts the call, not ahead of time such as on page load.
+- A session that no client joins before the deadline ends with status `failed` and end reason [`room_join_timeout`](/agents/monitor/conversation-history#status-and-end-reason). It is not billed.
 - On network drops the SDK reconnects at the transport level; it never re-creates the session, so you never need a fresh token mid-call.
 - Once a session ends, the token is spent. Create a new token for each conversation.
 
