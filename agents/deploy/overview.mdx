@@ -51,8 +51,7 @@ The widget and the SDKs each work with **either** access mode; pick per agent. P
 
 <CardGroup cols={2}>
   <Card title="Public agents" icon="globe" href="/agents/deploy/public-agents">
-    The client connects with just an `agentId`: no backend, gated by an origin
-    allowlist and rate limits.
+    The client connects with just an `agentId`, no backend needed.
   </Card>
   <Card
     title="Authenticated sessions"
@@ -67,7 +66,7 @@ The widget and the SDKs each work with **either** access mode; pick per agent. P
 |                           | Public agent ID                                                             | Session token                         |
 | ------------------------- | --------------------------------------------------------------------------- | ------------------------------------- |
 | Credential in browser     | None                                                                        | Short-lived session token             |
-| Requires                  | Agent set to public + allowed origins                                       | Your own backend endpoint             |
+| Requires                  | Agent set to public                                                         | Your own backend endpoint             |
 | Session parameters set by | The SDK (`overrides`, `dynamicVariables`, `language`, `toolEvents` options) | Your backend, in the creation request |
 | Best for                  | Demos, marketing pages, low-friction embeds                                 | Production apps with signed-in users  |
 
@@ -104,8 +103,7 @@ const session = await AgentSession.start({ sessionToken });
 
 <Tip>
   Agents marked [public](/agents/deploy/public-agents) skip the backend step
-  entirely: the SDK connects with just an `agentId`, gated by an origin
-  allowlist and rate limits.
+  entirely: the SDK connects with just an `agentId`.
 </Tip>
 
 For phone calls there is no client integration: assign a number, and inbound calls connect directly to your agent, which can [transfer callers](/agents/telephony/transfers) to another number mid-call. See [Phone numbers](/agents/telephony/phone-numbers).
