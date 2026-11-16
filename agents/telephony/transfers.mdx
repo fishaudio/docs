@@ -400,6 +400,26 @@ A session with a successful transfer ends with `end_reason` `escalated`, however
 
 `sip_status` is the carrier's final SIP response code as received, and `null` when the carrier gave none. When a cold handoff rings past the time limit with the caller still on the line, the attempt is `refer_failed` with `dial_status` `no_answer` and no `sip_status`.
 
+### Reason codes on the tool result
+
+The `_transfer_call` tool call that started a failed attempt has a `tool_result` with `status` `failed`. Its `error_detail` says why the attempt did not connect, as one code you can count, alert on and write rules against:
+
+| `status_code`   | What happened                                                                                                 | Warm `outcome` (`dial_status`)                         | Cold `outcome` (`dial_status`)                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `not_placed`    | The call never went out: the carrier refused it, the number or trunk has a problem, or it could not be set up | `dial_failed` (`failed` or none), `unavailable`        | `refer_failed` (`failed` or none)                                                       |
+| `busy`          | The line was busy, or the call was rejected (`486`, `600`, `603`)                                             | `dial_failed` (`busy`)                                 | `refer_failed` (`busy`)                                                                 |
+| `no_answer`     | It rang and nobody answered                                                                                   | `dial_failed` (`no_answer`), `consult_timeout`         | `refer_failed` (`no_answer`)                                                            |
+| `declined`      | Your team member said they could not take the call                                                            | `declined`                                             |                                                                                         |
+| `voicemail`     | Voicemail answered                                                                                            | `voicemail`                                            |                                                                                         |
+| `ivr`           | A phone menu answered and nobody took over                                                                    | `ivr`                                                  |                                                                                         |
+| `hung_up`       | Your team member hung up, or the line dropped, before the calls were merged                                   | `consult_closed`                                       |                                                                                         |
+| `merge_failed`  | Both sides were there, but connecting them failed                                                             | `merge_failed`                                         |                                                                                         |
+| `caller_hangup` | The caller hung up during the transfer; the destination was not at fault                                      | `caller_hangup`, or the caller had left when it failed | The caller hung up while the destination rang, or during the announcement (`cancelled`) |
+
+A cold transfer only sees the carrier's answer to the handoff, so on the destination's side it can only be `not_placed`, `busy` or `no_answer`. The caller hanging up takes precedence over the carrier's code: a caller who hangs up while a cold destination rings is `caller_hangup`, not `no_answer`, even though the carrier answers `487`. Leave `caller_hangup` out when you count unreachable destinations.
+
+`error_detail` also carries `sip_status`, the carrier's SIP response code when it gave one and `null` otherwise, and `status_message`, a readable explanation. The result's `error` text starts with `transfer_failed: <status_code> — `, so rules that match the text keep working. New codes may be added, so don't reject ones you don't recognize. Results recorded before reason codes existed have `error_detail` `null`. See [Item types](/agents/monitor/conversation-history#item-types) for the rest of the `tool_result`.
+
 ### After a successful transfer
 
 `merged` and `referred` items carry three facts about the call between the caller and your team member:

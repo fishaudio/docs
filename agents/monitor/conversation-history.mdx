@@ -167,6 +167,7 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
       "output_truncated": false,
       "error": null,
       "rejected_by": null,
+      "error_detail": null,
       "latency_ms": 812,
       "created_at": "2026-07-22T09:14:07Z"
     },
@@ -205,6 +206,7 @@ Details worth knowing:
 - **Mid-call queries**: you can fetch an `active` session; you get the items persisted so far, and `analysis` is `null` until [post-call analysis](/agents/monitor/post-call-analysis) completes.
 - A `tool_call` without a matching `tool_result` means the execution never resolved.
 - **`rejected_by`**: on a `tool_result`, `"parameter_validation"` when the tool [validates its parameters](/agents/build/webhook-tools#parameters-and-validation) and refused the call before it ran, so `status` is `failed` and `error` is the rejection the model was shown. `null` for every other result, including a tool that ran and failed. New values may be added.
+- **`error_detail`**: on a failed `tool_result`, the structured reason beside the `error` text: `status_code`, a stable code to count and match on; `sip_status`, the carrier's SIP response code, or `null`; and `status_message`, a readable explanation. Only `_transfer_call` sets it so far; see [reason codes on the tool result](/agents/telephony/transfers#reason-codes-on-the-tool-result) for its codes. `null` on completed results, on tools that only set `error`, and on results recorded before the field existed.
 
 ### LLM endpoint errors
 
