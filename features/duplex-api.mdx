@@ -124,7 +124,8 @@ For example, encode this object as MessagePack rather than sending it as a JSON 
   "type": "session.start",
   "audio": {
     "encoding": "pcm_s16le",
-    "sample_rate": 24000
+    "sample_rate": 24000,
+    "noise_cancellation": true
   },
   "turns": {
     "eager": true
@@ -136,7 +137,7 @@ Omitting `voice` selects the server's default voice. To use a supported voice fr
 
 Send audio continuously in real time in 20–100 ms chunks, including silence. The caller audio stream drives the session clock. Each WebSocket frame must contain one MessagePack map; `audio.data` is raw MessagePack binary, not base64 or an array of integers. For `pcm_s16le`, silence is zero-valued samples.
 
-Only send supported session fields. In particular, `audio.noise_cancel` is not supported by the Duplex API and is rejected with `invalid_session_start` and close code `4400`. Browser microphone echo cancellation and noise suppression are configured in your client, separately from this handshake.
+Set `audio.noise_cancellation: true` to request server-side denoising of caller audio. It is off by default in the API; the starter requests it by default. Check `session.started.noise_cancellation.on` to confirm it is active and `delay_ms` for the added listening delay. If the service does not offer denoising, the session continues with `on: false`. It does not change the agent's output audio or replace browser echo cancellation. Use the current field name: the old `audio.noise_cancel` spelling is rejected with `invalid_session_start` and close code `4400`.
 
 Read the negotiated input and output rates from `session.started.audio`, and configure playback using `output_sample_rate`. Use `session.started.limits` for the current message, text, held-reply, idle, and session limits. If you buffer speaker audio, set `playback.delay_ms` to reflect that delay so interruption alignment can account for it. See the [Converse reference](/api-reference/endpoint/websocket/duplex-api-converse) for all fields and supported audio formats.
 

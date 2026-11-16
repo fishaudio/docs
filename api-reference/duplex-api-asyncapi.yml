@@ -166,6 +166,10 @@ components:
                   - 44100
                   - 48000
                 description: Agent output PCM sample rate in Hz (defaults to `sample_rate`).
+              noise_cancellation:
+                type: boolean
+                default: false
+                description: Request denoising of caller audio for the service's listening. Availability and listening delay are reported in `session.started.noise_cancellation`. Does not change agent output audio or replace echo cancellation.
           turns:
             type: object
             description: Conversational turn detection settings (`/v1/duplex/converse` only).
@@ -211,6 +215,7 @@ components:
             audio:
               encoding: pcm_s16le
               sample_rate: 24000
+              noise_cancellation: true
             turns:
               eager: true
               backchannel: true
@@ -404,6 +409,17 @@ components:
                 type: integer
               output_sample_rate:
                 type: integer
+          noise_cancellation:
+            type: object
+            description: Effective server-side caller denoising status. Off when not requested or unavailable; the session continues either way.
+            properties:
+              on:
+                type: boolean
+                description: Whether caller denoising is active for this session.
+              delay_ms:
+                type: integer
+                minimum: 0
+                description: Additional listening delay in milliseconds; not an output audio timestamp.
       examples:
         - payload:
             seq: 0
@@ -427,6 +443,9 @@ components:
               encoding: pcm_s16le
               sample_rate: 24000
               output_sample_rate: 24000
+            noise_cancellation:
+              on: true
+              delay_ms: 28
     ServerAudio:
       name: audio
       title: audio
