@@ -207,7 +207,7 @@ Details worth knowing:
 
 ### LLM endpoint errors
 
-Sessions also carry `llm_endpoint_errors`, oldest first. On a [custom LLM](/agents/build/custom-llm) it lists each failed generation of your endpoint. On any model, including platform models, it lists each reply the model's provider refused, such as a content filter or a content policy block. It is empty when neither happened.
+Sessions also carry `llm_endpoint_errors`, oldest first. On a [custom LLM](/agents/build/custom-llm) it lists each failed generation of your endpoint. On any model, including platform models, it lists each reply the model's provider refused, such as a content filter or a content policy block, when no [fallback model](/agents/build/llm-fallback) was left to answer it. It is empty when neither happened.
 
 ```json
 {
@@ -235,7 +235,7 @@ Sessions also carry `llm_endpoint_errors`, oldest first. On a [custom LLM](/agen
 - `status_code` is set on `http_error` only.
 - `response_body` is the start of what your endpoint sent back, on `http_error` and `not_event_stream`. On `refused` it is what the provider said about the refusal, for example `PROHIBITED_CONTENT: The prompt could not be submitted.` It is at most 300 characters, and your API key is masked. It is `null` when the body was empty.
 
-A refused reply looks like this. Retrying does not help: change the agent's prompt, the conversation or the model.
+A refused reply looks like this. A refusal first moves the reply to the next [fallback model](/agents/build/llm-fallback), which shows in [`llm_fallbacks`](#llm-fallbacks) with `reason: refused`. It is listed here when no model was left to answer. Retrying does not help: change the agent's prompt, the conversation or the model, or add a fallback model that accepts the content.
 
 ```json
 {
@@ -282,6 +282,7 @@ A refused reply looks like this. Retrying does not help: change the agent's prom
   | `ttft_timeout` | No first token within the model's `ttft_timeout_ms`. |
   | `total_timeout` | The reply did not finish within the model's `total_timeout_ms` and nothing was spoken yet. |
   | `empty` | The response stream broke off with no output and no end signal. A reply that finished normally with nothing in it is the agent staying silent. That is not a fallback. |
+  | `refused` | The model's provider ended the reply as a refusal with nothing in it, such as a content filter or a content policy block. |
   | `kick_in` | The fallback ran in parallel and its reply was used. The agent's own model had no first token within `kick_in_ms`. |
 
   New reasons may be added.
