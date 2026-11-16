@@ -4,7 +4,7 @@ description: "Let visitors talk to your agent directly from the browser, no back
 icon: "globe"
 ---
 
-A public agent accepts sessions straight from the browser: the SDK calls the session endpoint with just an `agent_id`, no API key and no server of your own. The platform gates access with three controls: an agent-level public switch (off by default), an optional origin allowlist, and rate limiting.
+A public agent accepts sessions straight from the browser: the SDK calls the session endpoint with just an `agent_id`, no API key and no server of your own. The platform gates access with an agent-level public switch (off by default) and rate limiting, and you can [restrict the origins](#restrict-origins) that may use the agent.
 
 Use this mode for demos, marketing pages, and support bubbles where standing up a backend isn't worth it. For production apps with their own users, [authenticated sessions](/agents/deploy/authenticated-sessions) are usually the better fit. See [when to use session tokens instead](#when-to-use-session-tokens-instead).
 
@@ -23,21 +23,6 @@ Use this mode for demos, marketing pages, and support bubbles where standing up 
   </Step>
 </Steps>
 
-That is all a public agent needs: once the switch is on, any website can start sessions with the agent ID.
-
-## Restrict origins
-
-To limit which sites can use the agent, turn on **Restrict origins** on the **Deploy** page and list every web origin that may start sessions (`restrict_origins` and `allowed_origins` in the API). While the restriction is on, a request whose `Origin` doesn't match any entry is rejected with `403`.
-
-<Warning>
-  With **Restrict origins** on and no origin listed, every public request is
-  rejected. Add an origin or turn the restriction off.
-</Warning>
-
-Restricting origins keeps other websites from embedding your agent and spending your credit from visitors' browsers. A non-browser client can send any `Origin` header, so the allowlist is not a substitute for [authenticated sessions](/agents/deploy/authenticated-sessions) when the agent must stay private.
-
-When you set the fields through the API, sending `allowed_origins` on its own turns the restriction on, and it stays on if you later empty the list. Send `"restrict_origins": false` to open the agent to every origin again.
-
 ## Start a session from the browser
 
 Pass `agentId` to the SDK and it creates the session directly with the Fish Audio API, then connects the audio.
@@ -55,11 +40,9 @@ session.on("agentResponse", ({ text }) => console.log("Agent:", text));
 ```
 
 ```bash API (curl)
-# No Authorization header. When the agent restricts origins, the Origin
-# header is checked: browsers send it automatically, curl must set it.
+# No Authorization header.
 curl --request POST https://api.fish.audio/v1/agent/sessions \
   --header "Content-Type: application/json" \
-  --header "Origin: https://app.example.com" \
   --data '{ "agent_id": "YOUR_AGENT_ID" }'
 ```
 
@@ -67,9 +50,20 @@ curl --request POST https://api.fish.audio/v1/agent/sessions \
 
 The response is the same session token an authenticated request returns. The SDK consumes it internally. Everything else (events, methods, client tools) works exactly as in the [Web SDK](/agents/deploy/web-sdk).
 
-## Origin matching
+## Restrict origins
 
-Matching applies while **Restrict origins** is on. An entry matches only on **exact scheme + host + port**. The host is case-insensitive, and a trailing slash on an entry is tolerated.
+By default, any website can start sessions on a public agent. To limit that to your own sites, turn on **Restrict origins** on the **Deploy** page and add each web origin that may start sessions (`restrict_origins` and `allowed_origins` in the API). A request whose `Origin` doesn't match any entry is then rejected with `403`.
+
+<Warning>
+  With **Restrict origins** on and no origin listed, every public request is
+  rejected.
+</Warning>
+
+Browsers send the `Origin` header automatically. Any other client must set it, and can set any value, so restricting origins does not make an agent private.
+
+### Origin matching
+
+An entry matches only on **exact scheme + host + port**. The host is case-insensitive, and a trailing slash on an entry is tolerated.
 
 | Allowlist entry           | Browser origin                 | Allowed                        |
 | ------------------------- | ------------------------------ | ------------------------------ |
