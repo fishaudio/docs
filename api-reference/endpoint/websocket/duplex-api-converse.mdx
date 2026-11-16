@@ -13,5 +13,7 @@ hidden: true
 
 Use this endpoint when you want Fish to provide turn detection. Read the [Duplex API guide](/features/duplex-api) for the architecture, starter application, and conversation flow.
 
+Select a voice with `session.start.voice.reference_id`. See [Voice presets](/features/duplex-api#choose-a-voice) for Clara and the other ready-to-use reference IDs, or supply a custom Fish Voice Library ID. Use the ID, not the voice's display name.
+
 Every message is a binary WebSocket frame containing a MessagePack map. Audio
 payloads use MessagePack binary data, not base64 strings.
