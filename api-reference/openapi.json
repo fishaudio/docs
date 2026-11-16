@@ -23718,6 +23718,37 @@
         "title": "AgentSessionToolCallItem",
         "type": "object"
       },
+      "AgentSessionToolErrorDetail": {
+        "description": "A failed tool call's structured reason, beside the `error` string.\nOnly `_transfer_call` fills it so far: `status_code` is then why the\ntransfer did not connect (not_placed, busy, no_answer, declined, voicemail,\nivr, hung_up, merge_failed or caller_hangup, the last when the caller hung\nup during the transfer). The gateway's keys, forwarded as they are.",
+        "properties": {
+          "status_code": {
+            "title": "Status Code",
+            "type": "string"
+          },
+          "sip_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sip Status"
+          },
+          "status_message": {
+            "title": "Status Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status_code",
+          "status_message"
+        ],
+        "title": "AgentSessionToolErrorDetail",
+        "type": "object"
+      },
       "AgentSessionToolResultItem": {
         "description": "Tool outcome (`tool.completed`/`tool.failed` twin). A call that never\nresolved (session died mid-flight) has no result item.",
         "properties": {
@@ -23783,6 +23814,17 @@
             ],
             "default": null,
             "title": "Error"
+          },
+          "error_detail": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentSessionToolErrorDetail"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "rejected_by": {
             "anyOf": [
