@@ -86,7 +86,7 @@ sequenceDiagram
     L-->>B: First text chunk
     B->>F: reply.text (reply_id=r1, for=e1, last=false)
     Note over F: Prepare speech and hold it until approval
-    Note over B,L: Read-only tools may run; state-changing tools wait for commit
+    Note over B,L: Read-only tools may run<br/>State-changing tools wait for commit
 
     alt Caller finishes the turn
         F-->>B: turn.committed (approved_eager_id=e1)
