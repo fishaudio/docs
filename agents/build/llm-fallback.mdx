@@ -15,7 +15,7 @@ Fallback decides what happens when that attempt produces no reply:
 
 Instead of the call going silent, the platform retries the reply on another model.
 
-A switch only affects the reply that failed. The next reply tries the agent's own model again.
+A switch only affects the reply that failed. The next reply tries the agent's own model again. In `platform` mode there are two exceptions. A model that failed is skipped until it answers again. A model refused three times in one conversation is skipped for the rest of it.
 
 ## Modes
 
@@ -117,7 +117,7 @@ A reply moves to the next model on:
 - No first token within `ttft_timeout_ms`. Outside `manual`, within the platform's own limit.
 - `total_timeout_ms` reached before anything was spoken.
 - A response stream that breaks off with no output.
-- A refusal. The model's provider ended the reply as a refusal with nothing in it, such as a content filter or a content policy block. The refusing model is not asked again for that reply. Another model may answer what this provider blocked.
+- A refusal. The model's provider ended the reply as a refusal with nothing in it, such as a content filter or a content policy block. The refused request is not retried. Another model may answer what this provider blocked.
 
 ## What doesn't switch
 
