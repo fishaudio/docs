@@ -222,9 +222,9 @@ Everything else on the request is not an override: `dynamic_variables`, `timezon
 | `max_duration_seconds` | Hard cap on session length.                                                                                 |
 | `transport`            | Which transport the SDK uses for this session; `livekit` today.                                             |
 | `livekit_url`, `token` | Connection details for that transport, consumed by the SDK.                                                 |
-| `join_url`             | A link that opens this session in the browser, for trying it without writing a client. It carries the token, so anyone with the link can join this one session. |
+| `join_url`             | A link that opens this session in the browser, for trying it without writing a client. It carries the token, so anyone with the link can join this one session. Treat it as a secret. Do not parse it, because its format can change. |
 
-Treat the response as opaque and pass it to `start()` unmodified. If the SDK does not recognize the `transport` value, it fails fast with an `unsupported_transport` error asking you to upgrade the SDK. If you pass anything other than this response, such as your backend's error body, `start()` rejects with `invalid_session_token` (from `@fishaudio/agent-client` NEXT_SDK_VERSION).
+Treat the response as opaque and pass it to `start()` unmodified. If the SDK does not recognize the `transport` value, it fails fast with an `unsupported_transport` error asking you to upgrade the SDK. If you pass something that is not this response, such as your backend's error body or only the `token` string, `start()` rejects with `invalid_session_token` (from `@fishaudio/agent-client` NEXT_SDK_VERSION).
 
 ## Token lifetime
 
@@ -233,6 +233,7 @@ Treat the response as opaque and pass it to `start()` unmodified. If the SDK doe
 - `join_url` carries the same token. It has the same deadline, and it works once.
 - Every call to `POST /v1/agent/sessions` creates a new session. Create it when the user starts the call, not ahead of time such as on page load.
 - A session that no client joins before the deadline ends with status `failed` and end reason [`room_join_timeout`](/agents/monitor/conversation-history#status-and-end-reason). It is not billed.
+- A session nobody has joined yet counts toward your concurrent lines for a short time after creation. Creating many sessions without joining them can return `429`.
 - On network drops the SDK reconnects at the transport level; it never re-creates the session, so you never need a fresh token mid-call.
 - Once a session ends, the token is spent. Create a new token for each conversation.
 
@@ -263,7 +264,7 @@ Session creation fails with standard HTTP statuses; the SDK surfaces them as a `
 | Status | Meaning                                                                                                                                       |
 | ------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `400`  | A keyless (public-agent) request sent an override [public sessions don't accept](#overrides), or a `name`.                                    |
-| `401`  | Invalid API key. A request with no `Authorization` header at all is treated as a public-agent request instead.                                |
+| `401`  | Invalid API key. A request with no `Authorization` header at all is treated as a public-agent request instead. So is an empty key, such as an unset `$FISH_API_KEY`.                                |
 | `402`  | Out of credit: the account has no trial balance or API credit left.                                                                           |
 | `403`  | Public-agent request rejected: the agent is not public, or the page's `Origin` is not on the allow-list.                                      |
 | `409`  | Conflict: most commonly the agent has no published version yet. [Publish](/agents/deploy/versions-publishing) to resolve.                    |
