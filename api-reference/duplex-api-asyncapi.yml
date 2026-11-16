@@ -1,0 +1,946 @@
+asyncapi: 3.0.0
+info:
+  title: Fish Audio Duplex API
+  version: 1.0.0
+  description: |
+    Preview — invitation only, currently limited to selected customers.
+
+    Voice interaction protocol over binary MessagePack WebSockets.
+
+    ## Protocol Overview
+
+    1. **Connect** server-to-server to `/v1/duplex/converse` with `Authorization: Bearer <API_KEY>`.
+    2. **Send `session.start`** immediately as the first binary MessagePack frame (within 5 s normally, or 1 s when server capacity is full) with `"turns": {"eager": true}`.
+    3. **Wait for `session.started`**, then stream 20–100 ms `audio` frames continuously in real time—including silence (`0x00`)—as the session clock.
+    4. **React to `turn.eager`** by immediately streaming LLM tokens via `reply.text` tagged with `"for": eager_id` (first frame only). Fish Audio synthesizes and buffers the audio silently until `turn.committed` approves `approved_eager_id` (or cancel on `turn.resumed`).
+    5. **Reconcile barge-in** using `reply.done.heard_text`, which reports the spoken prefix; check `basis` for aligned versus estimated progress.
+
+    ## Wire Framing Constraints
+
+    - Every frame in both directions is **one binary WebSocket frame** containing **one MessagePack map** (`application/msgpack`).
+    - Audio payloads (`audio.data`) must be raw MessagePack binary (`bin`), never base64 strings or integer arrays.
+    - Max frame size: `131,072 bytes` (128 KB); max map keys or array items: `16`; max `reply.text` chunk: `4,096 bytes`.
+    - Unknown keys or mismatched types are rejected as protocol errors.
+servers:
+  preview:
+    host: api.fish.audio
+    protocol: wss
+    description: Fish Audio Duplex API WebSocket server
+    security:
+      - $ref: "#/components/securitySchemes/bearerAuth"
+channels:
+  duplexConverse:
+    address: /v1/duplex/converse
+    description: |
+      Full-duplex voice agent channel with server-side turn detection (`turn.eager`, `turn.resumed`, `turn.committed`), barge-in interruption, and `heard_text` receipts.
+    messages:
+      sessionStart:
+        $ref: "#/components/messages/SessionStart"
+      clientAudio:
+        $ref: "#/components/messages/ClientAudio"
+      replyText:
+        $ref: "#/components/messages/ReplyText"
+      replyCancel:
+        $ref: "#/components/messages/ReplyCancel"
+      listenPause:
+        $ref: "#/components/messages/ListenPause"
+      listenResume:
+        $ref: "#/components/messages/ListenResume"
+      sessionStarted:
+        $ref: "#/components/messages/SessionStarted"
+      serverAudio:
+        $ref: "#/components/messages/ServerAudio"
+      turnEager:
+        $ref: "#/components/messages/TurnEager"
+      turnResumed:
+        $ref: "#/components/messages/TurnResumed"
+      turnCommitted:
+        $ref: "#/components/messages/TurnCommitted"
+      turnDropped:
+        $ref: "#/components/messages/TurnDropped"
+      turnBackchannel:
+        $ref: "#/components/messages/TurnBackchannel"
+      turnInterim:
+        $ref: "#/components/messages/TurnInterim"
+      replyStarted:
+        $ref: "#/components/messages/ReplyStarted"
+      replyProgress:
+        $ref: "#/components/messages/ReplyProgress"
+      replyInterrupted:
+        $ref: "#/components/messages/ReplyInterrupted"
+      replyDone:
+        $ref: "#/components/messages/ReplyDone"
+      agentSpeech:
+        $ref: "#/components/messages/AgentSpeech"
+      sessionEnding:
+        $ref: "#/components/messages/SessionEnding"
+      errorEvent:
+        $ref: "#/components/messages/ErrorEvent"
+operations:
+  converseClientFrames:
+    action: receive
+    channel:
+      $ref: "#/channels/duplexConverse"
+    messages:
+      - $ref: "#/channels/duplexConverse/messages/sessionStart"
+      - $ref: "#/channels/duplexConverse/messages/clientAudio"
+      - $ref: "#/channels/duplexConverse/messages/replyText"
+      - $ref: "#/channels/duplexConverse/messages/replyCancel"
+      - $ref: "#/channels/duplexConverse/messages/listenPause"
+      - $ref: "#/channels/duplexConverse/messages/listenResume"
+    description: Client-to-server control and continuous caller audio frames (`C -> S`).
+  converseServerFrames:
+    action: send
+    channel:
+      $ref: "#/channels/duplexConverse"
+    messages:
+      - $ref: "#/channels/duplexConverse/messages/sessionStarted"
+      - $ref: "#/channels/duplexConverse/messages/serverAudio"
+      - $ref: "#/channels/duplexConverse/messages/turnEager"
+      - $ref: "#/channels/duplexConverse/messages/turnResumed"
+      - $ref: "#/channels/duplexConverse/messages/turnCommitted"
+      - $ref: "#/channels/duplexConverse/messages/turnDropped"
+      - $ref: "#/channels/duplexConverse/messages/turnBackchannel"
+      - $ref: "#/channels/duplexConverse/messages/turnInterim"
+      - $ref: "#/channels/duplexConverse/messages/replyStarted"
+      - $ref: "#/channels/duplexConverse/messages/replyProgress"
+      - $ref: "#/channels/duplexConverse/messages/replyInterrupted"
+      - $ref: "#/channels/duplexConverse/messages/replyDone"
+      - $ref: "#/channels/duplexConverse/messages/agentSpeech"
+      - $ref: "#/channels/duplexConverse/messages/sessionEnding"
+      - $ref: "#/channels/duplexConverse/messages/errorEvent"
+    description: Server-to-client turn, reply receipt, and continuous agent audio frames (`S -> C`).
+components:
+  messages:
+    SessionStart:
+      name: session.start
+      title: session.start
+      contentType: application/msgpack
+      description: |
+        Sent **once** as the very first frame within 5 s of connecting (or within 1 s when server capacity is full). Configures voice, audio format, and eager turn options for the entire call.
+      payload:
+        type: object
+        required:
+          - type
+          - audio
+        properties:
+          type:
+            type: string
+            const: session.start
+          voice:
+            type: object
+            required:
+              - reference_id
+            description: Optional Fish Voice Library model. Omit `voice` to use the server's default voice.
+            properties:
+              reference_id:
+                type: string
+                description: Fish Voice Library model ID (1-128 chars), e.g. `9a9cf47702da476aa4629e2506d4a857`.
+          audio:
+            type: object
+            required:
+              - encoding
+              - sample_rate
+            properties:
+              encoding:
+                type: string
+                enum:
+                  - pcm_s16le
+                  - mulaw
+                description: "`pcm_s16le` (16-bit signed LE mono) or `mulaw` (8-bit G.711 at 8000 Hz)."
+              sample_rate:
+                type: integer
+                enum:
+                  - 8000
+                  - 16000
+                  - 24000
+                  - 44100
+                  - 48000
+                description: Caller input sample rate in Hz.
+              output_sample_rate:
+                type: integer
+                enum:
+                  - 8000
+                  - 16000
+                  - 24000
+                  - 44100
+                  - 48000
+                description: Agent output PCM sample rate in Hz (defaults to `sample_rate`).
+              noise_cancel:
+                type: boolean
+                default: true
+                description: Denoise caller audio before speech recognition.
+          turns:
+            type: object
+            description: Conversational turn detection settings (`/v1/duplex/converse` only).
+            properties:
+              eager:
+                type: boolean
+                default: false
+                description: "**Recommended: `true`.** Emits `turn.eager` and `turn.resumed` for speculative low-latency generation."
+              backchannel:
+                type: boolean
+                default: false
+                description: Emit `turn.backchannel` when the caller says brief acknowledgements while the agent speaks.
+              interim:
+                type: boolean
+                default: false
+                description: Emit streaming `turn.interim` ASR drafts for live UI captions.
+          own_speech:
+            type: string
+            enum:
+              - natural
+              - quiet
+            default: natural
+            description: "`natural` enables conversational prosody/breaths; `quiet` suppresses autonomous sounds."
+          playback:
+            type: object
+            properties:
+              delay_ms:
+                type: integer
+                minimum: 0
+                maximum: 2000
+                default: 0
+                description: Client speaker/jitter-buffer latency in milliseconds for accurate `heard_text` alignment on barge-in.
+          session_ending:
+            type: boolean
+            default: false
+            description: Emit `session.ending` warnings at 120 s and 30 s before `max_session_s`.
+      examples:
+        - name: Recommended Eager Voice Agent
+          payload:
+            type: session.start
+            voice:
+              reference_id: 9a9cf47702da476aa4629e2506d4a857
+            audio:
+              encoding: pcm_s16le
+              sample_rate: 24000
+              noise_cancel: true
+            turns:
+              eager: true
+              backchannel: true
+              interim: true
+            playback:
+              delay_ms: 260
+            session_ending: true
+    ClientAudio:
+      name: audio
+      title: audio
+      contentType: application/msgpack
+      description: |
+        Continuous real-time caller audio stream (`20 ms` to `100 ms` per frame), **silence included**. Acts as the session clock; stopping for over 30 s closes the call (`4408 idle_timeout`) unless `listen.pause` is active.
+      payload:
+        type: object
+        required:
+          - type
+          - data
+        properties:
+          type:
+            type: string
+            const: audio
+          data:
+            type: string
+            format: binary
+            description: Raw MessagePack `bin` audio bytes matching `session.start.audio`.
+      examples:
+        - payload:
+            type: audio
+            data: <960 bytes raw pcm_s16le (20 ms @ 24 kHz)>
+    ReplyText:
+      name: reply.text
+      title: reply.text
+      contentType: application/msgpack
+      description: |
+        Streams text chunks from your LLM for the agent to speak. Starting a new `reply_id` preempts any currently speaking reply.
+      payload:
+        type: object
+        required:
+          - type
+          - reply_id
+          - text
+        properties:
+          type:
+            type: string
+            const: reply.text
+          reply_id:
+            type: string
+            description: Client-assigned reply identifier (1-64 chars).
+          text:
+            type: string
+            maxLength: 4096
+            description: 'Spoken text delta (up to 4,096 bytes). May be `""` when signaling `last: true` or `flush: true`.'
+          for:
+            type: string
+            description: "**First frame of a `reply_id` only.** Names the `eager_id` (or `turn_id`) being answered. When set to an `eager_id`, Fish synthesizes and holds audio silently until `turn.committed` approves it."
+          flush:
+            type: boolean
+            default: false
+            description: Synthesize accumulated text immediately without closing the reply (ideal for short filler lines before running a tool).
+          last:
+            type: boolean
+            default: false
+            description: Marks the end of this `reply_id` text stream.
+      examples:
+        - name: Speculative Eager First Chunk
+          payload:
+            type: reply.text
+            reply_id: r-1-9f3a
+            for: e_01
+            text: "Got it, adding a burger meal. "
+            flush: true
+            last: false
+        - name: Final Closing Chunk
+          payload:
+            type: reply.text
+            reply_id: r-1-9f3a
+            text: What drink would you like with that?
+            flush: false
+            last: true
+    ReplyCancel:
+      name: reply.cancel
+      title: reply.cancel
+      contentType: application/msgpack
+      description: Cancels an in-progress or held speculative reply (for example, when `turn.resumed` arrives).
+      payload:
+        type: object
+        required:
+          - type
+          - reply_id
+        properties:
+          type:
+            type: string
+            const: reply.cancel
+          reply_id:
+            type: string
+      examples:
+        - payload:
+            type: reply.cancel
+            reply_id: r-1-9f3a
+    ListenPause:
+      name: listen.pause
+      title: listen.pause
+      contentType: application/msgpack
+      description: Mutes caller input processing (during IVR keypad entry, call transfer, or hold) and extends idle timeout from 30 s to 300 s.
+      payload:
+        type: object
+        required:
+          - type
+        properties:
+          type:
+            type: string
+            const: listen.pause
+      examples:
+        - payload:
+            type: listen.pause
+    ListenResume:
+      name: listen.resume
+      title: listen.resume
+      contentType: application/msgpack
+      description: Resumes caller audio listening and restores the 30 s idle timeout.
+      payload:
+        type: object
+        required:
+          - type
+        properties:
+          type:
+            type: string
+            const: listen.resume
+      examples:
+        - payload:
+            type: listen.resume
+    SessionStarted:
+      name: session.started
+      title: session.started
+      contentType: application/msgpack
+      description: Confirms the session is live, returning active limits, audio rates, and LLM prompt `text_rules`. Begin streaming real-time caller audio upon receipt.
+      payload:
+        type: object
+        required:
+          - seq
+          - type
+          - session_id
+          - limits
+          - text_rules
+          - audio
+        properties:
+          seq:
+            type: integer
+          type:
+            type: string
+            const: session.started
+          session_id:
+            type: string
+          limits:
+            type: object
+            properties:
+              max_session_s:
+                type: integer
+              idle_s:
+                type: integer
+              max_text_bytes:
+                type: integer
+              max_held_bytes:
+                type: integer
+              max_held_s:
+                type: integer
+              max_message_bytes:
+                type: integer
+          text_rules:
+            type: object
+            description: Spoken formatting rules to inject into your LLM system prompt.
+            properties:
+              numbers:
+                type: string
+                enum:
+                  - spoken
+                  - written
+              ack_in_t:
+                type: boolean
+              avoid:
+                type: array
+                items:
+                  type: string
+          audio:
+            type: object
+            properties:
+              encoding:
+                type: string
+              sample_rate:
+                type: integer
+              output_sample_rate:
+                type: integer
+          noise_cancel:
+            type: object
+            properties:
+              on:
+                type: boolean
+              delay_ms:
+                type: integer
+      examples:
+        - payload:
+            seq: 0
+            type: session.started
+            session_id: 20261116-090715-6462dd
+            limits:
+              max_session_s: 1800
+              idle_s: 30
+              max_text_bytes: 4096
+              max_held_bytes: 8192
+              max_held_s: 15
+              max_message_bytes: 131072
+            text_rules:
+              numbers: written
+              ack_in_t: false
+              avoid:
+                - colon
+                - semicolon
+                - spaced_dash
+            audio:
+              encoding: pcm_s16le
+              sample_rate: 24000
+              output_sample_rate: 24000
+            noise_cancel:
+              on: true
+              delay_ms: 20
+    ServerAudio:
+      name: audio
+      title: audio
+      contentType: application/msgpack
+      description: Continuous `pcm_s16le` mono agent audio stream at `output_sample_rate` (silence included). Buffer ~240–300 ms on playback.
+      payload:
+        type: object
+        required:
+          - seq
+          - type
+          - data
+        properties:
+          seq:
+            type: integer
+          type:
+            type: string
+            const: audio
+          data:
+            type: string
+            format: binary
+      examples:
+        - payload:
+            seq: 1
+            type: audio
+            data: <raw pcm_s16le mono bytes>
+    TurnEager:
+      name: turn.eager
+      title: turn.eager
+      contentType: application/msgpack
+      description: |
+        Speculative end-of-turn signal emitted as soon as the caller pauses. Start your LLM stream immediately and send `reply.text` with `"for": eager_id` (gate mutating database/order writes until `turn.committed`).
+      payload:
+        type: object
+        required:
+          - seq
+          - type
+          - eager_id
+          - turn_id
+          - text
+          - agent
+        properties:
+          seq:
+            type: integer
+          type:
+            type: string
+            const: turn.eager
+          eager_id:
+            type: string
+          turn_id:
+            type: string
+          text:
+            type: string
+          agent:
+            $ref: "#/components/schemas/AgentSnapshot"
+      examples:
+        - payload:
+            seq: 42
+            type: turn.eager
+            eager_id: e_01
+            turn_id: t_01
+            text: Can I get a burger meal
+            agent:
+              reply_id: null
+              state: idle
+              heard_text: ""
+              basis: aligned
+    TurnResumed:
+      name: turn.resumed
+      title: turn.resumed
+      contentType: application/msgpack
+      description: Caller continued speaking after `turn.eager`. Cancel your in-flight speculative LLM stream and send `reply.cancel`.
+      payload:
+        type: object
+        required:
+          - seq
+          - type
+          - eager_id
+        properties:
+          seq:
+            type: integer
+          type:
+            type: string
+            const: turn.resumed
+          eager_id:
+            type: string
+      examples:
+        - payload:
+            seq: 45
+            type: turn.resumed
+            eager_id: e_01
+    TurnCommitted:
+      name: turn.committed
+      title: turn.committed
+      contentType: application/msgpack
+      description: |
+        Authoritative finalized caller turn. If `approved_eager_id` matches your active speculative run, Fish Audio immediately releases the pre-synthesized audio buffer (`lead_ms` reports latency saved) and your server can commit any gated write tools.
+      payload:
+        type: object
+        required:
+          - seq
+          - type
+          - turn_id
+          - text
+          - kind
+          - agent
+        properties:
+          seq:
+            type: integer
+          type:
+            type: string
+            const: turn.committed
+          turn_id:
+            type: string
+          text:
+            type: string
+          kind:
+            type: string
+            enum:
+              - turn
+              - aside
+            description: "`turn` is addressed to the agent; `aside` is speech directed away from the phone/mic."
+          approved_eager_id:
+            type:
+              - string
+              - "null"
+          lead_ms:
+            type:
+              - integer
+              - "null"
+            description: Milliseconds of speculative head-start saved by `turn.eager`.
+          agent:
+            $ref: "#/components/schemas/AgentSnapshot"
+      examples:
+        - payload:
+            seq: 49
+            type: turn.committed
+            turn_id: t_01
+            text: Can I get a burger meal
+            kind: turn
+            approved_eager_id: e_01
+            lead_ms: 280
+            agent:
+              reply_id: r-1-9f3a
+              state: pending
+              heard_text: ""
+              basis: aligned
+    TurnDropped:
+      name: turn.dropped
+      title: turn.dropped
+      contentType: application/msgpack
+      description: Sound stopped agent speech or triggered VAD without becoming a valid caller turn.
+      payload:
+        type: object
+        required:
+          - seq
+          - type
+          - reason
+          - agent
+        properties:
+          seq:
+            type: integer
+          type:
+            type: string
+            const: turn.dropped
+          reason:
+            type: string
+            enum:
+              - nonuser
+              - filler
+              - backchannel
+              - echo
+              - no_commit
+              - asr_lost
+          agent:
+            $ref: "#/components/schemas/AgentSnapshot"
+    TurnBackchannel:
+      name: turn.backchannel
+      title: turn.backchannel
+      contentType: application/msgpack
+      description: Short caller acknowledgement (*"mm-hmm"*, *"okay"*) while the agent holds the floor.
+      payload:
+        type: object
+        required:
+          - seq
+          - type
+          - text
+          - at_ms
+        properties:
+          seq:
+            type: integer
+          type:
+            type: string
+            const: turn.backchannel
+          text:
+            type: string
+          at_ms:
+            type: integer
+    TurnInterim:
+      name: turn.interim
+      title: turn.interim
+      contentType: application/msgpack
+      description: "Live streaming ASR partial transcript for UI captions (`turns.interim: true`)."
+      payload:
+        type: object
+        required:
+          - seq
+          - type
+          - turn_id
+          - text
+        properties:
+          seq:
+            type: integer
+          type:
+            type: string
+            const: turn.interim
+          turn_id:
+            type: string
+          text:
+            type: string
+    ReplyStarted:
+      name: reply.started
+      title: reply.started
+      contentType: application/msgpack
+      description: Emitted when the first audible speech sample of `reply_id` enters the output audio stream.
+      payload:
+        type: object
+        required:
+          - seq
+          - type
+          - reply_id
+          - at_ms
+        properties:
+          seq:
+            type: integer
+          type:
+            type: string
+            const: reply.started
+          reply_id:
+            type: string
+          at_ms:
+            type: integer
+            description: Session output timestamp (`sample_index * 1000 / output_sample_rate`).
+    ReplyProgress:
+      name: reply.progress
+      title: reply.progress
+      contentType: application/msgpack
+      description: Periodic spoken character progress along `reply_id`.
+      payload:
+        type: object
+        required:
+          - seq
+          - type
+          - reply_id
+          - spoken_chars
+          - basis
+        properties:
+          seq:
+            type: integer
+          type:
+            type: string
+            const: reply.progress
+          reply_id:
+            type: string
+          spoken_chars:
+            type: integer
+          basis:
+            type: string
+            enum:
+              - aligned
+              - estimated
+    ReplyInterrupted:
+      name: reply.interrupted
+      title: reply.interrupted
+      contentType: application/msgpack
+      description: "Emitted up to twice when a reply is cut short (`final: false` at cut onset for immediate client speaker fade-out; `final: true` once agent audio settles)."
+      payload:
+        type: object
+        required:
+          - seq
+          - type
+          - reply_id
+          - by
+          - heard_text
+          - basis
+          - final
+        properties:
+          seq:
+            type: integer
+          type:
+            type: string
+            const: reply.interrupted
+          reply_id:
+            type: string
+          by:
+            type: string
+            enum:
+              - caller
+              - client
+          heard_text:
+            type: string
+          basis:
+            type: string
+            enum:
+              - aligned
+              - estimated
+          final:
+            type: boolean
+    ReplyDone:
+      name: reply.done
+      title: reply.done
+      contentType: application/msgpack
+      description: |
+        Single authoritative receipt concluding every reply. Always append `heard_text` (never unplayed `unheard_text`) to your LLM conversation history.
+      payload:
+        type: object
+        required:
+          - seq
+          - type
+          - reply_id
+          - status
+          - heard_text
+          - unheard_text
+          - heard_chars
+          - basis
+        properties:
+          seq:
+            type: integer
+          type:
+            type: string
+            const: reply.done
+          reply_id:
+            type: string
+          status:
+            type: string
+            enum:
+              - completed
+              - interrupted
+              - partial
+              - replaced
+              - rejected
+              - failed
+          reason:
+            type:
+              - string
+              - "null"
+            description: "`not_approved` | `stale_turn` | `held_timeout` | `held_overflow` | `stopped_early` | `never_spoke` | `empty_text` | `text_refused` | `engine_lost` | `session_ended`"
+          by:
+            type:
+              - string
+              - "null"
+            enum:
+              - caller
+              - client
+              - replaced
+              - null
+          heard_text:
+            type: string
+            description: Exact prefix heard by the caller.
+          unheard_text:
+            type: string
+            description: Remaining submitted text that never played (`heard_text + unheard_text` equals total submitted text).
+          heard_chars:
+            type: integer
+          basis:
+            type: string
+            enum:
+              - aligned
+              - estimated
+          audio_end_ms:
+            type:
+              - integer
+              - "null"
+      examples:
+        - name: Interrupted Reply Receipt
+          payload:
+            seq: 88
+            type: reply.done
+            reply_id: r-1-9f3a
+            status: interrupted
+            reason: null
+            by: caller
+            heard_text: Got it, adding a burger meal.
+            unheard_text: " What drink would you like with that?"
+            heard_chars: 30
+            basis: aligned
+            audio_end_ms: 4120
+    AgentSpeech:
+      name: agent.speech
+      title: agent.speech
+      contentType: application/msgpack
+      description: Autonomous conversational backchannel or natural vocalization produced by the voice model outside explicit replies.
+      payload:
+        type: object
+        required:
+          - seq
+          - type
+          - kind
+          - start_ms
+          - end_ms
+        properties:
+          seq:
+            type: integer
+          type:
+            type: string
+            const: agent.speech
+          kind:
+            type: string
+            enum:
+              - backchannel
+              - own
+          start_ms:
+            type: integer
+          end_ms:
+            type: integer
+    SessionEnding:
+      name: session.ending
+      title: session.ending
+      contentType: application/msgpack
+      description: Warning emitted 120 s and 30 s before `limits.max_session_s`.
+      payload:
+        type: object
+        required:
+          - seq
+          - type
+          - in_s
+        properties:
+          seq:
+            type: integer
+          type:
+            type: string
+            const: session.ending
+          in_s:
+            type: integer
+    ErrorEvent:
+      name: error
+      title: error
+      contentType: application/msgpack
+      description: Recoverable or fatal protocol/subsystem error notification.
+      payload:
+        type: object
+        required:
+          - seq
+          - type
+          - code
+          - message
+          - recoverable
+        properties:
+          seq:
+            type: integer
+          type:
+            type: string
+            const: error
+          code:
+            type: string
+          message:
+            type: string
+          recoverable:
+            type: boolean
+          lane:
+            type:
+              - string
+              - "null"
+            enum:
+              - caller
+              - agent
+              - null
+  schemas:
+    AgentSnapshot:
+      type: object
+      required:
+        - state
+        - heard_text
+        - basis
+      properties:
+        reply_id:
+          type:
+            - string
+            - "null"
+        state:
+          type: string
+          enum:
+            - idle
+            - pending
+            - speaking
+            - interrupted
+            - completed
+            - partial
+            - failed
+        heard_text:
+          type: string
+        basis:
+          type: string
+          enum:
+            - aligned
+            - estimated
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Pass your Fish Audio API key on the server-to-server WebSocket upgrade request:
+        `Authorization: Bearer YOUR_API_KEY`

@@ -1,0 +1,16 @@
+---
+asyncapi: "/api-reference/duplex-api-asyncapi.yml duplexConverse"
+title: "Duplex API Converse"
+description: "Voice conversation WebSocket with server-side turn detection, streamed speech, and interruption handling."
+icon: "waveform-lines"
+---
+
+<Warning>
+  **Preview — invitation only.** Duplex API access is currently limited to
+  selected customers. Public documentation does not grant service access.
+</Warning>
+
+Use this endpoint when you want Fish to provide turn detection. Read the [Duplex API guide](/features/duplex-api) for the architecture, starter application, and conversation flow.
+
+Every message is a binary WebSocket frame containing a MessagePack map. Audio
+payloads use MessagePack binary data, not base64 strings.
