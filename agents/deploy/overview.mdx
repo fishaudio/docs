@@ -105,7 +105,7 @@ if (!response.ok) throw new Error(`Could not create a session (HTTP ${response.s
 const session = await AgentSession.start({ sessionToken: await response.json() });
 ```
 
-Create the session when the user starts the call: the token is valid for about 5 minutes and works once. To try a session without a frontend, open the `join_url` from the response in your browser. See [Token lifetime](/agents/deploy/authenticated-sessions#token-lifetime).
+Create the session when the user starts the call: the token is valid for about 5 minutes and starts one conversation. To try a session without a frontend, open the `join_url` from the response in your browser. See [Token lifetime](/agents/deploy/authenticated-sessions#token-lifetime).
 
 <Tip>
   Agents marked [public](/agents/deploy/public-agents) skip the backend step

@@ -50,7 +50,7 @@ curl --request POST https://api.fish.audio/v1/agent/sessions \
 
 The response is the same session token an authenticated request returns. The SDK consumes it internally. Everything else (events, methods, client tools) works exactly as in the [Web SDK](/agents/deploy/web-sdk).
 
-If you run the curl request yourself, open the `join_url` from the response in your browser to talk to the agent. The token is valid for about 5 minutes and works once: see [Token lifetime](/agents/deploy/authenticated-sessions#token-lifetime).
+If you run the curl request yourself, open the `join_url` from the response in your browser to talk to the agent. The token is valid for about 5 minutes and starts one conversation: see [Token lifetime](/agents/deploy/authenticated-sessions#token-lifetime).
 
 ## Restrict origins
 

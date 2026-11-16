@@ -40,7 +40,7 @@ Your backend exchanges your API key for a single-conversation token.
   </Step>
 </Steps>
 
-Create the session when the user starts the call. The token is valid for about 5 minutes and works once: see [Token lifetime](#token-lifetime).
+Create the session when the user starts the call. The token is valid for about 5 minutes and starts one conversation: see [Token lifetime](#token-lifetime).
 
 <CodeGroup>
 ```bash API (curl)
@@ -229,8 +229,9 @@ Treat the response as opaque and pass it to `start()` unmodified. If the SDK doe
 ## Token lifetime
 
 - A session token is valid for **about 5 minutes** after creation. `expires_at` is the exact deadline for the client to connect.
-- A session token is **single-use**: `start()` consumes it once to establish the conversation.
-- `join_url` carries the same token. It has the same deadline, and it works once.
+- A session token belongs to **one conversation**. When that conversation ends, the token cannot start another.
+- `join_url` carries the same token and has the same deadline.
+- Until `expires_at`, anyone who has the token or the link can join that session. Treat both as secrets.
 - Every call to `POST /v1/agent/sessions` creates a new session. Create it when the user starts the call, not ahead of time such as on page load.
 - A session that no client joins before the deadline ends with status `failed` and end reason [`room_join_timeout`](/agents/monitor/conversation-history#status-and-end-reason). It is not billed.
 - A session nobody has joined yet counts toward your concurrent lines for a short time after creation. Creating many sessions without joining them can return `429`.

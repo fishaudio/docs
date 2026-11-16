@@ -58,7 +58,7 @@ const session = await AgentSession.start({ sessionToken });
 
 `start()` resolves once the realtime connection is up and rejects with a [`FishAgentError`](#errors) if session creation, the microphone permission, or the connection fails. Call it from a user gesture (a click handler): browsers only grant the microphone and audio playback inside one.
 
-A session token is valid for about 5 minutes and works once, so fetch a new one for every call, right before `start()`. See [Token lifetime](/agents/deploy/authenticated-sessions#token-lifetime).
+A session token is valid for about 5 minutes and starts one conversation, so fetch a new one for every call, right before `start()`. See [Token lifetime](/agents/deploy/authenticated-sessions#token-lifetime).
 
 ### Microphone access
 

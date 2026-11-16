@@ -104,7 +104,7 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
         Open `join_url` in your browser, start the call, and allow the microphone. You are now talking to your agent.
 
         - The token and the link are valid for about 5 minutes. `expires_at` is the exact deadline for joining.
-        - The link carries the token, and the token works once. To talk again, create another session.
+        - The link carries the token, so anyone who has it can join until it expires. It is for this one conversation: to talk again, create another session.
         - Every call to this endpoint creates a new session.
         - A session that no client joins ends as [`failed`](/agents/monitor/conversation-history#status-and-end-reason).
       </Step>
@@ -216,7 +216,7 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
         startButton.onclick = async () => {
           startButton.disabled = true;
           try {
-            // A new session for every call: a session token works once.
+            // A new session for every call: a session token starts one conversation.
             const response = await fetch("/api/voice-session", { method: "POST" });
             if (!response.ok) {
               throw new Error("the backend answered HTTP " + response.status);
