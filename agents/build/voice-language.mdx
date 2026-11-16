@@ -166,16 +166,9 @@ To switch back, pick Drama 3 or S2.1 Pro in the selector, or set `voice.engine` 
 
 An agent on Live 3 speaks either one of the voices that come with Live 3, or a voice from the Voice Library. Both are set in `voice.voice_id`.
 
-The voices that come with Live 3 exist only there and are not in the Voice Library. Set one by its name:
+The voices that come with Live 3 exist only there and are not in the Voice Library. Set one by its name: `clara` (default), `nora`, `harper`, `patricia`, `owen`, `marco`, `milo`, or `jonah`.
 
-| Situation | Voices |
-|---|---|
-| All | `clara` (default), `nora`, `harper`, `patricia`, `owen`, `marco`, `milo`, `jonah` |
-| Drive-thru only | `maddie`, `brianna`, `ethan`, `tyler` |
-
-The Builder's voice picker lists the ones that fit the current [situation prompt](#situation-prompt) under **Live 3 voices**, with samples.
-
-The drive-thru voices need `voice.live3_prompt` set to `DT`. With any other situation, including the default, Live 3 doesn't start and the session speaks through the text-to-speech model.
+The Builder's voice picker lists them under **Live 3 voices**, with samples.
 
 For a Voice Library voice or one of your clones, set `voice.voice_id` to its id. Live 3 recreates the voice from a sample, so it sounds close to, but not exactly like, the same voice on Drama 3 or S2.1 Pro. If Live 3 can't use the voice, the session speaks as Clara.
 
