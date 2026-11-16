@@ -74,40 +74,40 @@ sequenceDiagram
     participant F as Fish Duplex API
     participant L as Your LLM
 
-    B->>F: Open WebSocket /v1/duplex/converse
+    B->>F: Open WebSocket<br/>/v1/duplex/converse
     B->>F: session.start (turns.eager=true)
-    F-->>B: session.started (limits, text_rules, audio)
-    Note over B,F: Keep sending caller audio every 20-100 ms, including silence
+    F-->>B: session.started<br/>(limits, text_rules, audio)
+    Note over B,F: Keep sending caller audio every 20-100 ms<br/>Include silence throughout the call
     B->>F: audio (caller frames)
     F-->>B: audio (output PCM frames)
 
-    F-->>B: turn.eager (eager_id=e1, provisional text)
+    F-->>B: turn.eager<br/>(eager_id=e1, provisional text)
     B->>L: Start speculative generation
     L-->>B: First text chunk
-    B->>F: reply.text (reply_id=r1, for=e1, last=false)
-    Note over F: Prepare speech and hold it until approval
+    B->>F: reply.text (reply_id=r1)<br/>(for=e1, last=false)
+    Note over F: Prepare speech<br/>Hold until approval
     Note over B,L: Read-only tools may run<br/>State-changing tools wait for commit
 
     alt Caller finishes the turn
-        F-->>B: turn.committed (approved_eager_id=e1)
-        Note over B: Allow matching state-changing tool calls
-        Note over F: Release prepared speech when available
+        F-->>B: turn.committed<br/>(approved_eager_id=e1)
+        Note over B: Allow matching<br/>state-changing tools
+        Note over F: Release prepared speech<br/>when available
         F-->>B: reply.started (reply_id=r1)
         L-->>B: Remaining text chunks
-        B->>F: reply.text (same r1, no for, final chunk last=true)
+        B->>F: reply.text (same r1, no for)<br/>(final chunk last=true)
         alt Reply finishes
-            F-->>B: reply.done (status=completed, heard_text)
+            F-->>B: reply.done (completed)<br/>(heard_text)
         else Caller interrupts playback
             F-->>B: reply.interrupted (reply_id=r1)
-            Note over B: Stop queued playback for the interrupted reply
-            F-->>B: reply.done (status=interrupted, heard_text, unheard_text)
+            Note over B: Stop queued playback<br/>for this reply
+            F-->>B: reply.done (interrupted)<br/>(heard_text, unheard_text)
         end
-        B->>B: Reconcile history with reply.done.heard_text
+        B->>B: Reconcile history<br/>with heard_text
     else Caller resumes before approval
         F-->>B: turn.resumed (eager_id=e1)
-        B->>L: Cancel or discard speculative generation
+        B->>L: Cancel or discard generation
         B->>F: reply.cancel (reply_id=r1)
-        Note over B: Discard pending writes for this eager turn
+        Note over B: Discard pending writes<br/>for this eager turn
     end
 ```
 
