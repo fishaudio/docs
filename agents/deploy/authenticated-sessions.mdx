@@ -211,7 +211,7 @@ Everything else on the request is not an override: `dynamic_variables`, `timezon
   "transport": "livekit",
   "livekit_url": "wss://example.livekit.cloud",
   "token": "<participant token>",
-  "join_url": "https://fish.audio/agents/join#..."
+  "join_url": "https://fish.audio/agents/join/#..."
 }
 ```
 
@@ -219,7 +219,7 @@ Everything else on the request is not an override: `dynamic_variables`, `timezon
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `session_id`           | The session's id. Use it later to look up the [conversation record](/agents/monitor/conversation-history). |
 | `expires_at`           | Deadline for the client to connect, about 5 minutes after creation. See [Token lifetime](#token-lifetime).  |
-| `max_duration_seconds` | Hard cap on session length.                                                                                 |
+| `max_duration_seconds` | Hard cap on session length. It counts from when the session is created, not from when the client joins.     |
 | `transport`            | Which transport the SDK uses for this session; `livekit` today.                                             |
 | `livekit_url`, `token` | Connection details for that transport, consumed by the SDK.                                                 |
 | `join_url`             | A link that opens this session in the browser, for trying it without writing a client. It carries the token, so anyone with the link can join this one session. Treat it as a secret. Do not parse it, because its format can change. |
@@ -233,7 +233,7 @@ Treat the response as opaque and pass it to `start()` unmodified. If the SDK doe
 - `join_url` carries the same token and has the same deadline.
 - Until `expires_at`, anyone who has the token or the link can join that session. Treat both as secrets.
 - Every call to `POST /v1/agent/sessions` creates a new session. Create it when the user starts the call, not ahead of time such as on page load.
-- A session that no client joins before the deadline ends with status `failed` and end reason [`room_join_timeout`](/agents/monitor/conversation-history#status-and-end-reason). It is not billed.
+- A session that no client joins before the deadline ends with status `failed` and end reason [`room_join_timeout`](/agents/monitor/conversation-history#status-and-end-reason). It is not billed. The status can read `pending` for a minute or two after the deadline.
 - A session nobody has joined yet counts toward your concurrent lines for a short time after creation. Creating many sessions without joining them can return `429`.
 - On network drops the SDK reconnects at the transport level; it never re-creates the session, so you never need a fresh token mid-call.
 - Once a session ends, the token is spent. Create a new token for each conversation.

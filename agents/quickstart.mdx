@@ -97,11 +97,16 @@ Build a voice agent and talk to it in a few minutes. Use the console for a no-co
           "transport": "livekit",
           "livekit_url": "wss://...",
           "token": "<participant token>",
-          "join_url": "https://fish.audio/agents/join#..."
+          "join_url": "https://fish.audio/agents/join/#..."
         }
         ```
 
         Open `join_url` in your browser, start the call, and allow the microphone. You are now talking to your agent.
+
+        The response is one long line, and the link is at the end of it. Two ways to get at it:
+
+        - Print only the link: add `-s` to the curl command and pipe it to `jq -r .join_url`.
+        - Paste the whole response into the box at [fish.audio/agents/join](https://fish.audio/agents/join/).
 
         - The token and the link are valid for about 5 minutes. `expires_at` is the exact deadline for joining.
         - The link carries the token, so anyone who has it can join until it expires. It is for this one conversation: to talk again, create another session.
