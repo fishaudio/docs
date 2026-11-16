@@ -188,6 +188,7 @@ Every payload carries the `event` name, a unique `event_id`, and a `session` obj
     "dial_status": "answered",
     "answered_by": "human",
     "caller_number": "+15551234567",
+    "caller_id_withheld": false,
     "dialed_number": "+14155550100",
     "sip_call_id": "7f3a9c@sbc.example.com",
     "call_sid": "",
@@ -215,7 +216,7 @@ Every payload carries the `event` name, a unique `event_id`, and a `session` obj
 
 `dial_status` is `answered`, `busy`, `no_answer`, or `failed`. `answered_by` is deprecated: answering-machine detection has been removed, so it is `unknown` once the call is answered and `null` before (older events may carry `human` or `voicemail`). Both facts also appear on the session, alongside `direction` (`inbound` or `outbound`) and `batch_call_id` (reserved, always `null` today); these session fields are present in every webhook payload, with the dial fields `null` on inbound sessions. The `phone_call.dial_finished` snapshot is taken when the dial resolves, so on an answered call `conversation_ended_at` and `duration_seconds` are still `null`. The final numbers arrive with `call.ended`.
 
-`caller_number`, `dialed_number` and `sip_call_id` carry the same values as on the [sessions API](/agents/monitor/conversation-history): the E.164 numbers of the call (person-centric on outbound calls, so `caller_number` is the party you dialed) and the SIP `Call-ID` of the call's INVITE. All three are empty strings on web sessions, and `sip_call_id` is also empty on an unanswered outbound dial. How to use it against your carrier's records: [Match calls with your SIP records](/agents/telephony/byo-sip#match-calls-with-your-sip-records).
+`caller_number`, `dialed_number` and `sip_call_id` carry the same values as on the [sessions API](/agents/monitor/conversation-history): the E.164 numbers of the call (person-centric on outbound calls, so `caller_number` is the party you dialed) and the SIP `Call-ID` of the call's INVITE. All three are empty strings on web sessions, and `sip_call_id` is also empty on an unanswered outbound dial. `caller_id_withheld` is `true` when the carrier hid the caller's number; `caller_number` is then an empty string. It is `false` on phone and WhatsApp sessions whose number was shown, on outbound calls, and on calls made before the field existed, and `null` on web and other non-call sessions. It is in every `call.ended`, `call.analyzed` and `phone_call.dial_finished` payload, even where the shortened examples leave it out. How to use it against your carrier's records: [Match calls with your SIP records](/agents/telephony/byo-sip#match-calls-with-your-sip-records).
 
 `call_sid` is the carrier's id of the call. Today that is Twilio's CallSid on an inbound call through a Twilio number. It is the same value the [inbound call webhook](#inbound-call-webhook) request carries, so you can join that request to the session. It is an empty string on web sessions, outbound calls, and calls through your own SIP trunk.
 
@@ -387,6 +388,7 @@ The platform sends one `POST` with a JSON body:
   "event": "call.inbound",
   "call": {
     "caller_number": "+15551234567",
+    "caller_id_withheld": false,
     "dialed_number": "+14155550100",
     "agent_id": "a1b2…",
     "phone_number_id": "7e9f…",
@@ -395,7 +397,7 @@ The platform sends one `POST` with a JSON body:
 }
 ```
 
-`caller_number` and `dialed_number` are E.164. `caller_number` is an empty string when the carrier withholds the caller's number, and `call_sid` is empty when the call did not come through a Twilio number.
+`caller_number` and `dialed_number` are E.164. `caller_number` is an empty string when the carrier withholds the caller's number, and `caller_id_withheld` is a boolean that says so: `true` when the number is withheld, `false` otherwise. Withheld means the carrier sent no digits (`anonymous`, `restricted`, an empty value) or one of the placeholder numbers Twilio uses when it has none, so a placeholder never reaches you as a number. When it is `true`, skip the lookup by number in your endpoint; the agent can ask who is calling instead, see [Withheld caller ID](/agents/build/dynamic-variables#withheld-caller-id). `call_sid` is empty when the call did not come through a Twilio number.
 
 To match this request with the call, keep `call_sid`. Once the call is connected, `GET /v1/agent/sessions?call_sid=…` returns its session, and post-call webhooks carry the same value. This works only when `call_sid` is not empty, that is for calls through a Twilio number. During the call, webhook tools can send the session id with `{{system.session_id}}`. New fields can be added to this request, see [Forward compatibility](#forward-compatibility).
 

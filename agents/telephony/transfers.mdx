@@ -240,7 +240,7 @@ By default the agent introduces itself, reads out the caller's number, relays th
 
 The text is rendered with [dynamic variables](/agents/build/dynamic-variables) when the session starts, so it can carry facts the conversation may not mention. A custom text is spoken as written, so if it should include the caller's number, put it in yourself with `{{system.caller_number_spoken}}`, which arrives pre-grouped for speech (`+1; 4 1 5; 5 5 5; 0 1 2 3`) so the voice reads it digit by digit in any language; see [Reading a number out loud](/agents/build/dynamic-variables#reading-a-number-out-loud).
 
-Two things to keep in mind. The variables are filled in once, when the session is created, so an order number the caller mentions later reaches the colleague only through the notes. And a withheld caller ID renders as an empty string, so write the text to read well without it.
+Two things to keep in mind. The variables are filled in once, when the session is created, so an order number the caller mentions later reaches the colleague only through the notes. And a withheld caller ID (the carrier sent `anonymous`, no digits, or one of Twilio's placeholder numbers) renders as an empty string, so write the text to read well without it; `{{system.caller_id_withheld}}` is `"true"` then.
 
 #### In the console
 
