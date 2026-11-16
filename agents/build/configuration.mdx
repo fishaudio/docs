@@ -65,14 +65,18 @@ A short answer such as "yes" normally lands on the fast path. When the agent ask
 
 An agent on a speech model that backchannels acknowledges the caller as it listens, with a short "mm-hmm" or "okay" when they pause. [Live 3](/agents/build/voice-language#live-3-full-duplex) is the one that does today. Other models ignore these settings. If callers find the acknowledgements too frequent, or feel talked over, turn them down or off. In the Builder both settings are under **Voice details**, shown once Live 3 is on.
 
-- `conversation.backchannel` (default `true`): `false` turns backchannels off.
-- `conversation.backchannel_strength` (whole number from `1` to `10`, default `null`): How readily the agent backchannels. Lower means fewer. `null` uses the speech model's own setting, `6` on Live 3. Send `null` to go back to it. Not used while `backchannel` is `false`.
+`conversation.backchannel` is an object. A patch changes only the fields it names.
+
+- `enabled` (default `true`): `false` turns backchannels off.
+- `strength` (whole number from `1` to `10`, default `null`): How readily the agent backchannels. Lower means fewer. `null` uses the speech model's own setting, `6` on Live 3. Send `null` to go back to it. Not used while `enabled` is `false`.
 
 ```json
 {
   "conversation": {
-    "backchannel": true,
-    "backchannel_strength": 2
+    "backchannel": {
+      "enabled": true,
+      "strength": 2
+    }
   }
 }
 ```
@@ -164,8 +168,10 @@ curl --request GET "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
     "interruptible": true,
     "interruption_sensitivity": "balanced",
     "interruption_ignore_phrases": [],
-    "backchannel": true,
-    "backchannel_strength": null,
+    "backchannel": {
+      "enabled": true,
+      "strength": null
+    },
     "echo_guard": null,
     "speculative_response": true,
     "timezone": ""
