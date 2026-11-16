@@ -66,6 +66,7 @@ Browsers give a page the microphone only in a secure context:
 
 - Serve the page over `https`, or open it on `localhost` during development.
 - A plain `http` address such as a LAN IP (`http://192.168.1.20:5173`) does not get the microphone. To test from another device, serve the page over `https`.
+- From NEXT_SDK_VERSION, `start()` rejects with [`insecure_context`](#errors) on such a page.
 
 ### Options
 
@@ -277,8 +278,11 @@ Failures surface as `FishAgentError`: thrown from `AgentSession.start()` when th
 | `agent_not_public`                  | `agentId` mode, but the agent is not enabled for public access                                                                                                                                                                                 |
 | `origin_forbidden`                  | The agent restricts origins and the page's origin is not allowed                                                                                                                                                                               |
 | `insufficient_credit`               | `agentId` mode, but the agent owner's account has no trial balance or API credit left (HTTP `402`); the owner needs to top up                                                                                                                         |
-| `unsupported_transport`             | The session token uses a transport this SDK version doesn't know; upgrade the SDK                                                                                                                                                             |
+| `invalid_session_token`             | `sessionToken` is not a complete session token object. The message says what the SDK received, for example a string, an object with missing fields, or your backend's error body. Pass the JSON from `POST /v1/agent/sessions` unchanged. Reported before the microphone prompt (from NEXT_SDK_VERSION) |
+| `unsupported_transport`             | The session token is valid, but it uses a transport this SDK version doesn't know. Upgrade the SDK. Before NEXT_SDK_VERSION, this code is also reported for a `sessionToken` that is not a session token at all                                |
+| `insecure_context`                  | The page is not served over `https` or opened on `localhost`, so the browser does not offer the microphone. See [Microphone access](#microphone-access) (from NEXT_SDK_VERSION)                                                                |
 | `mic_permission_denied`             | The user denied microphone access; the SDK ends the session                                                                                                                                                                                    |
+| `mic_unavailable`                   | No microphone was found, or the browser could not open it (from NEXT_SDK_VERSION)                                                                                                                                                              |
 | `device_change_failed`              | A requested audio device could not be activated, or the browser doesn't support selecting it (output selection is unsupported on some mobile browsers). Thrown from `start()` with `audio.outputDeviceId` set, or from device-switching calls |
 | `connection_failed`                 | The realtime connection could not be established or recovered, a message to the agent could not be sent, the agent never joined (15 s), or the microphone could not be toggled                                                                |
 | `session_expired`                   | The session token's join deadline passed before connecting                                                                                                                                                                                     |

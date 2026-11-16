@@ -224,7 +224,7 @@ Everything else on the request is not an override: `dynamic_variables`, `timezon
 | `livekit_url`, `token` | Connection details for that transport, consumed by the SDK.                                                 |
 | `join_url`             | A link that opens this session in the browser, for trying it without writing a client. It carries the token, so anyone with the link can join this one session. |
 
-Treat the response as opaque and pass it to `start()` unmodified. If the SDK does not recognize the `transport` value, it fails fast with an `unsupported_transport` error asking you to upgrade the SDK.
+Treat the response as opaque and pass it to `start()` unmodified. If the SDK does not recognize the `transport` value, it fails fast with an `unsupported_transport` error asking you to upgrade the SDK. If you pass anything other than this response, such as your backend's error body, `start()` rejects with `invalid_session_token` (from `@fishaudio/agent-client` NEXT_SDK_VERSION).
 
 ## Token lifetime
 
