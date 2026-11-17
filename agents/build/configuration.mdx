@@ -52,29 +52,6 @@ A short answer such as "yes" normally lands on the fast path. When the agent ask
 
 `conversation.speculative_response` (default `true`) lets the agent start preparing its reply while the caller may still be speaking; the draft is discarded if they continue, and tools never run before the caller's turn is confirmed. Turn it off if your [custom LLM](/agents/build/custom-llm) bills per token and you would rather not pay for discarded drafts. With it off, the response wait is added directly to every reply.
 
-#### Turn detector
-
-`conversation.turn_detector` (**Turn detector** in the Builder) picks the model that decides the caller has finished speaking. It is an object with one field, `model`, which takes one of two values.
-
-- `fish`: Fish Audio's turn detection model. It waits for the end of the caller's thought, so a caller who pauses between two sentences or between groups of digits is less likely to be answered in the middle. It takes about 0.4 s longer to decide the caller is done. With `speculative_response` on, the agent prepares its reply during that time, so the reply usually starts no later. With it off, replies start about 0.4 s later.
-- `legacy`: The earlier model. It answers sooner after a sentence that sounds complete.
-
-The default is `fish`. If your agents ran the earlier model before this setting existed, your account's default is `legacy`, so they behave as they did. An agent that never set the model reads the default, and new agents are created with it. Send `"model": null` to go back to the default.
-
-```json
-{
-  "conversation": {
-    "turn_detector": {
-      "model": "legacy"
-    }
-  }
-}
-```
-
-<Note>
-  The turn detector applies to agents that speak through a text-to-speech model (`voice.engine` is `fish_tts`). It is not used by an agent on [Live 3](/agents/build/voice-language#live-3-full-duplex), including in sessions that speak through its text-to-speech model instead, or by an agent that listens through the Fish Transcribe Stream 1 [speech recognition model](/agents/build/voice-language#speech-recognition-model), which decides when the caller has finished on its own. The Builder hides the setting in both cases.
-</Note>
-
 ### Interruptions
 
 - `conversation.interruptible` (default `true`): Whether the caller can barge in while the agent is speaking.
@@ -168,9 +145,6 @@ curl --request GET "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
     "interruption_sensitivity": "balanced",
     "interruption_ignore_phrases": [],
     "echo_guard": null,
-    "turn_detector": {
-      "model": "fish"
-    },
     "speculative_response": true,
     "timezone": ""
   },
