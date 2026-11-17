@@ -4,12 +4,12 @@ description: "Running Fish Audio Enterprise on a network that cannot reach Fish 
 icon: "shield-halved"
 ---
 
-Both offline modes need no outbound access at runtime, but installing them still
+The Air-gapped mode needs no outbound access at runtime, but installing it still
 takes artifacts from Fish Audio: the images and, on Helm, the chart. An air-gapped
-deployment is about getting those across the boundary, together with the license
-bundle and the reference voices you use. The license expires, so plan a recurring
-transfer, not a one-off; voices are copied in as archives, since voice sync cannot
-reach Fish Audio from there.
+deployment is about getting those across the boundary, together with the install
+bundle and the reference voices you use. The license renews each billing cycle, so plan
+a recurring transfer, not a one-off; voices are copied in as archives, since voice sync
+cannot reach Fish Audio from there.
 
 <Note>
   Fish Audio does this with you as part of an air-gapped delivery, and the step-by-step
@@ -21,9 +21,8 @@ reach Fish Audio from there.
 
 **The air-gapped All-in-One appliance** is the straightforward answer to a strict air
 gap: one image, moved to the disconnected host as a file and loaded there. Beyond the
-image, the license bundle — and, in the external-weights modes, the weight
-fileset — has to be carried across. Its online counterpart cannot run air
-gapped: it authorizes every request against Fish Audio.
+image, the install bundle — and, in the external-weights modes, the weight
+fileset — has to be carried across.
 
 **The Helm chart** is more work, because the release is many images rather than one.
 Every image has to be mirrored into a registry the cluster can reach and the release
@@ -32,9 +31,10 @@ set, and expect to do it with your account team rather than alone.
 
 ## Offline usage accounting
 
-Offline billing records usage in a signed ledger on persistent storage. It is durable
-data, not cache: back it up, and agree with your account team how often to send it for
-reconciliation.
+Usage is recorded in a signed ledger on persistent storage. It is durable data, not
+cache: back it up. After each billing cycle, upload the ledger on the deployment's
+page; once it passes Fish Audio's check, install the renewed license before the current
+one expires.
 
 ## Proving there is no egress
 
