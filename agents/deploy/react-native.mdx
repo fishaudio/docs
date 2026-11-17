@@ -250,7 +250,7 @@ The [React SDK hook](/agents/deploy/react-sdk) with the same arguments, return v
 | ---------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `startSession`   | `(overrides?) => Promise<string>`   | Before connecting, also requests the Android microphone permission (rejects with `mic_permission_denied` on a no), sets up the audio session and route, and on Android starts the call's foreground service |
 | `endSession`     | `() => Promise<void>`               | Also releases the audio session and stops the foreground service. Both are also released when the agent hangs up or the connection drops                                                                    |
-| `audioOutput`    | `"auto" \| "speaker" \| "earpiece"` | The route you asked for, not the device currently playing (see [Limitations](#limitations))                                                                                                                 |
+| `audioOutput`    | `"auto" \| "speaker" \| "earpiece"` | The route you asked for, not the device currently playing                                                                                                                                                   |
 | `setAudioOutput` | `(route) => Promise<void>`          | Change the route, before or during a call                                                                                                                                                                   |
 
 Audio routes:
@@ -271,7 +271,7 @@ Everything else (`status`, `mode`, `micMuted` / `setMicMuted`, `sendUserMessage`
 Not available on React Native:
 
 - The browser-only members of the React hook (`startAudio`, `setOutputVolume`, `setInputDevice`, `setOutputDevice`).
-- `useAudioLevels` and `AgentAudioVisualizer` (see [Limitations](#limitations)).
+- `useAudioLevels` and `AgentAudioVisualizer`.
 - Starting calls with `AgentSession` directly. It is exported as a type only, for `conversation.session`. Start calls through `useConversation`, which also handles the permission, audio session, and call service.
 
 ## Background calls
@@ -290,13 +290,6 @@ Not available on React Native:
     );
   }
   ```
-
-## Limitations
-
-- **No audio levels.** React Native has no Web Audio API, so `session.getInputVolume()` and `getOutputVolume()` stay at `0`. Use `mode` to animate a speaking indicator.
-- **`audioOutput` is the requested route,** not a report of the current device. Plugging in a headset in `auto` mode moves audio to it, but `audioOutput` still reads `auto`, and there is no route-change event.
-- **`mode` and Chinese replies.** `speaking` follows the agent's transcript, which for Chinese replies currently arrives in one piece instead of following playback, so `speaking` shows only briefly.
-- **Not yet tested:** an incoming phone call interrupting a call, Bluetooth headsets, Wi-Fi to cellular handover, and reconnecting after a network drop on iOS.
 
 ## Troubleshooting
 
