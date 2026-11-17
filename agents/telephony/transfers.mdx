@@ -97,7 +97,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 | `warm_confirm_timeout_seconds` | Warm `confirm` and `briefing` only: how long the agent waits after the human answers before giving up, in whole seconds from 10 to 300. Default 60. See [Timeouts](#timeouts).                                                                                                                                                                          |
 | `warm_human_detection`         | Warm `confirm` and `briefing` only: `true` makes the agent wait for the other side to speak and stop the transfer when voicemail or a phone menu answers. Default `false`. See [Waiting for a person to answer](#waiting-for-a-person-to-answer).                                                                                                       |
 
-A literal destination number must be E.164 and is limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list. A number that contains a `{{variable}}` is saved as a template instead of being checked as a number: it can be at most 100 characters, and a `{{system.*}}` variable it names must exist, otherwise it is rejected the same way. A variable name must start with a letter and use only letters, digits and underscores (`oncall_number`, or a `system.` name), and spaces just inside the braces are allowed. Anything else, such as `{{on-call}}` or `{{1st}}`, is not a variable: the value is checked as a literal number and rejected. Once the valid variables are taken out, all that may be left is digits and a `+` at the very start: any `{` or `}` left over, as in `{{oncall_number}}}`, and any space, dash, bracket or extension, as in `+1 {{area}} 555 0199`, is rejected too. A missing label, or two labels that differ only in case, is rejected the same way. There is no cap on the number of destinations, but every description is part of the agent's tool instructions on every turn, so keep the list to what a receptionist could hold in their head.
+A literal destination number must be E.164 and is limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list. For a number that contains variables, see [Choosing the number per call](#choosing-the-number-per-call). A missing label, or two labels that differ only in case, is rejected the same way. There is no cap on the number of destinations, but every description is part of the agent's tool instructions on every turn, so keep the list to what a receptionist could hold in their head.
 
 ## How the agent decides to transfer
 
@@ -206,6 +206,13 @@ When the right person to call changes often, such as an on-call rotation, don't 
 }
 ```
 
+A number with variables is saved as a template instead of being checked as a number. When you save, it is rejected with `422 Unprocessable Entity` unless it follows these rules:
+
+- The whole number can be one variable (`{{oncall_number}}`), or digits, a leading `+` and variables combined (`+1{{area}}{{local}}`).
+- A variable name starts with a letter and uses only letters, digits and underscores, or is a `{{system.*}}` variable that exists. Spaces just inside the braces are allowed. Anything else, such as `{{on-call}}` or `{{1st}}`, is not a variable, so the value is checked as a literal number and rejected.
+- Besides the variables, only digits and a `+` at the very start are allowed. Spaces, dashes, brackets, extensions (`+1 {{area}} 555 0199`) and unmatched braces (`{{oncall_number}}}`) are rejected.
+- At most 100 characters.
+
 The value comes from the call itself:
 
 - **Inbound calls**: your [inbound call webhook](/agents/monitor/webhooks#inbound-call-webhook) returns it in `dynamic_variables`.
@@ -228,7 +235,7 @@ The value must be an E.164 string with the leading `+`. Only surrounding whitesp
 
 The number is checked after it is filled in, with the same rules as a literal one: it must be E.164, and its country must be in the same supported list a literal number is checked against (the transfer card in the console shows it). If the call has no valid number, that call skips the destination and the rest of the list works as usual. This happens when:
 
-- the variable has no value from the call and no default, whatever the agent's `on_missing` setting (a missing transfer number never rejects the call);
+- the variable has no value from the call and no default, whatever the agent's **If a variable has no value** setting (`on_missing` in the API), and a missing transfer number never rejects the call;
 - the value is not a valid E.164 number, or its country is not supported;
 - a placeholder is still unfilled after substitution.
 
