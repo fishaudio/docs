@@ -61,6 +61,8 @@ const session = await AgentSession.start({
 ```
 </CodeGroup>
 
+The curl request returns a session token. To hear the result, open the `join_url` from the response in your browser within about 5 minutes. See [Token lifetime](/agents/deploy/authenticated-sessions#token-lifetime).
+
 ### Default values
 
 A placeholder is resolved in this order: the value supplied for the session, then the default configured on the agent. What happens when neither exists is set by `on_missing`:
@@ -117,6 +119,9 @@ const response = await fetch("https://api.fish.audio/v1/agent/sessions", {
     dynamic_variables: { customer_name: user.name, plan: user.plan },
   }),
 });
+if (!response.ok) {
+  throw new Error(`Session creation failed (HTTP ${response.status})`);
+}
 const sessionToken = await response.json(); // pass to AgentSession.start({ sessionToken })
 ```
 

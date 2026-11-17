@@ -48,6 +48,7 @@ import { AgentSession } from "@fishaudio/agent-client";
 // Your backend calls POST /v1/agent/sessions and returns the
 // response body. Pass it to the SDK as-is.
 const resp = await fetch("/api/voice-session", { method: "POST" });
+if (!resp.ok) throw new Error(`Could not create a session (HTTP ${resp.status})`);
 const sessionToken = await resp.json();
 
 const session = await AgentSession.start({ sessionToken });
@@ -56,6 +57,16 @@ const session = await AgentSession.start({ sessionToken });
 </CodeGroup>
 
 `start()` resolves once the realtime connection is up and rejects with a [`FishAgentError`](#errors) if session creation, the microphone permission, or the connection fails. Call it from a user gesture (a click handler): browsers only grant the microphone and audio playback inside one.
+
+A session token is valid for about 5 minutes and starts one conversation, so fetch a new one for every call, right before `start()`. See [Token lifetime](/agents/deploy/authenticated-sessions#token-lifetime).
+
+### Microphone access
+
+Browsers give a page the microphone only in a secure context:
+
+- Serve the page over `https`, or open it on `localhost` during development.
+- A plain `http` address such as a LAN IP (`http://192.168.1.20:5173`) does not get the microphone. To test from another device, serve the page over `https`.
+- From NEXT_SDK_VERSION, `start()` rejects with [`insecure_context`](#errors) on such a page. A start with `microphone: false` is not affected.
 
 ### Options
 
@@ -111,6 +122,7 @@ When the session ends, `disconnect` fires with a reason (also available as `sess
 | `agent_hangup`         | The agent ended the call: the hang-up [system tool](/agents/build/system-tools), a workflow end node, or an idle hangup                                          |
 | `conversation_timeout` | The session reached the agent's [maximum duration](/agents/build/configuration#call-duration)                                                                    |
 | `escalated`            | The call was transferred to a human                                                                                                                              |
+| `llm_endpoint_failure` | A [custom LLM](/agents/build/custom-llm) failed repeatedly and the agent hung up (from 0.4.0)                                                                    |
 | `internal_error`       | The agent runtime itself failed and closed the call, for example its process was stopped for exceeding its memory limit (from 1.0.0)                              |
 | `connection_lost`      | The connection dropped and could not be recovered, the agent never joined, or the call ended before the server could say why                                     |
 
@@ -265,9 +277,12 @@ Failures surface as `FishAgentError`: thrown from `AgentSession.start()` when th
 | `session_request_failed`            | Session creation failed; check `statusCode`                                                                                                                                                                                                   |
 | `agent_not_public`                  | `agentId` mode, but the agent is not enabled for public access                                                                                                                                                                                 |
 | `origin_forbidden`                  | The agent restricts origins and the page's origin is not allowed                                                                                                                                                                               |
-| `insufficient_credit`               | `agentId` mode, but the agent owner's account has no Agent credit left (HTTP `402`); the owner needs to top up                                                                                                                                 |
-| `unsupported_transport`             | The session token uses a transport this SDK version doesn't know; upgrade the SDK                                                                                                                                                             |
+| `insufficient_credit`               | `agentId` mode, but the agent owner's account has no trial balance or API credit left (HTTP `402`); the owner needs to top up                                                                                                                         |
+| `invalid_session_token`             | `sessionToken` is not the session-creation response. The message says what the SDK received: `null`, a string, your backend's error body, an object wrapped in another one, camelCase keys, or an object without `transport`, `livekit_url` or `token`. Pass the JSON from `POST /v1/agent/sessions` unchanged. Reported before the microphone prompt (from NEXT_SDK_VERSION) |
+| `unsupported_transport`             | The session token is valid, but it uses a transport this SDK version doesn't know. Upgrade the SDK. Before NEXT_SDK_VERSION, this code is also reported for a `sessionToken` that is not a session token at all                                |
+| `insecure_context`                  | The page is not served over `https` or opened on `localhost`, so the browser does not offer the microphone. See [Microphone access](#microphone-access) (from NEXT_SDK_VERSION)                                                                |
 | `mic_permission_denied`             | The user denied microphone access; the SDK ends the session                                                                                                                                                                                    |
+| `mic_unavailable`                   | At start, no microphone was found, the browser could not open it, or the environment has no microphone capture API (from NEXT_SDK_VERSION)                                                                                                                                                              |
 | `device_change_failed`              | A requested audio device could not be activated, or the browser doesn't support selecting it (output selection is unsupported on some mobile browsers). Thrown from `start()` with `audio.outputDeviceId` set, or from device-switching calls |
 | `connection_failed`                 | The realtime connection could not be established or recovered, a message to the agent could not be sent, the agent never joined (15 s), or the microphone could not be toggled                                                                |
 | `session_expired`                   | The session token's join deadline passed before connecting                                                                                                                                                                                     |
@@ -279,7 +294,11 @@ Failures surface as `FishAgentError`: thrown from `AgentSession.start()` when th
   provider or infrastructure details are never sent to the browser.
 </Note>
 
-```javascript Handle errors
+The same handling fits both modes. With a `sessionToken`, check your backend's response before you pass it on: an error body is not a session token.
+
+<CodeGroup>
+
+```javascript Public agent
 import { AgentSession, FishAgentError } from "@fishaudio/agent-client";
 
 try {
@@ -293,6 +312,26 @@ try {
   }
 }
 ```
+
+```javascript Private agent
+import { AgentSession, FishAgentError } from "@fishaudio/agent-client";
+
+try {
+  const resp = await fetch("/api/voice-session", { method: "POST" });
+  if (!resp.ok) throw new Error(`Could not create a session (HTTP ${resp.status})`);
+
+  const session = await AgentSession.start({ sessionToken: await resp.json() });
+  session.on("error", err => console.warn("session error:", err.code));
+} catch (err) {
+  if (err instanceof FishAgentError && err.code === "mic_permission_denied") {
+    showMicHelp();
+  } else {
+    showRetry(err); // fetch a new token for the next attempt
+  }
+}
+```
+
+</CodeGroup>
 
 ## End the session
 

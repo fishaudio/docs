@@ -11,6 +11,7 @@ The widget is the zero-code way to put your agent on a website. A `<fish-agent>`
 - An agent with a [published version](/agents/deploy/versions-publishing).
 - **Public access** enabled on the agent. See [Public agents](/agents/deploy/public-agents).
 - To keep the agent private instead, skip public access and supply session tokens from your backend with [`sessionTokenProvider`](#private-agents).
+- A page served over `https`, or opened on `localhost` during development, so the browser offers the microphone. See [Microphone access](/agents/deploy/web-sdk#microphone-access).
 
 ## Two-line embed
 
@@ -85,10 +86,15 @@ Keep the agent non-public and set `sessionTokenProvider` instead of an `agent-id
       method: "POST",
       headers: { Authorization: `Bearer ${appSession.token}` },
     });
+    if (!response.ok) {
+      throw new Error(`Could not create a session (HTTP ${response.status})`);
+    }
     return response.json();
   };
 </script>
 ```
+
+The widget calls the provider for every call, so return a new token each time. A token is valid for about 5 minutes and starts one conversation: see [Token lifetime](/agents/deploy/authenticated-sessions#token-lifetime).
 
 React apps pass the same function as a prop:
 
