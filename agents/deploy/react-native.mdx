@@ -60,7 +60,7 @@ npx expo install @fishaudio/agent-react-native @livekit/react-native @livekit/re
 }
 ```
 
-Then build the native app with `npx expo run:ios --device` or `npx expo run:android --device`. Rebuild whenever you add a package with native code or change a plugin. A JavaScript reload does not pick those up.
+Then build the native app with `npx expo run:ios --device` or `npx expo run:android --device`. Rebuild whenever you add a package with native code. After changing a plugin or its options, run `npx expo prebuild` first: once the `ios` and `android` folders exist, `run:ios` and `run:android` do not apply plugin changes. A JavaScript reload picks up neither.
 
 | Plugin option          | Default                                                          | Description                                                                                          |
 | ---------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -111,33 +111,34 @@ npm install @fishaudio/agent-react-native @livekit/react-native @livekit/react-n
 
 ## Set up the entry file
 
-`setupFishAgent()` installs the WebRTC globals the SDK runs on. Call it once at the top of your entry file, before any other import that might touch WebRTC. `startSession` also installs them if they are missing, so a forgotten call does not break calls, but the entry file is the safe place.
+`setupFishAgent()` installs the WebRTC globals the SDK runs on. Call it before your app's modules load: put it in a file of its own and import that file first in your entry file. A call in the entry file's body is not enough, since every import in a file runs before its body. `startSession` also installs the globals if they are missing, so a forgotten call does not break calls, but code that touches WebRTC earlier would fail.
+
+```ts setupFishAgent.ts
+import { setupFishAgent } from "@fishaudio/agent-react-native";
+setupFishAgent();
+```
 
 <CodeGroup>
 
 ```ts index.ts (expo-router)
-import { setupFishAgent } from "@fishaudio/agent-react-native";
-setupFishAgent();
-
+import "./setupFishAgent";
 import "expo-router/entry";
 ```
 
 ```ts index.ts (Expo, no router)
-import { setupFishAgent } from "@fishaudio/agent-react-native";
-setupFishAgent();
-
+import "./setupFishAgent";
 import { registerRootComponent } from "expo";
 import App from "./App";
+
 registerRootComponent(App);
 ```
 
 ```ts index.js (bare React Native)
-import { setupFishAgent } from "@fishaudio/agent-react-native";
-setupFishAgent();
-
+import "./setupFishAgent";
 import { AppRegistry } from "react-native";
 import App from "./App";
 import { name as appName } from "./app.json";
+
 AppRegistry.registerComponent(appName, () => App);
 ```
 
@@ -152,6 +153,7 @@ import {
   useAgentMessages,
   useConversation,
 } from "@fishaudio/agent-react-native";
+import { useRef } from "react";
 import { Button, FlatList, Text, View } from "react-native";
 
 export default function SupportCall() {
@@ -160,12 +162,21 @@ export default function SupportCall() {
     { callNotification: { title: "Talking to support" } }
   );
   const messages = useAgentMessages(conversation.session);
+  const attempt = useRef(0);
 
   const start = async () => {
+    const current = ++attempt.current;
     const sessionToken = await fetch("https://api.example.com/agent-session", {
       method: "POST",
     }).then(r => r.json());
+    // The user hung up while the token was on its way.
+    if (current !== attempt.current) return;
     await conversation.startSession({ sessionToken });
+  };
+
+  const hangUp = () => {
+    attempt.current++;
+    void conversation.endSession();
   };
 
   return (
@@ -174,7 +185,7 @@ export default function SupportCall() {
         {conversation.status} · {conversation.mode}
       </Text>
       <Button title="Call" onPress={() => void start()} />
-      <Button title="Hang up" onPress={() => void conversation.endSession()} />
+      <Button title="Hang up" onPress={hangUp} />
       <FlatList
         data={messages}
         keyExtractor={m => m.key}
@@ -294,7 +305,7 @@ Not available on React Native:
 | Errors about a missing native module in Expo Go                                                | Expo Go cannot load WebRTC. Build the app with `npx expo run:ios` or `run:android`                                                                                                                                                                   |
 | Warning `Native module missing: background calls will lose the microphone`                     | The app was not rebuilt after installing the package. Rebuild the native app                                                                                                                                                                         |
 | `startSession` rejects with `connection_failed`                                                | Check that the token came from `POST /v1/agent/sessions`, that it was used right away (tokens are short-lived), and that the device has network. If you call LiveKit or WebRTC APIs before the first call, call `setupFishAgent()` in the entry file |
-| A plugin change has no effect (missing microphone text, no background audio)                   | Native settings only change on a rebuild. Run `npx expo prebuild` (or `run:ios` / `run:android`) again. In bare React Native, check `Info.plist` and rebuild                                                                                         |
+| A plugin change has no effect (missing microphone text, no background audio)                   | Native settings only change through prebuild. Run `npx expo prebuild`, then `run:ios` / `run:android` again. In bare React Native, check `Info.plist` and rebuild                                                                                    |
 | iOS `pod install` cannot find `LiveKitWebRTC`                                                  | The LiveKit pod sources are missing from the top of the `Podfile`; see [Bare React Native](#bare-react-native)                                                                                                                                       |
 | A public agent fails with `origin_forbidden`                                                   | The agent restricts origins. Pass `origin` to `startSession`, matching an allowed origin exactly (scheme, host, and port)                                                                                                                            |
 | `fetch` to your token endpoint fails on the phone                                              | `localhost` points at the phone. Use your computer's LAN address or `adb reverse`, and HTTPS on iOS                                                                                                                                                  |
