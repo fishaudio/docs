@@ -32,6 +32,39 @@ Choose how the agent opens each conversation:
 
 `first_message` and `first_message_prompt` can each hold up to 10,000 characters. The active mode (`first_message_mode`: `off`, `fixed`, or `prompt`) decides what callers hear. Both fields accept the same `{{placeholders}}` as the system prompt (see [Dynamic variables](/agents/build/dynamic-variables)), and both can be replaced for a single session by sending `overrides.first_message` or `overrides.first_message_prompt` when [creating the session](/agents/deploy/authenticated-sessions#overrides).
 
+### When the first message starts
+
+`prompt.first_message_start` decides whether the agent speaks as soon as the conversation connects. In the Builder this is **Start** in the First message section.
+
+| Value | Builder label | Behavior |
+|---|---|---|
+| `agent_first` (default) | **Agent first** | The agent opens as soon as the conversation connects. |
+| `wait_for_caller` | **Wait for caller** | The agent listens first. If the caller starts speaking, the agent lets them finish and then says the first message as its reply to them; it does not answer them with a separate turn first. If the caller stays silent, the agent speaks on its own once `first_message_max_wait_ms` has passed. |
+
+"Connects" means the callee picks up on a phone call, and the client is ready on a web or API session. Phone calls that play a [keypad](/agents/telephony/keypad) menu first are not affected by this setting.
+
+`prompt.first_message_max_wait_ms` (1000–5000, default `3000`) is how long the agent waits for the caller before it speaks anyway. It only applies when `first_message_start` is `wait_for_caller`. In the Builder this is **Speak anyway after**, with 1 s, 3 s, and 5 s shortcuts and a **Custom** value.
+
+Background noise, someone else talking nearby, or a short acknowledgment such as "mm-hmm" does not count as the caller speaking. A sound that never turns into a sentence can delay the first message a few seconds past `first_message_max_wait_ms`, so treat it as the point where the agent stops waiting, not as a hard ceiling.
+
+### Interrupting the first message
+
+`prompt.first_message_interruptible` controls whether the caller can barge in while the first message plays. In the Builder this is **During the first message**.
+
+| Value | Builder label | Behavior |
+|---|---|---|
+| `true` | **Interruptible** | The caller can interrupt the first message, as in any other reply. |
+| `false` | **Protected** | The first message always plays to the end. What the caller says during it is dropped, and the agent does not go back and answer it afterwards. |
+| `null` | — | Same as `true`: the caller can interrupt the first message. |
+
+When the setting is not set (`null`), the first message can be interrupted. `conversation.interruptible` does not change this: it applies to the rest of the conversation, not to the first message. New agents are created with the setting unset, so their first message can be interrupted. Set it to `false` to protect the first message.
+
+<Warning>
+Protected has a cost: a caller who starts talking over the first message cannot cut it off, and the agent never hears what they said. Keep the first message short, or use **Wait for caller** so the agent speaks into a quiet line.
+</Warning>
+
+With [Echo guard](#echo-guard) on, the first 3 seconds of the first message cannot be interrupted whichever way this is set.
+
 ## Voice
 
 The Voice panel selects the voice your agent speaks with (`voice_id`) and its speaking language (`speaking_language`, one of the [52 supported languages](/agents/build/voice-language#speaking-language)). It also holds the text-to-speech model (`tts_model`), expressive delivery (`expressive`) and the speech recognition settings, which the API keeps in their own `asr` section: the recognition model (`asr.model`) and the multilingual recognition switch (`asr.multilingual`). See [Voice & language](/agents/build/voice-language) for all of them.
@@ -65,7 +98,7 @@ A short answer such as "yes" normally lands on the fast path. When the agent ask
 
 Callers' devices and the phone network normally cancel the agent's echo, but in a few calls (under 3%) some echo gets through in the agent's first seconds and cuts it off.
 
-`conversation.echo_guard` (**Echo guard** in the Builder) prevents this. For 3 seconds after the agent first starts talking, the caller can't interrupt it, and what the caller says over the agent is dropped. [Keypad entries](/agents/telephony/keypad#keypad-input) and the [web SDK](/agents/deploy/web-sdk)'s `interrupt()` still work.
+`conversation.echo_guard` (**Echo guard** in the Builder) prevents this. For 3 seconds after the agent first starts talking, the caller can't interrupt it, and what the caller says over the agent is dropped. This holds for the first message too: with Echo guard on, its first 3 seconds cannot be interrupted, even when [`prompt.first_message_interruptible`](#interrupting-the-first-message) is `true`. [Keypad entries](/agents/telephony/keypad#keypad-input) and the [web SDK](/agents/deploy/web-sdk)'s `interrupt()` still work.
 
 Each [channel](/agents/build/dynamic-variables#system-variables) has its own key. Set it to `true`, `false`, or `null` for the default.
 
