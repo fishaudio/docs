@@ -45,7 +45,10 @@ Every agent has one **draft** and a linear history of **published versions**. Ed
 
 Phone number settings are not part of the agent, so they are not versioned. Which agent a number is bound to, its [transfer caller ID](/agents/telephony/transfers#caller-id-on-transfers), and an [imported number's SIP configuration](/agents/telephony/byo-sip#update-the-configuration) live on the number. Changes to them apply from the next call without publishing, and publishing or rolling back the agent never changes them.
 
-## Publish from the Builder
+## Publish the draft
+
+<Tabs className="console-api">
+<Tab title="Console" icon="browser">
 
 <Steps>
   <Step title="Edit: changes autosave">
@@ -66,9 +69,8 @@ Phone number settings are not part of the agent, so they are not versioned. Whic
   </Step>
 </Steps>
 
-New sessions use the newly published version from that point on. To hear a change before it goes live, run a [preview call](/agents/test/preview-calls). Previews always use the draft.
-
-## Publish via the API
+</Tab>
+<Tab title="API" icon="code">
 
 Configuration edits (`PATCH`) go to the draft; a separate `publish` call rolls them out. A `version_title` and `version_description` are optional and make the version history easier to audit:
 
@@ -89,6 +91,11 @@ curl --request POST "https://api.fish.audio/v1/agent/agents/$AGENT_ID/publish" \
 ```
 
 The publish response includes the new `version_number`.
+
+</Tab>
+</Tabs>
+
+New sessions use the newly published version from that point on. To hear a change before it goes live, run a [preview call](/agents/test/preview-calls). Previews always use the draft.
 
 ## Version history
 

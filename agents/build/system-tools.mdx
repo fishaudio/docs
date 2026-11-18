@@ -14,13 +14,20 @@ System tools are capabilities built into the platform. There is nothing to creat
 Unlike [webhook tools](/agents/build/webhook-tools), system tools are not workspace resources shared across agents. The on/off state is stored per agent.
 </Note>
 
-## Toggle in the Builder
+## Toggle a system tool
+
+<Tabs className="console-api">
+<Tab title="Console" icon="browser">
 
 Open your agent's **Tools** page in the Builder. The **System tools** card holds the **Hang up call** switch.
 
-## Toggle via the API
+</Tab>
+<Tab title="API" icon="code">
 
 Over the REST API, system tool switches are part of the agent's configuration, in the same `tools` section that holds its attached webhook tools. See [Configuration](/agents/build/configuration) for reading and updating an agent's config.
+
+</Tab>
+</Tabs>
 
 ## Farewell
 

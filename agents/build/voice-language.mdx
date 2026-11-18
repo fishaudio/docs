@@ -18,7 +18,10 @@ Your agent speaks with a voice model from the Fish Audio Voice Library: the same
   </Card>
 </CardGroup>
 
-## Pick a voice in the Builder
+## Pick a voice
+
+<Tabs className="console-api">
+<Tab title="Console" icon="browser">
 
 The voice picker on the **Configuration** page has two levels: a curated list for a fast start, and the full Voice Library when you want something specific.
 
@@ -37,14 +40,8 @@ The voice picker on the **Configuration** page has two levels: a curated list fo
   </Step>
 </Steps>
 
-## Use any voice model
-
-The agent's voice is a **voice model id** (`voice_id`): the same ids used as `reference_id` in [Text to Speech](/features/text-to-speech). Any public voice model from the Voice Library works, including:
-
-- **Library voices**: Ready-made public voices. Find ids in the [Voice Library](/features/manage-voices).
-- **Your cloned voices**: [Clone a voice](/features/voice-cloning) once, then use its model id as your agent's voice.
-
-## Set the voice via API
+</Tab>
+<Tab title="API" icon="code">
 
 Voice settings live in the `voice` section of the agent's configuration. Patches are partial: only the fields you send change, and the result is saved to the draft:
 
@@ -62,6 +59,16 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 </CodeGroup>
 
 `voice.speaking_language` lives in the same section and is patched the same way. As in the Builder, API edits land in the draft. Publish to roll them out.
+
+</Tab>
+</Tabs>
+
+## Use any voice model
+
+The agent's voice is a **voice model id** (`voice_id`): the same ids used as `reference_id` in [Text to Speech](/features/text-to-speech). Any public voice model from the Voice Library works, including:
+
+- **Library voices**: Ready-made public voices. Find ids in the [Voice Library](/features/manage-voices).
+- **Your cloned voices**: [Clone a voice](/features/voice-cloning) once, then use its model id as your agent's voice.
 
 ## Speaking language
 
