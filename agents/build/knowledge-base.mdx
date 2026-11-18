@@ -29,6 +29,8 @@ Files are validated, parsed, and indexed as part of the upload itself. When the 
 
 Group sources into folders with **New folder**, and rename sources from the row menu. Deleting a folder never deletes its sources. Anything inside moves back to **All sources**.
 
+The API manages folders too: [create, rename, and delete them](#organize-sources-in-folders) with `/v1/agent/knowledge-folders`, and put a source in a folder with `folder_id`. An empty `folder_id` means the root, which is **All sources** in the console.
+
 ## Share sources across agents
 
 Workspace sources belong to the workspace, not to a single agent (agent-private files offer only **Edit** and **Delete**). In the library, the **Used by** column shows how many agents attach each source, and **Manage access** lists every agent with a toggle:
@@ -104,6 +106,52 @@ curl https://api.fish.audio/v1/agent/knowledge-sources/{source_id}/agents \
 ```
 
 Only the `source` file part is required on create: `name` falls back to the uploaded file's name.
+
+### Organize sources in folders
+
+Folders are a flat list: they can't be nested, and a source is in at most one folder. Each folder belongs to one workspace.
+
+| Endpoint | Description |
+|---|---|
+| `GET /v1/agent/knowledge-folders` | List your team's folders across workspaces, newest first. Tell same-named folders apart by `workspace_id` |
+| `POST /v1/agent/knowledge-folders` | Create a folder in your default workspace. Returns `409` if the workspace already has a folder with that name |
+| `PATCH /v1/agent/knowledge-folders/{folder_id}` | Rename a folder |
+| `DELETE /v1/agent/knowledge-folders/{folder_id}` | Delete a folder. Its sources are not deleted: they move back to the root |
+
+Folder names are 1 to 120 characters and compared exactly, so `Support` and `support` are different names.
+
+```bash Create a folder
+curl --request POST https://api.fish.audio/v1/agent/knowledge-folders \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{"name": "Support"}'
+```
+
+Every source returned by the API has a `folder_id`, which is `null` at the root. To control it, send `folder_id` in the multipart form:
+
+- **Create**: send a folder ID to upload the source into that folder. Omit it, or send it empty, to put the source at the root.
+- **Update**: send a folder ID to move the source into that folder, or send it empty to move it back to the root. Omit it to leave the source where it is. Moving a source doesn't create a new revision.
+
+Both calls return `404` if the folder doesn't exist in the source's workspace.
+
+```bash Move a source into a folder
+curl --request PATCH https://api.fish.audio/v1/agent/knowledge-sources/{source_id} \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --form "folder_id=YOUR_FOLDER_ID"
+```
+
+To filter the list, pass `folder_id` as a query parameter. A folder ID returns only that folder's sources. An empty value returns only the sources at the root, across all workspaces. Leave it out to list everything.
+
+```bash List sources at the root
+curl "https://api.fish.audio/v1/agent/knowledge-sources?folder_id=" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+<Warning>
+`folder_id=` has to reach the server with its empty value. Some HTTP clients and SDKs drop query parameters whose value is empty, and the request then lists every source instead of the root. The API playground on this site does this too: it leaves an empty `folder_id` out of the request, so use cURL or your own client to list the root. If you get more sources than expected, check the request URL that was actually sent.
+</Warning>
+
+To count the sources in a folder, add `include_total=true` to the filtered list request.
 
 ### Attach sources to an agent
 
