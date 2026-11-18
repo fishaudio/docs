@@ -89,11 +89,11 @@ Set **Channel** to **Phone inbound**, so the agent speaks the way it does on rea
 
 ## 7. Create the test
 
-<Tabs>
-  <Tab title="Dashboard">
+<Tabs className="console-api">
+  <Tab title="Console" icon="browser">
     Open **Library → Tests**, click **Add test**, pick the **Simulation** type, and fill in the fields from the steps above. Then open the test's **Access** tab and turn it on for your agent.
   </Tab>
-  <Tab title="API">
+  <Tab title="API" icon="code">
     Look up your tool ids with [List Test Tools](/api-reference/endpoint/agent/list-test-tools), replace the placeholders below, and send the body to [Create Test](/api-reference/endpoint/agent/create-test). `agent_ids` attaches the test in the same call.
 
     ```bash

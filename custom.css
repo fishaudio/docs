@@ -82,3 +82,100 @@ img[src*="/images/"] {
   color: rgb(var(--primary-light));
   background: rgb(var(--primary-light) / 0.16);
 }
+
+/* Console / API switch, used as <Tabs className="console-api">. The border shows where the switched content ends. */
+.tab-container:is(.console-api, :has(> .console-api)) {
+  margin: 1.5rem 0;
+  padding: 0.875rem 1.25rem 1.125rem;
+  border: 1px solid rgb(var(--gray-200));
+  border-radius: 1rem;
+}
+
+.dark .tab-container:is(.console-api, :has(> .console-api)) {
+  border-color: rgb(255 255 255 / 0.1);
+}
+
+.tab-container:is(.console-api, :has(> .console-api))
+  > [data-component-part="tabs-list"] {
+  display: flex;
+  width: fit-content;
+  min-width: 0;
+  gap: 2px;
+  padding: 3px;
+  margin-bottom: 0.875rem;
+  border: 0;
+  border-radius: 9px;
+  background: rgb(120 120 120 / 0.12);
+}
+
+.tab-container:is(.console-api, :has(> .console-api))
+  > [data-component-part="tabs-list"]
+  [data-component-part="tab-button"] {
+  padding: 2px 10px;
+  margin: 0;
+  border: 0;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.375rem;
+  color: rgb(var(--gray-600));
+}
+
+.tab-container:is(.console-api, :has(> .console-api))
+  > [data-component-part="tabs-list"]
+  [data-component-part="tab-button"]:hover {
+  color: rgb(var(--gray-900));
+}
+
+.tab-container:is(.console-api, :has(> .console-api))
+  > [data-component-part="tabs-list"]
+  [data-component-part="tab-button"][data-active="true"] {
+  color: rgb(var(--primary));
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
+}
+
+.dark
+  .tab-container:is(.console-api, :has(> .console-api))
+  > [data-component-part="tabs-list"]
+  [data-component-part="tab-button"] {
+  color: rgb(var(--gray-400));
+}
+
+.dark
+  .tab-container:is(.console-api, :has(> .console-api))
+  > [data-component-part="tabs-list"]
+  [data-component-part="tab-button"]:hover {
+  color: rgb(var(--gray-200));
+}
+
+.dark
+  .tab-container:is(.console-api, :has(> .console-api))
+  > [data-component-part="tabs-list"]
+  [data-component-part="tab-button"][data-active="true"] {
+  color: rgb(var(--primary-light));
+  background: rgb(255 255 255 / 0.12);
+  box-shadow: none;
+}
+
+.tab-container:is(.console-api, :has(> .console-api))
+  > [data-component-part="tabs-list"]
+  .tab-icon {
+  width: 0.8125rem;
+  height: 0.8125rem;
+  background-color: currentColor;
+}
+
+.tab-container:is(.console-api, :has(> .console-api))
+  > div
+  > [data-component-part="tab-content"]
+  > :first-child {
+  margin-top: 0;
+}
+
+.tab-container:is(.console-api, :has(> .console-api))
+  > div
+  > [data-component-part="tab-content"]
+  > :last-child {
+  margin-bottom: 0;
+}
