@@ -7345,19 +7345,6 @@
                       "title": "Description",
                       "type": "string"
                     },
-                    "folder_id": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "description": "The knowledge folder this source is in; null at the root. Folders are managed with `/v1/agent/knowledge-folders`.",
-                      "title": "Folder Id"
-                    },
                     "file_name": {
                       "title": "File Name",
                       "type": "string"
@@ -7389,6 +7376,19 @@
                       "description": "The full current text content.",
                       "title": "Content",
                       "type": "string"
+                    },
+                    "folder_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The knowledge folder this source is in; null at the root. Folders are managed with `/v1/agent/knowledge-folders`.",
+                      "title": "Folder Id"
                     }
                   },
                   "required": [
@@ -7683,19 +7683,6 @@
                       "title": "Description",
                       "type": "string"
                     },
-                    "folder_id": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "description": "The knowledge folder this source is in; null at the root. Folders are managed with `/v1/agent/knowledge-folders`.",
-                      "title": "Folder Id"
-                    },
                     "file_name": {
                       "title": "File Name",
                       "type": "string"
@@ -7727,6 +7714,19 @@
                       "description": "The full current text content.",
                       "title": "Content",
                       "type": "string"
+                    },
+                    "folder_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The knowledge folder this source is in; null at the root. Folders are managed with `/v1/agent/knowledge-folders`.",
+                      "title": "Folder Id"
                     }
                   },
                   "required": [
@@ -7970,19 +7970,6 @@
                       "title": "Description",
                       "type": "string"
                     },
-                    "folder_id": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "description": "The knowledge folder this source is in; null at the root. Folders are managed with `/v1/agent/knowledge-folders`.",
-                      "title": "Folder Id"
-                    },
                     "file_name": {
                       "title": "File Name",
                       "type": "string"
@@ -8014,6 +8001,19 @@
                       "description": "The full current text content.",
                       "title": "Content",
                       "type": "string"
+                    },
+                    "folder_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The knowledge folder this source is in; null at the root. Folders are managed with `/v1/agent/knowledge-folders`.",
+                      "title": "Folder Id"
                     }
                   },
                   "required": [
@@ -8569,911 +8569,6 @@
         },
         "tags": [
           "Knowledge Sources"
-        ]
-      }
-    },
-    "/v1/agent/knowledge-folders": {
-      "get": {
-        "summary": "List Knowledge Folders",
-        "description": "List your team's knowledge folders across all workspaces, newest first.\nFolder names are unique per workspace, so two workspaces can each have a\n\"Support\" folder: tell them apart by `workspace_id`. Paginate with\n`cursor` (follow `next_cursor` while `has_more` is true) or with `page`\nfor offset pagination with a `total` count — the two are mutually\nexclusive. To list the sources in a folder, call\n`GET /v1/agent/knowledge-sources?folder_id=<folder_id>`; pass\n`include_total=true` there for a count.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "query",
-            "name": "cursor",
-            "description": "",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "default": null,
-              "title": "Cursor"
-            },
-            "deprecated": false
-          },
-          {
-            "in": "query",
-            "name": "page",
-            "description": "1-based page number; mutually exclusive with cursor.",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "minimum": 1,
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "default": null,
-              "title": "Page"
-            },
-            "deprecated": false
-          },
-          {
-            "in": "query",
-            "name": "include_total",
-            "description": "",
-            "required": false,
-            "schema": {
-              "default": false,
-              "title": "Include Total",
-              "type": "boolean"
-            },
-            "deprecated": false
-          },
-          {
-            "in": "query",
-            "name": "page_size",
-            "description": "",
-            "required": false,
-            "schema": {
-              "default": 30,
-              "maximum": 100,
-              "minimum": 1,
-              "title": "Page Size",
-              "type": "integer"
-            },
-            "deprecated": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Request fulfilled, document follows",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "folders": {
-                      "items": {
-                        "$ref": "#/components/schemas/PublicKnowledgeFolder"
-                      },
-                      "title": "Folders",
-                      "type": "array"
-                    },
-                    "has_more": {
-                      "title": "Has More",
-                      "type": "boolean"
-                    },
-                    "next_cursor": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Next Cursor"
-                    },
-                    "total": {
-                      "anyOf": [
-                        {
-                          "type": "integer"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Total"
-                    }
-                  },
-                  "required": [
-                    "folders",
-                    "has_more"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request syntax or unsupported method",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No permission -- see authorization schemes",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The server cannot process the request due to a high load",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Knowledge Folders"
-        ]
-      },
-      "post": {
-        "summary": "Create Knowledge Folder",
-        "description": "Create a folder in the API key owner's default workspace. Returns 409 if\nthat workspace already has a folder with the same name (compared exactly,\ncase-sensitive). Put knowledge sources in it by passing `folder_id` when\nyou create or update them.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PublicKnowledgeFolderPayload"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Document created, URL follows",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "folder_id": {
-                      "title": "Folder Id",
-                      "type": "string"
-                    },
-                    "workspace_id": {
-                      "title": "Workspace Id",
-                      "type": "string"
-                    },
-                    "name": {
-                      "title": "Name",
-                      "type": "string"
-                    },
-                    "created_at": {
-                      "format": "date-time",
-                      "title": "Created At",
-                      "type": "string"
-                    },
-                    "updated_at": {
-                      "format": "date-time",
-                      "title": "Updated At",
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "folder_id",
-                    "workspace_id",
-                    "name",
-                    "created_at",
-                    "updated_at"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No permission -- see authorization schemes",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Request forbidden -- authorization will not help",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Request conflict",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The server cannot process the request due to a high load",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Knowledge Folders"
-        ]
-      }
-    },
-    "/v1/agent/knowledge-folders/{folder_id}": {
-      "patch": {
-        "summary": "Rename Knowledge Folder",
-        "description": "Rename a folder. The name must be free within the folder's own workspace\n(409 otherwise); renaming a folder to its current name succeeds.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "folder_id",
-            "description": "",
-            "required": true,
-            "schema": {
-              "title": "Folder Id",
-              "type": "string"
-            },
-            "deprecated": false
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PublicKnowledgeFolderPayload"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Request fulfilled, document follows",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "folder_id": {
-                      "title": "Folder Id",
-                      "type": "string"
-                    },
-                    "workspace_id": {
-                      "title": "Workspace Id",
-                      "type": "string"
-                    },
-                    "name": {
-                      "title": "Name",
-                      "type": "string"
-                    },
-                    "created_at": {
-                      "format": "date-time",
-                      "title": "Created At",
-                      "type": "string"
-                    },
-                    "updated_at": {
-                      "format": "date-time",
-                      "title": "Updated At",
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "folder_id",
-                    "workspace_id",
-                    "name",
-                    "created_at",
-                    "updated_at"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No permission -- see authorization schemes",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Nothing matches the given URI",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Request conflict",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The server cannot process the request due to a high load",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Knowledge Folders"
-        ]
-      },
-      "delete": {
-        "summary": "Delete Knowledge Folder",
-        "description": "Delete a folder, empty or not. The knowledge sources inside it are not\ndeleted: they are taken out of the folder (`folder_id` becomes null).",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "folder_id",
-            "description": "",
-            "required": true,
-            "schema": {
-              "title": "Folder Id",
-              "type": "string"
-            },
-            "deprecated": false
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Request fulfilled, nothing follows",
-            "headers": {}
-          },
-          "401": {
-            "description": "No permission -- see authorization schemes",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Nothing matches the given URI",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The server cannot process the request due to a high load",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Knowledge Folders"
         ]
       }
     },
@@ -18226,6 +17321,43 @@
               }
             }
           },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Request forbidden -- authorization will not help",
             "headers": {},
@@ -18265,43 +17397,6 @@
           },
           "422": {
             "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No permission -- see authorization schemes",
             "headers": {},
             "content": {
               "application/json": {
@@ -18518,6 +17613,43 @@
               }
             }
           },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Request forbidden -- authorization will not help",
             "headers": {},
@@ -18557,43 +17689,6 @@
           },
           "422": {
             "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No permission -- see authorization schemes",
             "headers": {},
             "content": {
               "application/json": {
@@ -18815,6 +17910,43 @@
               }
             }
           },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Request forbidden -- authorization will not help",
             "headers": {},
@@ -18854,43 +17986,6 @@
           },
           "404": {
             "description": "Nothing matches the given URI",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No permission -- see authorization schemes",
             "headers": {},
             "content": {
               "application/json": {
@@ -19120,6 +18215,43 @@
               }
             }
           },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Request forbidden -- authorization will not help",
             "headers": {},
@@ -19268,43 +18400,6 @@
               }
             }
           },
-          "401": {
-            "description": "No permission -- see authorization schemes",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
           "503": {
             "description": "The server cannot process the request due to a high load",
             "headers": {},
@@ -19373,6 +18468,43 @@
             "description": "Request fulfilled, nothing follows",
             "headers": {}
           },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Request forbidden -- authorization will not help",
             "headers": {},
@@ -19412,43 +18544,6 @@
           },
           "404": {
             "description": "Nothing matches the given URI",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No permission -- see authorization schemes",
             "headers": {},
             "content": {
               "application/json": {
@@ -19712,6 +18807,43 @@
               }
             }
           },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Request forbidden -- authorization will not help",
             "headers": {},
@@ -19788,43 +18920,6 @@
           },
           "422": {
             "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No permission -- see authorization schemes",
             "headers": {},
             "content": {
               "application/json": {
@@ -20048,6 +19143,43 @@
               }
             }
           },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Request forbidden -- authorization will not help",
             "headers": {},
@@ -20161,43 +19293,6 @@
           },
           "422": {
             "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No permission -- see authorization schemes",
             "headers": {},
             "content": {
               "application/json": {
@@ -20424,6 +19519,43 @@
               }
             }
           },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Request forbidden -- authorization will not help",
             "headers": {},
@@ -20463,43 +19595,6 @@
           },
           "404": {
             "description": "Nothing matches the given URI",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No permission -- see authorization schemes",
             "headers": {},
             "content": {
               "application/json": {
@@ -20614,6 +19709,43 @@
             "description": "Request fulfilled, nothing follows",
             "headers": {}
           },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Request forbidden -- authorization will not help",
             "headers": {},
@@ -20690,43 +19822,6 @@
           },
           "409": {
             "description": "Request conflict",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No permission -- see authorization schemes",
             "headers": {},
             "content": {
               "application/json": {
@@ -20923,6 +20018,43 @@
               }
             }
           },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Request forbidden -- authorization will not help",
             "headers": {},
@@ -20999,43 +20131,6 @@
           },
           "422": {
             "description": "",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No permission -- see authorization schemes",
             "headers": {},
             "content": {
               "application/json": {
@@ -21367,7 +20462,7 @@
                         "segments": [
                           {
                             "end": 0.16,
-                            "start": 0.0,
+                            "start": 0,
                             "text": "I"
                           },
                           {
@@ -21416,13 +20511,13 @@
                             "text": "like"
                           },
                           {
-                            "end": 4.0,
+                            "end": 4,
                             "start": 3.36,
                             "text": "forever"
                           },
                           {
                             "end": 4.32,
-                            "start": 4.0,
+                            "start": 4,
                             "text": "since"
                           },
                           {
@@ -21447,7 +20542,7 @@
                           },
                           {
                             "end": 6.24,
-                            "start": 6.0,
+                            "start": 6,
                             "text": "Ive"
                           },
                           {
@@ -21506,13 +20601,13 @@
                             "text": "you"
                           },
                           {
-                            "end": 10.0,
+                            "end": 10,
                             "start": 9.68,
                             "text": "used"
                           },
                           {
                             "end": 10.08,
-                            "start": 10.0,
+                            "start": 10,
                             "text": "to"
                           },
                           {
@@ -21542,7 +20637,7 @@
                           },
                           {
                             "end": 12.24,
-                            "start": 12.0,
+                            "start": 12,
                             "text": "Ive"
                           },
                           {
@@ -21618,7 +20713,7 @@
                         ]
                       },
                       "audio_base64": "SUQzBAAAAAAA...",
-                      "chunk_audio_offset_sec": 0.0,
+                      "chunk_audio_offset_sec": 0,
                       "chunk_seq": 0,
                       "content": "I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start."
                     },
@@ -21628,7 +20723,7 @@
                         "segments": [
                           {
                             "end": 0.16,
-                            "start": 0.0,
+                            "start": 0,
                             "text": "I"
                           },
                           {
@@ -21677,13 +20772,13 @@
                             "text": "like"
                           },
                           {
-                            "end": 4.0,
+                            "end": 4,
                             "start": 3.36,
                             "text": "forever"
                           },
                           {
                             "end": 4.32,
-                            "start": 4.0,
+                            "start": 4,
                             "text": "since"
                           },
                           {
@@ -21708,7 +20803,7 @@
                           },
                           {
                             "end": 6.24,
-                            "start": 6.0,
+                            "start": 6,
                             "text": "Ive"
                           },
                           {
@@ -21767,13 +20862,13 @@
                             "text": "you"
                           },
                           {
-                            "end": 10.0,
+                            "end": 10,
                             "start": 9.68,
                             "text": "used"
                           },
                           {
                             "end": 10.08,
-                            "start": 10.0,
+                            "start": 10,
                             "text": "to"
                           },
                           {
@@ -21803,7 +20898,7 @@
                           },
                           {
                             "end": 12.24,
-                            "start": 12.0,
+                            "start": 12,
                             "text": "Ive"
                           },
                           {
@@ -21879,7 +20974,7 @@
                         ]
                       },
                       "audio_base64": "//uSxOAAF...",
-                      "chunk_audio_offset_sec": 0.0,
+                      "chunk_audio_offset_sec": 0,
                       "chunk_seq": 0,
                       "content": "I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start."
                     },
@@ -22058,7 +21153,7 @@
                             "text": "you"
                           },
                           {
-                            "end": 10.0,
+                            "end": 10,
                             "start": 9.6,
                             "text": "about"
                           },
@@ -22105,7 +21200,7 @@
                     },
                     "chunk_audio_offset_sec": {
                       "description": "Absolute start time of this text chunk within the full audio, in seconds.",
-                      "minimum": 0.0,
+                      "minimum": 0,
                       "title": "Chunk Audio Offset Sec",
                       "type": "number"
                     }
@@ -24846,6 +23941,911 @@
         },
         "tags": [
           "Model"
+        ]
+      }
+    },
+    "/v1/agent/knowledge-folders": {
+      "get": {
+        "summary": "List Knowledge Folders",
+        "description": "List your team's knowledge folders across all workspaces, newest first.\nFolder names are unique per workspace, so two workspaces can each have a\n\"Support\" folder: tell them apart by `workspace_id`. Paginate with\n`cursor` (follow `next_cursor` while `has_more` is true) or with `page`\nfor offset pagination with a `total` count — the two are mutually\nexclusive. To list the sources in a folder, call\n`GET /v1/agent/knowledge-sources?folder_id=<folder_id>`; pass\n`include_total=true` there for a count.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "description": "",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Cursor"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "description": "1-based page number; mutually exclusive with cursor.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Page"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "include_total",
+            "description": "",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Total",
+              "type": "boolean"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "description": "",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "folders": {
+                      "items": {
+                        "$ref": "#/components/schemas/PublicKnowledgeFolder"
+                      },
+                      "title": "Folders",
+                      "type": "array"
+                    },
+                    "has_more": {
+                      "title": "Has More",
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Next Cursor"
+                    },
+                    "total": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Total"
+                    }
+                  },
+                  "required": [
+                    "folders",
+                    "has_more"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Knowledge Folders"
+        ]
+      },
+      "post": {
+        "summary": "Create Knowledge Folder",
+        "description": "Create a folder in the API key owner's default workspace. Returns 409 if\nthat workspace already has a folder with the same name (compared exactly,\ncase-sensitive). Put knowledge sources in it by passing `folder_id` when\nyou create or update them.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicKnowledgeFolderPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Document created, URL follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "folder_id": {
+                      "title": "Folder Id",
+                      "type": "string"
+                    },
+                    "workspace_id": {
+                      "title": "Workspace Id",
+                      "type": "string"
+                    },
+                    "name": {
+                      "title": "Name",
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "format": "date-time",
+                      "title": "Created At",
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "format": "date-time",
+                      "title": "Updated At",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "folder_id",
+                    "workspace_id",
+                    "name",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request forbidden -- authorization will not help",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request conflict",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Knowledge Folders"
+        ]
+      }
+    },
+    "/v1/agent/knowledge-folders/{folder_id}": {
+      "patch": {
+        "summary": "Rename Knowledge Folder",
+        "description": "Rename a folder. The name must be free within the folder's own workspace\n(409 otherwise); renaming a folder to its current name succeeds.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "folder_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Folder Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicKnowledgeFolderPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "folder_id": {
+                      "title": "Folder Id",
+                      "type": "string"
+                    },
+                    "workspace_id": {
+                      "title": "Workspace Id",
+                      "type": "string"
+                    },
+                    "name": {
+                      "title": "Name",
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "format": "date-time",
+                      "title": "Created At",
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "format": "date-time",
+                      "title": "Updated At",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "folder_id",
+                    "workspace_id",
+                    "name",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request conflict",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Knowledge Folders"
+        ]
+      },
+      "delete": {
+        "summary": "Delete Knowledge Folder",
+        "description": "Delete a folder, empty or not. The knowledge sources inside it are not\ndeleted: they are taken out of the folder (`folder_id` becomes null).",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "folder_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Folder Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Request fulfilled, nothing follows",
+            "headers": {}
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Knowledge Folders"
         ]
       }
     }
@@ -27908,7 +27908,7 @@
           "warm_briefing_speed": {
             "anyOf": [
               {
-                "maximum": 2.0,
+                "maximum": 2,
                 "minimum": 0.5,
                 "type": "number"
               },
@@ -29413,7 +29413,7 @@
           "speed": {
             "anyOf": [
               {
-                "maximum": 2.0,
+                "maximum": 2,
                 "minimum": 0.5,
                 "type": "number"
               },
@@ -29596,10 +29596,10 @@
             "title": "Keep Previous Secret For Seconds"
           },
           "timeout_seconds": {
-            "default": 5.0,
+            "default": 5,
             "description": "How long the platform waits for the endpoint before connecting the call without variables.",
-            "maximum": 8.0,
-            "minimum": 1.0,
+            "maximum": 8,
+            "minimum": 1,
             "title": "Timeout Seconds",
             "type": "number"
           }
@@ -30933,7 +30933,7 @@
           "warm_briefing_speed": {
             "anyOf": [
               {
-                "maximum": 2.0,
+                "maximum": 2,
                 "minimum": 0.5,
                 "type": "number"
               },
@@ -31231,8 +31231,8 @@
             "type": "boolean"
           },
           "speed": {
-            "default": 1.0,
-            "maximum": 2.0,
+            "default": 1,
+            "maximum": 2,
             "minimum": 0.5,
             "title": "Speed",
             "type": "number"
@@ -31350,7 +31350,7 @@
             "title": "Previous Secret Expires At"
           },
           "timeout_seconds": {
-            "default": 5.0,
+            "default": 5,
             "title": "Timeout Seconds",
             "type": "number"
           }
@@ -32451,19 +32451,6 @@
             "title": "Description",
             "type": "string"
           },
-          "folder_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "The knowledge folder this source is in; null at the root. Folders are managed with `/v1/agent/knowledge-folders`.",
-            "title": "Folder Id"
-          },
           "file_name": {
             "title": "File Name",
             "type": "string"
@@ -32490,6 +32477,19 @@
             "format": "date-time",
             "title": "Updated At",
             "type": "string"
+          },
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The knowledge folder this source is in; null at the root. Folders are managed with `/v1/agent/knowledge-folders`.",
+            "title": "Folder Id"
           }
         },
         "required": [
@@ -32522,58 +32522,6 @@
           "name"
         ],
         "title": "PublicDependentAgent",
-        "type": "object"
-      },
-      "PublicKnowledgeFolder": {
-        "properties": {
-          "folder_id": {
-            "title": "Folder Id",
-            "type": "string"
-          },
-          "workspace_id": {
-            "title": "Workspace Id",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "created_at": {
-            "format": "date-time",
-            "title": "Created At",
-            "type": "string"
-          },
-          "updated_at": {
-            "format": "date-time",
-            "title": "Updated At",
-            "type": "string"
-          }
-        },
-        "required": [
-          "folder_id",
-          "workspace_id",
-          "name",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "PublicKnowledgeFolder",
-        "type": "object"
-      },
-      "PublicKnowledgeFolderPayload": {
-        "additionalProperties": false,
-        "properties": {
-          "name": {
-            "description": "1-120 characters, stored exactly as sent. Unique within the workspace, case-sensitive.",
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "name"
-        ],
-        "title": "PublicKnowledgeFolderPayload",
         "type": "object"
       },
       "PublicAgentToolSummary": {
@@ -35481,13 +35429,13 @@
         "description": "Controls for adjusting the prosody (rhythm and intonation) of generated speech.",
         "properties": {
           "speed": {
-            "default": 1.0,
+            "default": 1,
             "description": "Speaking rate multiplier. Valid range: 0.5 to 2.0. 1.0 = normal speed, 0.5 = half speed, 2.0 = double speed. Useful for adjusting pacing without regenerating audio.",
             "title": "Speed",
             "type": "number"
           },
           "volume": {
-            "default": 0.0,
+            "default": 0,
             "description": "Volume adjustment in decibels (dB). 0 = no change, positive values = louder, negative values = quieter.",
             "title": "Volume",
             "type": "number"
@@ -35535,16 +35483,16 @@
           "temperature": {
             "default": 0.7,
             "description": "Controls expressiveness. Higher is more varied, lower is more consistent.",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Temperature",
             "type": "number"
           },
           "top_p": {
             "default": 0.7,
             "description": "Controls diversity via nucleus sampling.",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Top P",
             "type": "number"
           },
@@ -35728,10 +35676,10 @@
             "type": "boolean"
           },
           "early_stop_threshold": {
-            "default": 1.0,
+            "default": 1,
             "description": "Early stopping threshold for batch processing.",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Early Stop Threshold",
             "type": "number"
           },
@@ -35788,16 +35736,16 @@
           "temperature": {
             "default": 0.7,
             "description": "Controls expressiveness. Higher is more varied, lower is more consistent.",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Temperature",
             "type": "number"
           },
           "top_p": {
             "default": 0.7,
             "description": "Controls diversity via nucleus sampling.",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Top P",
             "type": "number"
           },
@@ -35981,10 +35929,10 @@
             "type": "boolean"
           },
           "early_stop_threshold": {
-            "default": 1.0,
+            "default": 1,
             "description": "Early stopping threshold for batch processing.",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Early Stop Threshold",
             "type": "number"
           },
@@ -36126,7 +36074,7 @@
           {
             "event": "finish",
             "reason": "stop",
-            "time": 5460.0
+            "time": 5460
           }
         ],
         "properties": {
@@ -36187,7 +36135,7 @@
               "segments": [
                 {
                   "end": 0.16,
-                  "start": 0.0,
+                  "start": 0,
                   "text": "I"
                 },
                 {
@@ -36236,13 +36184,13 @@
                   "text": "like"
                 },
                 {
-                  "end": 4.0,
+                  "end": 4,
                   "start": 3.36,
                   "text": "forever"
                 },
                 {
                   "end": 4.32,
-                  "start": 4.0,
+                  "start": 4,
                   "text": "since"
                 },
                 {
@@ -36267,7 +36215,7 @@
                 },
                 {
                   "end": 6.24,
-                  "start": 6.0,
+                  "start": 6,
                   "text": "Ive"
                 },
                 {
@@ -36326,13 +36274,13 @@
                   "text": "you"
                 },
                 {
-                  "end": 10.0,
+                  "end": 10,
                   "start": 9.68,
                   "text": "used"
                 },
                 {
                   "end": 10.08,
-                  "start": 10.0,
+                  "start": 10,
                   "text": "to"
                 },
                 {
@@ -36362,7 +36310,7 @@
                 },
                 {
                   "end": 12.24,
-                  "start": 12.0,
+                  "start": 12,
                   "text": "Ive"
                 },
                 {
@@ -36438,7 +36386,7 @@
               ]
             },
             "audio": "<raw audio bytes>",
-            "chunk_audio_offset_sec": 0.0,
+            "chunk_audio_offset_sec": 0,
             "chunk_seq": 0,
             "content": "I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start.",
             "event": "audio",
@@ -36619,7 +36567,7 @@
                   "text": "you"
                 },
                 {
-                  "end": 10.0,
+                  "end": 10,
                   "start": 9.6,
                   "text": "about"
                 },
@@ -36635,7 +36583,7 @@
             "chunk_seq": 1,
             "content": "Seeing you again now makes me realize just how much I’ve missed you. We have so much to catch up on, and I don’t even know which part of my life to tell you about first.",
             "event": "audio",
-            "time": 4210.0
+            "time": 4210
           }
         ],
         "properties": {
@@ -36674,7 +36622,7 @@
           },
           "chunk_audio_offset_sec": {
             "description": "Start time of this text chunk within the full audio, in seconds — the sum of the audio durations of every earlier chunk. Add it to a segment's `start`/`end` to get absolute timestamps. Monotonically non-decreasing.",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Chunk Audio Offset Sec",
             "type": "number"
           },
@@ -36807,15 +36755,15 @@
         "description": "Request body for synchronous voice design generation. The endpoint returns generated voice candidates with base64-encoded audio.",
         "examples": [
           {
-            "guidance_scale": 2.0,
-            "instruct_guidance_scale": 0.0,
+            "guidance_scale": 2,
+            "instruct_guidance_scale": 0,
             "instruction": "Warm, confident studio narrator with a natural tone",
             "language": "en",
             "n": 2,
             "num_step": 32,
             "reference_text": "Welcome to Fish Audio.",
             "seed": 42,
-            "speed": 1.0
+            "speed": 1
           }
         ],
         "properties": {
@@ -36862,10 +36810,10 @@
             "type": "integer"
           },
           "speed": {
-            "default": 1.0,
+            "default": 1,
             "description": "Speaking speed multiplier for candidate generation.",
-            "exclusiveMinimum": 0.0,
-            "maximum": 3.0,
+            "exclusiveMinimum": 0,
+            "maximum": 3,
             "title": "Speed",
             "type": "number"
           },
@@ -36878,16 +36826,16 @@
             "type": "integer"
           },
           "guidance_scale": {
-            "default": 2.0,
+            "default": 2,
             "description": "Classifier-free guidance scale. Higher values follow the prompt more strongly.",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Guidance Scale",
             "type": "number"
           },
           "instruct_guidance_scale": {
-            "default": 0.0,
+            "default": 0,
             "description": "Instruction guidance scale for prompt conditioning.",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Instruct Guidance Scale",
             "type": "number"
           },
@@ -37382,6 +37330,58 @@
           "audio"
         ],
         "title": "SampleEntity",
+        "type": "object"
+      },
+      "PublicKnowledgeFolder": {
+        "properties": {
+          "folder_id": {
+            "title": "Folder Id",
+            "type": "string"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "folder_id",
+          "workspace_id",
+          "name",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PublicKnowledgeFolder",
+        "type": "object"
+      },
+      "PublicKnowledgeFolderPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "1-120 characters, stored exactly as sent. Unique within the workspace, case-sensitive.",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "PublicKnowledgeFolderPayload",
         "type": "object"
       }
     }
