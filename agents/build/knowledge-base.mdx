@@ -29,7 +29,7 @@ Files are validated, parsed, and indexed as part of the upload itself. When the 
 
 Group sources into folders with **New folder**, and rename sources from the row menu. Deleting a folder never deletes its sources. Anything inside moves back to **All sources**.
 
-The API manages folders too: [create, rename, and delete them](#organize-sources-in-folders) with `/v1/agent/knowledge-folders`, and put a source in a folder with `folder_id`. An empty `folder_id` means the root, which is **All sources** in the console.
+The API manages folders too: [create, rename, and delete them](#organize-sources-in-folders) with `/v1/agent/knowledge-folders`, and put a source in a folder with `folder_id`. `folder_id=root` stands for the root, which is **All sources** in the console.
 
 ## Share sources across agents
 
@@ -127,10 +127,10 @@ curl --request POST https://api.fish.audio/v1/agent/knowledge-folders \
   --data '{"name": "Support"}'
 ```
 
-Every source returned by the API has a `folder_id`, which is `null` at the root. To control it, send `folder_id` in the multipart form:
+Every source returned by the API has a `folder_id`, which is `null` when the source isn't in a folder. To control it, send `folder_id` in the multipart form:
 
-- **Create**: send a folder ID to upload the source into that folder. Omit it, or send it empty, to put the source at the root.
-- **Update**: send a folder ID to move the source into that folder, or send it empty to move it back to the root. Omit it to leave the source where it is. Moving a source doesn't create a new revision.
+- **Create**: send a folder ID to upload the source into that folder. Omit it, or send `root`, to upload it outside any folder.
+- **Update**: send a folder ID to move the source into that folder, or send `root` to take it out of its folder. Omit it to leave the source where it is. Moving a source doesn't create a new revision.
 
 Both calls return `404` if the folder doesn't exist in the source's workspace.
 
@@ -140,16 +140,18 @@ curl --request PATCH https://api.fish.audio/v1/agent/knowledge-sources/{source_i
   --form "folder_id=YOUR_FOLDER_ID"
 ```
 
-To filter the list, pass `folder_id` as a query parameter. A folder ID returns only that folder's sources. An empty value returns only the sources at the root, across all workspaces. Leave it out to list everything.
+To filter the list, pass `folder_id` as a query parameter. A folder ID returns only that folder's sources. `folder_id=root`, or leaving it out, returns every source across all workspaces, whether or not it's in a folder. There's no filter for sources outside any folder: list everything, following `next_cursor` while `has_more` is true, and keep the ones whose `folder_id` is `null`.
 
-```bash List sources at the root
-curl "https://api.fish.audio/v1/agent/knowledge-sources?folder_id=" \
+```bash List the sources in a folder
+curl "https://api.fish.audio/v1/agent/knowledge-sources?folder_id=YOUR_FOLDER_ID" \
   --header "Authorization: Bearer $FISH_API_KEY"
 ```
 
-<Warning>
-`folder_id=` has to reach the server with its empty value. Some HTTP clients and SDKs drop query parameters whose value is empty, and the request then lists every source instead of the root. The API playground on this site does this too: it leaves an empty `folder_id` out of the request, so use cURL or your own client to list the root. If you get more sources than expected, check the request URL that was actually sent.
-</Warning>
+```bash Keep only sources outside any folder
+curl "https://api.fish.audio/v1/agent/knowledge-sources?folder_id=root" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  | jq '.knowledge_sources | map(select(.folder_id == null))'
+```
 
 To count the sources in a folder, add `include_total=true` to the filtered list request.
 

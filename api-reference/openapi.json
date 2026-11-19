@@ -6982,7 +6982,7 @@
     "/v1/agent/knowledge-sources": {
       "get": {
         "summary": "List Knowledge Sources",
-        "description": "List your team's knowledge sources, newest first. Paginate with `cursor`\n(follow `next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count — the two are mutually exclusive. Filter\nby folder with `folder_id=<id>`, or with an empty `folder_id=` for sources\nat the root.",
+        "description": "List your team's knowledge sources, newest first. Paginate with `cursor`\n(follow `next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count — the two are mutually exclusive. Filter\nby folder with `folder_id=<id>`; with `folder_id=root` or no `folder_id`\nyou get every source, and the ones outside any folder have a null\n`folder_id`.",
         "security": [
           {
             "BearerAuth": []
@@ -7011,7 +7011,7 @@
           {
             "in": "query",
             "name": "folder_id",
-            "description": "Only sources in this knowledge folder. Pass an empty value (`folder_id=`) for sources at the root, across all workspaces. Omit to list everything. An unknown or deleted folder id gives an empty list. Combines with `search`.",
+            "description": "Only sources in this knowledge folder. Omit it, or pass `root` (an empty value counts as omitted), to list every source across all workspaces, in a folder or not; sources outside any folder have a null `folder_id`. An unknown or deleted folder id gives an empty list. Combines with `search`.",
             "required": false,
             "schema": {
               "anyOf": [
@@ -7264,7 +7264,7 @@
       },
       "post": {
         "summary": "Create Knowledge Source",
-        "description": "Upload a plain-text or Markdown file (UTF-8, up to 1 MB) as a knowledge\nsource. Send `multipart/form-data` with the file in `source`; `name`\ndefaults to the file name. Send `folder_id` to put it in a knowledge\nfolder (otherwise it lands at the root). Attach it to agents via the agent config's\n`knowledge_base.knowledge_source_ids`.",
+        "description": "Upload a plain-text or Markdown file (UTF-8, up to 1 MB) as a knowledge\nsource. Send `multipart/form-data` with the file in `source`; `name`\ndefaults to the file name. Send `folder_id` to put it in a knowledge\nfolder (otherwise it is created outside any folder; `folder_id=root` says\nso explicitly). Attach it to agents via the agent config's\n`knowledge_base.knowledge_source_ids`.",
         "security": [
           {
             "BearerAuth": []
@@ -7308,7 +7308,7 @@
                       }
                     ],
                     "default": null,
-                    "description": "Put the source in this knowledge folder, which must be in the workspace the source is created in (your default workspace). Omit or send an empty value for the root. 404 if the folder does not exist there.",
+                    "description": "Put the source in this knowledge folder, which must be in the workspace the source is created in (your default workspace). Omit it, or send `root` (or an empty value), to create it outside any folder. 404 if the folder does not exist there.",
                     "title": "Folder Id"
                   }
                 },
@@ -7864,7 +7864,7 @@
       },
       "patch": {
         "summary": "Update Knowledge Source",
-        "description": "Rename the source and/or replace its content by uploading a new file in\n`source` (multipart). Replacing content increments `revision_number` while\nthe id stays stable, and every attached agent's draft picks it up\nimmediately; published versions pin the revision they were published with,\nso republish each affected agent to put the new content live — that\ntwo-step (sync content, republish) is the nightly content-sync recipe.\nSend `folder_id` to move the source into a knowledge folder, or an empty\n`folder_id` to move it back to the root; a move alone does not create a\nrevision.",
+        "description": "Rename the source and/or replace its content by uploading a new file in\n`source` (multipart). Replacing content increments `revision_number` while\nthe id stays stable, and every attached agent's draft picks it up\nimmediately; published versions pin the revision they were published with,\nso republish each affected agent to put the new content live — that\ntwo-step (sync content, republish) is the nightly content-sync recipe.\nSend `folder_id` to move the source into a knowledge folder, or\n`folder_id=root` to take it out of its folder; a move alone does not create\na revision.",
         "security": [
           {
             "BearerAuth": []
@@ -7936,7 +7936,7 @@
                       }
                     ],
                     "default": null,
-                    "description": "Move the source into this knowledge folder, which must be in the source's own workspace. An empty value moves it back to the root; omit to leave it where it is. Moving never creates a new revision. 404 if the folder does not exist there.",
+                    "description": "Move the source into this knowledge folder, which must be in the source's own workspace. `root` (or an empty value) takes it out of its folder; omit to leave it where it is. Moving never creates a new revision. 404 if the folder does not exist there.",
                     "title": "Folder Id"
                   }
                 },
@@ -9336,7 +9336,7 @@
       },
       "delete": {
         "summary": "Delete Knowledge Folder",
-        "description": "Delete a folder, empty or not. The knowledge sources inside it are not\ndeleted: they return to the root (`folder_id` becomes null).",
+        "description": "Delete a folder, empty or not. The knowledge sources inside it are not\ndeleted: they are taken out of the folder (`folder_id` becomes null).",
         "security": [
           {
             "BearerAuth": []
