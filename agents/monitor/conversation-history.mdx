@@ -374,7 +374,7 @@ When `transferred_call_ended_at` is `null`, the other two are `null` as well. A 
 
 ## Download recordings
 
-`GET /v1/agent/sessions/{session_id}/recording` returns the recording status and signed download URLs: one audio track per speaker, so you can play or process the agent and the user separately. For sessions that never [recorded](#what-gets-stored) (recording turned off, or no audio produced), the endpoint returns `404`.
+`GET /v1/agent/sessions/{session_id}/recording` returns the recording status and signed download URLs: one audio track per speaker, so you can play or process the agent and the user separately. An agent with a [background sound](/agents/build/background-sound-voice-effect#recordings) has a second `agent` track, which holds the ambience. For sessions that never [recorded](#what-gets-stored) (recording turned off, or no audio produced), the endpoint returns `404`.
 
 ```bash API (curl)
 curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID/recording" \
