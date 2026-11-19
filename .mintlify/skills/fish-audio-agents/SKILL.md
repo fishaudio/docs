@@ -115,7 +115,7 @@ Give the user `https://fish.audio/app/agents/<agent_id>` and tell them to click 
 
 ### Your own page
 
-This one-file Node.js server (Node 18+, no dependencies) serves a page with the call widget and a route that creates a session with the API key when the user starts a call. It is the same file as the Quickstart's **Your own page** tab, which also has a Python version (`server.py`, Python 3.8+, in `https://docs.fish.audio/agents/quickstart.md`) for projects without Node.
+This one-file Node.js server (Node 18+, no dependencies) serves a page with the call widget and a route that creates a session with the API key when the user starts a call. Copy it from here as written. Only a project without Node needs the Quickstart: its **Your own page** tab in `https://docs.fish.audio/agents/quickstart.md` has the same server in Python (`server.py`, Python 3.8+).
 
 ```javascript server.mjs
 import { createServer } from "node:http";
@@ -162,7 +162,7 @@ createServer(async (req, res) => {
 1. Write the file into the project unchanged.
 2. Start it in a shell where `FISH_API_KEY` and `AGENT_ID` are set, for example `set -a; . ./.env; set +a; node server.mjs`.
 3. Check it answers: `curl -s -o /dev/null -w '%{http_code}' http://localhost:3000` returns `200`.
-4. Give the user the start command from step 2 to run in their own terminal. A server you start from your own tool usually stops when your command, turn, or session ends, so the user's terminal is where it keeps running.
+4. Give the user the start command from step 2 as the first thing to do: run it in their own terminal, then open the page. A server you start from your own tool usually stops when your command, turn, or session ends, so say that your check was a one-off and the user's terminal is where the server keeps running.
 5. Tell the user to open `http://localhost:3000`, click the launcher in the corner, and allow the microphone. The page needs `localhost` or `https`; a plain `http` LAN address gets no microphone.
 
 Whenever you tell the user the page is ready, including after later changes, check it with the `curl` from step 3 first. Published changes reach the next call without a restart.
