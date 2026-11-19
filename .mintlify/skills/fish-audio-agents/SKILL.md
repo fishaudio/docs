@@ -1,23 +1,23 @@
 ---
 name: fish-audio-agents
-description: Build, publish, and talk to a Fish Audio voice agent (voice agent, phone agent, voice bot) through the Agents API (`/v1/agent`). Use when the user asks to create or deploy a voice agent, give it a phone number, put it on a web page, or read back its conversations. Covers the API key, creating and configuring an agent, publishing, three ways to reach it (console test call, a one-file browser demo, a phone number), reading a session back, the Agents API errors, and which page to read for tools, knowledge base, deployment, and telephony. For text-to-speech or speech-to-text alone, use the `fish-audio-sdk` or `fish-audio-api` skill instead.
+description: Build, publish, and talk to a Fish Audio voice agent through the Agents API (`/v1/agent`). Use when the user wants to create a voice agent, give it a phone number, put it on a web page, or read back its calls. For text-to-speech or speech-to-text alone, use the `fish-audio-sdk` or `fish-audio-api` skill instead.
 ---
 
 # Fish Audio Agents Skill
 
-Use this skill to take a user from an API key to a first conversation with a working Fish Audio voice agent, and to find the right page for everything after that. Work through the steps in order. Each step ends with a condition that tells you it is done.
+Use this skill to take a user from an API key to a first conversation with a working Fish Audio voice agent, and to find the right page for everything after that.
 
 ## Global facts
 
 - Base URL: `https://api.fish.audio`. Every Agents endpoint lives under `/v1/agent`.
-- Auth: `Authorization: Bearer $FISH_API_KEY` on every request. Read the key from the environment or the project's `.env` and refer to it as `$FISH_API_KEY` in commands and code.
-- The key belongs on a server. Browser code gets a per-call session token from your backend instead.
-- Every account starts with a $5 trial balance, about 70 minutes of conversation.
-- Full API reference for any endpoint: `https://docs.fish.audio/api-reference/endpoint/agent/<operation>.md` (for example `create-agent.md`). Every docs page is also served as markdown: append `.md` to its URL.
+- Auth: `Authorization: Bearer $FISH_API_KEY` on every request (step 2 finds the key). The key stays on a server.
+- Every docs page is served as markdown: `https://docs.fish.audio/<path>.md`. The API reference for an endpoint is `api-reference/endpoint/agent/<operation>` (for example `create-agent`).
+- **Business facts** are what the agent tells callers about the user's business: menu, prices, opening hours, policies. They come from the user only.
+- **Live check**: `curl -s -o /dev/null -w '%{http_code}' http://localhost:3000` returns `200`.
 
 ## Sessions are created only when a call starts
 
-A session (`POST /v1/agent/sessions`) is a short-lived join token for exactly one call, and it is billed. Create one only at the moment a user starts a call, one per call. A session that no client joins ends as `failed`. To check a key or test the setup, use `GET /v1/agent/agents`.
+A session (`POST /v1/agent/sessions`) is a short-lived join token for exactly one call, and it is billed. Create one only at the moment a user starts a call, one per call; browser code gets it from your backend. A session that no client joins ends as `failed`. To check a key or test the setup, use `GET /v1/agent/agents`.
 
 ## Step 1: Ask what to build
 
@@ -30,7 +30,7 @@ Ask the user, in one message, for anything the request has not already answered:
 
 If the user leaves a choice to you, use English, an opening line you write from the purpose, and the console.
 
-Facts the agent will tell callers about the business (menu, prices, opening hours, policies) also come from the user. Ask for the ones the purpose needs, or build without them as step 3 describes.
+Ask for the business facts the purpose needs, or build without them as step 3 describes.
 
 Done when: you have a value for all four.
 
@@ -45,7 +45,7 @@ curl https://api.fish.audio/v1/agent/agents \
   --header "Authorization: Bearer $FISH_API_KEY"
 ```
 
-A `200` (an empty list on a new account) means the key works. A `401` means it is wrong or expired: ask for a new one. This request creates nothing.
+A `200` (an empty list on a new account) means the key works; anything else, see Errors. This request creates nothing.
 
 When the key lives only in `.env`, load it into the shell first, for example `set -a; . ./.env; set +a`.
 
@@ -75,9 +75,9 @@ curl --request POST https://api.fish.audio/v1/agent/agents \
   }'
 ```
 
-- `system_prompt`: write it from the purpose and from facts the user gave. For a menu, prices, hours, or policies the user has not given, tell the agent to say that the staff will confirm them, and list in your reply what the user should send you to fill them in. It is capped at 32,000 tokens; keep it under 2,000 for latency and cost. See `https://docs.fish.audio/agents/build/configuration.md`.
-- `first_message_mode`: `fixed` speaks `first_message` word for word, `prompt` generates the opening from `first_message_prompt`, `off` waits for the caller.
-- `speaking_language`: a language code such as `en`, `es`, `ja`, `zh`. The supported list is in `https://docs.fish.audio/agents/build/voice-language.md`.
+- `system_prompt`: write it from the purpose and the business facts the user gave. For business facts still missing, tell the agent to say the staff will confirm them, and list in your reply what the user should send you. It is capped at 32,000 tokens; keep it under 2,000 for latency and cost. See `agents/build/configuration`.
+- `first_message_mode: fixed` speaks `first_message` word for word.
+- `speaking_language`: a language code such as `en`, `es`, `ja`, `zh`. The supported list is in `agents/build/voice-language`.
 - `voice_id`: any public voice model id. `802e3bc2b27e49c2995d23ef70e6ac89` is an English voice. For another language, pick a voice from the Voice Library in that language (no key needed):
 
 ```bash
@@ -88,20 +88,18 @@ Use an `_id` from `items` as `voice_id`.
 
 The response contains `agent_id`. Save it as `AGENT_ID` (in the shell, and in `.env` if the project will use it).
 
-To change the configuration later, `PATCH /v1/agent/agents/$AGENT_ID/config` with only the fields to change. It deep-merges into the draft; lists are replaced as a whole.
+To change the configuration later, `PATCH /v1/agent/agents/$AGENT_ID/config` with only the fields to change, then publish again (step 4). It deep-merges into the draft; lists are replaced as a whole.
 
 Done when: you have an `agent_id`.
 
 ## Step 4: Publish
 
-Sessions run only published configuration. Creating a session for an agent that was never published returns `409`.
+Sessions run only published configuration, and every later change needs another publish to reach the next call.
 
 ```bash
 curl --request POST https://api.fish.audio/v1/agent/agents/$AGENT_ID/publish \
   --header "Authorization: Bearer $FISH_API_KEY"
 ```
-
-Every later change to the draft needs another publish to go live.
 
 Done when: the response has a `version_number`.
 
@@ -115,7 +113,7 @@ Give the user `https://fish.audio/app/agents/<agent_id>` and tell them to click 
 
 ### Your own page
 
-This one-file Node.js server (Node 18+, no dependencies) serves a page with the call widget and a route that creates a session with the API key when the user starts a call. Copy it from here as written. Only a project without Node needs the Quickstart: its **Your own page** tab in `https://docs.fish.audio/agents/quickstart.md` has the same server in Python (`server.py`, Python 3.8+).
+This one-file Node.js server (Node 18+, no dependencies) serves a page with the call widget and a route that creates the session when the user starts a call. Copy it from here as written. Only a project without Node needs the Quickstart: its **Your own page** tab in `agents/quickstart` has the same server in Python (`server.py`, Python 3.8+).
 
 ```javascript server.mjs
 import { createServer } from "node:http";
@@ -161,13 +159,13 @@ createServer(async (req, res) => {
 
 1. Write the file into the project unchanged.
 2. Start it in a shell where `FISH_API_KEY` and `AGENT_ID` are set, for example `set -a; . ./.env; set +a; node server.mjs`.
-3. Check it answers: `curl -s -o /dev/null -w '%{http_code}' http://localhost:3000` returns `200`.
+3. Run the live check.
 4. Give the user the start command from step 2 as the first thing to do: run it in their own terminal, then open the page. A server you start from your own tool usually stops when your command, turn, or session ends, so say that your check was a one-off and the user's terminal is where the server keeps running.
 5. Tell the user to open `http://localhost:3000`, click the launcher in the corner, and allow the microphone. The page needs `localhost` or `https`; a plain `http` LAN address gets no microphone.
 
-Whenever you tell the user the page is ready, including after later changes, check it with the `curl` from step 3 first. Published changes reach the next call without a restart.
+Each time you tell the user the page is ready, including after later changes, run the live check first. Published changes need no restart.
 
-The server prints each call's `session_id`. For production, keep the same shape: the backend holds the key and returns session tokens, the page runs the widget or the Web SDK. See `https://docs.fish.audio/agents/deploy/authenticated-sessions.md`.
+The server prints each call's `session_id`. For production, keep the same shape (backend holds the key, page runs the widget or the Web SDK); see `agents/deploy/authenticated-sessions`.
 
 ### Phone number
 
@@ -218,7 +216,7 @@ curl --request DELETE https://api.fish.audio/v1/agent/phone-numbers/YOUR_PHONE_N
   --header "Authorization: Bearer $FISH_API_KEY"
 ```
 
-Done when: the user has a link, a running page, or a number to call.
+Done when: the user has a console link, the start command for a page that passed the live check, or a number to call.
 
 ## Step 6: Read the conversation back
 
@@ -236,13 +234,13 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
   --header "Authorization: Bearer $FISH_API_KEY"
 ```
 
-`status` is `completed` after a normal hang-up, and `items` holds the messages and tool calls in order. Tell the user what was said. If there is no session, or it ended as `failed`, check the errors below and the server output. See `https://docs.fish.audio/agents/monitor/conversation-history.md`.
+`status` is `completed` after a normal hang-up, and `items` holds the messages and tool calls in order. Tell the user what was said. If there is no session, or it ended as `failed`, check Errors and the server output. See `agents/monitor/conversation-history`.
 
 Done when: you have reported the session's status and what was said.
 
 ## Errors
 
-Errors come back as JSON `{ "status": ..., "message": ... }`. A `422` is a list of field errors instead. Full reference: `https://docs.fish.audio/api-reference/agent-errors.md`.
+Errors come back as JSON `{ "status": ..., "message": ... }`. A `422` is a list of field errors instead. Full reference: `api-reference/agent-errors`.
 
 | Status | Message or cause | What to do |
 | --- | --- | --- |
@@ -252,34 +250,33 @@ Errors come back as JSON `{ "status": ..., "message": ... }`. A `422` is a list 
 | `404` | Missing id, or one that belongs to another team | Treat both the same. Check the id came from this account. |
 | `409` | `Agent has no published version` | Publish (step 4), then create the session again. |
 | `409` | `This number is already on the platform` | Pick another number from the search. |
-| `415` | Missing body or wrong `Content-Type` | Send `Content-Type: application/json`. |
 | `422` | Field errors (`loc` names the field) | Fix those fields. Common causes: `system_prompt` over 32,000 tokens; an explicit `null` in a `PATCH` (omit the field to keep it, send `""` to clear text); an unknown field. |
-| `422` on `/phone-calls` | `reason` such as `destination_not_allowed` | The destination is refused. See `https://docs.fish.audio/agents/telephony/outbound-calls.md#errors`. |
+| `422` on `/phone-calls` | `reason` such as `destination_not_allowed` | The destination is refused. See `agents/telephony/outbound-calls`, section Errors. |
 | `502`, `503` | An upstream or platform dependency failed | Retry with backoff. A failed number purchase leaves a row with status `error` that is safe to release. |
 
 ## Where to look next
 
-Fetch the page for the task before writing code. All of these are markdown.
+Fetch the page for the task before writing code (paths under `https://docs.fish.audio/`, add `.md`).
 
 | Task | Page |
 | --- | --- |
-| How agents, drafts, versions, and sessions fit together | `https://docs.fish.audio/agents/concepts.md` |
-| System prompt, opening line, turn-taking, timezone | `https://docs.fish.audio/agents/build/configuration.md` |
-| Voice, speaking language, speech recognition | `https://docs.fish.audio/agents/build/voice-language.md` |
-| Let the agent call your HTTP API (look up an order, book a slot) | `https://docs.fish.audio/agents/build/webhook-tools.md` |
-| Tools that run in the user's browser | `https://docs.fish.audio/agents/build/client-tools.md` |
-| Let the agent hang up the call itself | `https://docs.fish.audio/agents/build/system-tools.md` |
-| Answer from your own documents | `https://docs.fish.audio/agents/build/knowledge-base.md` |
-| Personalize each call with variables | `https://docs.fish.audio/agents/build/dynamic-variables.md` |
-| Use your own LLM endpoint | `https://docs.fish.audio/agents/build/custom-llm.md` |
-| Choose how users reach the agent | `https://docs.fish.audio/agents/deploy/overview.md` |
-| Embed the widget on a site | `https://docs.fish.audio/agents/deploy/widget.md` |
-| Backend-issued session tokens and per-session overrides | `https://docs.fish.audio/agents/deploy/authenticated-sessions.md` |
-| Let anyone call without a backend (origin allowlist) | `https://docs.fish.audio/agents/deploy/public-agents.md` |
-| Build your own call UI | `https://docs.fish.audio/agents/deploy/web-sdk.md`, `https://docs.fish.audio/agents/deploy/react-sdk.md` |
-| Versions, publishing, rollback | `https://docs.fish.audio/agents/deploy/versions-publishing.md` |
-| Phone numbers, inbound and outbound calls, transfers | `https://docs.fish.audio/agents/telephony/phone-numbers.md`, `https://docs.fish.audio/agents/telephony/inbound-calls.md`, `https://docs.fish.audio/agents/telephony/outbound-calls.md`, `https://docs.fish.audio/agents/telephony/transfers.md` |
-| Transcripts and recordings | `https://docs.fish.audio/agents/monitor/conversation-history.md` |
-| Get notified when a call ends | `https://docs.fish.audio/agents/monitor/webhooks.md` |
-| Automated tests for an agent | `https://docs.fish.audio/agents/test/agent-tests.md` |
-| Prices | `https://docs.fish.audio/agents/pricing.md` |
+| How agents, drafts, versions, and sessions fit together | `agents/concepts` |
+| System prompt, opening line, turn-taking, timezone | `agents/build/configuration` |
+| Voice, speaking language, speech recognition | `agents/build/voice-language` |
+| Let the agent call your HTTP API (look up an order, book a slot) | `agents/build/webhook-tools` |
+| Tools that run in the user's browser | `agents/build/client-tools` |
+| Let the agent hang up the call itself | `agents/build/system-tools` |
+| Answer from your own documents | `agents/build/knowledge-base` |
+| Personalize each call with variables | `agents/build/dynamic-variables` |
+| Use your own LLM endpoint | `agents/build/custom-llm` |
+| Choose how users reach the agent | `agents/deploy/overview` |
+| Embed the widget on a site | `agents/deploy/widget` |
+| Backend-issued session tokens and per-session overrides | `agents/deploy/authenticated-sessions` |
+| Let anyone call without a backend (origin allowlist) | `agents/deploy/public-agents` |
+| Build your own call UI | `agents/deploy/web-sdk`, `agents/deploy/react-sdk` |
+| Versions, publishing, rollback | `agents/deploy/versions-publishing` |
+| Phone numbers, inbound and outbound calls, transfers | `agents/telephony/phone-numbers`, `agents/telephony/inbound-calls`, `agents/telephony/outbound-calls`, `agents/telephony/transfers` |
+| Transcripts and recordings | `agents/monitor/conversation-history` |
+| Get notified when a call ends | `agents/monitor/webhooks` |
+| Automated tests for an agent | `agents/test/agent-tests` |
+| Prices | `agents/pricing` |
