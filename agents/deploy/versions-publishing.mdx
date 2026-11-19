@@ -113,13 +113,14 @@ curl "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions/3" \
 
 Each version record includes:
 
-| Field                 | Description                               |
-| --------------------- | ----------------------------------------- |
-| `version_number`      | Auto-incrementing, unique per agent       |
-| `version_title`       | Optional label sent when publishing       |
-| `version_description` | Optional description sent when publishing |
-| `config_hash`         | Fingerprint of the configuration snapshot |
-| `published_at`        | When the version was published            |
+| Field                 | Description                                                                    |
+| --------------------- | ------------------------------------------------------------------------------ |
+| `version_number`      | Auto-incrementing, unique per agent                                            |
+| `version_title`       | Optional label sent when publishing                                            |
+| `version_description` | Optional description sent when publishing                                      |
+| `config_hash`         | Fingerprint of the configuration snapshot                                      |
+| `published_at`        | When the version was published                                                 |
+| `rolled_back_from`    | The version this one was restored from, or `null` if it was published normally |
 
 Fetching a single version returns the full configuration as it was published. Because `GET .../config` always shows the draft, the snapshot endpoint is how you read back what is actually running in production.
 
@@ -131,29 +132,96 @@ Fetching a single version returns the full configuration as it was published. Be
   every version including historical ones.
 </Warning>
 
-## Restore a previous version
+## Edit a version's title and description
 
-Roll back by copying an old snapshot back into the draft: read the version you want, then `PATCH` its sections into the draft config.
+The title and description of a published version can be changed at any time, including on the version that is live. Only the labels change: the frozen configuration and its `config_hash` stay as they were.
 
-```bash 1. Read the old snapshot
-curl "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions/2" \
-  --header "Authorization: Bearer $FISH_API_KEY"
-```
-
-```bash 2. Patch it back into the draft
-curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+```bash Change a version's labels
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions/3" \
   --header "Authorization: Bearer $FISH_API_KEY" \
   --header "Content-Type: application/json" \
-  --data '{ "prompt": { "system_prompt": "<system prompt from the snapshot>" } }'
+  --data '{ "version_title": "Tighter greeting", "version_description": null }'
 ```
 
-Patching updates the draft. It does **not** publish. Review or [preview](/agents/test/preview-calls) the restored draft, then publish it as a new version; the rollback becomes part of the linear history, so the audit trail stays intact. Because snapshots never echo secrets (see above), credential fields keep their current draft values unless you set them again explicitly. Phone number settings, such as the transfer caller ID, stay as they are.
+Each field behaves the same way:
+
+- A string sets the label.
+- An explicit `null` clears it.
+- An omitted field keeps its current value, so `{}` changes nothing.
+
+The response is the updated version record, without the configuration snapshot.
+
+## Roll back to a previous version
+
+A rollback restores the agent to a published version in one call. The draft is overwritten with that version's configuration, and the result is published as a new version. The rollback becomes part of the linear history, so the audit trail stays intact, and the new version's `rolled_back_from` is the version you restored.
+
+```bash Roll back to version 2
+curl --request POST "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions/2/rollback" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "version_title": "Revert the broken greeting" }'
+```
+
+The request body is optional. Without one, the new version is titled `Rollback to v<version_number>` and has no description.
+
+| Field                  | Description                                                                                                                                     |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `version_title`        | Label for the new version (up to 120 characters)                                                                                                |
+| `version_description`  | Longer note for the new version (up to 2000 characters)                                                                                         |
+| `expected_config_hash` | Roll back only while the draft still has this `config_hash`; see [Avoid overwriting a colleague's edits](#avoid-overwriting-a-colleagues-edits) |
+
+The response has the same shape as [Publish Agent](/api-reference/endpoint/agent/publish-agent): the version record, the published `config`, and `created`.
+
+<Warning>
+  A rollback **overwrites the whole draft**. Any edits you have not published
+  are discarded. Publish or copy out what you want to keep first.
+</Warning>
+
+### When nothing new is created
+
+If the restored content is identical to the live version, no version is created. The call returns the live version unchanged with `created: false`, and the draft is still overwritten. That live version keeps its own title, description, and `rolled_back_from`, which may differ from the version in the path, so check `created` rather than comparing version numbers to tell whether a new version was made. `version_title` and `version_description` in the request are ignored in this case.
+
+### Avoid overwriting a colleague's edits
+
+Read the draft with [Get Draft Config](/api-reference/endpoint/agent/get-draft-config) and pass its `config_hash` as `expected_config_hash`. If the draft has changed since you read it, the call fails with `409` and `reason: "draft_changed"`, returns the draft's current `config_hash`, and writes nothing.
+
+```bash Roll back only if the draft is unchanged
+curl --request POST "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions/2/rollback" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "expected_config_hash": "<config_hash from Get Draft Config>" }'
+```
+
+### What the restored configuration contains
+
+- **Knowledge sources** are resolved again against today's sources. Sources that have since been archived or deleted drop out, and the rest point at their current revision, so the new version's `config_hash` can differ from the version you restored. More than 100 knowledge attachments returns `400`.
+- **Credentials** come back from the version itself and read back the same way as everywhere else: webhook secrets show `has_secret: true`, and the custom LLM [`api_key` and `headers`](/agents/build/custom-llm) read back as `null`.
+- **Agent-level settings** such as the name, description, public access, allowed origins, and session overrides are not part of a version, so a rollback does not change them. Phone number settings stay as they are.
+
+To bring back only part of an old version, read its snapshot with `GET .../versions/{version_number}` and `PATCH` just those sections into the draft config. That updates the draft without publishing: [preview](/agents/test/preview-calls) it, then publish. Because snapshots never echo secrets, credential fields keep their current draft values unless you set them again.
 
 ## Clone an agent
 
-Cloning creates a new agent from an existing one's **draft** configuration. In the console, open the agents list and choose **Clone** from the agent's row menu.
+Cloning creates a new agent from an existing one's **draft** configuration. In the console, open the agents list and choose **Clone** from the agent's row menu. Over the API, send a `POST` with no body:
 
-The clone starts with a copy of the source's current draft. Published versions do not carry over: the new agent is unpublished until you publish it yourself. Use clones to template a base configuration across many agents, or to experiment without risking an agent that is already live.
+```bash Clone an agent
+curl --request POST "https://api.fish.audio/v1/agent/agents/$AGENT_ID/clone" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+The response is the new agent, with status `201`. It is named `<name> copy` (truncated to 120 characters) and keeps the source's description. Rename it with [Update Agent](/api-reference/endpoint/agent/update-agent).
+
+| Copied                                                                                        | Not copied                                                                           |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| The draft configuration, including credentials such as webhook secrets and the custom LLM key | Published versions and version history                                               |
+| Attached tools and integration connections                                                    | Agent-private knowledge sources                                                      |
+| Workspace knowledge sources                                                                   | Phone numbers bound to the source agent                                              |
+| The data retention setting                                                                    | Agent tests                                                                          |
+|                                                                                               | Public access, allowed origins, and session overrides (they start at their defaults) |
+
+The clone is created in the same workspace as the source, so the workspace-level tools, knowledge sources, and connections it references stay valid. An archived agent cannot be cloned and returns `404`.
+
+The new agent is unpublished: its `publication_state` is `draft`, and it cannot take production sessions until you [publish](#publish-the-draft) it. Use clones to template a base configuration across many agents, or to experiment without risking an agent that is already live.
 
 ## Going further
 

@@ -3902,6 +3902,252 @@
         ]
       }
     },
+    "/v1/agent/agents/{agent_id}/clone": {
+      "post": {
+        "summary": "Clone Agent",
+        "description": "Copy an agent into a new draft agent in the same workspace. The copy is\nnamed `<name> copy` (truncated to 120 characters) and keeps the source's\ndescription. It takes the source's draft configuration (including\nsecrets, tools, integration connections and the data retention setting)\nand any workspace knowledge sources. It starts unpublished: publish it\nbefore creating sessions with it. Public access, allowed origins and\nsession overrides start at their defaults.\n\nNot copied: the version history, agent-private knowledge sources, phone\nnumbers and tests. An archived source agent is a 404. Rename the copy with\n`PATCH /v1/agent/agents/{agent_id}`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Agent Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Document created, URL follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "agent_id": {
+                      "title": "Agent Id",
+                      "type": "string"
+                    },
+                    "workspace_id": {
+                      "title": "Workspace Id",
+                      "type": "string"
+                    },
+                    "name": {
+                      "title": "Name",
+                      "type": "string"
+                    },
+                    "description": {
+                      "default": "",
+                      "title": "Description",
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": [
+                        "active",
+                        "archived"
+                      ],
+                      "title": "Status",
+                      "type": "string"
+                    },
+                    "publication_state": {
+                      "description": "`live` once at least one version is published; `draft` agents cannot take sessions yet.",
+                      "enum": [
+                        "live",
+                        "draft"
+                      ],
+                      "title": "Publication State",
+                      "type": "string"
+                    },
+                    "public_enabled": {
+                      "default": false,
+                      "title": "Public Enabled",
+                      "type": "boolean"
+                    },
+                    "allowed_origins": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "Allowed Origins",
+                      "type": "array"
+                    },
+                    "restrict_origins": {
+                      "default": false,
+                      "description": "Whether public access is limited to `allowed_origins`. When false, any origin can start a public session.",
+                      "title": "Restrict Origins",
+                      "type": "boolean"
+                    },
+                    "overrides_allowed": {
+                      "items": {
+                        "enum": [
+                          "first_message",
+                          "system_prompt",
+                          "voice_id",
+                          "language",
+                          "asr.model",
+                          "llm.fallback"
+                        ],
+                        "type": "string"
+                      },
+                      "title": "Overrides Allowed",
+                      "type": "array"
+                    },
+                    "created_at": {
+                      "format": "date-time",
+                      "title": "Created At",
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "format": "date-time",
+                      "title": "Updated At",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "agent_id",
+                    "workspace_id",
+                    "name",
+                    "status",
+                    "publication_state",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agents"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "Clone Agent",
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/agent/agents/<agent-id>/clone \\\n  --header 'Authorization: Bearer <token>'"
+          }
+        ]
+      }
+    },
     "/v1/agent/agents/{agent_id}/config": {
       "get": {
         "summary": "Get Draft Config",
@@ -4533,6 +4779,19 @@
                       "title": "Published At",
                       "type": "string"
                     },
+                    "rolled_back_from": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The version this one was restored from when it came from a rollback; null for versions published normally.",
+                      "title": "Rolled Back From"
+                    },
                     "config": {
                       "$ref": "#/components/schemas/PublicAgentConfigEntity",
                       "description": "The immutable configuration snapshot this version pinned at publish time."
@@ -5161,6 +5420,19 @@
                       "title": "Published At",
                       "type": "string"
                     },
+                    "rolled_back_from": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The version this one was restored from when it came from a rollback; null for versions published normally.",
+                      "title": "Rolled Back From"
+                    },
                     "config": {
                       "$ref": "#/components/schemas/PublicAgentConfigEntity",
                       "description": "The immutable configuration snapshot this version pinned at publish time."
@@ -5292,6 +5564,654 @@
         "tags": [
           "Agents"
         ]
+      },
+      "patch": {
+        "summary": "Update Version Labels",
+        "description": "Change the title and description of a published version, including the\nlive one. Only the labels change: the frozen configuration and its\n`config_hash` stay as they were. An explicit `null` clears a label, an\nomitted field keeps its value, and `{}` changes nothing.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Agent Id",
+              "type": "string"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "path",
+            "name": "version_number",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Version Number",
+              "type": "integer"
+            },
+            "deprecated": false
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicAgentVersionUpdatePayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "version_number": {
+                      "title": "Version Number",
+                      "type": "integer"
+                    },
+                    "version_title": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Version Title"
+                    },
+                    "version_description": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Version Description"
+                    },
+                    "config_hash": {
+                      "title": "Config Hash",
+                      "type": "string"
+                    },
+                    "published_at": {
+                      "format": "date-time",
+                      "title": "Published At",
+                      "type": "string"
+                    },
+                    "rolled_back_from": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The version this one was restored from when it came from a rollback; null for versions published normally.",
+                      "title": "Rolled Back From"
+                    }
+                  },
+                  "required": [
+                    "version_number",
+                    "config_hash",
+                    "published_at"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agents"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "Update Version Labels",
+            "source": "curl --request PATCH \\\n  --url https://api.fish.audio/v1/agent/agents/<agent-id>/versions/3 \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --data '{\n    \"version_title\": \"Tighter greeting\",\n    \"version_description\": null\n  }'"
+          }
+        ]
+      }
+    },
+    "/v1/agent/agents/{agent_id}/versions/{version_number}/rollback": {
+      "post": {
+        "summary": "Roll Back To Version",
+        "description": "Restore the agent to a published version: the draft is overwritten with\nthat version's configuration, discarding any unpublished edits, and the\nresult is published as a new version whose `rolled_back_from` is the\nversion you restored. The overwrite and the publish are one atomic step.\n\nThe response has the same shape as Publish Agent, and `created` tells\nwhether a new version was made. If the restored content matches the live\nversion, no version is created: the live version comes back unchanged\n(its own title, description and `rolled_back_from`, which may differ from\nthe version in the path), `created` is `false`, and the draft is still\noverwritten.\n\nThe restored content can differ slightly from the original snapshot:\nknowledge sources are resolved again against today's sources, so archived\nor deleted ones drop out. More than 100 knowledge attachments is a 400.\nWebhook secrets and the custom LLM key come back from the version\nitself, and read back as `has_secret` / `null`.\n\nThe body is optional:\n- `expected_config_hash` rolls back only while the draft still has that\n  config_hash. Take it from Get Draft Config. On a mismatch the call\n  returns 409 with `reason: \"draft_changed\"` and the draft's current\n  `config_hash`. Nothing is written.\n- `version_title` defaults to `Rollback to v<version_number>`;\n  `version_description` defaults to none. Both are ignored when no new\n  version is created.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Agent Id",
+              "type": "string"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "path",
+            "name": "version_number",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Version Number",
+              "type": "integer"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "version_number": {
+                      "title": "Version Number",
+                      "type": "integer"
+                    },
+                    "version_title": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Version Title"
+                    },
+                    "version_description": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Version Description"
+                    },
+                    "config_hash": {
+                      "title": "Config Hash",
+                      "type": "string"
+                    },
+                    "published_at": {
+                      "format": "date-time",
+                      "title": "Published At",
+                      "type": "string"
+                    },
+                    "rolled_back_from": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The version this one was restored from when it came from a rollback; null for versions published normally.",
+                      "title": "Rolled Back From"
+                    },
+                    "config": {
+                      "$ref": "#/components/schemas/PublicAgentConfigEntity",
+                      "description": "The immutable configuration snapshot this version pinned at publish time."
+                    },
+                    "created": {
+                      "description": "Whether this call created a new version. False when the draft already matched the live version, which is returned unchanged.",
+                      "title": "Created",
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "version_number",
+                    "config_hash",
+                    "published_at",
+                    "config",
+                    "created"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request conflict",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agents"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "Roll Back",
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/agent/agents/<agent-id>/versions/2/rollback \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --data '{\n    \"version_title\": \"Revert the broken greeting\",\n    \"expected_config_hash\": \"<config_hash from Get Draft Config>\"\n  }'"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "version_title": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "description": "Label for the new version. Defaults to `Rollback to v<version_number>`."
+                  },
+                  "version_description": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "description": "Optional longer note for the new version."
+                  },
+                  "expected_config_hash": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "description": "Roll back only while the draft has this config_hash. Otherwise 409 with reason `draft_changed` and nothing is written."
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/agent/agents/{agent_id}/tests/{test_id}": {
@@ -30481,6 +31401,19 @@
             "format": "date-time",
             "title": "Published At",
             "type": "string"
+          },
+          "rolled_back_from": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The version this one was restored from when it came from a rollback; null for versions published normally.",
+            "title": "Rolled Back From"
           }
         },
         "required": [
@@ -30489,6 +31422,40 @@
           "published_at"
         ],
         "title": "PublicAgentVersionSummary",
+        "type": "object"
+      },
+      "PublicAgentVersionUpdatePayload": {
+        "additionalProperties": false,
+        "description": "Version label edit. Explicit null clears a label, an omitted field keeps\nit; `{}` writes nothing.",
+        "properties": {
+          "version_title": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Version Title"
+          },
+          "version_description": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Version Description"
+          }
+        },
+        "title": "PublicAgentVersionUpdatePayload",
         "type": "object"
       },
       "AgentTestAssertionResult": {
