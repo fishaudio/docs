@@ -30,6 +30,16 @@ With `manual` you choose which models back up the agent, in what order, and with
 
 ## Configure manual fallback
 
+<Tabs className="console-api">
+<Tab title="Console" icon="browser">
+
+On your agent's **Configuration** page, open **Fallback models** in the **Model** section and pick **Custom**. Select **Add fallback** and choose a model for each one, then select **Save**.
+
+The agent's own model appears as **Primary model**. Every model has a **First token timeout (s)** and a **Total timeout (s)**, entered in seconds.
+
+</Tab>
+<Tab title="API" icon="code">
+
 Set `llm.fallback` on the agent's draft configuration through [`PATCH /v1/agent/agents/{agent_id}/config`](/agents/build/configuration#configure-through-the-api). It works like any other `llm` field.
 
 ```bash
@@ -59,6 +69,9 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
     }
   }'
 ```
+
+</Tab>
+</Tabs>
 
 Changes take effect for new sessions after you [publish](/agents/deploy/versions-publishing).
 
@@ -125,9 +138,39 @@ If the model had not started its reply yet, the reply moves to the next model.
 
 The first fallback can run alongside the agent's own model, so a slow start does not hold the reply.
 
-**Turn it on.** Set `parallel.kick_in_ms` on the first entry in `models`. Range 300–10,000, default 1500. Only the first entry can set `parallel`. On a later entry it is `422`.
+<Tabs className="console-api">
+<Tab title="Console" icon="browser">
 
-**Whose reply is used.** On every reply, the platform requests the agent's own model and this fallback at the same time.
+In **Fallback models**, turn on **Run with the primary model** on **Fallback 1**, then set **Switch after (ms)**.
+
+</Tab>
+<Tab title="API" icon="code">
+
+Set `parallel.kick_in_ms` on the first entry in `models`. On a later entry it is `422`.
+
+```bash
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "llm": {
+      "fallback": {
+        "mode": "manual",
+        "models": [
+          {
+            "model": "google/gemini-3.8-flash",
+            "parallel": { "kick_in_ms": 1200 }
+          }
+        ]
+      }
+    }
+  }'
+```
+
+</Tab>
+</Tabs>
+
+The switch-over time is 300 to 10,000 ms, 1500 by default. On every reply, the platform requests the agent's own model and this fallback at the same time.
 
 | What happens | Whose reply is used |
 |---|---|
@@ -136,7 +179,7 @@ The first fallback can run alongside the agent's own model, so a slow start does
 | One of the two fails | The other's, without waiting for `kick_in_ms` |
 | Both fail | The next entry in `models` |
 
-**What it costs.** Parallel trades cost for latency. Both requests bill their own tokens, whichever reply is used. The request that was not used is cancelled.
+Parallel trades cost for latency. Both requests bill their own tokens, whichever reply is used. The request that was not used is cancelled.
 
 ## What triggers a switch
 
