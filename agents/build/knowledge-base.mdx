@@ -147,11 +147,13 @@ curl "https://api.fish.audio/v1/agent/knowledge-sources?folder_id=YOUR_FOLDER_ID
   --header "Authorization: Bearer $FISH_API_KEY"
 ```
 
-```bash Keep only sources outside any folder
-curl "https://api.fish.audio/v1/agent/knowledge-sources?folder_id=root" \
+```bash Keep only sources outside any folder (one page)
+curl "https://api.fish.audio/v1/agent/knowledge-sources?folder_id=root&page_size=100" \
   --header "Authorization: Bearer $FISH_API_KEY" \
   | jq '.knowledge_sources | map(select(.folder_id == null))'
 ```
+
+This reads one page. If the response has `has_more: true`, repeat the request with `cursor` set to `next_cursor` and combine the results.
 
 To count the sources in a folder, add `include_total=true` to the filtered list request.
 
