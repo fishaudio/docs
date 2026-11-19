@@ -29,7 +29,7 @@ Files are validated, parsed, and indexed as part of the upload itself. When the 
 
 Group sources into folders with **New folder**, and rename sources from the row menu. Deleting a folder never deletes its sources. Anything inside moves back to **All sources**.
 
-The API manages folders too: [create, rename, and delete them](#organize-sources-in-folders) with `/v1/agent/knowledge-folders`, and put a source in a folder with `folder_id`. `folder_id=root` stands for the root, which is **All sources** in the console.
+The API manages folders too: [create, rename, and delete them](#organize-sources-in-folders) with `/v1/agent/knowledge-folders`, and put a source in a folder with `folder_id`. On upload and update, `folder_id=root` keeps a source out of any folder, the same as **Root** in the console's folder picker. The source list is flat: it returns files only, each with its `folder_id`, while folders come from their own endpoint. To rebuild the console's **All sources** view, list the folders and the sources whose `folder_id` is `null`.
 
 ## Share sources across agents
 
