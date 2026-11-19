@@ -123,12 +123,16 @@ If the model had not started its reply yet, the reply moves to the next model.
 
 ### Run a fallback in parallel
 
-The first entry in `models` can set `parallel.kick_in_ms`. Range 300–10,000, default 1500.
+The first entry in `models` can set `parallel.kick_in_ms`. Range 300–10,000, default 1500. On every reply, the platform then requests the agent's own model and this fallback at the same time.
 
-- The platform requests the agent's own model and this fallback at the same time.
-- If the main model has not [started its reply](#when-a-reply-has-started) by `kick_in_ms`, the fallback's reply is used.
-- The other request is cancelled.
-- Only the first entry can set `parallel`. On a later entry it is `422`.
+| What happens | Whose reply is used |
+|---|---|
+| The main model [starts its reply](#when-a-reply-has-started) within `kick_in_ms` | The main model's |
+| `kick_in_ms` passes first | Whichever of the two starts first |
+| One of the two fails | The other's, without waiting for `kick_in_ms` |
+| Both fail | The next entry in `models` |
+
+The request that was not used is cancelled. Only the first entry can set `parallel`. On a later entry it is `422`.
 
 Parallel trades cost for latency. Both requests bill their own tokens, whichever reply is used.
 
