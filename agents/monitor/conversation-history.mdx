@@ -266,10 +266,10 @@ Sessions on a [custom LLM](/agents/build/custom-llm) also carry `llm_endpoint_er
   |---|---|
   | `error` | The model's provider returned an error. |
   | `timeout` | No reply within the platform's own time limit (outside `manual` mode). |
-  | `ttft_timeout` | No first token within the model's `ttft_timeout_ms`. |
-  | `total_timeout` | The reply did not finish within the model's `total_timeout_ms` and nothing was spoken yet. |
+  | `ttft_timeout` | The model did not [start its reply](/agents/build/llm-fallback#when-a-reply-has-started) within its `ttft_timeout_ms`. |
+  | `total_timeout` | The model's `total_timeout_ms` ran out before it started its reply. |
   | `empty` | The response stream broke off with no output and no end signal. A reply that finished normally with nothing in it is the agent staying silent. That is not a fallback. |
-  | `kick_in` | The fallback ran in parallel and its reply was used. The agent's own model had no first token within `kick_in_ms`. |
+  | `kick_in` | The fallback ran in parallel and its reply was used. The agent's own model had not started its reply within `kick_in_ms`. |
 
   New reasons may be added.
 
