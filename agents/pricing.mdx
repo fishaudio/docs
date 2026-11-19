@@ -1,74 +1,103 @@
 ---
-title: "Pricing"
-description: "Rates for conversations, LLM usage, telephony, transfers, and simulation tests, plus the trial balance and billing"
+title: "Pricing & Limits"
+description: "What conversations, phone calls, LLM usage, and tests cost, how usage is billed, and how many calls and phone numbers your team can run"
 icon: "credit-card"
 ---
 
-Agents cost **\$0.07 per minute** of conversation, with a small number of add-ons for telephony and token-billed models. Every account starts with a \$5 trial balance, and everything after that is charged against your API credit.
+Agents are billed per second of conversation. Phone calls and token-billed LLMs add their own charges. Every account starts with a \$5 trial balance, and usage after that is charged to your API credit.
 
-Current promotions, concurrency limits, and plans are on the [pricing page](https://fish.audio/plan/?plans=agent).
+Through December 31, 2026, a minute of conversation costs **\$0.035**, half the standard rate of \$0.07. No other charge is discounted.
 
 ## Rates
 
-### Per-session charges
+### Conversations
 
 These charges apply while a web session or phone call is running.
 
-| Item                 | Price                                                   | Notes                                                                                                                                                      |
-| -------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Agent conversation   | \$0.07 per minute                                       | All-inclusive: STT, TTS, the basic LLMs, knowledge base retrieval, and tool calls                                                                          |
-| LLM usage            | Covered for the basic LLMs, by token usage for the rest | The other LLMs are billed on the tokens each request uses. See [LLM models](#llm-models). Custom LLM endpoints carry no LLM charge                         |
-| Phone call surcharge | +\$0.01 per minute                                      | Added to the conversation rate on phone calls. Some outbound destinations carry a higher rate instead. See [Outbound destinations](#outbound-destinations) |
+| Charge          | Price                                                     |
+| --------------- | --------------------------------------------------------- |
+| Conversation    | \$0.035 per minute through December 31, 2026, then \$0.07 |
+| Phone surcharge | +\$0.01 per minute                                        |
+| LLM usage       | Included on the basic LLMs, by token on the others        |
 
-Usage is counted per second. A plus sign marks a charge on top of the conversation rate.
+- **Conversation** covers speech recognition, the agent's voice, the basic LLMs, knowledge base retrieval, and tool calls. A call admitted on [burst](#concurrent-calls) costs \$0.12 per minute.
+- **Phone surcharge** is added on calls through a purchased number, and not on imported SIP numbers or WhatsApp calls. See [Phone calls](#phone-calls).
+- **LLM usage** depends on the model your agent runs. See [LLM models](#llm-models).
+
+A plus sign marks a charge added on top of the conversation rate.
+
+### Phone calls
+
+A phone call on a purchased number adds **\$0.01 per minute** to the conversation rate, inbound or outbound.
 
 Calls on [imported SIP numbers](/agents/telephony/byo-sip) and [WhatsApp calls](/agents/telephony/whatsapp) carry no phone surcharge and no transfer fees. They bill like web sessions.
 
+#### Outbound destinations
+
+Outbound calls to the countries below replace the \$0.01 surcharge with a rate that depends on the number dialed. Rates are per minute.
+
+| Destination    | Landline | Mobile  | Other numbers       |
+| -------------- | -------- | ------- | ------------------- |
+| Japan          | +\$0.10  | +\$0.22 | 050 numbers +\$0.10 |
+| United Kingdom | +\$0.02  | +\$0.03 | 03 numbers +\$0.04  |
+| Italy          | +\$0.02  | +\$0.05 |                     |
+| Australia      | +\$0.03  | +\$0.09 |                     |
+| Mexico         | +\$0.02  | +\$0.05 |                     |
+
+For Mexico, mobile means a number dialed with the legacy `+52 1` prefix.
+
+The countries purchased numbers can call are listed under [allowed destinations](/agents/telephony/outbound-calls#allowed-destinations).
+
 ### Transfers
 
-When the agent [transfers](/agents/telephony/transfers) a phone call to a person, the conversation rate and phone surcharge stop, and the rest of the call is billed at a transfer rate instead:
+When the agent [transfers](/agents/telephony/transfers) a phone call to a person, the conversation rate and the phone surcharge stop. The rest of the call is billed at a transfer rate.
 
-| Item          | Price              | Notes                                                                                                                                                   |
-| ------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cold transfer | \$0.015 per minute | Starts when the agent hands the call to the person                                                                                                      |
-| Warm transfer | \$0.025 per minute | Starts when the caller and the person are joined. The hold and briefing before that bill as part of the conversation. The joined call is still recorded |
+| Transfer | Price              | Billed from                                     |
+| -------- | ------------------ | ----------------------------------------------- |
+| Cold     | \$0.015 per minute | The moment the agent hands the call over        |
+| Warm     | \$0.025 per minute | The moment the caller and the person are joined |
 
-### Monthly fees
+Before a warm transfer joins the two, the hold and the briefing bill as part of the conversation. The joined call is still recorded.
 
-These charges apply whether or not your agent takes any calls.
+### Phone number rental
 
-| Item                | Price            | Notes                                                                            |
-| ------------------- | ---------------- | -------------------------------------------------------------------------------- |
-| Phone number rental | \$1.20 per month | Charged in daily slices while you hold the number, and stops when you release it |
+A purchased phone number costs **\$1.20 per month**, charged in daily slices for as long as you hold it. The charge stops when you release the number.
 
 [Imported SIP numbers](/agents/telephony/byo-sip) and [WhatsApp Business numbers](/agents/telephony/whatsapp) carry no rental.
 
 ### LLM models
 
-The LLM your agent runs is chosen in the Builder. The basic models are:
+The LLM your agent runs is chosen in the Builder.
 
-- Gemini 3.5 Flash Lite
-- GPT-5.6 Luna
-- Gemma 4 26B
+- **Basic models** are Gemini 3.5 Flash Lite, GPT-5.6 Luna, and Gemma 4 26B. Every model has a per-token cost. For now the conversation rate covers it for the basic models as a promotional offer, so they carry no separate charge.
+- **Every other model** is billed on token usage, in USD per 1 million tokens, with separate rates for input tokens, cached input, and output tokens. These rates are set by the LLM providers and may change. Refer to the provider's documentation for current pricing.
+- **A [custom LLM](/agents/build/custom-llm) endpoint** carries no LLM charge.
 
-Every model has a per-token cost. For now the conversation rate covers it for the basic models as a promotional offer, so they carry no separate charge.
+What a minute costs on a token-billed model depends on your agent.
 
-Every other model is billed on token usage. Prices are expressed in USD per 1 million tokens, with separate rates for input tokens, output tokens, and cached input. These rates are determined by the LLM providers and may change. Refer to the provider's documentation for current pricing.
+- How long the system prompt and the retrieved knowledge are.
+- How much conversation history the model reads again on every turn.
+- How often the model is called, and how long its replies are.
 
-What a minute costs on such a model therefore depends on your agent: how long the system prompt and retrieved knowledge are, how much conversation history the model re-reads on every turn, how often it is called, and how verbose its replies are. The Builder shows an estimated per-minute figure next to each token-billed model, computed from your current prompt and typical agent behavior. The estimate assumes the prompt caching a typical agent gets on that model, and actual charges are based on token usage.
+The Builder shows an estimated per-minute figure next to each token-billed model, computed from your current prompt and typical agent behavior. The estimate assumes the prompt caching a typical agent gets on that model, and actual charges are based on token usage.
 
-After a conversation, each message in the dashboard's conversation view shows its model requests and token cost. A [custom LLM](/agents/build/custom-llm) endpoint carries no LLM charge.
+After a conversation, each message in the dashboard's conversation view shows its model requests and token cost.
 
 ### Simulation tests
 
-A [Simulation test](/agents/test/agent-tests#simulation-tests) has the agent talk to a simulated user in text, then an LLM judge scores the conversation. There is no conversation rate. Each run that ends in **Pass** or **Fail** is charged:
+A [Simulation test](/agents/test/agent-tests#simulation-tests) has the agent talk to a simulated user in text, then an LLM judge scores the conversation. There is no conversation rate. A run that ends in **Pass** or **Fail** has two charges.
 
-- A platform fee of \$0.003 per agent reply. A [fixed first message](/agents/build/configuration#first-message) is spoken as written and is not counted, a generated one is.
-- The tokens of the agent, the simulated user, and the judge, each at the rate of the model it ran on. An agent on a [custom LLM](/agents/build/custom-llm) endpoint carries no charge for its own tokens.
+| Charge       | Price                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------- |
+| Platform fee | \$0.003 per agent reply                                                                     |
+| LLM tokens   | The agent's, the simulated user's, and the judge's, each at the rate of the model it ran on |
 
-A run that ends in **Error** is not charged, and every repeat of a test is a run of its own. Single Turn and Tool tests are free.
+- A [fixed first message](/agents/build/configuration#first-message) is spoken as written and is not counted as a reply. A generated one is.
+- An agent on a [custom LLM](/agents/build/custom-llm) endpoint carries no charge for its own tokens.
+- A run that ends in **Error** is not charged, and every repeat of a test is a run of its own.
+- Single Turn and Tool tests are free.
 
-With no conversation rate to cover them, the basic models are billed on their tokens in Simulation tests. Prices are in USD per 1 million tokens:
+With no conversation rate to cover them, the basic models are billed on their tokens in Simulation tests. Prices are in USD per 1 million tokens.
 
 | Model                 | Input  | Cached input | Output |
 | --------------------- | ------ | ------------ | ------ |
@@ -78,47 +107,84 @@ With no conversation rate to cover them, the basic models are billed on their to
 
 The other models are billed at the same rates as in conversations. The result of each run shows what it was charged, and the [Agents billing page](https://fish.audio/app/agents/billing) itemizes the platform fee and each participant's tokens.
 
-### Outbound destinations
-
-The standard phone surcharge applies to inbound calls and most outbound calls. Outbound calls to the destinations below replace it with a rate that depends on the number dialed:
-
-| Destination                              | Landline           | Mobile             |
-| ---------------------------------------- | ------------------ | ------------------ |
-| Japan (landline includes 050 numbers)    | +\$0.10 per minute | +\$0.22 per minute |
-| United Kingdom (03 numbers: +\$0.04)     | +\$0.02 per minute | +\$0.03 per minute |
-| Italy                                    | +\$0.02 per minute | +\$0.05 per minute |
-| Australia                                | +\$0.03 per minute | +\$0.09 per minute |
-| Mexico (mobile means the legacy `+52 1`) | +\$0.02 per minute | +\$0.05 per minute |
-
-The countries purchased numbers can call are listed under [allowed destinations](/agents/telephony/outbound-calls#allowed-destinations).
-
 ## Trial balance
 
-Every account starts with a one-time **\$5 trial balance**, about 70 minutes of conversation at the list rate. It pays for real usage at the normal rates:
+Every account starts with a one-time **\$5 trial balance**, about 140 minutes of web conversation at \$0.035 per minute.
 
-- Every charge draws on it first: web sessions, phone calls and their surcharges, transferred call time, number rental, LLM tokens on token-billed models, and Simulation test runs. Only what the trial balance does not cover is charged to your API credit.
-- A session can start on any model, including token-billed ones, as long as the trial balance or your API credit is above zero. The same goes for running Simulation tests.
-- [Preview calls](/agents/test/preview-calls) in the Builder are free on every LLM, including token-billed ones, and never draw on the trial balance.
-- The [Agents billing page](https://fish.audio/app/agents/billing) shows how much of the trial balance is left, and the Agents home page shows it as a usage meter.
+- **It pays for real usage at the normal rates.** That covers web sessions, phone calls and their surcharges, transferred call time, number rental, LLM tokens on token-billed models, and Simulation test runs.
+- **Every charge draws on it first.** Only what the trial balance does not cover is charged to your API credit.
+- **A session can start on any model**, token-billed ones included, as long as the trial balance or your API credit is above zero. The same goes for running Simulation tests.
+- **[Preview calls](/agents/test/preview-calls) in the Builder are free** on every LLM and never draw on the trial balance.
+
+The [Agents billing page](https://fish.audio/app/agents/billing) shows how much of the trial balance is left, and the Agents home page shows it as a usage meter.
+
+## Limits
+
+Limits apply to your whole team and are shared by its members, workspaces, and API keys. They follow the API credit your team has added. A **free account** is a team that has never topped up, and its first top-up, of any amount, ends the free account limits.
+
+| Limit              | Free account          | After the first top-up                                   | Enterprise |
+| ------------------ | --------------------- | -------------------------------------------------------- | ---------- |
+| Concurrent calls   | 3                     | 10, then 30 at \$100 in total top-ups and 100 at \$1,000 | Custom     |
+| Phone numbers      | 1                     | No limit                                                 | Custom     |
+| Outbound dial rate | 1 new call per second | 1 new call per second                                    | Custom     |
+
+The number of agents is not limited. For higher limits, [contact sales](https://fish.audio/contact-sales/agent/) about Enterprise. The shape of each error is on [Agents API errors](/api-reference/agent-errors).
+
+### Concurrent calls
+
+A concurrent call, also called a line, is one conversation in progress. A line is free again as soon as its call ends.
+
+- **What uses a line.** A web or app session from the moment it is created, an outbound call from the moment it is dialed, and an inbound phone or WhatsApp call once there is a line to answer it on. A session nobody joins gives its line back after 60 seconds.
+- **What does not.** [Preview calls](/agents/test/preview-calls) in the Builder, of which a team can run two at a time, and [Simulation tests](/agents/test/agent-tests#simulation-tests).
+- **Total top-ups** count every top-up your team has made, whatever your current balance is. The [Agents billing page](https://fish.audio/app/agents/billing) shows the lines in use, your limit, and how much more credit reaches the next step.
+
+With every line in use, what happens to a new call depends on how it arrives.
+
+| Call                  | At the limit                                                                                                                                      |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Web or app session    | Refused with `429` and the code `concurrency_limit_exceeded`. A public agent's visitors get the same answer                                       |
+| Outbound call         | Refused with `429` and the reason `concurrency_limit_exceeded`                                                                                    |
+| Inbound phone call    | Rings for up to 30 seconds while the platform waits for a line. If none frees up, a spoken message says that all lines are busy and the call ends |
+| Inbound WhatsApp call | Declined right away                                                                                                                               |
+
+Both `429` answers carry `retry_after`, the seconds to wait before trying again. Session creation on a [public agent](/agents/deploy/public-agents#rate-limiting) is also rate limited per visitor IP and per agent.
+
+**Burst** keeps admitting calls above your limit, up to three times the limit. A call admitted on burst bills its conversation at \$0.12 per minute, and its other charges stay the same. The team owner turns burst on from the [Agents billing page](https://fish.audio/app/agents/billing). Free accounts cannot use burst.
+
+### Phone numbers
+
+A free account holds one phone number at a time. Purchased numbers, [imported numbers](/agents/telephony/byo-sip), and [WhatsApp Business](/agents/telephony/whatsapp) numbers all count, and so does a number whose setup failed, until you release it.
+
+At the limit, buying or importing a number is refused with `403` and the reason `phone_number_limit_reached`. Top up any amount and the limit no longer applies.
+
+### Outbound dial rate
+
+Your team can start one new outbound call each second, across all its workspaces and API keys. This is how fast calls can be placed, not how many can be in progress.
+
+A faster request is refused with `429` and the reason `cps_limit_exceeded`, and no call is placed. Wait `retry_after` seconds and send it again. The same [`Idempotency-Key`](/agents/telephony/outbound-calls#retry-safely-with-an-idempotency-key) can be reused.
 
 ## Billing
 
-Usage is charged to your **API credit**, the same prepaid balance as the Fish Audio speech APIs. Sessions are charged when they end, Simulation test runs when they finish, and number rental is charged daily.
+Usage is charged to your **API credit**, the same prepaid balance as the Fish Audio speech APIs.
+
+- Sessions are charged when they end.
+- Simulation test runs are charged when they finish.
+- Number rental is charged daily.
 
 Every charge is listed on the [Agents billing page](https://fish.audio/app/agents/billing).
 
 ## Examples
 
-The examples use the list rate.
+The examples use the conversation rate of \$0.035 per minute.
 
-| Scenario                                                                           | Breakdown                                                                                                                      | Total               |
-| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------- |
-| Web conversation, 4 min 30 s, basic LLM                                            | Conversation 4.5 min × \$0.07 = \$0.315                                                                                        | \$0.315             |
-| Inbound phone call, 6 min, basic LLM                                               | Conversation 6 min × \$0.07 = \$0.42<br />Phone surcharge 6 min × \$0.01 = \$0.06                                              | \$0.48              |
-| Outbound call, 10 min, Japanese mobile number                                      | Conversation 10 min × \$0.07 = \$0.70<br />Japan mobile surcharge 10 min × \$0.22 = \$2.20                                     | \$2.90              |
-| Inbound call, 3 min with the agent, then 5 min with a person after a warm transfer | Conversation 3 min × \$0.07 = \$0.21<br />Phone surcharge 3 min × \$0.01 = \$0.03<br />Warm transfer 5 min × \$0.025 = \$0.125 | \$0.365             |
-| Web conversation, 5 min, token-billed LLM                                          | Conversation 5 min × \$0.07 = \$0.35<br />LLM usage: the session's tokens at the LLM's rates                                   | \$0.35 + LLM usage  |
-| Simulation test run with 6 agent replies                                           | Platform fee 6 × \$0.003 = \$0.018<br />LLM usage: the agent's, the simulated user's, and the judge's tokens                   | \$0.018 + LLM usage |
+| Scenario                                                                           | Conversation              | Other charges                                                          | Total               |
+| ---------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------- | ------------------- |
+| Web conversation, 10 min, basic LLM                                                | 10 min × \$0.035 = \$0.35 | None                                                                   | \$0.35              |
+| Inbound phone call, 6 min, basic LLM                                               | 6 min × \$0.035 = \$0.21  | Phone 6 min × \$0.01 = \$0.06                                          | \$0.27              |
+| Outbound call to a Japanese mobile number, 10 min                                  | 10 min × \$0.035 = \$0.35 | Phone 10 min × \$0.22 = \$2.20                                         | \$2.55              |
+| Inbound call, 3 min with the agent, then 5 min with a person after a warm transfer | 3 min × \$0.035 = \$0.105 | Phone 3 min × \$0.01 = \$0.03, warm transfer 5 min × \$0.025 = \$0.125 | \$0.26              |
+| Web conversation, 5 min, token-billed LLM                                          | 5 min × \$0.035 = \$0.175 | The session's tokens at the LLM's rates                                | \$0.175 + LLM usage |
+| Simulation test run with 6 agent replies                                           | None                      | Platform fee 6 × \$0.003 = \$0.018, plus the tokens of all three roles | \$0.018 + LLM usage |
 
 ## Going further
 
