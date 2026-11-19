@@ -168,7 +168,7 @@ The request body is optional. Without one, the new version is titled `Rollback t
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `version_title`        | Label for the new version (up to 120 characters)                                                                                                |
 | `version_description`  | Longer note for the new version (up to 2000 characters)                                                                                         |
-| `expected_config_hash` | Roll back only while the draft still has this `config_hash`; see [Avoid overwriting a colleague's edits](#avoid-overwriting-a-colleagues-edits) |
+| `expected_config_hash` | Roll back only while the draft still has this `config_hash`; see [Roll back only if the draft is unchanged](#roll-back-only-if-the-draft-is-unchanged) |
 
 The response has the same shape as [Publish Agent](/api-reference/endpoint/agent/publish-agent): the version record, the published `config`, and `created`.
 
@@ -181,7 +181,7 @@ The response has the same shape as [Publish Agent](/api-reference/endpoint/agent
 
 If the restored content is identical to the live version, no version is created. The call returns the live version unchanged with `created: false`, and the draft is still overwritten. That live version keeps its own title, description, and `rolled_back_from`, which may differ from the version in the path, so check `created` rather than comparing version numbers to tell whether a new version was made. `version_title` and `version_description` in the request are ignored in this case.
 
-### Avoid overwriting a colleague's edits
+### Roll back only if the draft is unchanged
 
 Read the draft with [Get Draft Config](/api-reference/endpoint/agent/get-draft-config) and pass its `config_hash` as `expected_config_hash`. If the draft has changed since you read it, the call fails with `409` and `reason: "draft_changed"`, returns the draft's current `config_hash`, and writes nothing.
 
