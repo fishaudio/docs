@@ -116,29 +116,6 @@ Every account starts with a one-time **\$5 trial balance**, about 140 minutes of
 
 The [Agents billing page](https://fish.audio/app/agents/billing) shows how much of the trial balance is left, and the Agents home page shows it as a usage meter.
 
-## Billing
-
-Usage is charged to your **API credit**, the same prepaid balance as the Fish Audio speech APIs.
-
-- Sessions are charged when they end.
-- Simulation test runs are charged when they finish.
-- Number rental is charged daily.
-
-Every charge is listed on the [Agents billing page](https://fish.audio/app/agents/billing).
-
-## Examples
-
-The examples use the conversation rate of \$0.035 per minute.
-
-| Scenario                                                                           | Conversation              | Other charges                                                          | Total               |
-| ---------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------- | ------------------- |
-| Web conversation, 10 min, basic LLM                                                | 10 min × \$0.035 = \$0.35 | None                                                                   | \$0.35              |
-| Inbound phone call, 6 min, basic LLM                                               | 6 min × \$0.035 = \$0.21  | Phone 6 min × \$0.01 = \$0.06                                          | \$0.27              |
-| Outbound call to a Japanese mobile number, 10 min                                  | 10 min × \$0.035 = \$0.35 | Phone 10 min × \$0.22 = \$2.20                                         | \$2.55              |
-| Inbound call, 3 min with the agent, then 5 min with a person after a warm transfer | 3 min × \$0.035 = \$0.105 | Phone 3 min × \$0.01 = \$0.03, warm transfer 5 min × \$0.025 = \$0.125 | \$0.26              |
-| Web conversation, 5 min, token-billed LLM                                          | 5 min × \$0.035 = \$0.175 | The session's tokens at the LLM's rates                                | \$0.175 + LLM usage |
-| Simulation test run with 6 agent replies                                           | None                      | Platform fee 6 × \$0.003 = \$0.018, plus the tokens of all three roles | \$0.018 + LLM usage |
-
 ## Limits
 
 Limits apply to your whole team and are shared by its members, workspaces, and API keys. They follow the API credit your team has added. A **free account** is a team that has never topped up, and its first top-up, of any amount, ends the free account limits for good.
@@ -183,6 +160,29 @@ At the limit, buying or importing a number is refused with `403` and the reason 
 Your team can start one new outbound call each second, across all its workspaces and API keys. This is how fast calls can be placed, not how many can be in progress.
 
 A faster request is refused with `429` and the reason `cps_limit_exceeded`, and no call is placed. Wait `retry_after` seconds and send it again. The same [`Idempotency-Key`](/agents/telephony/outbound-calls#retry-safely-with-an-idempotency-key) can be reused.
+
+## Billing
+
+Usage is charged to your **API credit**, the same prepaid balance as the Fish Audio speech APIs.
+
+- Sessions are charged when they end.
+- Simulation test runs are charged when they finish.
+- Number rental is charged daily.
+
+Every charge is listed on the [Agents billing page](https://fish.audio/app/agents/billing).
+
+## Examples
+
+The examples use the conversation rate of \$0.035 per minute.
+
+| Scenario                                                                           | Conversation              | Other charges                                                          | Total               |
+| ---------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------- | ------------------- |
+| Web conversation, 10 min, basic LLM                                                | 10 min × \$0.035 = \$0.35 | None                                                                   | \$0.35              |
+| Inbound phone call, 6 min, basic LLM                                               | 6 min × \$0.035 = \$0.21  | Phone 6 min × \$0.01 = \$0.06                                          | \$0.27              |
+| Outbound call to a Japanese mobile number, 10 min                                  | 10 min × \$0.035 = \$0.35 | Phone 10 min × \$0.22 = \$2.20                                         | \$2.55              |
+| Inbound call, 3 min with the agent, then 5 min with a person after a warm transfer | 3 min × \$0.035 = \$0.105 | Phone 3 min × \$0.01 = \$0.03, warm transfer 5 min × \$0.025 = \$0.125 | \$0.26              |
+| Web conversation, 5 min, token-billed LLM                                          | 5 min × \$0.035 = \$0.175 | The session's tokens at the LLM's rates                                | \$0.175 + LLM usage |
+| Simulation test run with 6 agent replies                                           | None                      | Platform fee 6 × \$0.003 = \$0.018, plus the tokens of all three roles | \$0.018 + LLM usage |
 
 ## Going further
 
