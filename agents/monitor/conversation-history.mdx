@@ -90,7 +90,7 @@ Each row carries the session facts:
 | `heartbeat_timeout`    | `completed` | The agent runtime stopped responding mid-call                                    |
 | `agent_join_timeout`   | `failed`    | The caller connected but no agent joined the call                                |
 | `internal_error`       | `completed` | The agent runtime hit an internal error (`failed` when it failed before the conversation started) |
-| `llm_endpoint_failure` | `completed` | A [custom LLM](/agents/build/custom-llm) failed repeatedly and the agent hung up |
+| `llm_endpoint_failure` | `completed` | The LLM could not answer and the agent hung up: a [custom LLM](/agents/build/custom-llm) failed repeatedly, or the model's provider kept refusing the content. [`llm_endpoint_errors`](#llm-endpoint-errors) has the detail |
 | `room_join_timeout`    | `failed`    | The caller never connected before the join deadline                              |
 | `cancelled`            | `failed`    | The session was ended before anyone connected                                    |
 | `dial_failed`          | `failed`    | An outbound call was not answered; `dial_status` has the detail                  |
@@ -210,7 +210,7 @@ Details worth knowing:
 
 ### LLM endpoint errors
 
-Sessions on a [custom LLM](/agents/build/custom-llm) also carry `llm_endpoint_errors`. It lists each failed generation of your endpoint, oldest first. It is empty when the agent runs on a platform model or your endpoint never failed.
+Sessions also carry `llm_endpoint_errors`, oldest first. On a [custom LLM](/agents/build/custom-llm) it lists each failed generation of your endpoint. On any model, including platform models, it lists each reply the model's provider refused, such as a content filter or a content policy block, when no [fallback model](/agents/build/llm-fallback) was left to answer it. It is empty when neither happened.
 
 ```json
 {
@@ -234,9 +234,25 @@ Sessions on a [custom LLM](/agents/build/custom-llm) also carry `llm_endpoint_er
 - `type` is `http_error`, `timeout`, `connection_error` or `invalid_response`. See [Failure behavior](/agents/build/custom-llm#failure-behavior). New types may be added.
 - `reason` is set on `connection_error` and `invalid_response` only. New reasons may be added.
   - `connection_error`: `dns_failed`, `connection_refused`, `connection_reset`, `tls_failed`, `address_not_allowed` (an address the platform does not call) or `unknown`.
-  - `invalid_response`: `not_event_stream` (a streamed request got something else back), `stream_incomplete` (the stream ended with no `finish_reason`, usage or output), `empty_reply` (no text and no tool call) or `unknown`.
+  - `invalid_response`: `not_event_stream` (a streamed request got something else back), `stream_incomplete` (the stream ended with no `finish_reason`, usage or output), `empty_reply` (no text and no tool call), `refused` (the model's provider ended the reply as a refusal instead of an answer) or `unknown`.
 - `status_code` is set on `http_error` only.
-- `response_body` is the start of what your endpoint sent back, on `http_error` and `not_event_stream` only. It is at most 300 characters, and your API key is masked. It is `null` when the body was empty.
+- `response_body` is the start of what your endpoint sent back, on `http_error` and `not_event_stream`. On `refused` it is what the provider said about the refusal, for example `PROHIBITED_CONTENT: The prompt could not be submitted.` It is at most 300 characters, and your API key is masked. It is `null` when the body was empty.
+
+A refused reply looks like this. A refusal first moves the reply to the next [fallback model](/agents/build/llm-fallback), which shows in [`llm_fallbacks`](#llm-fallbacks) with `reason: refused`. It is listed here when no model was left to answer. Retrying does not help: change the agent's prompt, the conversation or the model, or add a fallback model that accepts the content.
+
+```json
+{
+  "occurred_at": "2026-11-15T08:27:10Z",
+  "turn_id": 11,
+  "type": "invalid_response",
+  "reason": "refused",
+  "status_code": null,
+  "response_body": "PROHIBITED_CONTENT: The prompt could not be submitted.",
+  "duration_ms": null,
+  "consecutive_failures": 3
+}
+```
+
 - `duration_ms` is the time from the request to the response or the failure. It is `null` when it was not measured.
 - `consecutive_failures` counts failures in a row. The agent hangs up at the third.
 
@@ -269,6 +285,7 @@ Sessions on a [custom LLM](/agents/build/custom-llm) also carry `llm_endpoint_er
   | `ttft_timeout` | No first token within the model's `ttft_timeout_ms`. |
   | `total_timeout` | The reply did not finish within the model's `total_timeout_ms` and nothing was spoken yet. |
   | `empty` | The response stream broke off with no output and no end signal. A reply that finished normally with nothing in it is the agent staying silent. That is not a fallback. |
+  | `refused` | The model's provider ended the reply as a refusal with nothing in it, such as a content filter or a content policy block. |
   | `kick_in` | The fallback ran in parallel and its reply was used. The agent's own model had no first token within `kick_in_ms`. |
 
   New reasons may be added.

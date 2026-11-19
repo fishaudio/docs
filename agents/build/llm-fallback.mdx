@@ -11,10 +11,11 @@ Fallback decides what happens when that attempt produces no reply:
 - The provider returns an error.
 - The model takes too long.
 - The response stream breaks off with nothing in it.
+- The provider refuses the content.
 
 Instead of the call going silent, the platform retries the reply on another model.
 
-A switch only affects the reply that failed. The next reply tries the agent's own model again.
+A switch only affects the reply that failed. The next reply tries the agent's own model again. In `platform` mode there are two exceptions. A model that failed is skipped until it answers again. A model refused three times in one conversation is skipped for the rest of it.
 
 ## Modes
 
@@ -116,11 +117,16 @@ A reply moves to the next model on:
 - No first token within `ttft_timeout_ms`. Outside `manual`, within the platform's own limit.
 - `total_timeout_ms` reached before anything was spoken.
 - A response stream that breaks off with no output.
+- A refusal. The model's provider ended the reply as a refusal with nothing in it, such as a content filter or a content policy block. The refused request is not retried. Another model may answer what this provider blocked.
 
 ## What doesn't switch
 
 - **The agent choosing silence.** A model that finishes normally with an empty reply is the agent staying quiet on purpose. Nothing switches.
 - **A reply already playing.** Once the caller hears the answer, a problem finishing it counts as a failed reply.
+
+## When no model is left
+
+A reply can be refused with no model left to ask: the mode is `off`, a custom LLM runs without a `manual` fallback, or every model in the chain refused it. The agent then retries once, asks the caller to repeat, and hangs up after three such replies in a row with `end_reason: llm_endpoint_failure`. Each one is listed in [`llm_endpoint_errors`](/agents/monitor/conversation-history#llm-endpoint-errors) with `reason: refused`.
 
 ## Per-session override
 
