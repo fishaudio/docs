@@ -30,6 +30,8 @@ Ask the user, in one message, for anything the request has not already answered:
 
 If the user leaves a choice to you, use English, an opening line you write from the purpose, and the console.
 
+Facts the agent will tell callers about the business (menu, prices, opening hours, policies) also come from the user. Ask for the ones the purpose needs, or build without them as step 3 describes.
+
 Done when: you have a value for all four.
 
 ## Step 2: Get the API key
@@ -73,7 +75,7 @@ curl --request POST https://api.fish.audio/v1/agent/agents \
   }'
 ```
 
-- `system_prompt`: write it from the purpose. It is capped at 32,000 tokens; keep it under 2,000 for latency and cost. See `https://docs.fish.audio/agents/build/configuration.md`.
+- `system_prompt`: write it from the purpose and from facts the user gave. For a menu, prices, hours, or policies the user has not given, tell the agent to say that the staff will confirm them, and list in your reply what the user should send you to fill them in. It is capped at 32,000 tokens; keep it under 2,000 for latency and cost. See `https://docs.fish.audio/agents/build/configuration.md`.
 - `first_message_mode`: `fixed` speaks `first_message` word for word, `prompt` generates the opening from `first_message_prompt`, `off` waits for the caller.
 - `speaking_language`: a language code such as `en`, `es`, `ja`, `zh`. The supported list is in `https://docs.fish.audio/agents/build/voice-language.md`.
 - `voice_id`: any public voice model id. `802e3bc2b27e49c2995d23ef70e6ac89` is an English voice. For another language, pick a voice from the Voice Library in that language (no key needed):
@@ -113,12 +115,57 @@ Give the user `https://fish.audio/app/agents/<agent_id>` and tell them to click 
 
 ### Your own page
 
-The Quickstart has a one-file server, in Node.js (`server.mjs`, Node 18+) and Python (`server.py`, Python 3.8+), with no dependencies. It serves a page with the call widget and a route that creates a session with the API key when the user starts a call.
+This one-file Node.js server (Node 18+, no dependencies) serves a page with the call widget and a route that creates a session with the API key when the user starts a call. It is the same file as the Quickstart's **Your own page** tab, which also has a Python version (`server.py`, Python 3.8+, in `https://docs.fish.audio/agents/quickstart.md`) for projects without Node.
 
-1. Fetch `https://docs.fish.audio/agents/quickstart.md` and take the file from the **Your own page** tab. Use `server.mjs` for a Node project, `server.py` for a Python project, and whichever runtime is installed otherwise.
-2. Write it into the project unchanged.
-3. Start it in a shell where `FISH_API_KEY` and `AGENT_ID` are set (`node server.mjs` or `python3 server.py`).
-4. Tell the user to open `http://localhost:3000`, click the launcher in the corner, and allow the microphone. The page needs `localhost` or `https`; a plain `http` LAN address gets no microphone.
+```javascript server.mjs
+import { createServer } from "node:http";
+
+const page = `<!doctype html>
+<meta charset="utf-8">
+<title>Fish Agent demo</title>
+<fish-agent agent-name="My agent"></fish-agent>
+<script src="https://unpkg.com/@fishaudio/agent-widget-embed" async></script>
+<script>
+  document.querySelector("fish-agent").sessionTokenProvider = async () => {
+    const response = await fetch("/voice-session", { method: "POST" });
+    if (!response.ok) throw new Error("backend answered " + response.status);
+    return response.json();
+  };
+</script>`;
+
+createServer(async (req, res) => {
+  if (req.method !== "POST" || req.url !== "/voice-session") {
+    res.writeHead(200, { "Content-Type": "text/html" });
+    return res.end(page);
+  }
+  try {
+    const upstream = await fetch("https://api.fish.audio/v1/agent/sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.FISH_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ agent_id: process.env.AGENT_ID }),
+    });
+    const body = await upstream.text();
+    if (upstream.ok) console.log("session", JSON.parse(body).session_id);
+    else console.log("failed", upstream.status, body);
+    res.writeHead(upstream.status, { "Content-Type": "application/json" });
+    res.end(body);
+  } catch (error) {
+    console.error(error);
+    res.writeHead(502).end();
+  }
+}).listen(3000, "localhost", () => console.log("open http://localhost:3000"));
+```
+
+1. Write the file into the project unchanged.
+2. Start it in a shell where `FISH_API_KEY` and `AGENT_ID` are set, for example `set -a; . ./.env; set +a; node server.mjs`.
+3. Check it answers: `curl -s -o /dev/null -w '%{http_code}' http://localhost:3000` returns `200`.
+4. Give the user the start command from step 2 to run in their own terminal. A server you start from your own tool usually stops when your command, turn, or session ends, so the user's terminal is where it keeps running.
+5. Tell the user to open `http://localhost:3000`, click the launcher in the corner, and allow the microphone. The page needs `localhost` or `https`; a plain `http` LAN address gets no microphone.
+
+Whenever you tell the user the page is ready, including after later changes, check it with the `curl` from step 3 first. Published changes reach the next call without a restart.
 
 The server prints each call's `session_id`. For production, keep the same shape: the backend holds the key and returns session tokens, the page runs the widget or the Web SDK. See `https://docs.fish.audio/agents/deploy/authenticated-sessions.md`.
 
