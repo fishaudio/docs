@@ -250,7 +250,7 @@ Sessions on a [custom LLM](/agents/build/custom-llm) also carry `llm_endpoint_er
     {
       "occurred_at": "2026-10-15T15:45:10Z",
       "turn_id": 3,
-      "from": { "model": "google/gemini-3.6-flash" },
+      "from": { "model": "openai/gpt-6.1-terra-fast" },
       "to": { "custom": { "base_url": "https://llm.example.com/v1", "model": "backup-70b" } },
       "reason": "ttft_timeout"
     }
@@ -266,10 +266,10 @@ Sessions on a [custom LLM](/agents/build/custom-llm) also carry `llm_endpoint_er
   |---|---|
   | `error` | The model's provider returned an error. |
   | `timeout` | No reply within the platform's own time limit (outside `manual` mode). |
-  | `ttft_timeout` | No first token within the model's `ttft_timeout_ms`. |
-  | `total_timeout` | The reply did not finish within the model's `total_timeout_ms` and nothing was spoken yet. |
+  | `ttft_timeout` | The model did not [start its reply](/agents/build/llm-fallback#when-a-reply-has-started) within its `ttft_timeout_ms`. |
+  | `total_timeout` | The model's `total_timeout_ms` ran out before it started its reply. |
   | `empty` | The response stream broke off with no output and no end signal. A reply that finished normally with nothing in it is the agent staying silent. That is not a fallback. |
-  | `kick_in` | The fallback ran in parallel and its reply was used. The agent's own model had no first token within `kick_in_ms`. |
+  | `kick_in` | The fallback ran in parallel and its reply was used. The agent's own model had not started its reply within `kick_in_ms`. |
 
   New reasons may be added.
 
@@ -374,7 +374,7 @@ When `transferred_call_ended_at` is `null`, the other two are `null` as well. A 
 
 ## Download recordings
 
-`GET /v1/agent/sessions/{session_id}/recording` returns the recording status and signed download URLs: one audio track per speaker, so you can play or process the agent and the user separately. For sessions that never [recorded](#what-gets-stored) (recording turned off, or no audio produced), the endpoint returns `404`.
+`GET /v1/agent/sessions/{session_id}/recording` returns the recording status and signed download URLs: one audio track per speaker, so you can play or process the agent and the user separately. An agent with a [background sound](/agents/build/background-sound-voice-effect#recordings) has a second `agent` track, which holds the ambience. For sessions that never [recorded](#what-gets-stored) (recording turned off, or no audio produced), the endpoint returns `404`.
 
 ```bash API (curl)
 curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID/recording" \

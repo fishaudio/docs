@@ -15968,7 +15968,7 @@
       },
       "post": {
         "summary": "Create Background Sound",
-        "description": "Upload an mp3/wav/ogg/m4a clip, up to 10 MB and 300 seconds. Send\n`multipart/form-data` with the file in `file`. The server loudness-\nnormalizes and transcodes it to Ogg/Opus; the returned id is what\n`voice.background_sound.custom_asset_id` names.",
+        "description": "Upload an mp3/wav/ogg/m4a clip, up to 10 MB and 300 seconds. Send\n`multipart/form-data` with the file in `file`. The returned id is what\n`voice.background_sound.custom_asset_id` names.",
         "security": [
           {
             "BearerAuth": []
@@ -16001,7 +16001,6 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "Never carries storage_key: that is an internal R2 key, not something a\nclient should see or be able to request directly.",
                   "properties": {
                     "_id": {
                       "title": "Id",
@@ -20232,7 +20231,8 @@
                 "s2-pro",
                 "s2.1-pro",
                 "s2.1-pro-free",
-                "drama-3"
+                "drama-3",
+                "s3-pro"
               ],
               "title": "Model",
               "type": "string"
@@ -20417,7 +20417,8 @@
                 "s2-pro",
                 "s2.1-pro",
                 "s2.1-pro-free",
-                "drama-3"
+                "drama-3",
+                "s3-pro"
               ],
               "title": "Model",
               "type": "string"
@@ -21378,7 +21379,8 @@
                 "s2-pro",
                 "s2.1-pro",
                 "s2.1-pro-free",
-                "drama-3"
+                "drama-3",
+                "s3-pro"
               ],
               "title": "Model",
               "type": "string"
@@ -32237,7 +32239,7 @@
               }
             ],
             "default": null,
-            "description": "What the run was charged in USD. `0` on a finished run that is not charged: runs that end in `error` and tests other than simulations. Null until the run's charge is settled.",
+            "description": "What the run was charged in USD. `0` on a finished run that is not charged. Null until the run's charge is settled.",
             "title": "Cost Usd"
           },
           "platform_fee": {
@@ -34694,7 +34696,6 @@
         "type": "object"
       },
       "AgentBackgroundSoundEntity": {
-        "description": "Never carries storage_key: that is an internal R2 key, not something a\nclient should see or be able to request directly.",
         "properties": {
           "_id": {
             "title": "Id",

@@ -1,6 +1,6 @@
 ---
 title: "Registry & license"
-description: "The Self Host dashboard: deploy tokens, registry sign-in, and your license bundle"
+description: "The Self Host dashboard: deploy tokens, registry sign-in, deployments, and their licenses"
 icon: "key"
 ---
 
@@ -10,15 +10,15 @@ dashboard.
 
 ## The Self Host page
 
-Sign in to fish.audio and open **Developer → Self Host**. It takes your team from a
-deploy token and the license to the model you pick, the environment it needs, and
-install commands for the version you pick, with the registry host and artifact
-references filled in. The install step also downloads that version's **deployment
-guide**: the Helm deployment runbook or the All-in-One guide that the other pages here
-refer to. Each
-model has its own versions, and a deployment stays on its version until you install
-another. If the page says self-hosting is not enabled, or nothing has been granted to
-your team yet, contact your account manager.
+Sign in to fish.audio and open **Developer → Self Host**. It lists your team's deploy
+tokens and deployments, each deployment with its model and billing mode. A deployment's
+page gives its license, the environment it needs, and install commands for the version
+you pick, with the registry host and artifact references filled in. The install step
+also downloads that version's **deployment guide**: the Helm deployment runbook or the
+All-in-One guide that the other pages here refer to. Each model has its own versions,
+and a deployment stays on its version until you install another. If the page says
+self-hosting is not enabled, or nothing has been granted to your team yet, contact your
+account manager.
 
 ## Prerequisites
 
@@ -38,21 +38,21 @@ Docker, Helm, and the cluster's image pull secret all sign in with your account 
 and the token.
 
 Rotating or deleting a token revokes the old value at once. Running pods keep running,
-but new pulls fail until every consumer has a valid token. To switch with no gap,
-create a second token, move every consumer to it, then delete the old one. The token
-list shows when each token was last used, so you can retire the ones nothing uses.
+but new pulls, and an Online deployment's license renewals, fail until every consumer
+has a valid token. To switch with no gap, create a second token, move every consumer to
+it as your deployment guide shows, then delete the old one. The token list shows when
+each token was last used, so you can retire the ones nothing uses.
 
 ## The license
 
-The license is the product permit: every platform and billing mode needs one. Download
-the bundle, `license.crt` and `license.key`, from the License step on the Self Host
-page; some contracts bind it to specific GPUs, so have their UUIDs ready. Without it, the services never come up.
-Once it expires, they refuse requests (403) until a renewed one is in place. The
-dashboard shows the current expiry.
+The license is the product permit: every deployment has its own, in the install bundle
+you download from its page. Without it, the services never come up. Once it expires,
+they refuse requests (403) until a renewed one is in place.
 
-Before the expiry, settle the period's invoice and, on offline billing, send the usage
-ledger; Fish Audio then issues the renewed bundle. Your deployment guide shows how to
-apply it.
+The license renews each billing cycle. Online and Networked Ledger deployments renew
+their own, and stop serving after a week without a successful sync. An air-gapped one is
+renewed once its ledger passes Fish Audio's check; you then install the new license by
+hand, as your deployment guide shows.
 
 ## Next step
 

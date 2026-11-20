@@ -113,14 +113,14 @@ Both settings can also be replaced for a single session: send `overrides.voice_i
 
 ## Text-to-speech model
 
-**Text-to-speech model** picks the Fish Audio model that renders the agent's voice (`voice.tts_model` on the wire). Every voice from the Voice Library works with either model. The same selector offers [Live 3](#live-3-full-duplex), a full-duplex model set with `voice.engine`.
+**Text-to-speech model** picks the Fish Audio model that renders the agent's voice (`voice.tts_model` on the wire). Every voice from the Voice Library works with either model. In the Builder, both sit in the **Speech model** selector next to [Live 3](#live-3-full-duplex), a full-duplex model set with `voice.engine`.
 
 | Value | Model | Status | Notes |
 |---|---|---|---|
 | `drama-3` | Drama 3 | Default | The directable model from [Drama 3](/features/text-to-speech/drama-3). Time to first audio is comparable to S2.1 Pro. |
 | `s2.1-pro` | S2.1 Pro | Available | |
 
-Choose it with the **Text-to-speech model** selector in the Builder's voice section, or via the API:
+Choose it with the **Speech model** selector in the Builder's voice section, or via the API:
 
 <CodeGroup>
 ```bash API (curl)
@@ -141,13 +141,13 @@ The model applies to everything the agent speaks in voice and phone sessions. As
 
 **Live 3** is Fish Audio's full-duplex speech model. Instead of speaking the reply once the caller finishes, it listens while it speaks and decides on its own when to acknowledge, wait, respond, or stop. See [Cascade vs. full duplex](/agents/concepts#cascade-vs-full-duplex).
 
-- **Backchannels:** while the caller reads out a phone number in chunks, it answers with a quick "mm-hmm" and waits for the rest instead of cutting in.
+- **Backchannels:** while the caller reads out a phone number in chunks, it answers with a quick "mm-hmm" and waits for the rest instead of cutting in. To turn them down or off, see [Backchannels](/agents/build/configuration#backchannels).
 - **Interruptions:** a "yeah" or "mm-hmm" from the caller doesn't stop it, but a real interjection such as "Wait, actually..." does.
 - **Corrections:** when the caller changes their mind mid-order, it follows along without answering too early.
 
 Your agent's instructions and tools still decide what the agent says. Live 3 decides when and how it is said.
 
-New agents start on Live 3 with the Clara voice. To create one with another Live 3 voice or situation, pass the same `voice` fields in `config` on [Create agent](/api-reference/endpoint/agent/create-agent). To switch an existing agent, pick **Live 3** in the **Text-to-speech model** selector, or set `voice.engine` to `live3` via the API:
+New agents start on Live 3 with the Clara voice. To create one with another Live 3 voice or situation, pass the same `voice` fields in `config` on [Create agent](/api-reference/endpoint/agent/create-agent). To switch an existing agent, pick **Live 3** in the **Speech model** selector, or set `voice.engine` to `live3` via the API:
 
 <CodeGroup>
 ```bash API (curl)
@@ -192,8 +192,7 @@ For a Voice Library voice or one of your clones, set `voice.voice_id` to its id.
 
 #### What else changes
 
-- Speech recognition is fixed to Fish Transcribe Stream 1 (see [Speech recognition model](#speech-recognition-model)).
-- [Speaking speed](#speaking-speed), [expressive mode](#expressive-mode), and pronunciation dictionaries apply only to Drama 3 and S2.1 Pro. Live 3 sets its own pacing and delivery.
+- The [speech recognition model](#speech-recognition-model), [speaking speed](#speaking-speed), [expressive mode](#expressive-mode), and pronunciation dictionaries apply only to Drama 3 and S2.1 Pro. Live 3 does its own listening and sets its own pacing and delivery.
 - If Live 3 can't start a session, or drops during one, the agent keeps talking through its text-to-speech model.
 - In a [warm transfer](/agents/telephony/transfers), the briefing to your team member is spoken by the text-to-speech model.
 
@@ -326,6 +325,9 @@ The delivery cues are rendered by the voice model. They are never spoken and nev
 ## Going further
 
 <CardGroup cols={2}>
+  <Card title="Background sound & voice effect" icon="volume-high" href="/agents/build/background-sound-voice-effect">
+    Play an ambience under the voice, or make web calls sound like a phone line.
+  </Card>
   <Card title="Agent configuration" icon="sliders" href="/agents/build/configuration">
     System prompt, first message, and conversation settings.
   </Card>
