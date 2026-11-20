@@ -29,6 +29,8 @@ Files are validated, parsed, and indexed as part of the upload itself. When the 
 
 Group sources into folders with **New folder**, and rename sources from the row menu. Deleting a folder never deletes its sources. Anything inside moves back to **All sources**.
 
+The API manages folders too: [create, rename, and delete them](#organize-sources-in-folders) with `/v1/agent/knowledge-folders`, and put a source in a folder with `folder_id`. On upload and update, `folder_id=root` keeps a source out of any folder, the same as **Root** in the console's folder picker. The source list is flat: it returns files only, each with its `folder_id`, while folders come from their own endpoint. To rebuild the console's **All sources** view, list the folders and the sources whose `folder_id` is `null`.
+
 ## Share sources across agents
 
 Workspace sources belong to the workspace, not to a single agent (agent-private files offer only **Edit** and **Delete**). In the library, the **Used by** column shows how many agents attach each source, and **Manage access** lists every agent with a toggle:
@@ -104,6 +106,56 @@ curl https://api.fish.audio/v1/agent/knowledge-sources/{source_id}/agents \
 ```
 
 Only the `source` file part is required on create: `name` falls back to the uploaded file's name.
+
+### Organize sources in folders
+
+Folders are a flat list: they can't be nested, and a source is in at most one folder. Each folder belongs to one workspace.
+
+| Endpoint | Description |
+|---|---|
+| `GET /v1/agent/knowledge-folders` | List your team's folders across workspaces, newest first. Tell same-named folders apart by `workspace_id` |
+| `POST /v1/agent/knowledge-folders` | Create a folder in your default workspace. Returns `409` if the workspace already has a folder with that name |
+| `PATCH /v1/agent/knowledge-folders/{folder_id}` | Rename a folder |
+| `DELETE /v1/agent/knowledge-folders/{folder_id}` | Delete a folder. Its sources are not deleted: they move back to the root |
+
+Leading and trailing spaces are removed from folder names, and a name can't be blank. Names are 1 to 120 characters and case-sensitive, so `Support` and `support` are different names, while ` Support ` is the same name as `Support`.
+
+```bash Create a folder
+curl --request POST https://api.fish.audio/v1/agent/knowledge-folders \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{"name": "Support"}'
+```
+
+Every source returned by the API has a `folder_id`, which is `null` when the source isn't in a folder. To control it, send `folder_id` in the multipart form:
+
+- **Create**: send a folder ID to upload the source into that folder. Omit it, or send `root`, to upload it outside any folder.
+- **Update**: send a folder ID to move the source into that folder, or send `root` to take it out of its folder. Omit it to leave the source where it is. Moving a source doesn't create a new revision.
+
+Both calls return `404` if the folder doesn't exist in the source's workspace.
+
+```bash Move a source into a folder
+curl --request PATCH https://api.fish.audio/v1/agent/knowledge-sources/{source_id} \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --form "folder_id=YOUR_FOLDER_ID"
+```
+
+To filter the list, pass `folder_id` as a query parameter. A folder ID returns only that folder's sources. `folder_id=root`, or leaving it out, returns every source across all workspaces, whether or not it's in a folder. There's no filter for sources outside any folder: list everything, following `next_cursor` while `has_more` is true, and keep the ones whose `folder_id` is `null`.
+
+```bash List the sources in a folder
+curl "https://api.fish.audio/v1/agent/knowledge-sources?folder_id=YOUR_FOLDER_ID" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+```bash Keep only sources outside any folder (one page)
+curl "https://api.fish.audio/v1/agent/knowledge-sources?folder_id=root&page_size=100" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  | jq '.knowledge_sources | map(select(.folder_id == null))'
+```
+
+This reads one page. If the response has `has_more: true`, repeat the request with `cursor` set to `next_cursor` and combine the results.
+
+To count the sources in a folder, add `include_total=true` to the filtered list request.
 
 ### Attach sources to an agent
 
