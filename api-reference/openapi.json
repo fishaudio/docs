@@ -35113,20 +35113,8 @@
                 "type": "null"
               }
             ],
-            "description": "Input tokens written to the prompt cache at its default retention. Null when the model has no cache write charge.",
+            "description": "Input tokens written to the prompt cache. Null when the model has no cache write charge.",
             "title": "Cache Write 5M"
-          },
-          "cache_write_1h": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Input tokens written to the prompt cache with one hour retention. Null when the model has no such charge.",
-            "title": "Cache Write 1H"
           },
           "output": {
             "description": "Output tokens, reasoning tokens included.",
@@ -35138,7 +35126,6 @@
           "input",
           "cache_read",
           "cache_write_5m",
-          "cache_write_1h",
           "output"
         ],
         "title": "PublicLLMTokenRates",
