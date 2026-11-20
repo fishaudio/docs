@@ -95,7 +95,6 @@ A [Simulation test](/agents/test/agent-tests#simulation-tests) has the agent tal
 - A [fixed first message](/agents/build/configuration#first-message) is spoken as written and is not counted as a reply. A generated one is.
 - An agent on a [custom LLM](/agents/build/custom-llm) endpoint carries no charge for its own tokens.
 - A run that ends in **Error** is not charged, and every repeat of a test is a run of its own.
-- Single Turn and Tool tests are free.
 
 With no conversation rate to cover them, the basic models are billed on their tokens in Simulation tests. Prices are in USD per 1 million tokens.
 
@@ -114,7 +113,6 @@ Every account starts with a one-time **\$5 trial balance**, about 140 minutes of
 - **It pays for real usage at the normal rates.** That covers web sessions, phone calls and their surcharges, transferred call time, number rental, LLM tokens on token-billed models, and Simulation test runs.
 - **Every charge draws on it first.** Only what the trial balance does not cover is charged to your API credit.
 - **A session can start on any model**, token-billed ones included, as long as the trial balance or your API credit is above zero. The same goes for running Simulation tests.
-- **[Preview calls](/agents/test/preview-calls) in the Builder are free** on every LLM and never draw on the trial balance.
 
 The [Agents billing page](https://fish.audio/app/agents/billing) shows how much of the trial balance is left, and the Agents home page shows it as a usage meter.
 
@@ -149,7 +147,7 @@ With every line in use, what happens to a new call depends on how it arrives.
 
 Both `429` answers carry `retry_after`, the seconds to wait before trying again. Session creation on a [public agent](/agents/deploy/public-agents#rate-limiting) is also rate limited per visitor IP and per agent.
 
-**Burst** keeps admitting calls above your limit, up to three times the limit. A call admitted on burst bills its conversation at \$0.12 per minute, and its other charges stay the same. The team owner turns burst on from the [Agents billing page](https://fish.audio/app/agents/billing). Free accounts cannot use burst.
+**Burst** keeps admitting calls above your limit, up to three times the limit. A call admitted on burst bills its conversation at \$0.12 per minute, and its other charges stay the same. Turn burst on from the [Agents billing page](https://fish.audio/app/agents/billing). Free accounts cannot use burst.
 
 ### Phone numbers
 
