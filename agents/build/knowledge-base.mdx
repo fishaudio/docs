@@ -118,7 +118,7 @@ Folders are a flat list: they can't be nested, and a source is in at most one fo
 | `PATCH /v1/agent/knowledge-folders/{folder_id}` | Rename a folder |
 | `DELETE /v1/agent/knowledge-folders/{folder_id}` | Delete a folder. Its sources are not deleted: they move back to the root |
 
-Folder names are 1 to 120 characters and compared exactly, so `Support` and `support` are different names.
+Leading and trailing spaces are removed from folder names, and a name can't be blank. Names are 1 to 120 characters and case-sensitive, so `Support` and `support` are different names, while ` Support ` is the same name as `Support`.
 
 ```bash Create a folder
 curl --request POST https://api.fish.audio/v1/agent/knowledge-folders \
