@@ -149,6 +149,8 @@ Unlike most [Agents API errors](/api-reference/agent-errors), phone-call errors 
 | `422`  | `sip_headers_unsupported`                                                                            | `sip_headers` was sent with a platform-purchased number. See [per-call SIP headers](#per-call-sip-headers).                      |
 | `422`  | `destination_invalid`, `destination_not_allowed`, `premium_destination_blocked`, `self_call_blocked` | The destination is refused; see [allowed destinations](#allowed-destinations).                                                   |
 | `422`  | `idempotency_key_reuse`                                                                              | The key was already used with a different body; mint a fresh key per distinct call.                                              |
+| `429`  | `concurrency_limit_exceeded`                                                                         | Every [line](/agents/pricing#concurrent-calls) of your team is in use. Retry after `retry_after`. |
+| `429`  | `cps_limit_exceeded`                                                                                 | New calls are being started faster than your team's [dial rate](/agents/pricing#outbound-dial-rate). Retry after `retry_after`. |
 
 `502` and `503` follow the [general guidance](/api-reference/agent-errors#5xx): retrying is safe, especially with an `Idempotency-Key`.
 

@@ -1049,7 +1049,7 @@
       },
       "post": {
         "summary": "Create Agent Session",
-        "description": "Start a conversation session with an agent and receive a join token for the\nsession transport (currently LiveKit WebRTC). Authenticate with an API key to\nstart sessions with any agent in your team; without credentials only agents\npublished as public are reachable, and when the agent restricts origins the\nrequest `Origin` must match its allowed origins.\n\nThis call only issues the join token. The conversation starts when a client\n(the web SDK or the widget) joins with it, so create a session when a user\nstarts a call, one per call. A session that no client joins before\n`expires_at` ends as `failed`.\n\n`language` (and `overrides.language`) accepts `en`, `ja`, `zh`, `ko`, `es`,\n`fr`, `de`, `pt`, `it`, `nl`; anything else is 422. Omit it to use the agent's configured\nspeaking language.\n\n`overrides.asr.model` picks the speech recognition model for this session,\nnested like the agent config's `asr` section and with the same values as\n`asr.model`. It needs an API key.\n\n`overrides.llm.fallback` replaces the agent's `llm.fallback` for this\nsession, with the same shape and rules; each `custom` model needs its\n`api_key`. It needs an API key and `llm.fallback` in the agent's\n`overrides_allowed`.\n\nWhen every concurrent line of your plan is in use the answer is 429 with\n`code: concurrency_limit_exceeded`, a `retry_after` in seconds and a\n`Retry-After` header. Add lines or enable burst on the Agent plan to\nraise the limit.",
+        "description": "Start a conversation session with an agent and receive a join token for the\nsession transport (currently LiveKit WebRTC). Authenticate with an API key to\nstart sessions with any agent in your team; without credentials only agents\npublished as public are reachable, and when the agent restricts origins the\nrequest `Origin` must match its allowed origins.\n\nThis call only issues the join token. The conversation starts when a client\n(the web SDK or the widget) joins with it, so create a session when a user\nstarts a call, one per call. A session that no client joins before\n`expires_at` ends as `failed`.\n\n`language` (and `overrides.language`) accepts `en`, `ja`, `zh`, `ko`, `es`,\n`fr`, `de`, `pt`, `it`, `nl`; anything else is 422. Omit it to use the agent's configured\nspeaking language.\n\n`overrides.asr.model` picks the speech recognition model for this session,\nnested like the agent config's `asr` section and with the same values as\n`asr.model`. It needs an API key.\n\n`overrides.llm.fallback` replaces the agent's `llm.fallback` for this\nsession, with the same shape and rules; each `custom` model needs its\n`api_key`. It needs an API key and `llm.fallback` in the agent's\n`overrides_allowed`.\n\nWhen every concurrent line of your team is in use the answer is 429 with\n`code: concurrency_limit_exceeded`, a `retry_after` in seconds and a\n`Retry-After` header. The limit of a pay as you go team grows with its\ntotal top-ups, and burst admits sessions above it.",
         "security": [
           {
             "BearerAuth": []
@@ -1874,6 +1874,13 @@
                         "$ref": "#/components/schemas/AgentSessionLlmFallback"
                       },
                       "title": "Llm Fallbacks",
+                      "type": "array"
+                    },
+                    "engine_fallbacks": {
+                      "items": {
+                        "$ref": "#/components/schemas/AgentSessionEngineFallback"
+                      },
+                      "title": "Engine Fallbacks",
                       "type": "array"
                     }
                   },
@@ -6982,7 +6989,7 @@
     "/v1/agent/knowledge-sources": {
       "get": {
         "summary": "List Knowledge Sources",
-        "description": "List your team's knowledge sources, newest first. Paginate with `cursor`\n(follow `next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count — the two are mutually exclusive.",
+        "description": "List your team's knowledge sources, newest first. Paginate with `cursor`\n(follow `next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count — the two are mutually exclusive. Filter\nby folder with `folder_id=<id>`; with `folder_id=root` or no `folder_id`\nyou get every source, and the ones outside any folder have a null\n`folder_id`.",
         "security": [
           {
             "BearerAuth": []
@@ -7005,6 +7012,25 @@
               ],
               "default": null,
               "title": "Search"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "folder_id",
+            "description": "Only sources in this knowledge folder. Omit it, or pass `root` (an empty value counts as omitted), to list every source across all workspaces, in a folder or not; sources outside any folder have a null `folder_id`. An unknown or deleted folder id gives an empty list. Combines with `search`.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Folder Id"
             },
             "deprecated": false
           },
@@ -7245,7 +7271,7 @@
       },
       "post": {
         "summary": "Create Knowledge Source",
-        "description": "Upload a plain-text or Markdown file (UTF-8, up to 1 MB) as a knowledge\nsource. Send `multipart/form-data` with the file in `source`; `name`\ndefaults to the file name. Attach it to agents via the agent config's\n`knowledge_base.knowledge_source_ids`.",
+        "description": "Upload a plain-text or Markdown file (UTF-8, up to 1 MB) as a knowledge\nsource. Send `multipart/form-data` with the file in `source`; `name`\ndefaults to the file name. Send `folder_id` to put it in a knowledge\nfolder (otherwise it is created outside any folder; `folder_id=root` says\nso explicitly). Attach it to agents via the agent config's\n`knowledge_base.knowledge_source_ids`.",
         "security": [
           {
             "BearerAuth": []
@@ -7278,6 +7304,19 @@
                     "default": "",
                     "title": "Description",
                     "type": "string"
+                  },
+                  "folder_id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Put the source in this knowledge folder, which must be in the workspace the source is created in (your default workspace). Omit it, or send `root` (or an empty value), to create it outside any folder. 404 if the folder does not exist there.",
+                    "title": "Folder Id"
                   }
                 },
                 "required": [
@@ -7312,6 +7351,19 @@
                       "default": "",
                       "title": "Description",
                       "type": "string"
+                    },
+                    "folder_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The knowledge folder this source is in; null at the root. Folders are managed with `/v1/agent/knowledge-folders`.",
+                      "title": "Folder Id"
                     },
                     "file_name": {
                       "title": "File Name",
@@ -7474,6 +7526,43 @@
               }
             }
           },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
           "422": {
             "description": "",
             "headers": {},
@@ -7600,6 +7689,19 @@
                       "default": "",
                       "title": "Description",
                       "type": "string"
+                    },
+                    "folder_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The knowledge folder this source is in; null at the root. Folders are managed with `/v1/agent/knowledge-folders`.",
+                      "title": "Folder Id"
                     },
                     "file_name": {
                       "title": "File Name",
@@ -7769,7 +7871,7 @@
       },
       "patch": {
         "summary": "Update Knowledge Source",
-        "description": "Rename the source and/or replace its content by uploading a new file in\n`source` (multipart). Replacing content increments `revision_number` while\nthe id stays stable, and every attached agent's draft picks it up\nimmediately; published versions pin the revision they were published with,\nso republish each affected agent to put the new content live — that\ntwo-step (sync content, republish) is the nightly content-sync recipe.",
+        "description": "Rename the source and/or replace its content by uploading a new file in\n`source` (multipart). Replacing content increments `revision_number` while\nthe id stays stable, and every attached agent's draft picks it up\nimmediately; published versions pin the revision they were published with,\nso republish each affected agent to put the new content live — that\ntwo-step (sync content, republish) is the nightly content-sync recipe.\nSend `folder_id` to move the source into a knowledge folder, or\n`folder_id=root` to take it out of its folder; a move alone does not create\na revision.",
         "security": [
           {
             "BearerAuth": []
@@ -7830,6 +7932,19 @@
                     ],
                     "default": null,
                     "title": "Description"
+                  },
+                  "folder_id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Move the source into this knowledge folder, which must be in the source's own workspace. `root` (or an empty value) takes it out of its folder; omit to leave it where it is. Moving never creates a new revision. 404 if the folder does not exist there.",
+                    "title": "Folder Id"
                   }
                 },
                 "type": "object"
@@ -7861,6 +7976,19 @@
                       "default": "",
                       "title": "Description",
                       "type": "string"
+                    },
+                    "folder_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The knowledge folder this source is in; null at the root. Folders are managed with `/v1/agent/knowledge-folders`.",
+                      "title": "Folder Id"
                     },
                     "file_name": {
                       "title": "File Name",
@@ -8448,6 +8576,911 @@
         },
         "tags": [
           "Knowledge Sources"
+        ]
+      }
+    },
+    "/v1/agent/knowledge-folders": {
+      "get": {
+        "summary": "List Knowledge Folders",
+        "description": "List your team's knowledge folders across all workspaces, newest first.\nFolder names are unique per workspace, so two workspaces can each have a\n\"Support\" folder: tell them apart by `workspace_id`. Paginate with\n`cursor` (follow `next_cursor` while `has_more` is true) or with `page`\nfor offset pagination with a `total` count — the two are mutually\nexclusive. To list the sources in a folder, call\n`GET /v1/agent/knowledge-sources?folder_id=<folder_id>`; pass\n`include_total=true` there for a count.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "description": "",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Cursor"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "description": "1-based page number; mutually exclusive with cursor.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Page"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "include_total",
+            "description": "",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Total",
+              "type": "boolean"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "description": "",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "folders": {
+                      "items": {
+                        "$ref": "#/components/schemas/PublicKnowledgeFolder"
+                      },
+                      "title": "Folders",
+                      "type": "array"
+                    },
+                    "has_more": {
+                      "title": "Has More",
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Next Cursor"
+                    },
+                    "total": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Total"
+                    }
+                  },
+                  "required": [
+                    "folders",
+                    "has_more"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Knowledge Folders"
+        ]
+      },
+      "post": {
+        "summary": "Create Knowledge Folder",
+        "description": "Create a folder in the API key owner's default workspace. Returns 409 if\nthat workspace already has a folder with the same name (compared exactly,\ncase-sensitive). Put knowledge sources in it by passing `folder_id` when\nyou create or update them.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicKnowledgeFolderPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Document created, URL follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "folder_id": {
+                      "title": "Folder Id",
+                      "type": "string"
+                    },
+                    "workspace_id": {
+                      "title": "Workspace Id",
+                      "type": "string"
+                    },
+                    "name": {
+                      "title": "Name",
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "format": "date-time",
+                      "title": "Created At",
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "format": "date-time",
+                      "title": "Updated At",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "folder_id",
+                    "workspace_id",
+                    "name",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request forbidden -- authorization will not help",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request conflict",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Knowledge Folders"
+        ]
+      }
+    },
+    "/v1/agent/knowledge-folders/{folder_id}": {
+      "patch": {
+        "summary": "Rename Knowledge Folder",
+        "description": "Rename a folder. The name must be free within the folder's own workspace\n(409 otherwise); renaming a folder to its current name succeeds.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "folder_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Folder Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicKnowledgeFolderPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "folder_id": {
+                      "title": "Folder Id",
+                      "type": "string"
+                    },
+                    "workspace_id": {
+                      "title": "Workspace Id",
+                      "type": "string"
+                    },
+                    "name": {
+                      "title": "Name",
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "format": "date-time",
+                      "title": "Created At",
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "format": "date-time",
+                      "title": "Updated At",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "folder_id",
+                    "workspace_id",
+                    "name",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request conflict",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Knowledge Folders"
+        ]
+      },
+      "delete": {
+        "summary": "Delete Knowledge Folder",
+        "description": "Delete a folder, empty or not. The knowledge sources inside it are not\ndeleted: they are taken out of the folder (`folder_id` becomes null).",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "folder_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Folder Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Request fulfilled, nothing follows",
+            "headers": {}
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Knowledge Folders"
         ]
       }
     },
@@ -13283,7 +14316,7 @@
       },
       "post": {
         "summary": "Purchase or Import Phone Number",
-        "description": "`provider` discriminates two variants. `twilio` buys a number from the\nmanaged inventory: it lands in your default workspace, any `agent_id` you\nbind must live there too, and billing is the monthly price charged in\ndaily slices; the first day is charged before anything is bought (402\ncosts you nothing) and the daily run advances it from there. `sip`\nimports a number you already own at your carrier: point your trunk's\norigination at our SIP host, provide inbound authentication (digest\nand/or source CIDRs) and optionally a termination host so the number can\nplace calls; nothing is rented and there is no monthly fee. Either way,\n409 means the number is already on the platform; 502 means the provider\nor trunk provisioning refused, and the number stays visible with status\n`error` and is safe to release.",
+        "description": "`provider` discriminates two variants. `twilio` buys a number from the\nmanaged inventory: it lands in your default workspace, any `agent_id` you\nbind must live there too, and billing is the monthly price charged in\ndaily slices; the first day is charged before anything is bought (402\ncosts you nothing) and the daily run advances it from there. `sip`\nimports a number you already own at your carrier: point your trunk's\norigination at our SIP host, provide inbound authentication (digest\nand/or source CIDRs) and optionally a termination host so the number can\nplace calls; nothing is rented and there is no monthly fee. Either way,\n409 means the number is already on the platform; 502 means the provider\nor trunk provisioning refused, and the number stays visible with status\n`error` and is safe to release. 403 with\n`reason: phone_number_limit_reached` means your team already holds as\nmany numbers as it may. An account that has never added credit holds one.",
         "security": [
           {
             "BearerAuth": []
@@ -15847,7 +16880,7 @@
       },
       "post": {
         "summary": "Create Background Sound",
-        "description": "Upload an mp3/wav/ogg/m4a clip, up to 10 MB and 300 seconds. Send\n`multipart/form-data` with the file in `file`. The server loudness-\nnormalizes and transcodes it to Ogg/Opus; the returned id is what\n`voice.background_sound.custom_asset_id` names.",
+        "description": "Upload an mp3/wav/ogg/m4a clip, up to 10 MB and 300 seconds. Send\n`multipart/form-data` with the file in `file`. The returned id is what\n`voice.background_sound.custom_asset_id` names.",
         "security": [
           {
             "BearerAuth": []
@@ -15880,7 +16913,6 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "Never carries storage_key: that is an internal R2 key, not something a\nclient should see or be able to request directly.",
                   "properties": {
                     "_id": {
                       "title": "Id",
@@ -25047,6 +26079,112 @@
         "title": "AgentSessionAnalysisResult",
         "type": "object"
       },
+      "AgentSessionEngineFallback": {
+        "description": "One time the session did not speak with the speech engine or the voice\nits agent is set up with. `from` is what it was set up with, `to` is what\nspoke instead.\n\n- unsupported_language: the speech engine does not speak the session's\n  language (live3 speaks English only), so the whole session was spoken\n  by the agent's text-to-speech model. `detail` is the session's language.\n- invalid_config: the speech engine refused the agent's voice settings,\n  so the whole session was spoken by the agent's text-to-speech model.\n  `message` is what the engine said.\n- engine_unavailable: the speech engine was not available, when the\n  session started or from `occurred_at` during it. Replies from\n  `occurred_at` on were spoken by the agent's text-to-speech model, which\n  is the whole session when the engine could not take it.\n- voice_unusable: the speech engine could not use the agent's voice, so\n  the session stayed on the engine and spoke in the voice `to` names.\n  When the cause is the voice itself, `detail` names it (for example\n  no_transcript, too_long, text_mismatch, no_clip or not_found) and\n  `message` is what the engine said.",
+        "properties": {
+          "occurred_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Occurred At"
+          },
+          "from": {
+            "$ref": "#/components/schemas/AgentSessionEngineRef"
+          },
+          "to": {
+            "$ref": "#/components/schemas/AgentSessionEngineRef"
+          },
+          "reason": {
+            "enum": [
+              "unsupported_language",
+              "invalid_config",
+              "engine_unavailable",
+              "voice_unusable"
+            ],
+            "title": "Reason",
+            "type": "string"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Detail"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "reason"
+        ],
+        "title": "AgentSessionEngineFallback",
+        "type": "object"
+      },
+      "AgentSessionEngineRef": {
+        "description": "What a session speaks with, in the terms of the agent's `voice`\nsettings.",
+        "properties": {
+          "engine": {
+            "enum": [
+              "fish_tts",
+              "live3"
+            ],
+            "title": "Engine",
+            "type": "string"
+          },
+          "tts_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tts Model"
+          },
+          "voice_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Voice Id"
+          }
+        },
+        "required": [
+          "engine"
+        ],
+        "title": "AgentSessionEngineRef",
+        "type": "object"
+      },
       "AgentSessionLlmCustomRef": {
         "properties": {
           "base_url": {
@@ -31214,7 +32352,7 @@
               }
             ],
             "default": null,
-            "description": "What the run was charged in USD. `0` on a finished run that is not charged: runs that end in `error` and tests other than simulations. Null until the run's charge is settled.",
+            "description": "What the run was charged in USD. `0` on a finished run that is not charged. Null until the run's charge is settled.",
             "title": "Cost Usd"
           },
           "platform_fee": {
@@ -31428,6 +32566,19 @@
             "title": "Description",
             "type": "string"
           },
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The knowledge folder this source is in; null at the root. Folders are managed with `/v1/agent/knowledge-folders`.",
+            "title": "Folder Id"
+          },
           "file_name": {
             "title": "File Name",
             "type": "string"
@@ -31486,6 +32637,58 @@
           "name"
         ],
         "title": "PublicDependentAgent",
+        "type": "object"
+      },
+      "PublicKnowledgeFolder": {
+        "properties": {
+          "folder_id": {
+            "title": "Folder Id",
+            "type": "string"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "folder_id",
+          "workspace_id",
+          "name",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PublicKnowledgeFolder",
+        "type": "object"
+      },
+      "PublicKnowledgeFolderPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "1-120 characters after leading and trailing whitespace is removed (a blank name is rejected). Unique within the workspace, case-sensitive.",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "PublicKnowledgeFolderPayload",
         "type": "object"
       },
       "PublicAgentToolSummary": {
@@ -33658,7 +34861,6 @@
         "type": "object"
       },
       "AgentBackgroundSoundEntity": {
-        "description": "Never carries storage_key: that is an internal R2 key, not something a\nclient should see or be able to request directly.",
         "properties": {
           "_id": {
             "title": "Id",

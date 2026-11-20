@@ -53,7 +53,7 @@ Returns `201` with the number object, the same shape the list endpoint returns. 
 | `label`        | Optional free-form label, up to 120 characters.                         |
 | `agent_id`     | Optional: bind an agent so the number answers inbound calls right away. |
 
-A `409` means the number is already on the platform; a `502` means the provider refused the purchase; the number stays visible with status `error` and is safe to release.
+A `409` means the number is already on the platform; a `502` means the provider refused the purchase; the number stays visible with status `error` and is safe to release. A `403` with the reason `phone_number_limit_reached` means your team holds as many numbers as it may. A free account holds one, see [Limits](/agents/pricing#phone-numbers).
 
 <Note>
   Already have a number at your own carrier? The same endpoint imports it with
