@@ -69,7 +69,8 @@ A purchased phone number costs **\$1.20 per month**, charged in daily slices for
 
 The LLM your agent runs is chosen in the Builder.
 
-- **Basic models** are Gemini 3.5 Flash Lite, GPT-5.6 Luna, and Gemma 4 26B. Every model has a per-token cost. For now the conversation rate covers it for the basic models as a promotional offer, so they carry no separate charge.
+- **Basic models** are Gemini 3.5 Flash Lite, GPT-6 Luna, GPT-5.6 Luna, and Gemma 4 26B. Every model has a per-token cost. For now the conversation rate covers it for the basic models as a promotional offer, so they carry no separate charge.
+- **Fast mode and Priority** run a model on its provider's faster tier, which is billed on token usage, on a basic model too.
 - **Every other model** is billed on token usage, in USD per 1 million tokens, with separate rates for input tokens, cached input, and output tokens. These rates are set by the LLM providers and may change. Refer to the provider's documentation for current pricing.
 - **A [custom LLM](/agents/build/custom-llm) endpoint** carries no LLM charge.
 
@@ -101,6 +102,7 @@ With no conversation rate to cover them, the basic models are billed on their to
 | Model                 | Input  | Cached input | Output |
 | --------------------- | ------ | ------------ | ------ |
 | Gemini 3.5 Flash Lite | \$0.30 | \$0.03       | \$2.50 |
+| GPT-6 Luna            | \$0.10 | \$0.01       | \$0.50 |
 | GPT-5.6 Luna          | \$0.20 | \$0.02       | \$1.20 |
 | Gemma 4 26B           | \$0.10 | \$0.05       | \$0.30 |
 
