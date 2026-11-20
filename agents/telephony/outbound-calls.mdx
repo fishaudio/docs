@@ -94,6 +94,10 @@ Platform-purchased numbers refuse `sip_headers` with `422 sip_headers_unsupporte
 
 Outbound dials spend money and ring real phones, so put an `Idempotency-Key` header on every create. For 24 hours, repeating the same key with the same body returns the call already placed instead of dialing again. The same key with a **different** body is refused with `422 idempotency_key_reuse`, and a retry that races an in-flight first attempt gets `409 idempotency_key_conflict`; back off and retry the same request. If the create fails with an ambiguous network error, retry with the same key: you get the placed session back if the first attempt went through.
 
+## Automated phone menus
+
+A number you dial may be answered by an automated phone menu. With **Press keys** on, the agent can press keys to get through the menu and stay silent while it plays. See [Press keys](/agents/build/system-tools#press-keys) for the setting and how to prompt for it.
+
 ## The dial outcome
 
 Ringing is never billed; metering starts when the callee answers. A call that is never answered is not billed and not analyzed.
