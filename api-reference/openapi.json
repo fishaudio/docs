@@ -17249,7 +17249,7 @@
     "/v1/agent/llm-models": {
       "get": {
         "summary": "List LLM Models",
-        "description": "List the LLMs your team can set as `llm.model` on an agent's config, each\nwith its token rates. The rates are set by the LLM providers and are the\nones in force now.",
+        "description": "List the LLMs your team can set as `llm.model` on an agent's config, each\nwith its token rates. The rates are set by the LLM providers and change\nwhen a provider changes its pricing. The response carries the rates in\nforce now.",
         "security": [
           {
             "BearerAuth": []
