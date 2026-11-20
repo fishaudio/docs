@@ -17246,6 +17246,119 @@
         ]
       }
     },
+    "/v1/agent/llm-models": {
+      "get": {
+        "summary": "List LLM Models",
+        "description": "List the LLMs your team can set as `llm.model` on an agent's config, each\nwith its token rates. The rates are set by the LLM providers and are the\nones in force now.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "llm_models": {
+                      "items": {
+                        "$ref": "#/components/schemas/PublicLLMModel"
+                      },
+                      "title": "Llm Models",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "llm_models"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent LLM Models"
+        ]
+      }
+    },
     "/v1/asr": {
       "post": {
         "summary": "Speech to Text",
@@ -34892,6 +35005,143 @@
           "created_at"
         ],
         "title": "AgentBackgroundSoundEntity",
+        "type": "object"
+      },
+      "PublicLLMLongContextRates": {
+        "properties": {
+          "over_prompt_tokens": {
+            "description": "A request whose prompt is larger than this many tokens bills at these rates. The prompt is its input, cache read and cache write tokens together.",
+            "title": "Over Prompt Tokens",
+            "type": "integer"
+          },
+          "usd_per_million_tokens": {
+            "$ref": "#/components/schemas/PublicLLMTokenRates"
+          }
+        },
+        "required": [
+          "over_prompt_tokens",
+          "usd_per_million_tokens"
+        ],
+        "title": "PublicLLMLongContextRates",
+        "type": "object"
+      },
+      "PublicLLMModel": {
+        "properties": {
+          "id": {
+            "description": "The model id, as set in `llm.model` on an agent's config.",
+            "enum": [
+              "google/gemini-3.5-flash-lite",
+              "google/gemini-3.6-flash",
+              "google/gemini-3.8-flash",
+              "google/gemini-3.6-flash-priority",
+              "google/gemini-3.8-flash-priority",
+              "google/gemini-3.5-flash-lite-priority",
+              "google/gemini-2.5-flash",
+              "google/gemma-4-26b-a4b-it",
+              "z-ai/glm-5.3-flash",
+              "anthropic/claude-haiku-4.5",
+              "anthropic/claude-sonnet-4.6",
+              "anthropic/claude-sonnet-5.5",
+              "anthropic/claude-opus-5.5",
+              "anthropic/claude-fable-5.1",
+              "anthropic/claude-fable-5.2",
+              "openai/gpt-5.6-luna",
+              "openai/gpt-6-luna",
+              "openai/gpt-5",
+              "openai/gpt-6.1-sol",
+              "openai/gpt-6.1-terra",
+              "openai/gpt-6-astra",
+              "openai/gpt-4o",
+              "openai/gpt-4.1",
+              "openai/gpt-5.6-luna-fast",
+              "openai/gpt-6-luna-fast",
+              "openai/gpt-6.1-terra-fast",
+              "openai/gpt-6.1-sol-fast",
+              "openai/gpt-6-astra-fast"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "included_in_conversation_rate": {
+            "description": "Whether the conversation rate covers this model's tokens. When true, a conversation on the model has no LLM charge, and its rates apply where no conversation rate is charged, such as Simulation tests.",
+            "title": "Included In Conversation Rate",
+            "type": "boolean"
+          },
+          "usd_per_million_tokens": {
+            "$ref": "#/components/schemas/PublicLLMTokenRates",
+            "description": "What the model's tokens cost in USD per one million tokens, by token category, as decimal strings."
+          },
+          "long_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicLLMLongContextRates"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Rates that replace `usd_per_million_tokens` on a request with a long prompt. Null when the model has no such tier."
+          }
+        },
+        "required": [
+          "id",
+          "included_in_conversation_rate",
+          "usd_per_million_tokens",
+          "long_context"
+        ],
+        "title": "PublicLLMModel",
+        "type": "object"
+      },
+      "PublicLLMTokenRates": {
+        "properties": {
+          "input": {
+            "description": "Input tokens neither read from nor written to the prompt cache.",
+            "title": "Input",
+            "type": "string"
+          },
+          "cache_read": {
+            "description": "Input tokens read from the prompt cache.",
+            "title": "Cache Read",
+            "type": "string"
+          },
+          "cache_write_5m": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Input tokens written to the prompt cache at its default retention. Null when the model has no cache write charge.",
+            "title": "Cache Write 5M"
+          },
+          "cache_write_1h": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Input tokens written to the prompt cache with one hour retention. Null when the model has no such charge.",
+            "title": "Cache Write 1H"
+          },
+          "output": {
+            "description": "Output tokens, reasoning tokens included.",
+            "title": "Output",
+            "type": "string"
+          }
+        },
+        "required": [
+          "input",
+          "cache_read",
+          "cache_write_5m",
+          "cache_write_1h",
+          "output"
+        ],
+        "title": "PublicLLMTokenRates",
         "type": "object"
       },
       "ASRSegment": {
