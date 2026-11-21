@@ -17249,7 +17249,7 @@
     "/v1/agent/llm-models": {
       "get": {
         "summary": "List LLM Models",
-        "description": "List the LLMs your team can set as `llm.model` on an agent's config, each\nwith its token rates. The rates are set by the LLM providers and change\nwhen a provider changes its pricing. The response carries the rates in\nforce now.",
+        "description": "List the LLMs your team can set as `llm.model` on an agent's config, each\nwith its token rates and a reference latency. The rates are set by the LLM\nproviders and change when a provider changes its pricing. The response\ncarries the rates in force now.",
         "security": [
           {
             "BearerAuth": []
@@ -22819,7 +22819,7 @@
           {
             "in": "query",
             "name": "title",
-            "description": "Title to filter models",
+            "description": "Search term. Matches the voice title, description and tags; with self, the title only.",
             "required": false,
             "schema": {
               "anyOf": [
@@ -35087,13 +35087,26 @@
               }
             ],
             "description": "Rates that replace `usd_per_million_tokens` on a request with a long prompt. Null when the model has no such tier."
+          },
+          "reference_latency_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A reference time to the model's first token on a voice turn, in milliseconds. It is a measured median for comparing models, and the latency of a call varies with its prompt and the time of day. Null when the model has no measurement.",
+            "title": "Reference Latency Ms"
           }
         },
         "required": [
           "id",
           "included_in_conversation_rate",
           "usd_per_million_tokens",
-          "long_context"
+          "long_context",
+          "reference_latency_ms"
         ],
         "title": "PublicLLMModel",
         "type": "object"
