@@ -5,7 +5,7 @@ icon: "dharmachakra"
 ---
 
 Each model ships as its own Helm chart, which installs the whole speech stack into a
-cluster you run, with an online or an offline billing profile.
+cluster you run, in any billing mode.
 
 <Note>
   This page covers what the deployment involves and what you need to decide. The
@@ -15,13 +15,13 @@ cluster you run, with an online or an offline billing profile.
   they differ.
 </Note>
 
-## Billing profile
+## Billing mode
 
-The [billing modes](/developer-guide/self-hosting/introduction#billing) are two profiles
-of the chart. The online profile can also pull the model weights from S3-compatible
-storage, Fish Audio's or your own, instead of the in-cluster model warehouse. Installing
-either profile still pulls images and the chart from a registry; for a cluster with no
-network access at all, see [Air-gapped deployments](/developer-guide/self-hosting/air-gapped).
+One chart serves every [billing mode](/developer-guide/self-hosting/introduction#billing);
+the deployment's license decides. The chart can also pull the model weights from
+S3-compatible storage, Fish Audio's or your own, instead of the in-cluster model
+warehouse. Installing still pulls images and the chart from a registry; for a cluster
+with no network access at all, see [Air-gapped deployments](/developer-guide/self-hosting/air-gapped).
 
 ## Before installing
 
@@ -33,9 +33,9 @@ The chart installs everything into one namespace. Arrange the rest yourself:
   you run more than one GPU type.
 - **Ingress and TLS**, off by default: put your own ingress or load balancer in front of
   the API service, or turn on the chart's.
-- **Secrets** for registry credentials, the license bundle, and model storage,
-  preferably from your secret manager. The services that check the license stay down
-  until its Secret exists.
+- **Secrets** for registry credentials, the install bundle, model storage and, for
+  Online, the deploy token, preferably from your secret manager. The services that check
+  the license stay down until its Secret exists.
 - **Metrics**: the chart exposes Prometheus scrape annotations and creates no
   ServiceMonitors.
 - **Reference voices**, staged on shared storage by you or the optional voice sync

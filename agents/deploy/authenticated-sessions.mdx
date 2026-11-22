@@ -1,5 +1,6 @@
 ---
-title: "Authenticated Sessions"
+title: "Authenticated Sessions for Voice Agents"
+sidebarTitle: "Authenticated Sessions"
 description: "Create short-lived session tokens on your backend and run private agents in any client"
 icon: "server"
 ---
@@ -18,7 +19,7 @@ The token is client-agnostic. Create it the same way regardless of which surface
 <Note>
   No backend, and anyone may talk to the agent? A [public
   agent](/agents/deploy/public-agents) lets the SDK create sessions with just an
-  `agentId`: no token involved, gated by an origin allowlist and rate limits.
+  `agentId`, no token involved.
 </Note>
 
 ## Create a token on your backend
@@ -174,7 +175,7 @@ Unknown fields (top-level or inside `overrides`) are rejected with `422`.
     "llm": {
       "fallback": {
         "mode": "manual",
-        "models": [{ "model": "google/gemini-3.6-flash" }]
+        "models": [{ "model": "google/gemini-3.8-flash" }]
       }
     }
   }
@@ -246,7 +247,7 @@ Session creation fails with standard HTTP statuses; the SDK surfaces them as a `
 | `403`  | Public-agent request rejected: the agent is not public, or the page's `Origin` is not on the allow-list.                                      |
 | `409`  | Conflict: most commonly the agent has no published version yet. [Publish](/agents/deploy/versions-publishing) to resolve.                    |
 | `422`  | The request body failed validation: an unknown field, an unsupported `language` code, an invalid `timezone`, or an invalid dynamic variable. |
-| `429`  | Rate limited: a public-agent request exceeded the per-agent or per-IP limit.                                                                 |
+| `429`  | Every [concurrent line](/agents/pricing#concurrent-calls) of the team is in use (the code `concurrency_limit_exceeded`, with `retry_after`), or a public-agent request exceeded the per-agent or per-IP rate limit. |
 
 The complete status-code reference for every `/v1/agent` endpoint (error shapes, `400` vs `422`, conflict semantics) is on [Agents API errors](/api-reference/agent-errors).
 

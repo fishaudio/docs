@@ -1,0 +1,181 @@
+---
+title: "Hermes Agent"
+description: "Give Hermes Agent a Fish Audio voice with expressive text-to-speech, live dictation, voice cloning, and voice design"
+icon: "/images/hermes-logo.jpg"
+---
+
+[Hermes Agent](https://github.com/NousResearch/hermes-agent) is an open-source AI agent by Nous Research that runs in the terminal, in messaging apps such as Telegram and Discord, and in a desktop app. The official [Fish Audio plugin for Hermes](https://github.com/fishaudio/fish-audio-hermes) makes Fish Audio the agent's speech and transcription provider and adds tools to search, audition, clone, and design voices, manage pronunciation dictionaries, and check account usage.
+
+## Prerequisites
+
+- Hermes Agent 0.21.5 or newer (Python 3.11+, macOS or Linux). Streaming voice replies and live dictation require Hermes Agent 0.21.6 or newer.
+- A Fish Audio API key from [fish.audio/app/api-keys](https://fish.audio/app/api-keys).
+
+## Installation
+
+Install and enable the latest release from GitHub:
+
+```bash
+hermes plugins install fishaudio/fish-audio-hermes --enable --yes-deps
+```
+
+`--yes-deps` installs the plugin's Python dependencies without prompting. Hermes 0.21.5 installs dependencies automatically and does not accept `--yes-deps`, so omit the flag on 0.21.5.
+
+You can also install from the [Hermes plugin catalog](https://hermes-agent.nousresearch.com/docs/plugins/fish-audio):
+
+```bash
+hermes plugins install fish-audio --enable --yes-deps
+```
+
+<Note>
+  The catalog installs the release pinned in the Hermes catalog, which may lag
+  behind the latest GitHub release (check with `hermes plugins list`). To switch
+  from a catalog install to the GitHub repository, remove it first with `hermes
+  plugins remove fish-audio`, then run the GitHub install command above.
+</Note>
+
+### Hermes Desktop
+
+When Hermes Desktop runs on the same computer as your agent, it picks up the desktop interface automatically after a CLI install. Open **Capabilities** > **Plugins** > **Fish Audio**, switch on **Desktop**, and restart the gateway once.
+
+If Desktop is connected to an agent on another machine, install directly in Desktop:
+
+1. Open **Capabilities** > **Plugins** > **Install from Git** and enter `https://github.com/fishaudio/fish-audio-hermes`.
+2. Select **Review repository**, then **Install** (with **Enable after install** checked; on Desktop older than 0.21.7, also switch on **Desktop** under **Capabilities** > **Plugins** > **Fish Audio**).
+3. Restart the agent's gateway once so Hermes mounts the plugin's desktop routes.
+
+## Configuration
+
+Save your API key on the machine that runs Hermes:
+
+```bash
+hermes fish login
+```
+
+`login` validates the key against your Fish Audio account and saves it to the active Hermes profile. Where no speech or transcription provider is set, it selects Fish Audio. In an interactive terminal, it asks before replacing another provider; noninteractively, it preserves an existing provider unless you pass `--yes`. Pass `--key-stdin` to read the key from standard input.
+
+You can also enter your key in Hermes Desktop (**Voices** > **Enter API key**, which opens **Settings** > **Plugins** > **Fish Audio** > **Agent settings**; on older Desktop builds, open the gear icon on the `fish-audio` row in **Capabilities** > **Plugins**) or with `hermes tools` > **Text-to-Speech** > **Fish Audio**. Never paste API keys into chat.
+
+A key saved in Desktop's **Agent settings** takes effect immediately. After `hermes fish login` or `hermes tools`, restart a running Hermes gateway or Desktop app to pick up the new key.
+
+Verify your setup from any chat with the free checklist:
+
+```text
+/fish setup
+```
+
+Or run diagnostics from the terminal:
+
+```bash
+hermes fish doctor
+```
+
+`doctor` runs one short billed synthesis to verify the full round trip. Pass `--no-synth` to check your key, wallet, providers, Hermes version, and STT registration without making a billed synthesis.
+
+## Voices and settings
+
+Search the Fish Audio voice library, switch voices, and hear a short billed preview from any chat:
+
+```text
+/fish voices narrator
+/fish use <voice-id>
+/fish preview
+```
+
+Save a short voice name in any Unicode script (up to 50 per profile), then use it wherever a voice ID is accepted:
+
+```text
+/fish alias add narrator <voice-id>
+/fish use narrator
+```
+
+`/fish use`, `/fish preview`, and `hermes fish use` accept a Fish voice ID, a saved name, or a unique title of one of your own voices (case-insensitive; use a single-word title with `/fish preview`).
+
+In Hermes Desktop, open **Voices** to browse and preview the library with custom preview text, star favorites, click **Use**, edit or delete your own voices under **My voices**, clone or design voices under **Create**, and check credit under **Account**. On Desktop 0.21.6 or newer, **Settings** > **Plugins** > **Fish Audio** also lets you set the selected agent's voice, speech model, reading speed (`0.5×`–`2.0×`), and saved voice names, with plugin options under **Agent settings**. The Desktop UI follows Hermes Desktop's display language across nine languages.
+
+All settings are per Hermes profile and can also be configured in `config.yaml`:
+
+```yaml
+tts:
+  provider: fish-audio
+  fish-audio:
+    voice: 933563129e564b19a115bedd57b7406a # Sarah
+    model: s2.1-pro # optional; s2.1-pro | s2-pro | drama-3 | s2.1-pro-free
+    speed: 1.0 # 0.5 to 2.0
+    latency: balanced # normal | balanced | low
+    # language: es-MX # optional BCP-47 tag for number, date, and unit reading
+stt:
+  provider: fish-audio
+  streaming: true # live dictation on Hermes 0.21.6+
+  fish-audio:
+    model: transcribe-1-pro
+plugins:
+  entries:
+    fish-audio:
+      settings:
+        streaming: auto # auto | "off"
+        live_transcription: realtime # realtime (Preview) | compat
+        allow_free_model: true # false = always use s2.1-pro
+```
+
+Additional `plugins.entries.fish-audio.settings` options include `base_url` (an HTTPS URL, or HTTP on loopback, for a self-hosted Fish Audio endpoint) and `operator_account: true` (for operator-owned Fish accounts, hiding balances, billing links, and account-wide voices and dictionaries from end users).
+
+## Features
+
+- **Text-to-speech and streaming voice**: Voice replies, read-aloud, and voice notes use Fish Audio. S2 models (`s2.1-pro`, `s2-pro`, `s2.1-pro-free`) follow inline [emotion and delivery cues](/developer-guide/core-features/emotions) in square brackets such as `[excited]` or `[whispering]`, and support multi-speaker dialogue (`<|speaker:N|>`). On Hermes 0.21.6 or newer, CLI voice mode, the TUI, Desktop read-aloud, and gateway streaming stream 24 kHz PCM sentence by sentence (`POST /v1/tts`), retrying temporary rejections before audio starts; Hermes 0.21.5 synthesizes whole files before playback. (`s1` is deprecated and retires December 31, 2026.)
+- **Drama 3**: Switch to [Drama 3](/features/text-to-speech/drama-3) with `/fish model drama-3`. Plain-language performance directions and sounds in square brackets work in every voice reply; agents send word-level tags such as `<whisper>…</whisper>` and multi-speaker markup through `fish_speak`, which passes them to Fish Audio unchanged.
+- **Speech-to-text and live dictation**: Voice notes and recordings use `transcribe-1-pro` (`transcribe-1` is deprecated and retires December 31, 2026). On Hermes 0.21.6 or newer, set `stt.streaming: true` for live dictation in CLI voice mode, the TUI, and Desktop's composer mic. By default, live dictation streams 16-bit PCM to Fish Audio's native [realtime speech-to-text](/features/speech-to-text/realtime) endpoint (`transcribe-stream-1`, Preview) for word-by-word draft captions, billed per second of open session; failed or incomplete live sessions automatically fall back to file transcription. Set `live_transcription: compat` to use the ElevenLabs-compatible endpoint with phrase captions billed per committed phrase.
+- **Pronunciation dictionaries**: Create, publish, and pin up to three reusable [pronunciation dictionaries](/developer-guide/core-features/fine-grained-control/pronunciation-dictionaries) per profile with `fish_pronunciations`, or pass per-call `pronunciations` (phonemes), `spoken_as` (plain-text alias replacements), or `dictionaries` to `fish_speak`.
+- **Agent tools** (toolset `fish_audio`):
+  - `fish_speak`: Expressive and multi-speaker speech with `delivery` (`voice` or `file`), non-overwriting `output_path`, `language`, `speed`, pronunciations, and `timestamps: true` (word timings, complete `.alignment.json` sidecar, and SRT/WebVTT subtitles).
+  - `fish_voices`: Search, list, inspect, `audition` (up to four voices reading a passage of up to 200 characters), clone, design, save, update, and delete voices.
+  - `fish_transcribe`: Transcribe recordings with speaker turns (`diarize`), timestamps, and SRT subtitles.
+  - `fish_settings`: Inspect or update the profile's voice, model, reading speed (`0.5`–`2.0`), saved voice names, and setup status (free).
+  - `fish_account`: Check API credit and plan, list models with pricing and retirement dates, and run offline cost estimates before synthesis or transcription (free).
+  - `fish_pronunciations`: Manage reusable pronunciation dictionaries and profile defaults (free).
+- **Built-in skills**: Includes six workflow skills covering guided setup (`fish-audio-setup`), expressive speech (`fish-audio-expressive-speech`), voice casting and creation (`fish-audio-voice-studio`), long-form chapter narration with cost estimates and resumable manifests (`fish-audio-long-form`), multi-speaker clip translation and voice-over (`fish-audio-translate-voice`), and redacted bug reporting (`fish-audio-report-problem`).
+
+## Commands
+
+### Chat commands
+
+Available in the CLI, messaging gateways, and Hermes Desktop:
+
+| Command                             | Description                                                                    |
+| ----------------------------------- | ------------------------------------------------------------------------------ |
+| `/fish setup`                       | Free profile checklist with the next setup step                                |
+| `/fish status`                      | Key status, active providers, voice, model, credit, and last failure           |
+| `/fish voices [query]`              | Search the Fish Audio voice library                                            |
+| `/fish use <voice>`                 | Select a voice by ID, saved name, or unique title of your own voice            |
+| `/fish model <id>`                  | Select a TTS model (`s2.1-pro`, `s2.1-pro-free`, `s2-pro`, `drama-3`, or `s1`) |
+| `/fish preview [voice] [text]`      | Play a short billed sample of the current or specified voice                   |
+| `/fish alias`                       | List your saved voice names                                                    |
+| `/fish alias add <name> <voice-id>` | Save a name for a voice                                                        |
+| `/fish alias remove <name>`         | Delete a saved voice name                                                      |
+| `/fish balance`                     | Show API credit balance and plan                                               |
+
+### Terminal CLI
+
+Run setup, diagnostics, and noninteractive scripting commands from your terminal:
+
+- **Setup and diagnostics**: `hermes fish login [--key-stdin] [--yes]`, `hermes fish status`, `hermes fish doctor [--no-synth]`, and `hermes fish use <voice>`
+- **Scripting** (noninteractive; add `--json` for structured output with exit code `0` on success or `1` on failure): `hermes fish speak`, `hermes fish transcribe`, `hermes fish voices`, and `hermes fish balance`
+
+```bash
+hermes fish speak "Hello from Hermes" --format mp3 --out hello.mp3 --json
+```
+
+Under host plugin isolation (`plugins.isolation: host`), the `hermes fish` terminal command is unavailable and voice replies use whole-file speech instead of streaming; `/fish` chat commands, tools, and speech/transcription providers continue to work.
+
+## Billing, approvals, and MCP
+
+- **Billing**: Synthesis, transcription, voice cloning, and voice design are billed to your Fish Audio API credits (see [Pricing & Rate Limits](/developer-guide/models-pricing/pricing-and-rate-limits)), except requests that run on the free `s2.1-pro-free` model (free through November 30, 2026). Setting `allow_free_model: false` resolves `s2.1-pro-free` requests to paid `s2.1-pro`. `fish_settings`, `fish_account`, `fish_pronunciations`, `/fish setup`, `/fish status`, `/fish balance`, and `hermes fish doctor --no-synth` do not incur Fish Audio charges.
+- **Approvals**: Cloning or deleting voices and deleting pronunciation dictionaries or historical versions from chat go through Hermes's approval gate. On the Desktop **Voices** page, you confirm speaker consent and deletions directly on the page.
+- **Plugin vs. MCP server**: This plugin authenticates with a developer API key (billed to API credits) and registers Fish Audio as Hermes's speech and transcription provider. For Story Studio projects, image generation, or video generation billed to web app plan credits over OAuth, connect the [Fish Audio MCP server](/overview/mcp) instead (`hermes mcp add fish-audio --url https://api.fish.audio/mcp --auth oauth --connect-timeout 180` on Hermes 0.21.7 or newer).
+
+## Resources
+
+- [Fish Audio for Hermes on GitHub](https://github.com/fishaudio/fish-audio-hermes)
+- [Hermes plugin catalog](https://hermes-agent.nousresearch.com/docs/plugins/fish-audio)
+- [Hermes Agent](https://github.com/NousResearch/hermes-agent)
+- [Fish Audio Voice Library](https://fish.audio/discovery)

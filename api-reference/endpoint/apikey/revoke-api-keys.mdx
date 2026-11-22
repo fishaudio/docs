@@ -1,0 +1,41 @@
+---
+openapi: post /apikey/revoke
+title: "Revoke Exposed API Keys"
+description: "Revoke Fish Audio API keys that have been exposed, without signing in"
+icon: "key"
+iconType: "solid"
+---
+
+If you find a Fish Audio API key somewhere it shouldn't be, such as a public repository, a log, or a support ticket, submit it here to revoke it. You don't need an account or an API key of your own: anyone holding the key can already use it, so holding it is enough to revoke it.
+
+This endpoint is for secret scanners, partners that hold their customers' Fish Audio keys, security researchers, and key owners. If the exposed key is yours, you can also delete it from [API Keys](https://fish.audio/app/api-keys/).
+
+<Warning>
+  Revocation is permanent. The key stops working immediately, and any service
+  still using it gets `401`. A revoked key can't be restored: its owner has to
+  create a new one.
+</Warning>
+
+## What happens
+
+- Each submitted key that matches a Fish Audio API key is deleted.
+- The key's creator gets a security email listing the revoked keys. For a team key, the team owner gets one too.
+- The response is always the same empty `202`, whether or not any key matched, so this endpoint never reveals whether a key exists.
+
+## Request
+
+- Send up to 1,000 keys per request in `credentials`.
+- `source` (who you are) and `url` (where you found the keys) are optional. Fish Audio records them to investigate the exposure; they are not included in the email to the key owner.
+- Each IP address can send 60 requests per hour. Requests over the limit get `429`.
+
+```bash
+curl -X POST https://api.fish.audio/apikey/revoke \
+  -H "Content-Type: application/json" \
+  -d '{
+    "credentials": ["sk-fish-..."],
+    "source": "your-company",
+    "url": "https://github.com/example/repo/blob/main/.env"
+  }'
+```
+
+A `202` with an empty body means the request was accepted.

@@ -1,0 +1,197 @@
+---
+title: "Voice Agent React Native Widget"
+sidebarTitle: "React Native Widget"
+description: "Drop a ready-made voice agent into an iOS or Android app with one component: a floating button and a call panel"
+icon: "mobile-screen-button"
+---
+
+`@fishaudio/agent-widget-react-native` is the React Native counterpart of the web [widget](/agents/deploy/widget). One component renders a floating button that opens a call panel with a live transcript, text input, mute, inline tool activity, an optional consent step, and a minimized in-call pill. It runs on the [React Native SDK](/agents/deploy/react-native), so microphone permissions, the audio session, and background calls work the same way. To draw your own UI instead, use the SDK's `useConversation` hook.
+
+```tsx App.tsx
+import { FishAgentWidget } from "@fishaudio/agent-widget-react-native";
+import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+export default function App() {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={{ flex: 1 }}>
+      <YourApp />
+      <FishAgentWidget
+        sessionTokenProvider={() =>
+          fetch("https://api.example.com/agent-session", {
+            method: "POST",
+          }).then(r => r.json())
+        }
+        insets={insets}
+      />
+    </View>
+  );
+}
+```
+
+Render it last in your root view so it floats above the app and stays mounted across screens. It covers the screen with a layer that lets touches through, so only its button and panel catch taps. Unmounting the widget ends its call.
+
+## Prerequisites
+
+- An agent with a [published version](/agents/deploy/versions-publishing).
+- The [React Native SDK](/agents/deploy/react-native) set up: its native dependencies, the Expo config plugin or the bare React Native steps, the entry file, and a native build. Expo Go cannot run it.
+- Your own backend to create [session tokens](/agents/deploy/authenticated-sessions), or a [public agent](/agents/deploy/public-agents).
+
+## Install
+
+Add the widget and `react-native-svg`, which draws its icons:
+
+<CodeGroup>
+
+```bash Expo
+npx expo install @fishaudio/agent-widget-react-native react-native-svg
+```
+
+```bash Bare React Native
+npm install @fishaudio/agent-widget-react-native react-native-svg
+cd ios && pod install
+```
+
+</CodeGroup>
+
+`react-native-svg` is a native module, so rebuild the app after installing it.
+
+## Connect
+
+Pass exactly one of the two:
+
+- **`sessionTokenProvider` (recommended):** a function that asks your backend for a session token and returns it. The backend holds the API key and calls `POST /v1/agent/sessions`. It runs before every call. See [Start a session](/agents/deploy/react-native#start-a-session).
+- **`agentId`:** a public agent. If the agent has **Restrict origins** on, also pass `origin` with one of its allowed origins, because an app sends no `Origin` of its own.
+
+<Warning>
+  The `origin` prop is experimental, like the SDK's `origin` option, and may
+  change in a minor release.
+</Warning>
+
+For a public agent, the widget also loads the agent's widget settings from the dashboard (name, greeting, proactive message, consent, which features are on, UI strings). Props win over those settings.
+
+## How it behaves
+
+- **Button and proactive bubble.** A round button sits in the corner set by `position`. With `proactiveMessage` set, a bubble appears next to it after `proactiveDelay` seconds. Dismissing the bubble hides it until the app restarts.
+- **Panel.** On phones (screens narrower than 600 pt) the panel is a full-screen sheet. On tablets it is a card in the corner. The Android back button minimizes it.
+- **Starting.** "Start a voice chat" starts a voice call: the SDK asks for the microphone permission on Android, sets up the audio session, and runs the Android call service with the `callNotification` notification. Typing a message instead starts a text chat without the microphone. The mute pill can turn the microphone on later. A text chat has no Android call service, so a microphone turned on there is silenced while the app is in the background. Voice calls started with the button keep it.
+- **Consent.** With `consent` on, the first call waits for the user to agree. The answer lasts until the app restarts. To remember it across launches, pass `consentStorage`, for example AsyncStorage.
+- **During a call.** The header shows the status and timer, a mute pill, and a hang-up button. Minimizing keeps the call running and shows a pill with the timer and a hang-up button. Background calls work as described in [Background calls](/agents/deploy/react-native#background-calls).
+- **Dragging.** With `draggable`, the user can drag the button and the minimized pill. On release it snaps to the nearer side, stays clear of the insets, and keeps its place until the app restarts. Dragging hides the proactive bubble; a tap still opens the panel. On tablets, the card opens on the side the button was dragged to.
+- **After a call.** The transcript stays with a "Call ended" divider. The user can start a new call or keep typing.
+
+### Tool activity
+
+Each tool call shows as an inline chip with its status. Tapping it reveals the call's input, output, or error. A client tool that throws or times out marks its chip as failed; the call keeps running, and `onError` reports it. To keep tool data off the device, create sessions with `tool_events: false` on your backend, or set `options.toolEvents = false` in `onCall` for a public agent. See [Tool call lifecycle](/agents/deploy/web-sdk#tool-call-lifecycle).
+
+## Client tools
+
+Pass `clientTools` to handle the [client tools](/agents/build/client-tools) your agent is configured with. Each function's return value goes back to the agent as the tool result.
+
+```tsx
+<FishAgentWidget
+  sessionTokenProvider={getToken}
+  clientTools={{
+    get_device_info: () => ({ os: Platform.OS, version: Platform.Version }),
+    show_order_card: async ({ order_id }) => ({
+      confirmed: await askUser(order_id),
+    }),
+  }}
+  onCall={options => {
+    // A tool that waits for the user needs more than the default 15 s.
+    options.clientToolTimeoutMs = 28_000;
+  }}
+/>
+```
+
+`onCall` runs right before each call starts. Change `options` to adjust anything, including `callbacks`.
+
+## Props
+
+| Prop                                                  | Default                                  | Description                                                                                        |
+| ----------------------------------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `sessionTokenProvider`                                |                                          | `() => SessionToken \| Promise<SessionToken>`, called before every call                            |
+| `agentId`                                             |                                          | Public agent id                                                                                    |
+| `origin`                                              |                                          | Experimental. For public agents that restrict origins: one of the agent's allowed origins          |
+| `serverUrl`, `userId`, `language`, `dynamicVariables` |                                          | Session options for public agents. A backend token already carries them                            |
+| `agentName`                                           | dashboard, else `"Agent"`                | Header title                                                                                       |
+| `greeting`                                            | dashboard, else `"Hey! How can I help?"` | Home screen line                                                                                   |
+| `proactiveMessage`                                    | dashboard                                | Bubble text next to the button                                                                     |
+| `proactiveDelay`                                      | `3`                                      | Seconds before the bubble shows                                                                    |
+| `transcript`, `textInput`, `micMuting`                | dashboard, else `true`                   | Turn the transcript, the text box, and the mute pill on or off                                     |
+| `consent`                                             | dashboard, else `false`                  | Ask before the first call                                                                          |
+| `consentText`, `termsUrl`, `privacyUrl`               |                                          | Consent body and links                                                                             |
+| `consentKey`                                          | `"fish-agent-consent"`                   | Storage key for the consent answer                                                                 |
+| `consentStorage`                                      |                                          | `{ getItem, setItem }`, sync or async, e.g. AsyncStorage                                           |
+| `position`                                            | `"bottom-right"`                         | `bottom-right`, `bottom-left`, `top-right`, or `top-left`                                          |
+| `textContents`                                        |                                          | Overrides for any UI string, keyed as in `DEFAULT_TEXTS`                                           |
+| `theme`                                               |                                          | Colors and sizes, see [Theming](#theming)                                                          |
+| `colorScheme`                                         | `"light"`                                | `light`, `dark`, or `system` to follow the device                                                  |
+| `insets`                                              | `{}`                                     | Safe-area insets, e.g. `useSafeAreaInsets()`. The button and sheet stay clear of them              |
+| `draggable`                                           | `false`                                  | Let the user drag the button and the minimized pill                                                |
+| `callNotification`                                    | `{ title: "Call in progress" }`          | Android: the notification during voice calls. `false` turns off the call service                   |
+| `audioOutput`                                         | `"auto"`                                 | Initial audio route: `auto`, `speaker`, or `earpiece`                                              |
+| `clientTools`                                         |                                          | Client tools for every call                                                                        |
+| `onCall(options)`                                     |                                          | Runs right before a call starts; change `options` to adjust anything                               |
+| `onConnect({ sessionId })`                            |                                          | The call connected                                                                                 |
+| `onDisconnect({ reason })`                            |                                          | The call ended                                                                                     |
+| `onError({ code, message, stage?, recovered? })`      |                                          | A start failed or the call reported an error. Codes are in [Errors](/agents/deploy/web-sdk#errors) |
+| `style`                                               |                                          | Style of the full-screen layer, e.g. a `zIndex`                                                    |
+
+A ref exposes `expand()`, which opens the panel as a tap on the button does:
+
+```tsx
+const widget = useRef<FishAgentWidgetHandle>(null);
+
+<FishAgentWidget ref={widget} sessionTokenProvider={getToken} />;
+<Button title="Help" onPress={() => widget.current?.expand()} />;
+```
+
+## Theming
+
+`theme` takes any subset of these keys, applied over the light or dark defaults:
+
+| Key                                             | Light default                              | Used for                                           |
+| ----------------------------------------------- | ------------------------------------------ | -------------------------------------------------- |
+| `accent`, `accentText`                          | `#0f0e0d`, `#ffffff`                       | Button, primary actions, send                      |
+| `orbColor1`, `orbColor2`                        | `#7cc4ff`, `#0a3f8f`                       | The orb gradient and its rings                     |
+| `background`, `text`, `textSecondary`, `border` | `#ffffff`, `#141414`, `#8a8a86`, `#ebeae8` | Panel                                              |
+| `bubbleAgentBackground`, `bubbleAgentText`      | `#0f0e0d`, `#ffffff`                       | Agent messages                                     |
+| `bubbleUserBackground`, `bubbleUserText`        | `#f4f3f1`, `#141414`                       | User messages                                      |
+| `danger`, `live`                                | `#e5484d`, `#30a46c`                       | Hang-up and errors; live dot                       |
+| `radius`, `fabSize`, `offset`                   | `20`, `60`, `20`                           | Card corners, button size, distance from the edges |
+
+## Differences from the web widget
+
+- React Native has no audio levels, so the orb and the bars animate by the agent's mode (listening, thinking, speaking) instead of following the voice.
+- Colors come from `theme` instead of CSS custom properties, and there is a dark scheme.
+- `consentStorage` replaces `localStorage`. Without it, consent and the dismissed bubble last until the app restarts.
+- The error messages speak of the app and Settings, not the site and the browser.
+- Public agents that restrict origins need `origin`, since apps send no `Origin`.
+- `draggable` is React Native only.
+
+## Going further
+
+<CardGroup cols={2}>
+  <Card
+    title="React Native SDK"
+    icon="mobile"
+    href="/agents/deploy/react-native"
+  >
+    Setup, background calls, audio routes, and troubleshooting.
+  </Card>
+  <Card title="Client tools" icon="wrench" href="/agents/build/client-tools">
+    Let the agent call functions in your app.
+  </Card>
+  <Card
+    title="Authenticated sessions"
+    icon="server"
+    href="/agents/deploy/authenticated-sessions"
+  >
+    Create session tokens on your backend.
+  </Card>
+  <Card title="Web widget" icon="puzzle-piece" href="/agents/deploy/widget">
+    The same widget for websites.
+  </Card>
+</CardGroup>

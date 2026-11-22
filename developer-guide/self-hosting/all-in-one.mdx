@@ -9,8 +9,8 @@ turnkey single-node appliance, no Kubernetes. The model weights are baked into t
 image, except in the external-weights modes, which mount them from your own
 storage at run time.
 
-Each image is built for one [billing mode](/developer-guide/self-hosting/introduction#billing),
-online or offline; the container logs which at startup.
+One image serves every [billing mode](/developer-guide/self-hosting/introduction#billing);
+the deployment's license decides.
 
 <Note>
   This page covers what the appliance is and what to plan for. The commands, tuning
@@ -35,10 +35,11 @@ It needs:
 - **The GPUs its model takes** — usually two; a Single-GPU mode, where the model offers
   one, shares one card at lower throughput.
 - **One exposed port** for the API.
-- **One persistent volume.** Caches, reference voice archives, and — in the offline
-  mode — the [usage ledger](/developer-guide/self-hosting/air-gapped#offline-usage-accounting)
+- **One persistent volume.** Caches, reference voice archives, and — in Networked
+  Ledger and Air-gapped — the [usage ledger](/developer-guide/self-hosting/introduction#billing)
   all live there; the model weights do not.
-- **The license bundle** from **Developer → Self Host**, mounted read-only. See
+- **The deployment's install bundle** from **Developer → Self Host** and, for Online, a
+  deploy token. See
   [The license](/developer-guide/self-hosting/registry-access#the-license).
 
 Everything inside the container runs as a non-root user, so a reused volume or a host
@@ -54,7 +55,7 @@ the same volume.
 
 ## Tokens and tenancy
 
-Offline, any non-empty bearer token is accepted and recorded as the billing identity:
+In Networked Ledger and Air-gapped, any non-empty bearer token is accepted and recorded as the billing identity:
 give each tenant a stable token of its own, and control access in front of the
 appliance. Online, each request must carry a
 [Fish Audio API key](/developer-guide/getting-started/api-key) with credit, not the

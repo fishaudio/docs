@@ -1,5 +1,6 @@
 ---
-title: "Keypad Menu and Input"
+title: "Keypad Menu and Input for Voice Agents"
+sidebarTitle: "Keypad Menu and Input"
 description: "Let phone callers use their keypad: a menu before the agent's first reply, and digits typed during the call"
 icon: "keyboard"
 ---
@@ -47,7 +48,8 @@ While the menu runs, the agent doesn't reply. What the caller says or presses st
 
 ### Set up the menu
 
-#### In the console
+<Tabs className="console-api">
+<Tab title="Console" icon="browser">
 
 On the agent's **Phone** page, turn on the **Keypad menu** card and fill it in:
 
@@ -64,7 +66,8 @@ On the agent's **Phone** page, turn on the **Keypad menu** card and fill it in:
 
 Then [publish](/agents/deploy/versions-publishing). Calls always use the published configuration.
 
-#### Through the API
+</Tab>
+<Tab title="API" icon="code">
 
 Set `conversation.keypad_menu` in the config, then publish:
 
@@ -106,6 +109,9 @@ curl --request PATCH https://api.fish.audio/v1/agent/agents/YOUR_AGENT_ID/config
 | `fallback_value`           | `""`          | Up to 64 characters.                                                                                     |
 
 `keypad_menu` is replaced as a whole: fields you leave out go back to their defaults, and `{}` resets the menu. An enabled menu needs a prompt and at least one option, with no key used twice. The prompt and retry message can't use the menu's own `{{variable}}`, because it has no value while the menu plays. A request that breaks these rules returns `422`.
+
+</Tab>
+</Tabs>
 
 ### Use the choice
 

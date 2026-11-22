@@ -34,6 +34,7 @@
                 "pages": [
                   "features/text-to-speech",
                   "features/text-to-speech/drama-3",
+                  "features/text-to-speech/audio-infill",
                   "developer-guide/core-features/emotions",
                   {
                     "group": "Fine-grained Control",
@@ -111,6 +112,7 @@
             "pages": [
               "agents/build/configuration",
               "agents/build/voice-language",
+              "agents/build/background-sound-voice-effect",
               "agents/build/time-timezone",
               "agents/build/knowledge-base",
               {
@@ -147,6 +149,8 @@
               "agents/deploy/widget",
               "agents/deploy/web-sdk",
               "agents/deploy/react-sdk",
+              "agents/deploy/react-native",
+              "agents/deploy/react-native-widget",
               "agents/deploy/protocol"
             ]
           },
@@ -241,7 +245,8 @@
               "developer-guide/integrations/livekit",
               "developer-guide/integrations/n8n",
               "developer-guide/integrations/telnyx",
-              "developer-guide/integrations/slng"
+              "developer-guide/integrations/slng",
+              "developer-guide/integrations/hermes-agent"
             ]
           },
           {
@@ -302,6 +307,11 @@
                 ]
               },
               {
+                "group": "API Keys",
+                "icon": "key",
+                "pages": ["api-reference/endpoint/apikey/revoke-api-keys"]
+              },
+              {
                 "group": "Voice Models",
                 "icon": "cube",
                 "pages": [
@@ -335,7 +345,16 @@
                   "api-reference/endpoint/openapi-v1/text-to-speech",
                   "api-reference/endpoint/openapi-v1/text-to-speech-stream-with-timestamps",
                   "api-reference/endpoint/websocket/tts-live",
-                  "api-reference/endpoint/openapi-v1/text-to-speech-live-with-timestamps"
+                  "api-reference/endpoint/openapi-v1/text-to-speech-live-with-timestamps",
+                  "api-reference/endpoint/openapi-v1/audio-infill"
+                ]
+              },
+              {
+                "group": "Duplex (v1)",
+                "icon": "waveform-lines",
+                "hidden": true,
+                "pages": [
+                  "api-reference/endpoint/websocket/duplex-api-converse"
                 ]
               },
               {
@@ -429,6 +448,30 @@
                 ]
               },
               {
+                "group": "Knowledge Folders",
+                "icon": "folder",
+                "pages": [
+                  "api-reference/endpoint/agent/list-knowledge-folders",
+                  "api-reference/endpoint/agent/create-knowledge-folder",
+                  "api-reference/endpoint/agent/update-knowledge-folder",
+                  "api-reference/endpoint/agent/delete-knowledge-folder"
+                ]
+              },
+              {
+                "group": "Background Sounds",
+                "icon": "volume-high",
+                "pages": [
+                  "api-reference/endpoint/agent/list-background-sounds",
+                  "api-reference/endpoint/agent/create-background-sound",
+                  "api-reference/endpoint/agent/delete-background-sound"
+                ]
+              },
+              {
+                "group": "LLM Models",
+                "icon": "brain",
+                "pages": ["api-reference/endpoint/agent/list-llm-models"]
+              },
+              {
                 "group": "Phone Numbers",
                 "icon": "phone",
                 "pages": [
@@ -443,9 +486,7 @@
               {
                 "group": "Phone Calls",
                 "icon": "phone-arrow-up-right",
-                "pages": [
-                  "api-reference/endpoint/agent/create-phone-call"
-                ]
+                "pages": ["api-reference/endpoint/agent/create-phone-call"]
               }
             ]
           },
@@ -757,6 +798,22 @@
     {
       "source": "/developer-guide/self-hosting/running-inference",
       "destination": "/developer-guide/self-hosting/introduction"
+    },
+    {
+      "source": "/features/realtime-agent",
+      "destination": "/features/duplex-api"
+    },
+    {
+      "source": "/features/live-api",
+      "destination": "/features/duplex-api"
+    },
+    {
+      "source": "/api-reference/endpoint/websocket/realtime-converse",
+      "destination": "/api-reference/endpoint/websocket/duplex-api-converse"
+    },
+    {
+      "source": "/api-reference/endpoint/websocket/live-api-converse",
+      "destination": "/api-reference/endpoint/websocket/duplex-api-converse"
     }
   ],
   "footer": {

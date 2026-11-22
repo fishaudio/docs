@@ -13,46 +13,50 @@
 ## API Specs
 
 - [OpenAPI](https://docs.fish.audio/api-reference/openapi.json): REST API schema for text-to-speech, speech-to-text, wallet, and voice model endpoints.
-- [AsyncAPI](https://docs.fish.audio/api-reference/asyncapi.yml): WebSocket schema for real-time text-to-speech streaming.
-- [AsyncAPI: Realtime Speech to Text](https://docs.fish.audio/api-reference/asyncapi-asr-realtime.yml): WebSocket schema for realtime speech-to-text (transcribe-stream-1, Preview).
 
 ## Core REST API
 
 - [API Introduction](https://docs.fish.audio/api-reference/introduction.md): How to use the Fish Audio API.
 - [Text to Speech Endpoint](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech.md): Convert text to speech.
 - [Speech to Text Endpoint](https://docs.fish.audio/api-reference/endpoint/openapi-v1/speech-to-text.md): Transcribe audio with transcribe-1-pro (recommended; select it with the model header) or transcribe-1; request fields, timestamps, speaker turns, limits, formats and errors.
+- [Audio Infill Endpoint](https://docs.fish.audio/api-reference/endpoint/openapi-v1/audio-infill.md): Regenerate part of a recording with drama-3 (POST /v1/audio/infill) and get the whole take back; request shapes, positions, length of the new span, response and stream events.
 - [Voice Design Endpoint](https://docs.fish.audio/api-reference/endpoint/openapi-v1/voice-design.md): Generate candidate voices from a prompt.
 - [List Models](https://docs.fish.audio/api-reference/endpoint/model/list-models.md): Get a list of all models.
 - [Create Model](https://docs.fish.audio/api-reference/endpoint/model/create-model.md): Create a new voice model.
 - [Get Model](https://docs.fish.audio/api-reference/endpoint/model/get-model.md): Get details of a specific model.
 - [Update Model](https://docs.fish.audio/api-reference/endpoint/model/update-model.md): Update an existing model.
 - [Delete Model](https://docs.fish.audio/api-reference/endpoint/model/delete-model.md): Delete an existing model.
+- [Revoke Exposed API Keys](https://docs.fish.audio/api-reference/endpoint/apikey/revoke-api-keys.md): Revoke exposed Fish Audio API keys without signing in; for secret scanners, partners, and key owners.
 - [WebSocket TTS Streaming](https://docs.fish.audio/api-reference/endpoint/websocket/tts-live.md): Real-time text-to-speech streaming via WebSocket.
 - [WebSocket Realtime Speech to Text](https://docs.fish.audio/api-reference/endpoint/websocket/asr-realtime.md): Stream audio to wss://api.fish.audio/v1/asr/realtime (transcribe-stream-1, Preview) and receive transcripts per turn; every client and server message, turn detection modes, errors, close codes and limits.
 
 ## SDKs
 
-- [Python SDK Overview](https://docs.fish.audio/developer-guide/sdk-guide/python/overview.md): Official Python SDK overview and setup.
+- [SDK Quickstart](https://docs.fish.audio/developer-guide/sdk-guide/quickstart.md): Install the Python SDK (pip install fish-audio-sdk) or the JavaScript SDK (npm install fish-audio), authenticate with the FISH_API_KEY environment variable, and generate your first audio.
+- [Python SDK Overview](https://docs.fish.audio/api-reference/sdk/python/overview.md): Official Python SDK overview and setup.
 - [Python Authentication](https://docs.fish.audio/developer-guide/sdk-guide/python/authentication.md): Configure API authentication for the Fish Audio Python SDK.
-- [Python Text-to-Speech](https://docs.fish.audio/developer-guide/sdk-guide/python/text-to-speech.md): Generate natural-sounding speech with the Fish Audio Python SDK.
-- [Python Voice Cloning](https://docs.fish.audio/developer-guide/sdk-guide/python/voice-cloning.md): Clone voices and create custom voice models with the Fish Audio Python SDK.
-- [Python WebSocket Streaming](https://docs.fish.audio/developer-guide/sdk-guide/python/websocket.md): Stream text-to-speech in real-time with WebSocket connections.
-- [JavaScript Installation](https://docs.fish.audio/developer-guide/sdk-guide/javascript/installation.md): Install and set up the Fish Audio JavaScript SDK.
-- [JavaScript Authentication](https://docs.fish.audio/developer-guide/sdk-guide/javascript/authentication.md): Manage API keys and client setup in the Fish Audio JavaScript SDK.
-- [JavaScript Text-to-Speech](https://docs.fish.audio/developer-guide/sdk-guide/javascript/text-to-speech.md): Convert text to natural speech with Fish Audio JavaScript SDK.
-- [JavaScript Voice Cloning](https://docs.fish.audio/developer-guide/sdk-guide/javascript/voice-cloning.md): Clone voices using reference audio with Fish Audio JavaScript SDK.
-- [JavaScript WebSocket](https://docs.fish.audio/developer-guide/sdk-guide/javascript/websocket.md): Real-time streaming with Fish Audio JavaScript SDK.
+- [JavaScript SDK Reference](https://docs.fish.audio/api-reference/sdk/javascript/api-reference.md): Reference for the Fish Audio JavaScript SDK, covering client setup with an API key, text to speech, realtime streaming over WebSocket with convertRealtime(), speech to text, and voice model creation with voices.ivc.create().
+- [Get Your API Key](https://docs.fish.audio/developer-guide/getting-started/api-key.md): Create a Fish Audio account, generate an API key, and make your first request.
+- [Instant Voice Cloning](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/instant-voice-cloning.md): Clone a voice on the fly for a single request from a short reference clip and its transcript, with Python SDK and JavaScript SDK examples.
+- [Clone a Voice and Wait Until It Is Ready](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/clone-and-wait-until-ready.md): Create a persistent voice from a reference clip, poll until training finishes, then synthesize with it, with Python SDK and JavaScript SDK examples.
+- [One-shot vs Persistent Voice Cloning](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/oneshot-vs-persistent-cloning.md): Choose between instant per-request cloning and a saved, reusable voice model, with Python SDK and JavaScript SDK examples.
+- [Stream TTS to a File](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/streaming-to-file.md): Generate long text-to-speech audio and write it to disk chunk by chunk without buffering it all in memory, with Python SDK and JavaScript SDK examples.
+- [Telephony-grade Audio (8 kHz)](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/telephony-8khz-audio.md): Generate 8 kHz mono WAV or PCM text-to-speech audio for IVR and phone playback, with Python SDK, JavaScript SDK, and curl examples.
+- [Realtime LLM Tokens to Speech](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/realtime-llm-to-speech.md): Pipe a streaming LLM response into speech over a WebSocket as tokens arrive, with stream_websocket() in the Python SDK.
+- [Build a Voice Agent Loop](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/voice-agent-loop.md): Transcribe an utterance, generate a reply with your own LLM, and stream the reply back as speech, with Python SDK and JavaScript SDK examples.
 
 ## Product Guides
 
-- [Text to Speech Guide](https://docs.fish.audio/developer-guide/core-features/text-to-speech.md): Convert text to natural-sounding speech with Fish Audio.
+- [Text to Speech Guide](https://docs.fish.audio/features/text-to-speech.md): Generate natural speech from text, with Python SDK, JavaScript SDK, and curl examples, plus voice selection, output formats, speed, and latency settings.
 - [Drama 3](https://docs.fish.audio/features/text-to-speech/drama-3.md): Text-to-speech model (drama-3) directed with plain-language directions in square brackets, sounds and pauses, paired tags for specific words, and multi-speaker dialogue.
+- [Audio Infill](https://docs.fish.audio/features/text-to-speech/audio-infill.md): Apply a script change to an existing recording with drama-3: send the take, the full revised transcript and the span to replace, and get the whole take back.
 - [Speech to Text Guide](https://docs.fish.audio/features/speech-to-text.md): Transcribe audio with transcribe-1-pro, including multi-speaker conversations with speaker turns, long recordings and inline emotion cues.
 - [Realtime Speech to Text](https://docs.fish.audio/features/speech-to-text/realtime.md): Transcribe live audio turn by turn with transcribe-stream-1 (Preview): turn detection, eager end of turn, backchannel detection and conversation context for voice agents.
 - [Transcribe a Live Audio Stream](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/realtime-transcription.md): Python and Node.js clients for the realtime speech-to-text WebSocket (transcribe-stream-1, Preview), plus a browser microphone relay.
 - [Build a Realtime Voice Agent](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/realtime-voice-agent.md): Agent loop on realtime speech to text (transcribe-stream-1, Preview): eager replies, agent_speaking, barge-in and backchannels.
 - [Voice Design Guide](https://docs.fish.audio/features/voice-design.md): Generate candidate voices from natural-language prompts.
-- [Creating Voice Models](https://docs.fish.audio/developer-guide/core-features/creating-models.md): Learn how to create custom voice models with Fish Audio.
+- [Voice Cloning](https://docs.fish.audio/features/voice-cloning.md): Create a custom voice model from audio samples and speak with it by passing its id as reference_id, with Python SDK, JavaScript SDK, and curl examples, plus instant vs. persistent clones and sample audio requirements.
+- [Realtime Streaming](https://docs.fish.audio/features/realtime-streaming.md): Stream text-to-speech audio as it generates for the lowest latency. HTTP streaming for text you already have, with Python SDK, JavaScript SDK, and curl examples, and WebSocket streaming for LLM tokens with the Python SDK.
 - [Emotion Control](https://docs.fish.audio/developer-guide/core-features/emotions.md): Add natural emotions and expressions to your AI-generated speech.
 - [Fine-grained Control](https://docs.fish.audio/developer-guide/core-features/fine-grained-control.md): Advanced control over speech generation.
 - [Pronunciation Dictionaries](https://docs.fish.audio/developer-guide/core-features/fine-grained-control/pronunciation-dictionaries.md): Create, preview, and publish pronunciation dictionaries in the web app and use them in TTS requests.
@@ -65,10 +69,12 @@
 ## Voice Agents
 
 - [Agents Overview](https://docs.fish.audio/agents/overview.md): The Fish Audio voice-agent platform — build agents in the console, integrate via REST API and web SDK.
-- [Agents Quickstart](https://docs.fish.audio/agents/quickstart.md): Create, test, and publish your first voice agent via the dashboard or the API.
+- [Agents Quickstart](https://docs.fish.audio/agents/quickstart.md): Create and publish a voice agent, then talk to it on the phone with API requests only or in a one-file browser demo. Test an API key with GET /v1/agent/agents. POST /v1/agent/sessions only issues a join token for one call, so create it when a user starts a call, never as a test.
 - [Agent Concepts](https://docs.fish.audio/agents/concepts.md): Workspaces, agents, draft and published versions, and sessions.
+- [Agents Pricing & Limits](https://docs.fish.audio/agents/pricing.md): Per-minute conversation rate, phone surcharge, transfer and number rental fees, token-billed LLMs, and Simulation test charges, plus the trial balance and team limits on concurrent calls, phone numbers, and outbound dial rate.
 - [Agent Configuration](https://docs.fish.audio/agents/build/configuration.md): System prompt, first message modes, and draft autosave.
 - [Voice & Language](https://docs.fish.audio/agents/build/voice-language.md): Choose the agent's voice profile and speaking language.
+- [Background Sound & Voice Effect](https://docs.fish.audio/agents/build/background-sound-voice-effect.md): Make calls feel more real with an ambience under the agent's voice and a phone line or intercom sound on web calls.
 - [Time & Timezone](https://docs.fish.audio/agents/build/time-timezone.md): Agents know the current date and time by default; timezone resolution and opt-out.
 - [Knowledge Base](https://docs.fish.audio/agents/build/knowledge-base.md): Attach documents so the agent can answer from your content.
 - [Tools Overview](https://docs.fish.audio/agents/build/tools.md): Webhook, client, and system tools for voice agents.
@@ -77,23 +83,31 @@
 - [System Tools](https://docs.fish.audio/agents/build/system-tools.md): Built-in capabilities like hanging up the call.
 - [Dynamic Variables](https://docs.fish.audio/agents/build/dynamic-variables.md): Personalize each session with template variables supplied at creation time.
 - [Custom LLM](https://docs.fish.audio/agents/build/custom-llm.md): Serve your agent's replies from your own OpenAI-compatible model endpoint.
-- [Versions & Publishing](https://docs.fish.audio/agents/deploy/versions-publishing.md): Draft, publish, clone, and restore agent configurations.
+- [LLM Fallback](https://docs.fish.audio/agents/build/llm-fallback.md): Retry a reply on another model when the agent's own model fails or is too slow, using the platform's failover chain or your own ordered list of models with timeouts (llm.fallback).
+- [Preview Calls](https://docs.fish.audio/agents/test/preview-calls.md): Test your draft agent by voice inside the Builder.
+- [Agent Tests](https://docs.fish.audio/agents/test/agent-tests.md): Single Turn, Tool, and Simulation tests with Pass or Fail verdicts, run against the agent's draft from the console, the API, or CI.
+- [Import and Export Tests](https://docs.fish.audio/agents/test/import-export-tests.md): Save tests as JSON files with Get Test and recreate them with Create Test, in the same team or in another team.
+- [Simulation Test Tutorial](https://docs.fish.audio/agents/test/simulation-tutorial.md): Build one Simulation test for a rescheduling call step by step, from the scenario and success conditions to tool mocks and assertions, then read its results.
 - [Deployment Overview](https://docs.fish.audio/agents/deploy/overview.md): Pick a deployment channel — widget, public agents, authenticated sessions, or a phone number.
-- [Authentication & Session Tokens](https://docs.fish.audio/agents/deploy/authentication.md): Public agent IDs vs server-minted session tokens; POST /v1/agent/sessions.
+- [Versions & Publishing](https://docs.fish.audio/agents/deploy/versions-publishing.md): Draft, publish, clone, and restore agent configurations.
 - [Public Agents](https://docs.fish.audio/agents/deploy/public-agents.md): Credential-free browser access with an origin allowlist.
+- [Authenticated Sessions](https://docs.fish.audio/agents/deploy/authenticated-sessions.md): Create short-lived session tokens on your backend with POST /v1/agent/sessions and run private agents in any client, with per-session overrides and dynamic variables.
+- [Widget](https://docs.fish.audio/agents/deploy/widget.md): Embed a complete voice and chat UI on any website with two lines of HTML — no build step.
 - [Web SDK](https://docs.fish.audio/agents/deploy/web-sdk.md): @fishaudio/agent-client — events, modes, transcripts, audio controls, and errors.
 - [React SDK](https://docs.fish.audio/agents/deploy/react-sdk.md): React hooks and components for voice-agent UIs.
-- [Widget](https://docs.fish.audio/agents/deploy/widget.md): Embed a complete voice and chat UI on any website with two lines of HTML — no build step.
+- [React Native SDK](https://docs.fish.audio/agents/deploy/react-native.md): @fishaudio/agent-react-native for voice calls in iOS and Android apps, in Expo or bare React Native, with microphone permission, audio routing, and background calls handled.
+- [React Native Widget](https://docs.fish.audio/agents/deploy/react-native-widget.md): @fishaudio/agent-widget-react-native, one component that adds a floating button and a call panel with a live transcript to an iOS or Android app.
 - [Wire Protocol](https://docs.fish.audio/agents/deploy/protocol.md): The realtime message protocol for non-SDK consumers.
 - [Phone Numbers](https://docs.fish.audio/agents/telephony/phone-numbers.md): Manage phone numbers and bind them to agents.
+- [Bring Your Own Number](https://docs.fish.audio/agents/telephony/byo-sip.md): Import a number you already own by pointing your carrier's SIP trunk (Twilio, Asterisk, FreePBX, or another SIP provider) at Fish Audio, with inbound authentication, optional outbound termination, and custom SIP headers.
 - [WhatsApp Business Calling](https://docs.fish.audio/agents/telephony/whatsapp.md): Answer WhatsApp voice calls to your WhatsApp Business number through your own Meta app.
 - [Inbound Calls](https://docs.fish.audio/agents/telephony/inbound-calls.md): Answer phone calls with an agent and track caller attribution.
+- [Outbound Calls](https://docs.fish.audio/agents/telephony/outbound-calls.md): Place calls from your phone numbers with POST /v1/agent/phone-calls, retry safely with an Idempotency-Key, and read the dial outcome from dial_status or the phone_call.dial_finished webhook.
 - [Call Transfers](https://docs.fish.audio/agents/telephony/transfers.md): Let the agent hand a phone call to a human — cold carrier handoff or warm transfer with a private briefing.
-- [Preview Calls](https://docs.fish.audio/agents/test/preview-calls.md): Test your draft agent by voice inside the Builder.
-- [Agent Tests](https://docs.fish.audio/agents/test/agent-tests.md): Scripted next-reply tests scored by an LLM judge.
+- [Keypad Menu and Input](https://docs.fish.audio/agents/telephony/keypad.md): Let phone callers use their keypad (DTMF), with a menu before the agent's first reply that stores the choice in a dynamic variable, and digits typed during the call that reach the agent as one message.
 - [Conversation History](https://docs.fish.audio/agents/monitor/conversation-history.md): Query sessions, transcripts, tool timelines, and recordings via the API.
 - [Post-call Analysis](https://docs.fish.audio/agents/monitor/post-call-analysis.md): Automatic summaries, data extraction, and success criteria.
-- [Agent Webhooks](https://docs.fish.audio/agents/monitor/webhooks.md): call.ended and call.analyzed events with HMAC signature verification.
+- [Agent Webhooks](https://docs.fish.audio/agents/monitor/webhooks.md): call.ended, call.analyzed, and phone_call.dial_finished events with HMAC signature verification, plus the inbound call webhook that returns dynamic variables before the agent answers.
 
 ## Operational Docs
 
@@ -103,5 +117,5 @@
 - [Model Deprecations](https://docs.fish.audio/developer-guide/models-pricing/deprecations.md): Track deprecated models and migration timelines.
 - [Migrate from S1](https://docs.fish.audio/developer-guide/models-pricing/migrate-from-s1.md): Move text-to-speech requests from the deprecated S1 model to S2.1-Pro before S1 is retired on December 31, 2026.
 - [Migrate from transcribe-1](https://docs.fish.audio/developer-guide/models-pricing/migrate-from-transcribe-1.md): Move speech-to-text requests from the deprecated transcribe-1 model to transcribe-1-pro before transcribe-1 is retired on December 31, 2026.
-- [Migration Guide](https://docs.fish.audio/developer-guide/resources/migration.md): Switch from ElevenLabs, OpenAI, or other TTS providers to Fish Audio.
+- [Migration Guide](https://docs.fish.audio/developer-guide/getting-started/migration.md): Switch from ElevenLabs, OpenAI, or other TTS providers to Fish Audio.
 - [Changelog](https://docs.fish.audio/developer-guide/getting-started/changelog.md): Complete release history and version updates for Fish Audio products.

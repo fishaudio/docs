@@ -194,4 +194,8 @@ curl --fail --show-error --request POST https://api.fish.audio/v1/tts \
 
 <AudioClip src="/snippets/drama-3/ship.mp3" title="Delia, Adrian, Sheila" />
 
+## Edit a recording
+
+To change a few words in a take you already have, without re-recording it, use [Audio Infill](/features/text-to-speech/audio-infill). Send the take, the full revised transcript, and the span to replace to `POST /v1/audio/infill`. Drama 3 regenerates only that span in the speaker's voice and returns the whole take.
+
 <Support />

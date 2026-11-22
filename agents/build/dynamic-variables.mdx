@@ -1,5 +1,6 @@
 ---
-title: "Dynamic Variables"
+title: "Dynamic Variables for Voice Agents"
+sidebarTitle: "Dynamic Variables"
 description: "Personalize each session with template variables: your own values, and facts the platform fills in"
 icon: "brackets-curly"
 ---
@@ -20,6 +21,7 @@ Placeholders are substituted in the agent's configured text and in webhook tool 
 | Session [overrides](/agents/deploy/authenticated-sessions#overrides) of those fields (`overrides.system_prompt`, `overrides.first_message`, `overrides.first_message_prompt`) | Yes | Yes |
 | [Warm transfer briefing](/agents/telephony/transfers#customizing-the-briefing) (`conversation.transfer_destinations[].warm_briefing_instructions`) | Yes | Yes |
 | [Fixed transfer announcement](/agents/telephony/transfers#the-transfer-announcement) (`conversation.transfer_destinations[].announcement_message`) | Yes | Yes |
+| [Transfer destination number](/agents/telephony/transfers#choosing-the-number-per-call) (`conversation.transfer_destinations[].phone_number`) | Yes | Yes |
 | [Transfer failure message](/agents/telephony/transfers#if-the-transfer-fails) (`conversation.transfer_destinations[].on_failure.message`) | Yes | Yes |
 | [Webhook tool](/agents/build/webhook-tools#argument-templating) URL, header values, and body template | Yes | Yes |
 
@@ -64,13 +66,17 @@ const session = await AgentSession.start({
 
 ### Default values
 
-A placeholder is resolved in this order: the value supplied for the session, then the default configured on the agent. What happens when neither exists is set by `on_missing`:
+A placeholder is resolved in this order: the value supplied for the session, then the default configured on the agent. What happens when neither exists is set by **If a variable has no value** (`on_missing` in the API):
 
-| `on_missing`       | A placeholder with no value                                                                 |
-| ------------------ | ------------------------------------------------------------------------------------------- |
-| `keep` (default)   | Stays in the text as written, visible to the model and spoken on a fixed first message       |
-| `empty`            | Renders as empty text                                                                       |
-| `reject`           | Session creation fails with `422 Missing dynamic variables: ...` and an inbound call is not connected |
+| `on_missing`                      | A placeholder with no value                                                                           |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `keep` (Keep as written, default) | Stays in the text as written, visible to the model and spoken on a fixed first message                |
+| `empty` (Empty text)              | Renders as empty text                                                                                 |
+| `reject` (Reject session)         | Session creation fails with `422 Missing dynamic variables: ...` and an inbound call is not connected |
+
+<Note>
+  A variable in a [transfer destination's phone number](/agents/telephony/transfers#choosing-the-number-per-call) is the exception. When it has no value and no default, that number alone never rejects the call: only that destination is skipped. If the same variable also appears in the prompt or first message, that text still follows the setting above, so **Reject session** can still reject the call.
+</Note>
 
 Set both in the **Dynamic variables** sheet of the agent's Configuration page (the **Default values** link under the system prompt), or through the `variables` section of the config API. The defaults map replaces as a whole on every update, and names follow the same rules as `dynamic_variables`:
 
@@ -152,7 +158,8 @@ The platform fills a handful of `{{system.*}}` placeholders itself, on every ses
 | `system.timezone` | The session's resolved IANA timezone, for example `Asia/Tokyo` | `UTC` when nothing resolves. Always equals the session's `timezone` field; see [which timezone a session uses](/agents/build/time-timezone#which-timezone-a-session-uses). |
 | `system.today` | Today's date in that timezone, ISO 8601 `YYYY-MM-DD` | The calendar date at session creation. There is no `system.now`; see [Current date and time](#current-date-and-time). |
 | `system.language` | The session language code, one of the [52 supported languages](/agents/build/voice-language#speaking-language) | The `language` [override](/agents/deploy/authenticated-sessions#overrides) when the request carries one, otherwise the agent's [speaking language](/agents/build/voice-language#speaking-language). |
-| `system.caller_number` | The human party's number, E.164 | Inbound: the caller (empty if withheld or not a valid E.164 number). Outbound: the number you dialed. Empty on non-phone sessions. |
+| `system.caller_number` | The human party's number, E.164 | Inbound: the caller (empty if the carrier withheld the number, for example `anonymous` or one of Twilio's placeholder numbers, or it is not a valid E.164 number). Outbound: the number you dialed. Empty on non-phone sessions. |
+| `system.caller_id_withheld` | `"true"` or `"false"` (text, like every system variable) | `"true"` when an inbound caller's number was withheld, `"false"` for an inbound call with a number, an outbound call, and a WhatsApp call. Empty on non-phone sessions. See [Phone numbers](#phone-numbers). |
 | `system.caller_number_spoken` | The same number written for speech, for example `+1; 4 1 5; 5 5 5; 0 1 2 3` | Use it wherever the agent should say the number out loud; see [Reading a number out loud](#reading-a-number-out-loud). Empty whenever `system.caller_number` is empty. |
 | `system.dialed_number` | Your workspace number, E.164 | Inbound: the number that was called. Outbound: the number the call was placed from. Empty on non-phone sessions. |
 | `system.session_id` | The session's id, for example `sess_5f3e…` | Send it from a [webhook tool](#in-webhook-tools) to tie each tool call to its session. Outside the agent, the same id is in the `POST /v1/agent/sessions` [response](/agents/deploy/authenticated-sessions), the SDK's `connect` event, and `session.id` in [post-call webhooks](/agents/monitor/webhooks), and [`GET /v1/agent/sessions/{session_id}`](/agents/monitor/conversation-history#get-a-session) accepts it. |
@@ -163,7 +170,7 @@ Write `{{system.caller_number}}` where the number must stay a plain E.164 string
 
 ### Phone numbers
 
-The phone numbers are the session's `caller_number` and `dialed_number` fields as shown in [session history](/agents/telephony/inbound-calls#phone-sessions-in-history). Only a value that is a well-formed E.164 number reaches the agent: anything else the carrier sends as the caller id (for example an `anonymous` marker) renders as an empty string, while the history field keeps the raw value. On every session that is not a phone call (web, text, preview, agent tests) both render as an empty string, never as literal `{{system.caller_number}}` text, so one agent can serve web and phone with the same prompt.
+The phone numbers are the session's `caller_number` and `dialed_number` fields as shown in [session history](/agents/telephony/inbound-calls#phone-sessions-in-history). Only a value that is a well-formed E.164 number reaches the agent: anything else the carrier sends as the caller id (for example an `anonymous` marker) renders as an empty string, and the session's `caller_number` field is empty too. On every session that is not a phone call (web, text, preview, agent tests) both render as an empty string, never as literal `{{system.caller_number}}` text, so one agent can serve web and phone with the same prompt.
 
 Write the prompt so it also reads well when the number is empty:
 
@@ -182,6 +189,30 @@ confirm the last four digits before discussing the account.
 ```
 
 On a web session the same prompt renders `The caller's number is "".`, and the agent asks for a number. To look the caller up in your own systems, template the number into a [webhook tool](#in-webhook-tools) instead of relying on the model to repeat it.
+
+#### Withheld caller ID
+
+A caller can hide their number. The carrier then sends no digits (`anonymous`, `restricted`, an empty value) or one of the placeholder numbers Twilio sends in place of a hidden one. All of these count as withheld: `system.caller_number` and `system.caller_number_spoken` are empty, and `system.caller_id_withheld` is `"true"`. An empty `system.caller_number` alone does not tell you why, since it is also empty on non-phone sessions; `system.caller_id_withheld` does, because it is `"true"` only when a caller on a phone call hid their number.
+
+When the number is withheld, the agent cannot match the caller to a customer record by number, so have it ask who is calling:
+
+```text System prompt
+The caller's number is "{{system.caller_number}}". Number withheld: {{system.caller_id_withheld}}.
+If the number is withheld, do not look the caller up by number: ask for their full
+name and date of birth first, then use the lookup tool with those. Otherwise
+look them up by the number.
+```
+
+On an inbound call with a hidden number the model sees:
+
+```text Rendered
+The caller's number is "". Number withheld: true.
+If the number is withheld, do not look the caller up by number: ask for their full
+name and date of birth first, then use the lookup tool with those. Otherwise
+look them up by the number.
+```
+
+The same flag reaches your systems as `caller_id_withheld` in the [inbound call webhook](/agents/monitor/webhooks#inbound-call-webhook), on the [session record](/agents/monitor/conversation-history), and in the [post-call webhooks](/agents/monitor/webhooks#payload).
 
 ### Date and timezone
 

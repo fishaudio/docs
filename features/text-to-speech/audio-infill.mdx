@@ -1,0 +1,113 @@
+---
+title: "Audio Infill"
+description: "Apply a script change to an existing recording with drama-3: regenerate only the changed span in the speaker's voice and get the whole take back"
+icon: "pen-to-square"
+---
+
+import Support from "/snippets/support.mdx";
+
+Audio infill applies a script change to a recording you already have, without re-recording it. Send the take, the full revised transcript, and the span to replace. Drama 3 regenerates only that span, in the speaker's voice taken from the audio around it, and returns the whole take.
+
+<CardGroup cols={2}>
+  <Card
+    title="API reference"
+    icon="brackets-curly"
+    href="/api-reference/endpoint/openapi-v1/audio-infill"
+  >
+    Every field, rule, and error for `POST /v1/audio/infill`.
+  </Card>
+  <Card
+    title="Drama 3"
+    icon="clapperboard"
+    href="/features/text-to-speech/drama-3"
+  >
+    The model that regenerates the span.
+  </Card>
+</CardGroup>
+
+## Before you start
+
+- An API key in the `FISH_API_KEY` environment variable. See [Get Your API Key](/developer-guide/getting-started/api-key).
+- The take, as an audio file.
+- The full transcript of the take, with the change already applied.
+- Where the words to replace start and end in the take, in seconds or in frames. The endpoint doesn't search for the words, so you supply the positions, for example from the word timestamps of [Speech to Text](/features/speech-to-text#read-the-timestamps).
+
+Every request needs the `model: drama-3` header. Only `drama-3` serves this endpoint.
+
+## Edit a take
+
+Say the script changes "chamber A" to "chamber B", and in `take.wav` the words to replace run from 2.1 s to 2.9 s. Send the take, the whole revised line as `transcript`, and the start and end of the span:
+
+```bash
+curl --fail --show-error --request POST https://api.fish.audio/v1/audio/infill \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "model: drama-3" \
+  --form "audio=@take.wav" \
+  --form-string "transcript=Next, load the wafer into chamber B and run the standard CVD recipe." \
+  --form "prefix_seconds=2.1" \
+  --form "suffix_seconds=2.9" \
+  --form "format=mp3" \
+  --output edited.mp3
+```
+
+- `transcript` is the full text of the result, not only the new words. It is sent to the model as written, without text normalization.
+- `--form-string` sends `transcript` as plain text: curl reads a `--form` value that starts with `<` or `@` as a file.
+- Positions are absolute, counted from the start of the take.
+
+### Give positions in frames
+
+Positions can also be frames, at 44100 / 2048 (about 21.53) frames per second. Seconds are rounded to the nearest frame, `frames = round(seconds × 44100 / 2048)`, so 2.1 s is frame 45 and 2.9 s is frame 62. This request makes the same edit:
+
+```bash
+curl --fail --show-error --request POST https://api.fish.audio/v1/audio/infill \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "model: drama-3" \
+  --form "audio=@take.wav" \
+  --form-string "transcript=Next, load the wafer into chamber B and run the standard CVD recipe." \
+  --form "prefix_frames=45" \
+  --form "suffix_frames=62" \
+  --form "format=mp3" \
+  --output edited.mp3
+```
+
+Give each side in frames or in seconds, not both.
+
+### Choose the span
+
+- To insert new speech without replacing any, give the same position for the start and the end.
+- To change the first or the last words of a take, start the span at 0 or end it at the end of the take. Replacing the whole take returns 400: with no original audio left, there is no voice to continue.
+- For the best results, keep at least 0.75 s of the original on each side of the span and replace at least 0.2 s.
+
+## Join two clips
+
+When the speech before and after the new words is in two separate files, send them as `prefix_audio` and `suffix_audio`, with no positions. Drama 3 generates the speech between them. Here `first.wav` says "Close the chamber door." and `second.wav` says "Then start the recipe.", and `transcript` covers both clips and the new sentence between them:
+
+```bash
+curl --fail --show-error --request POST https://api.fish.audio/v1/audio/infill \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "model: drama-3" \
+  --form "prefix_audio=@first.wav" \
+  --form "suffix_audio=@second.wav" \
+  --form-string "transcript=Close the chamber door. Wait for the pressure to stabilize. Then start the recipe." \
+  --form "format=mp3" \
+  --output joined.mp3
+```
+
+- Send `prefix_audio` alone to continue a clip.
+- `suffix_audio` without `prefix_audio` returns 400.
+- Don't combine `prefix_audio` or `suffix_audio` with `audio`.
+
+## What you get back
+
+The response is the whole take as one audio file in `format` (`mp3` by default). The output fields `format`, `sample_rate`, `mp3_bitrate`, and `opus_bitrate` work as on [`/v1/tts`](/api-reference/endpoint/openapi-v1/text-to-speech).
+
+The kept parts are re-synthesized together with the new span rather than copied byte for byte, so on a human recording they also pass through the model's audio codec.
+
+To find where the new span is in the result, send `Accept: text/event-stream`. The stream reports the span's start and end in seconds. See [Stream events](/api-reference/endpoint/openapi-v1/audio-infill#stream-events).
+
+## Current limitations
+
+- **Length of the new span:** the model decides how long the regenerated span is, up to 1024 frames (about 47 s). There is no way to request an exact length yet, so the span can come out shorter or longer than the speech it replaces. If your audio has to stay in sync with picture, such as video or lip-sync, check the length of the result.
+- **Positions only:** the endpoint does not find and replace words by text. You supply where the span starts and ends.
+
+<Support />
