@@ -41,6 +41,8 @@ Your backend exchanges your API key for a single-conversation token.
   </Step>
 </Steps>
 
+Create the session when the user starts the call. The token is valid for about 5 minutes and starts one conversation: see [Token lifetime](#token-lifetime).
+
 <CodeGroup>
 ```bash API (curl)
 curl --request POST https://api.fish.audio/v1/agent/sessions \
@@ -100,17 +102,31 @@ def create_voice_session(end_user_id: str, name: str, timezone: str) -> dict:
 
 `timezone` overrides the agent's configured timezone for this session, so the agent speaks in your user's local date and time. The default is UTC: see [Time & timezone](/agents/build/time-timezone).
 
-On the client, fetch the token from your backend and pass it to the SDK unchanged:
+<Tip>
+  To try a session before you write a client, run the curl request and open the
+  `join_url` from the response in your browser.
+</Tip>
+
+On the client, fetch the token from your backend and pass it to the SDK unchanged. Check that your backend answered with a token before you hand the body to the SDK:
 
 ```javascript Browser
 import { AgentSession } from "@fishaudio/agent-client";
 
-const sessionToken = await fetch("/api/voice-session", { method: "POST" }).then(r =>
-  r.json()
-);
-
-const session = await AgentSession.start({ sessionToken });
+// Run this from a click handler, once per call.
+async function startCall() {
+  try {
+    const response = await fetch("/api/voice-session", { method: "POST" });
+    if (!response.ok) {
+      throw new Error(`Could not create a session (HTTP ${response.status})`);
+    }
+    return await AgentSession.start({ sessionToken: await response.json() });
+  } catch (error) {
+    showCallFailed(error); // your UI
+  }
+}
 ```
+
+`start()` rejects with a [`FishAgentError`](/agents/deploy/web-sdk#errors) when the token, the microphone, or the connection fails.
 
 More on what the SDK can do once connected is in the [Web SDK](/agents/deploy/web-sdk) reference.
 
@@ -128,7 +144,7 @@ More on what the SDK can do once connected is in the [Web SDK](/agents/deploy/we
 | `agent_id`          | string, required  | The agent to talk to. It must have a [published version](/agents/deploy/versions-publishing).                                                                                                                                                                                             |
 | `name`              | string, optional  | Display name for this session in the console's Conversations list, up to 128 characters. Omit it to show the session's start time instead. API-key requests only: keyless (public) creation rejects it with `400`.                                                                       |
 | `overrides`         | object, optional  | Replace parts of the published configuration for this session. See [Overrides](#overrides).                                                                                                                                                                                              |
-| `dynamic_variables` | object, optional  | Up to 50 entries of string, number, or boolean values, substituted into `{{placeholders}}`. See [Dynamic variables](/agents/build/dynamic-variables).                                                                                                                                     |
+| `dynamic_variables` | object, optional  | Up to 500 entries of string, number, or boolean values, substituted into `{{placeholders}}`. See [Dynamic variables](/agents/build/dynamic-variables).                                                                                                                                     |
 | `tool_events`       | boolean, optional | Stream tool lifecycle events (`toolCallStarted` / `toolCallCompleted` / `toolCallFailed`) to the client. Default `true`; set `false` to keep tool inputs and outputs off the client.                                                                                                      |
 | `end_user_id`       | string, optional  | Your identifier for the end user, up to 256 characters. Stored on the session, returned on [session queries](/agents/monitor/conversation-history) where you can also filter by it, and echoed in [webhook](/agents/monitor/webhooks) payloads and [custom LLM](/agents/build/custom-llm) requests. |
 | `metadata`          | object, optional  | Your own key-value namespace. Stored and returned verbatim on session queries and webhooks, never read or interpreted by the platform.                                                                                                                                                   |
@@ -195,23 +211,31 @@ Everything else on the request is not an override: `dynamic_variables`, `timezon
   "max_duration_seconds": 1800,
   "transport": "livekit",
   "livekit_url": "wss://example.livekit.cloud",
-  "token": "<participant token>"
+  "token": "<participant token>",
+  "join_url": "https://fish.audio/agents/join/#..."
 }
 ```
 
 | Field                  | Description                                                                                                 |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `session_id`           | The session's id. Use it later to look up the [conversation record](/agents/monitor/conversation-history). |
-| `expires_at`           | Deadline for the client to connect. Create the token right before starting, not ahead of time.              |
-| `max_duration_seconds` | Hard cap on session length.                                                                                 |
+| `expires_at`           | Deadline for the client to connect, about 5 minutes after creation. See [Token lifetime](#token-lifetime).  |
+| `max_duration_seconds` | Hard cap on session length. It counts from when the session is created, not from when the client joins.     |
 | `transport`            | Which transport the SDK uses for this session; `livekit` today.                                             |
 | `livekit_url`, `token` | Connection details for that transport, consumed by the SDK.                                                 |
+| `join_url`             | A link that opens this session in the browser, for trying it without writing a client. It carries the token, so anyone with the link can join this one session. Treat it as a secret. Do not parse it, because its format can change. |
 
-Treat the response as opaque and pass it to `start()` unmodified. If the SDK does not recognize the `transport` value, it fails fast with an `unsupported_transport` error asking you to upgrade the SDK.
+Treat the response as opaque and pass it to `start()` unmodified. If the SDK does not recognize the `transport` value, it fails fast with an `unsupported_transport` error asking you to upgrade the SDK. If you pass something that is not this response, such as your backend's error body or only the `token` string, `start()` rejects with `invalid_session_token` (from `@fishaudio/agent-client` NEXT_SDK_VERSION).
 
 ## Token lifetime
 
-- A session token is **single-use**: `start()` consumes it once to establish the conversation.
+- A session token is valid for **about 5 minutes** after creation. `expires_at` is the exact deadline for the client to connect.
+- A session token belongs to **one conversation**. When that conversation ends, the token cannot start another.
+- `join_url` carries the same token and has the same deadline.
+- Until `expires_at`, anyone who has the token or the link can join that session. Treat both as secrets.
+- Every call to `POST /v1/agent/sessions` creates a new session. Create it when the user starts the call, not ahead of time such as on page load.
+- A session that no client joins before the deadline ends with status `failed` and end reason [`room_join_timeout`](/agents/monitor/conversation-history#status-and-end-reason). It is not billed. The status can read `pending` for a minute or two after the deadline.
+- A session nobody has joined yet counts toward your concurrent lines for a short time after creation. Creating many sessions without joining them can return `429`.
 - On network drops the SDK reconnects at the transport level; it never re-creates the session, so you never need a fresh token mid-call.
 - Once a session ends, the token is spent. Create a new token for each conversation.
 
@@ -242,12 +266,12 @@ Session creation fails with standard HTTP statuses; the SDK surfaces them as a `
 | Status | Meaning                                                                                                                                       |
 | ------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `400`  | A keyless (public-agent) request sent an override [public sessions don't accept](#overrides), or a `name`.                                    |
-| `401`  | Invalid API key. A request with no `Authorization` header at all is treated as a public-agent request instead.                                |
-| `402`  | Quota exceeded.                                                                                                                               |
+| `401`  | Invalid API key. A request with no `Authorization` header at all is treated as a public-agent request instead. So is an empty key, such as an unset `$FISH_API_KEY`.                                |
+| `402`  | Out of credit: the account has no trial balance or API credit left.                                                                           |
 | `403`  | Public-agent request rejected: the agent is not public, or the page's `Origin` is not on the allow-list.                                      |
 | `409`  | Conflict: most commonly the agent has no published version yet. [Publish](/agents/deploy/versions-publishing) to resolve.                    |
 | `422`  | The request body failed validation: an unknown field, an unsupported `language` code, an invalid `timezone`, or an invalid dynamic variable. |
-| `429`  | Every [concurrent line](/agents/pricing#concurrent-calls) of the team is in use (the code `concurrency_limit_exceeded`, with `retry_after`), or a public-agent request exceeded the per-agent or per-IP rate limit. |
+| `429`  | Every [concurrent line](/agents/pricing#concurrent-calls) of the team is in use (the code `concurrency_limit_exceeded`, with `retry_after`), or a public-agent request exceeded the per-agent or per-IP rate limit. See [Billing and rate limits](/api-reference/agent-errors#billing-and-rate-limits). |
 
 The complete status-code reference for every `/v1/agent` endpoint (error shapes, `400` vs `422`, conflict semantics) is on [Agents API errors](/api-reference/agent-errors).
 

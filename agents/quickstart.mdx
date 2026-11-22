@@ -122,7 +122,7 @@ npx skills add https://docs.fish.audio --skill fish-audio-agents
         Each publish creates an immutable version with an auto-incremented `version_number`.
       </Step>
       <Step title="Talk to your agent">
-        Your agent is published. Reach it on the phone with nothing but API requests, hear it in the console with a test call, or talk to it on your own page with a one-file demo.
+        Your agent is published. Reach it on the phone with nothing but API requests, hear it in the console with a test call, open a join link in your browser, or talk to it on your own page with a one-file demo.
 
         <Tabs sync={false}>
           <Tab title="Phone">
@@ -203,6 +203,44 @@ npx skills add https://docs.fish.audio --skill fish-audio-agents
             Open the link. Agents created over the API appear in the console like any other. Click **Test call** in the top bar. Your browser asks for the microphone, then you are talking to your agent.
 
             A test call is a preview for you. It runs the agent's draft, which right after publishing matches the published version. To put the agent in front of your users, use **Phone** or **Your own page**. See [Preview calls](/agents/test/preview-calls).
+          </Tab>
+          <Tab title="Join link">
+            Create a session and open its link in your browser. It takes no code and no phone number. The response is a short-lived session token for one conversation.
+
+            ```bash Create a session
+            curl --request POST https://api.fish.audio/v1/agent/sessions \
+              --header "Authorization: Bearer $FISH_API_KEY" \
+              --header "Content-Type: application/json" \
+              --data '{ "agent_id": "'$AGENT_ID'" }'
+            ```
+
+            ```json Response
+            {
+              "session_id": "...",
+              "expires_at": "2026-07-23T12:34:56Z",
+              "max_duration_seconds": 1800,
+              "transport": "livekit",
+              "livekit_url": "wss://...",
+              "token": "<participant token>",
+              "join_url": "https://fish.audio/agents/join/#..."
+            }
+            ```
+
+            Open `join_url` in your browser, start the call, and allow the microphone. You are now talking to your agent.
+
+            The response is one long line, and the link is at the end of it. Two ways to get at it:
+
+            - Print only the link: add `-s` to the curl command and pipe it to `jq -r .join_url`.
+            - Paste the whole response into the box at [fish.audio/agents/join](https://fish.audio/agents/join/).
+
+            About the link.
+
+            - The token and the link are valid for about 5 minutes. `expires_at` is the exact deadline for joining.
+            - The link carries the token, so anyone who has it can join until it expires. It is for this one conversation. To talk again, create another session.
+            - Every call to this endpoint creates a new session. Create one only when you are about to open the link.
+            - A session that no client joins ends as [`failed`](/agents/monitor/conversation-history#status-and-end-reason).
+
+            In your own app, the client SDK takes the place of `join_url`. See **Your own page**.
           </Tab>
           <Tab title="Your own page">
             Run one file to get a browser demo on your own page. It serves a page with the call widget and a route that creates a session with your API key when a call starts. It has no dependencies and no build step, and needs Node.js 18 or later, or Python 3.8 or later.

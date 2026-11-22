@@ -16,7 +16,7 @@ Everything the SDKs do rides a small, versioned wire protocol: two JSON message 
 
 ## The protocol package
 
-Every message shape on this page is published as TypeScript definitions in `@fishaudio/agent-protocol`, with zero runtime dependencies. This page documents the protocol as of package version **0.1.0**. The package is the source of truth for shapes; this page fixes the semantics.
+Every message shape on this page is published as TypeScript definitions in `@fishaudio/agent-protocol`, with zero runtime dependencies. This page documents the protocol as of package version **1.0.0**. The package is the source of truth for shapes; this page fixes the semantics.
 
 ```bash npm
 npm install @fishaudio/agent-protocol
@@ -40,11 +40,16 @@ curl --request POST https://api.fish.audio/v1/agent/sessions \
   "max_duration_seconds": 1800,
   "transport": "livekit",
   "livekit_url": "wss://...",
-  "token": "<participant JWT>"
+  "token": "<participant JWT>",
+  "join_url": "https://fish.audio/agents/join/#..."
 }
 ```
 
 The response is a discriminated union on `transport`. The `livekit` arm carries `livekit_url` and `token`: [connect](https://docs.livekit.io/home/client/connect/) a LiveKit-compatible WebRTC client with them before `expires_at` (the join deadline), then [publish your microphone track and subscribe](https://docs.livekit.io/home/client/tracks/) to the agent's audio track.
+
+- `expires_at` is about 5 minutes after creation, and the token is for this one session. See [Token lifetime](/agents/deploy/authenticated-sessions#token-lifetime).
+- Check for a `201` before you read the body. An error response has no `transport`.
+- `join_url` opens the same session in a browser. Use it to hear the agent before your client is ready. A custom client ignores it.
 
 <Warning>
   If you receive a `transport` value you don't recognize, fail with an explicit
@@ -173,7 +178,7 @@ These events are on by default and their payloads travel to the end user's clien
 { "type": "session.ended", "reason": "conversation_timeout" }
 ```
 
-Sent once, right before the server ends the call (before the agent leaves the room or the room is deleted), so a client learns the cause instead of inferring it from the disconnect. `reason` is `user_hangup` (the user hung up, or a backend ended the session through the API), `agent_hangup` (the agent hung up or the workflow reached an end node), `conversation_timeout` (the session reached its maximum duration), `escalated` (the call was transferred to a human), or `internal_error` (from 1.0.0: the runtime itself failed and closed the session, for example its process was stopped for exceeding its memory limit). The values match `end_reason` on the [session record](/agents/monitor/conversation-history#status-and-end-reason); treat the set as open, per the [compatibility rules](#compatibility-rules). A call that drops without this message has no announced reason: the SDKs report `connection_lost` once reconnection fails.
+Sent once, right before the server ends the call (before the agent leaves the room or the room is deleted), so a client learns the cause instead of inferring it from the disconnect. `reason` is `user_hangup` (the user hung up, or a backend ended the session through the API), `agent_hangup` (the agent hung up or the workflow reached an end node), `conversation_timeout` (the session reached its maximum duration), `escalated` (the call was transferred to a human), `llm_endpoint_failure` (from 0.4.0: a [custom LLM](/agents/build/custom-llm) failed repeatedly and the agent hung up), or `internal_error` (from 1.0.0: the runtime itself failed and closed the session, for example its process was stopped for exceeding its memory limit). The values match `end_reason` on the [session record](/agents/monitor/conversation-history#status-and-end-reason); treat the set as open, per the [compatibility rules](#compatibility-rules). A call that drops without this message has no announced reason: the SDKs report `connection_lost` once reconnection fails.
 
 ## Client events: `client-event`
 
