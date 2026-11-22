@@ -70,6 +70,7 @@
 - [Agents Overview](https://docs.fish.audio/agents/overview.md): The Fish Audio voice-agent platform — build agents in the console, integrate via REST API and web SDK.
 - [Agents Quickstart](https://docs.fish.audio/agents/quickstart.md): Create and publish a voice agent, then talk to it on the phone with API requests only or in a one-file browser demo. Test an API key with GET /v1/agent/agents. POST /v1/agent/sessions only issues a join token for one call, so create it when a user starts a call, never as a test.
 - [Agent Concepts](https://docs.fish.audio/agents/concepts.md): Workspaces, agents, draft and published versions, and sessions.
+- [Agents Pricing & Limits](https://docs.fish.audio/agents/pricing.md): Per-minute conversation rate, phone surcharge, transfer and number rental fees, token-billed LLMs, and Simulation test charges, plus the trial balance and team limits on concurrent calls, phone numbers, and outbound dial rate.
 - [Agent Configuration](https://docs.fish.audio/agents/build/configuration.md): System prompt, first message modes, and draft autosave.
 - [Voice & Language](https://docs.fish.audio/agents/build/voice-language.md): Choose the agent's voice profile and speaking language.
 - [Background Sound & Voice Effect](https://docs.fish.audio/agents/build/background-sound-voice-effect.md): Make calls feel more real with an ambience under the agent's voice and a phone line or intercom sound on web calls.
@@ -81,23 +82,31 @@
 - [System Tools](https://docs.fish.audio/agents/build/system-tools.md): Built-in capabilities like hanging up the call.
 - [Dynamic Variables](https://docs.fish.audio/agents/build/dynamic-variables.md): Personalize each session with template variables supplied at creation time.
 - [Custom LLM](https://docs.fish.audio/agents/build/custom-llm.md): Serve your agent's replies from your own OpenAI-compatible model endpoint.
-- [Versions & Publishing](https://docs.fish.audio/agents/deploy/versions-publishing.md): Draft, publish, clone, and restore agent configurations.
+- [LLM Fallback](https://docs.fish.audio/agents/build/llm-fallback.md): Retry a reply on another model when the agent's own model fails or is too slow, using the platform's failover chain or your own ordered list of models with timeouts (llm.fallback).
+- [Preview Calls](https://docs.fish.audio/agents/test/preview-calls.md): Test your draft agent by voice inside the Builder.
+- [Agent Tests](https://docs.fish.audio/agents/test/agent-tests.md): Single Turn, Tool, and Simulation tests with Pass or Fail verdicts, run against the agent's draft from the console, the API, or CI.
+- [Import and Export Tests](https://docs.fish.audio/agents/test/import-export-tests.md): Save tests as JSON files with Get Test and recreate them with Create Test, in the same team or in another team.
+- [Simulation Test Tutorial](https://docs.fish.audio/agents/test/simulation-tutorial.md): Build one Simulation test for a rescheduling call step by step, from the scenario and success conditions to tool mocks and assertions, then read its results.
 - [Deployment Overview](https://docs.fish.audio/agents/deploy/overview.md): Pick a deployment channel — widget, public agents, authenticated sessions, or a phone number.
-- [Authentication & Session Tokens](https://docs.fish.audio/agents/deploy/authentication.md): Public agent IDs vs server-minted session tokens; POST /v1/agent/sessions.
+- [Versions & Publishing](https://docs.fish.audio/agents/deploy/versions-publishing.md): Draft, publish, clone, and restore agent configurations.
 - [Public Agents](https://docs.fish.audio/agents/deploy/public-agents.md): Credential-free browser access with an origin allowlist.
+- [Authenticated Sessions](https://docs.fish.audio/agents/deploy/authenticated-sessions.md): Create short-lived session tokens on your backend with POST /v1/agent/sessions and run private agents in any client, with per-session overrides and dynamic variables.
+- [Widget](https://docs.fish.audio/agents/deploy/widget.md): Embed a complete voice and chat UI on any website with two lines of HTML — no build step.
 - [Web SDK](https://docs.fish.audio/agents/deploy/web-sdk.md): @fishaudio/agent-client — events, modes, transcripts, audio controls, and errors.
 - [React SDK](https://docs.fish.audio/agents/deploy/react-sdk.md): React hooks and components for voice-agent UIs.
-- [Widget](https://docs.fish.audio/agents/deploy/widget.md): Embed a complete voice and chat UI on any website with two lines of HTML — no build step.
+- [React Native SDK](https://docs.fish.audio/agents/deploy/react-native.md): @fishaudio/agent-react-native for voice calls in iOS and Android apps, in Expo or bare React Native, with microphone permission, audio routing, and background calls handled.
+- [React Native Widget](https://docs.fish.audio/agents/deploy/react-native-widget.md): @fishaudio/agent-widget-react-native, one component that adds a floating button and a call panel with a live transcript to an iOS or Android app.
 - [Wire Protocol](https://docs.fish.audio/agents/deploy/protocol.md): The realtime message protocol for non-SDK consumers.
 - [Phone Numbers](https://docs.fish.audio/agents/telephony/phone-numbers.md): Manage phone numbers and bind them to agents.
+- [Bring Your Own Number](https://docs.fish.audio/agents/telephony/byo-sip.md): Import a number you already own by pointing your carrier's SIP trunk (Twilio, Asterisk, FreePBX, or another SIP provider) at Fish Audio, with inbound authentication, optional outbound termination, and custom SIP headers.
 - [WhatsApp Business Calling](https://docs.fish.audio/agents/telephony/whatsapp.md): Answer WhatsApp voice calls to your WhatsApp Business number through your own Meta app.
 - [Inbound Calls](https://docs.fish.audio/agents/telephony/inbound-calls.md): Answer phone calls with an agent and track caller attribution.
+- [Outbound Calls](https://docs.fish.audio/agents/telephony/outbound-calls.md): Place calls from your phone numbers with POST /v1/agent/phone-calls, retry safely with an Idempotency-Key, and read the dial outcome from dial_status or the phone_call.dial_finished webhook.
 - [Call Transfers](https://docs.fish.audio/agents/telephony/transfers.md): Let the agent hand a phone call to a human — cold carrier handoff or warm transfer with a private briefing.
-- [Preview Calls](https://docs.fish.audio/agents/test/preview-calls.md): Test your draft agent by voice inside the Builder.
-- [Agent Tests](https://docs.fish.audio/agents/test/agent-tests.md): Scripted next-reply tests scored by an LLM judge.
+- [Keypad Menu and Input](https://docs.fish.audio/agents/telephony/keypad.md): Let phone callers use their keypad (DTMF), with a menu before the agent's first reply that stores the choice in a dynamic variable, and digits typed during the call that reach the agent as one message.
 - [Conversation History](https://docs.fish.audio/agents/monitor/conversation-history.md): Query sessions, transcripts, tool timelines, and recordings via the API.
 - [Post-call Analysis](https://docs.fish.audio/agents/monitor/post-call-analysis.md): Automatic summaries, data extraction, and success criteria.
-- [Agent Webhooks](https://docs.fish.audio/agents/monitor/webhooks.md): call.ended and call.analyzed events with HMAC signature verification.
+- [Agent Webhooks](https://docs.fish.audio/agents/monitor/webhooks.md): call.ended, call.analyzed, and phone_call.dial_finished events with HMAC signature verification, plus the inbound call webhook that returns dynamic variables before the agent answers.
 
 ## Operational Docs
 
