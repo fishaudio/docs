@@ -18,6 +18,8 @@ Read each file's bytes from disk and pass them to [`asr.transcribe()`](/api-refe
 
 Collect one result row per file as you go. If a file cannot be read, its request fails with a network error such as a timeout, or the API returns an error for it, record the error in that file's row and move on to the next file.
 
+Install the Python SDK first: `pip install fish-audio-sdk`.
+
 <CodeGroup>
 
 ```python Synchronous

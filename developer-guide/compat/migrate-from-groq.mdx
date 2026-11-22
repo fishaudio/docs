@@ -17,7 +17,7 @@ from groq import Groq
 
 client = Groq(
     base_url="https://api.fish.audio/compat",
-    api_key=os.environ["FISH_AUDIO_API_KEY"],
+    api_key=os.environ["FISH_API_KEY"],
 )
 ```
 
@@ -25,7 +25,7 @@ client = Groq(
 import Groq from "groq-sdk";
 
 const client = new Groq({
-  apiKey: process.env.FISH_AUDIO_API_KEY,
+  apiKey: process.env.FISH_API_KEY,
   baseURL: "https://api.fish.audio/compat",
 });
 ```
@@ -79,7 +79,7 @@ fs.writeFileSync("hello.mp3", Buffer.from(await resp.arrayBuffer()));
 
 ```bash curl
 curl https://api.fish.audio/compat/openai/v1/audio/speech \
-  -H "Authorization: Bearer $FISH_AUDIO_API_KEY" \
+  -H "Authorization: Bearer $FISH_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model": "fish-audio/s2.1-pro",
        "input": "Hello from Fish Audio!",
@@ -151,7 +151,7 @@ console.log(tr.text);
 
 ```bash curl
 curl https://api.fish.audio/compat/openai/v1/audio/transcriptions \
-  -H "Authorization: Bearer $FISH_AUDIO_API_KEY" \
+  -H "Authorization: Bearer $FISH_API_KEY" \
   -F model=fish-audio/transcribe-1 \
   -F file=@hello.mp3
 ```

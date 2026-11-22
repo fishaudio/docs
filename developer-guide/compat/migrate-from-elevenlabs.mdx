@@ -17,7 +17,7 @@ from elevenlabs import ElevenLabs
 client = ElevenLabs(
     base_url="https://api.fish.audio/compat/elevenlabs",
     # sent as the standard xi-api-key header
-    api_key=os.environ["FISH_AUDIO_API_KEY"],
+    api_key=os.environ["FISH_API_KEY"],
 )
 ```
 
@@ -26,7 +26,7 @@ import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 
 const client = new ElevenLabsClient({
   baseUrl: "https://api.fish.audio/compat/elevenlabs",
-  apiKey: process.env.FISH_AUDIO_API_KEY, // sent as the standard xi-api-key header
+  apiKey: process.env.FISH_API_KEY, // sent as the standard xi-api-key header
 });
 ```
 
@@ -81,7 +81,7 @@ const audio = Buffer.concat(chunks);
 
 ```bash curl
 curl "https://api.fish.audio/compat/elevenlabs/v1/text-to-speech/default?output_format=mp3_44100_128" \
-  -H "xi-api-key: $FISH_AUDIO_API_KEY" \
+  -H "xi-api-key: $FISH_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"text": "Hello from Fish Audio!",
        "model_id": "eleven_multilingual_v2"}' \
@@ -223,7 +223,7 @@ console.log(result.text);
 
 ```bash curl
 curl https://api.fish.audio/compat/elevenlabs/v1/speech-to-text \
-  -H "xi-api-key: $FISH_AUDIO_API_KEY" \
+  -H "xi-api-key: $FISH_API_KEY" \
   -F model_id=scribe_v1 \
   -F file=@meeting.wav
 ```
@@ -341,7 +341,7 @@ for (const v of voices.voices) console.log(v.voiceId, v.name);
 
 ```bash curl
 curl https://api.fish.audio/compat/elevenlabs/v1/voices \
-  -H "xi-api-key: $FISH_AUDIO_API_KEY"
+  -H "xi-api-key: $FISH_API_KEY"
 ```
 
 </CodeGroup>

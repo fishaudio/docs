@@ -1,5 +1,6 @@
 ---
-title: "Webhook Tools"
+title: "Webhook Tools for Voice Agents"
+sidebarTitle: "Webhook Tools"
 description: "Let your agent call your HTTP endpoints in the middle of a conversation"
 icon: "webhook"
 ---
@@ -265,7 +266,7 @@ Ticket numbers get spoken aloud: short, pronounceable IDs survive text-to-speech
 
 ### URL restrictions
 
-Endpoint URLs must use `http` or `https`. Requests to localhost, private network ranges, and cloud metadata endpoints are rejected, and URLs may not embed credentials. The Builder validates the URL as you type; the API enforces the same rules.
+Endpoint URLs must use `http` or `https`. Requests to localhost, private network ranges, and cloud metadata endpoints are rejected, and URLs may not embed credentials. Hostnames that only a private network could resolve are rejected as well: single-label names such as `http://api/`, and names under `.local`, `.internal`, `.svc` or `.arpa`. The Builder validates the URL as you type; the API enforces the same rules.
 
 ## Going further
 

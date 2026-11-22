@@ -34,6 +34,7 @@
                 "pages": [
                   "features/text-to-speech",
                   "features/text-to-speech/drama-3",
+                  "features/text-to-speech/audio-infill",
                   "developer-guide/core-features/emotions",
                   {
                     "group": "Fine-grained Control",
@@ -88,6 +89,7 @@
               "developer-guide/models-pricing/choosing-a-model",
               "developer-guide/models-pricing/deprecations",
               "developer-guide/models-pricing/migrate-from-s1",
+              "developer-guide/models-pricing/migrate-from-transcribe-1",
               "developer-guide/models-pricing/pricing-and-rate-limits"
             ]
           }
@@ -110,6 +112,7 @@
             "pages": [
               "agents/build/configuration",
               "agents/build/voice-language",
+              "agents/build/background-sound-voice-effect",
               "agents/build/time-timezone",
               "agents/build/knowledge-base",
               {
@@ -123,7 +126,8 @@
                 ]
               },
               "agents/build/dynamic-variables",
-              "agents/build/custom-llm"
+              "agents/build/custom-llm",
+              "agents/build/llm-fallback"
             ]
           },
           {
@@ -145,6 +149,8 @@
               "agents/deploy/widget",
               "agents/deploy/web-sdk",
               "agents/deploy/react-sdk",
+              "agents/deploy/react-native",
+              "agents/deploy/react-native-widget",
               "agents/deploy/protocol"
             ]
           },
@@ -153,6 +159,7 @@
             "pages": [
               "agents/telephony/phone-numbers",
               "agents/telephony/byo-sip",
+              "agents/telephony/whatsapp",
               "agents/telephony/inbound-calls",
               "agents/telephony/outbound-calls",
               "agents/telephony/transfers",
@@ -238,7 +245,8 @@
               "developer-guide/integrations/livekit",
               "developer-guide/integrations/n8n",
               "developer-guide/integrations/telnyx",
-              "developer-guide/integrations/slng"
+              "developer-guide/integrations/slng",
+              "developer-guide/integrations/hermes-agent"
             ]
           },
           {
@@ -257,13 +265,13 @@
             "group": "Self-Hosting",
             "pages": [
               "developer-guide/self-hosting/introduction",
+              "developer-guide/self-hosting/models",
               "developer-guide/self-hosting/requirements",
               "developer-guide/self-hosting/registry-access",
               "developer-guide/self-hosting/kubernetes",
               "developer-guide/self-hosting/all-in-one",
               "developer-guide/self-hosting/air-gapped",
-              "developer-guide/self-hosting/operations",
-              "developer-guide/self-hosting/enterprise-releases"
+              "developer-guide/self-hosting/operations"
             ]
           },
           {
@@ -299,6 +307,11 @@
                 ]
               },
               {
+                "group": "API Keys",
+                "icon": "key",
+                "pages": ["api-reference/endpoint/apikey/revoke-api-keys"]
+              },
+              {
                 "group": "Voice Models",
                 "icon": "cube",
                 "pages": [
@@ -310,13 +323,38 @@
                 ]
               },
               {
+                "group": "Pronunciation Dictionaries",
+                "icon": "book-open",
+                "pages": [
+                  "api-reference/endpoint/pronunciation-dictionary/list-dictionaries",
+                  "api-reference/endpoint/pronunciation-dictionary/create-dictionary",
+                  "api-reference/endpoint/pronunciation-dictionary/get-dictionary",
+                  "api-reference/endpoint/pronunciation-dictionary/update-dictionary",
+                  "api-reference/endpoint/pronunciation-dictionary/delete-dictionary",
+                  "api-reference/endpoint/pronunciation-dictionary/list-versions",
+                  "api-reference/endpoint/pronunciation-dictionary/create-version",
+                  "api-reference/endpoint/pronunciation-dictionary/get-version",
+                  "api-reference/endpoint/pronunciation-dictionary/compare-versions",
+                  "api-reference/endpoint/pronunciation-dictionary/delete-version"
+                ]
+              },
+              {
                 "group": "TTS (v1)",
                 "icon": "code",
                 "pages": [
                   "api-reference/endpoint/openapi-v1/text-to-speech",
                   "api-reference/endpoint/openapi-v1/text-to-speech-stream-with-timestamps",
                   "api-reference/endpoint/websocket/tts-live",
-                  "api-reference/endpoint/openapi-v1/text-to-speech-live-with-timestamps"
+                  "api-reference/endpoint/openapi-v1/text-to-speech-live-with-timestamps",
+                  "api-reference/endpoint/openapi-v1/audio-infill"
+                ]
+              },
+              {
+                "group": "Duplex (v1)",
+                "icon": "waveform-lines",
+                "hidden": true,
+                "pages": [
+                  "api-reference/endpoint/websocket/duplex-api-converse"
                 ]
               },
               {
@@ -410,6 +448,30 @@
                 ]
               },
               {
+                "group": "Knowledge Folders",
+                "icon": "folder",
+                "pages": [
+                  "api-reference/endpoint/agent/list-knowledge-folders",
+                  "api-reference/endpoint/agent/create-knowledge-folder",
+                  "api-reference/endpoint/agent/update-knowledge-folder",
+                  "api-reference/endpoint/agent/delete-knowledge-folder"
+                ]
+              },
+              {
+                "group": "Background Sounds",
+                "icon": "volume-high",
+                "pages": [
+                  "api-reference/endpoint/agent/list-background-sounds",
+                  "api-reference/endpoint/agent/create-background-sound",
+                  "api-reference/endpoint/agent/delete-background-sound"
+                ]
+              },
+              {
+                "group": "LLM Models",
+                "icon": "brain",
+                "pages": ["api-reference/endpoint/agent/list-llm-models"]
+              },
+              {
                 "group": "Phone Numbers",
                 "icon": "phone",
                 "pages": [
@@ -424,9 +486,7 @@
               {
                 "group": "Phone Calls",
                 "icon": "phone-arrow-up-right",
-                "pages": [
-                  "api-reference/endpoint/agent/create-phone-call"
-                ]
+                "pages": ["api-reference/endpoint/agent/create-phone-call"]
               }
             ]
           },
@@ -482,7 +542,7 @@
     "primary": {
       "type": "button",
       "label": "Sign Up",
-      "href": "https://fish.audio/auth/?redirect=/app/"
+      "href": "https://fish.audio/app/developers/get-started/?utm_source=docs&utm_medium=navbar&utm_content=sign-up"
     }
   },
   "interaction": {
@@ -724,6 +784,10 @@
       "destination": "/developer-guide/self-hosting/introduction"
     },
     {
+      "source": "/developer-guide/self-hosting/enterprise-releases",
+      "destination": "/developer-guide/self-hosting/registry-access"
+    },
+    {
       "source": "/developer-guide/self-hosting/local-setup",
       "destination": "/developer-guide/self-hosting/introduction"
     },
@@ -734,6 +798,22 @@
     {
       "source": "/developer-guide/self-hosting/running-inference",
       "destination": "/developer-guide/self-hosting/introduction"
+    },
+    {
+      "source": "/features/realtime-agent",
+      "destination": "/features/duplex-api"
+    },
+    {
+      "source": "/features/live-api",
+      "destination": "/features/duplex-api"
+    },
+    {
+      "source": "/api-reference/endpoint/websocket/realtime-converse",
+      "destination": "/api-reference/endpoint/websocket/duplex-api-converse"
+    },
+    {
+      "source": "/api-reference/endpoint/websocket/live-api-converse",
+      "destination": "/api-reference/endpoint/websocket/duplex-api-converse"
     }
   ],
   "footer": {

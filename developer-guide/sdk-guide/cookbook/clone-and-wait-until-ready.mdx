@@ -18,6 +18,8 @@ This recipe creates a voice from `reference.wav`, polls [`voices.get()`](/api-re
 
 Poll `voices.get(voice.id).state` on an interval, stopping when it reaches `trained` (or raising if it `failed` or the timeout elapses). Then pass the voice id as `reference_id` on `convert()`.
 
+Install the Python SDK first: `pip install fish-audio-sdk`.
+
 <CodeGroup>
 ```python Synchronous
 import time

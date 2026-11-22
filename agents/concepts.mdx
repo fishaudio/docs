@@ -1,5 +1,5 @@
 ---
-title: "Core Concepts"
+title: "Voice Agents Core Concepts"
 sidebarTitle: "Concepts"
 description: "Workspaces, agents, versions, and sessions: the mental model behind Fish Agents"
 icon: "sitemap"
@@ -96,6 +96,23 @@ A session is one conversation between one user and one agent. Sessions start fro
 </CardGroup>
 
 Except [preview calls](/agents/test/preview-calls), which are ephemeral and never enter history, every session appears in [Conversation history](/agents/monitor/conversation-history) and `/v1/agent/sessions` (with its transcript, and its recording when the agent [records audio](/agents/monitor/conversation-history#what-gets-stored)) and can trigger [post-call analysis](/agents/monitor/post-call-analysis) when configured.
+
+## Cascade vs. full duplex
+
+An agent talks with callers in one of two ways, set by its [speech model](/agents/build/voice-language#text-to-speech-model). In both, what the agent says comes from your prompt, tools, and knowledge sources. They differ in how the agent listens and speaks.
+
+- **Cascade** (Drama 3, S2.1 Pro): three models in a chain. Speech recognition transcribes the caller, the LLM writes the reply, and a text-to-speech model speaks it. The agent listens while the caller talks and speaks once they finish.
+- **Full duplex** ([Live 3](/agents/build/voice-language#live-3-full-duplex)): one speech model listens while it speaks and decides when to talk. It backchannels naturally while the caller talks and acknowledges when they finish, then speaks the reply.
+
+|                   | Cascade                                                       | Full duplex                                                  |
+| ----------------- | ------------------------------------------------------------- | ------------------------------------------------------------ |
+| Models            | Drama 3, S2.1 Pro                                             | Live 3                                                       |
+| Turn-taking       | Takes turns: listens, then speaks                             | Listens while it speaks, and acknowledges the caller         |
+| Languages         | All 52 speaking languages                                     | English. Sessions in other languages use the cascade         |
+| Voices            | Any Voice Library voice, including your clones                | Live 3's own voices, or a Voice Library voice                |
+| Delivery controls | Speaking speed, expressive mode, pronunciation dictionaries  | Set by the model, tuned with a situation prompt              |
+
+New agents start on Live 3. Switch to the cascade for languages other than English, for the closest match to a cloned voice, or for control over delivery.
 
 ## Deleting resources
 

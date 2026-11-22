@@ -1,5 +1,6 @@
 ---
-title: "Voice & Language"
+title: "Agent Voice & Language"
+sidebarTitle: "Voice & Language"
 description: "Choose the voice your agent speaks with and the language it converses in"
 icon: "microphone"
 ---
@@ -18,7 +19,10 @@ Your agent speaks with a voice model from the Fish Audio Voice Library: the same
   </Card>
 </CardGroup>
 
-## Pick a voice in the Builder
+## Pick a voice
+
+<Tabs className="console-api">
+<Tab title="Console" icon="browser">
 
 The voice picker on the **Configuration** page has two levels: a curated list for a fast start, and the full Voice Library when you want something specific.
 
@@ -37,14 +41,8 @@ The voice picker on the **Configuration** page has two levels: a curated list fo
   </Step>
 </Steps>
 
-## Use any voice model
-
-The agent's voice is a **voice model id** (`voice_id`): the same ids used as `reference_id` in [Text to Speech](/features/text-to-speech). Any public voice model from the Voice Library works, including:
-
-- **Library voices**: Ready-made public voices. Find ids in the [Voice Library](/features/manage-voices).
-- **Your cloned voices**: [Clone a voice](/features/voice-cloning) once, then use its model id as your agent's voice.
-
-## Set the voice via API
+</Tab>
+<Tab title="API" icon="code">
 
 Voice settings live in the `voice` section of the agent's configuration. Patches are partial: only the fields you send change, and the result is saved to the draft:
 
@@ -62,6 +60,16 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 </CodeGroup>
 
 `voice.speaking_language` lives in the same section and is patched the same way. As in the Builder, API edits land in the draft. Publish to roll them out.
+
+</Tab>
+</Tabs>
+
+## Use any voice model
+
+The agent's voice is a **voice model id** (`voice_id`): the same ids used as `reference_id` in [Text to Speech](/features/text-to-speech). Any public voice model from the Voice Library works, including:
+
+- **Library voices**: Ready-made public voices. Find ids in the [Voice Library](/features/manage-voices).
+- **Your cloned voices**: [Clone a voice](/features/voice-cloning) once, then use its model id as your agent's voice.
 
 ## Speaking language
 
@@ -106,14 +114,14 @@ Both settings can also be replaced for a single session: send `overrides.voice_i
 
 ## Text-to-speech model
 
-**Text-to-speech model** picks the Fish Audio model that renders the agent's voice (`voice.tts_model` on the wire). Every voice from the Voice Library works with either model.
+**Text-to-speech model** picks the Fish Audio model that renders the agent's voice (`voice.tts_model` on the wire). Every voice from the Voice Library works with either model. In the Builder, both sit in the **Speech model** selector next to [Live 3](#live-3-full-duplex), a full-duplex model set with `voice.engine`.
 
 | Value | Model | Status | Notes |
 |---|---|---|---|
 | `drama-3` | Drama 3 | Default | The directable model from [Drama 3](/features/text-to-speech/drama-3). Time to first audio is comparable to S2.1 Pro. |
 | `s2.1-pro` | S2.1 Pro | Available | |
 
-Choose it with the **Text-to-speech model** selector in the Builder's voice section, or via the API:
+Choose it with the **Speech model** selector in the Builder's voice section, or via the API:
 
 <CodeGroup>
 ```bash API (curl)
@@ -129,6 +137,65 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 </CodeGroup>
 
 The model applies to everything the agent speaks in voice and phone sessions. As with every voice setting, the change lands in the draft: publish to roll it out.
+
+### Live 3 (full duplex)
+
+**Live 3** is Fish Audio's full-duplex speech model. Instead of speaking the reply once the caller finishes, it listens while it speaks and decides on its own when to acknowledge, wait, respond, or stop. See [Cascade vs. full duplex](/agents/concepts#cascade-vs-full-duplex).
+
+- **Backchannels:** while the caller reads out a phone number in chunks, it answers with a quick "mm-hmm" and waits for the rest instead of cutting in. To turn them down or off, see [Backchannels](/agents/build/configuration#backchannels).
+- **Interruptions:** a "yeah" or "mm-hmm" from the caller doesn't stop it, but a real interjection such as "Wait, actually..." does.
+- **Corrections:** when the caller changes their mind mid-order, it follows along without answering too early.
+
+Your agent's instructions and tools still decide what the agent says. Live 3 decides when and how it is said.
+
+New agents start on Live 3 with the Clara voice. To create one with another Live 3 voice or situation, pass the same `voice` fields in `config` on [Create agent](/api-reference/endpoint/agent/create-agent). To switch an existing agent, pick **Live 3** in the **Speech model** selector, or set `voice.engine` to `live3` via the API:
+
+<CodeGroup>
+```bash API (curl)
+curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "voice": {
+      "engine": "live3",
+      "voice_id": "clara"
+    }
+  }'
+```
+</CodeGroup>
+
+To switch back, pick Drama 3 or S2.1 Pro in the selector, or set `voice.engine` to `fish_tts`. The `live3_*` settings are ignored while Live 3 is off.
+
+<Note>
+  Live 3 speaks English only. Sessions in another speaking language, including a per-session [language override](/agents/deploy/authenticated-sessions#overrides), speak through the agent's text-to-speech model instead. In English sessions, the agent answers in English even when the caller switches language.
+</Note>
+
+#### Live 3 voices
+
+An agent on Live 3 speaks either one of the voices that come with Live 3, or a voice from the Voice Library. Both are set in `voice.voice_id`.
+
+The voices that come with Live 3 exist only there and are not in the Voice Library. Set one by its name: `clara` (default), `nora`, `harper`, `patricia`, `owen`, `marco`, `milo`, or `jonah`.
+
+The Builder's voice picker lists them under **Live 3 voices**, with samples.
+
+For a Voice Library voice or one of your clones, set `voice.voice_id` to its id. Live 3 recreates the voice from a sample, so it sounds close to, but not exactly like, the same voice on Drama 3 or S2.1 Pro. If Live 3 can't use the voice, the session speaks as Clara.
+
+#### Situation prompt
+
+`voice.live3_prompt` sets the situation the model speaks in, which tunes its pacing, backchannels, and turn-taking. In the Builder it is the **Situation prompt** selector, shown once Live 3 is on.
+
+| Value | Situation |
+|---|---|
+| empty (default) | Phone support, same as `P2` |
+| `P2` | Phone support |
+| `DT` | Drive-thru |
+| `AIR` | Airline |
+
+#### What else changes
+
+- The [speech recognition model](#speech-recognition-model), [speaking speed](#speaking-speed), [expressive mode](#expressive-mode), and pronunciation dictionaries apply only to Drama 3 and S2.1 Pro. Live 3 does its own listening and sets its own pacing and delivery.
+- If Live 3 can't start a session, or drops during one, the agent keeps talking through its text-to-speech model.
+- In a [warm transfer](/agents/telephony/transfers), the briefing to your team member is spoken by the text-to-speech model.
 
 ## Speech recognition model
 
@@ -259,6 +326,9 @@ The delivery cues are rendered by the voice model. They are never spoken and nev
 ## Going further
 
 <CardGroup cols={2}>
+  <Card title="Background sound & voice effect" icon="volume-high" href="/agents/build/background-sound-voice-effect">
+    Play an ambience under the voice, or make web calls sound like a phone line.
+  </Card>
   <Card title="Agent configuration" icon="sliders" href="/agents/build/configuration">
     System prompt, first message, and conversation settings.
   </Card>

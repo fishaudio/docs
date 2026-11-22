@@ -16,7 +16,7 @@ from openai import OpenAI
 
 client = OpenAI(
     base_url="https://api.fish.audio/compat/v1",
-    api_key=os.environ["FISH_AUDIO_API_KEY"],
+    api_key=os.environ["FISH_API_KEY"],
 )
 ```
 
@@ -25,7 +25,7 @@ import OpenAI from "openai";
 
 const client = new OpenAI({
   baseURL: "https://api.fish.audio/compat/v1",
-  apiKey: process.env.FISH_AUDIO_API_KEY,
+  apiKey: process.env.FISH_API_KEY,
 });
 ```
 
@@ -52,11 +52,13 @@ Groq SDK speaks the same protocol; see
 
 `POST /v1/audio/speech`
 
+These samples use the free `fish-audio/s2.1-pro-free` model, so they work before you add API credit. Use `fish-audio/s2.1-pro` in production; the OpenAI model names below map to it.
+
 <CodeGroup>
 
 ```python Python
 with client.audio.speech.with_streaming_response.create(
-    model="fish-audio/s2.1-pro",
+    model="fish-audio/s2.1-pro-free",
     input="Hello from Fish Audio!",
     voice="",  # a voice ID from your Fish voice library; "" = model default
     response_format="mp3",  # mp3 | wav | opus | pcm | pcm16
@@ -69,7 +71,7 @@ with client.audio.speech.with_streaming_response.create(
 import fs from "node:fs";
 
 const response = await client.audio.speech.create({
-  model: "fish-audio/s2.1-pro",
+  model: "fish-audio/s2.1-pro-free",
   input: "Hello from Fish Audio!",
   voice: "", // a voice ID from your Fish voice library; "" = model default
   response_format: "mp3", // mp3 | wav | opus | pcm | pcm16
@@ -80,9 +82,9 @@ fs.writeFileSync("out.mp3", Buffer.from(await response.arrayBuffer()));
 
 ```bash curl
 curl https://api.fish.audio/compat/v1/audio/speech \
-  -H "Authorization: Bearer $FISH_AUDIO_API_KEY" \
+  -H "Authorization: Bearer $FISH_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"model": "fish-audio/s2.1-pro",
+  -d '{"model": "fish-audio/s2.1-pro-free",
        "input": "Hello from Fish Audio!",
        "response_format": "mp3",
        "speed": 1.1}' \
@@ -119,7 +121,7 @@ accepts it inline in the request object.
 
 ```python
 with client.audio.speech.with_streaming_response.create(
-    model="fish-audio/s2.1-pro",
+    model="fish-audio/s2.1-pro-free",
     input="Hello from Fish Audio!",
     voice="",
     response_format="wav",
@@ -161,7 +163,7 @@ const tr = await client.audio.transcriptions.create({
 
 ```bash curl
 curl https://api.fish.audio/compat/v1/audio/transcriptions \
-  -H "Authorization: Bearer $FISH_AUDIO_API_KEY" \
+  -H "Authorization: Bearer $FISH_API_KEY" \
   -F model=fish-audio/transcribe-1 \
   -F file=@meeting.wav \
   -F response_format=verbose_json \
@@ -242,7 +244,7 @@ fs.writeFileSync(
 
 ```bash curl
 curl https://api.fish.audio/compat/v1/chat/completions \
-  -H "Authorization: Bearer $FISH_AUDIO_API_KEY" \
+  -H "Authorization: Bearer $FISH_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model": "fish-audio/s2.1-pro",
        "modalities": ["text", "audio"],
@@ -273,7 +275,7 @@ import { OpenAIRealtimeWS } from "openai/beta/realtime/ws";
 
 const client = new OpenAI({
   baseURL: "https://api.fish.audio/compat/v1",
-  apiKey: process.env.FISH_AUDIO_API_KEY,
+  apiKey: process.env.FISH_API_KEY,
 });
 const rt = new OpenAIRealtimeWS({ model: "fish-audio/s2.1-pro" }, client);
 // Stand-in for your audio pipeline; deltas are base64 chunks.

@@ -1,5 +1,6 @@
 ---
-title: "Bring Your Own Number"
+title: "Bring Your Own Number to Voice Agents"
+sidebarTitle: "Bring Your Own Number"
 description: "Import a number you already own by pointing your carrier's SIP trunk at Fish Audio: no rental fee, no telephony charges"
 icon: "phone-plus"
 ---
@@ -24,15 +25,17 @@ sip:1pv316az391.sip.livekit.cloud;transport=tcp
 ## Prerequisites
 
 - A number at your carrier and access to its SIP trunk configuration.
-- Team owner or admin role (console), or an API key.
+- An API key, if you use the API.
 
 ## Import the number
 
-### In the console
+<Tabs className="console-api">
+<Tab title="Console" icon="browser">
 
 On the workspace **Phone numbers** page, choose **Import number**. Enter the number in E.164 format, set at least one inbound authentication factor, and optionally fill in the **Outbound calling (termination)** section, including any **Custom SIP headers** (one `X-Name: value` per line). The same form is available later from the number's row menu as **Edit configuration**.
 
-### Through the API
+</Tab>
+<Tab title="API" icon="code">
 
 Import with the same endpoint that purchases numbers, using the `sip` provider variant:
 
@@ -79,6 +82,9 @@ At least one inbound factor (digest credentials and/or allowed addresses) is req
   echoed back by the API.
 </Note>
 
+</Tab>
+</Tabs>
+
 ## Inbound authentication
 
 The SIP endpoint is shared, so an import must prove that calls really come from your trunk:
@@ -120,7 +126,7 @@ Set both when your carrier supports it.
     outbound traffic does not come from fixed IPs, so Twilio IP access control
     lists cannot authorize it.
   </Step>
-  <Step title="Allow transfers (optional)">
+  <Step title="Allow transfers (optional)" id="twilio-allow-transfers">
     For [cold transfers](/agents/telephony/transfers), enable **Call Transfer
     (SIP REFER)** in the trunk's settings and also allow transfers to the PSTN.
     If transfers are limited to SIP destinations, Twilio rejects every transfer
@@ -154,7 +160,7 @@ The number object reports this as `supports_outbound`. Place calls with the same
 
 Imported numbers don't have the [caller ID choice](/agents/telephony/transfers#caller-id-on-transfers) that bought numbers have. Instead:
 
-- **Cold transfers** show whatever your carrier sends. On Twilio, you set this on the trunk with **Caller ID for Transfer Target** (see the [Twilio steps](#twilio-elastic-sip-trunking) above).
+- **Cold transfers** show whatever your carrier sends. On Twilio, you set this on the trunk with **Caller ID for Transfer Target** (see [Allow transfers](#twilio-allow-transfers) in the Twilio steps above).
 - **Warm transfers** always show your imported number.
 
 ### Custom SIP headers

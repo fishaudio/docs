@@ -1,0 +1,13 @@
+---
+openapi: post /v1/pronunciation-dictionaries/{dictionary_id}/versions
+title: "Publish Version"
+description: "Publish a new immutable version of a pronunciation dictionary"
+icon: "upload"
+iconType: "solid"
+---
+
+Each version holds the complete, ordered rule list; send every rule you want in the new version, not only the changes. Published versions never change, so TTS requests pinned to an older version keep using its rules.
+
+Set `expected_latest_version_id` to the dictionary's current `latest_version_id`, or `null` for the first version. If another version was published in the meantime, the request returns 409. Fetch the new latest version, merge its rules with your changes, and publish again with its ID; resending your original list would drop the other publisher's changes.
+
+For the rule fields, rule types and limits, see [Write Pronunciation Rules](/developer-guide/core-features/fine-grained-control/pronunciation-dictionaries#write-pronunciation-rules).

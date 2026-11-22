@@ -8,7 +8,7 @@ description: Write direct HTTP / WebSocket calls to the Fish Audio platform (TTS
 Use this skill to generate correct, runnable Fish Audio API calls without any SDK. The canonical machine-readable sources are:
 
 - REST: `https://docs.fish.audio/api-reference/openapi.json`
-- WebSocket: `https://docs.fish.audio/api-reference/asyncapi.yml`
+- WebSocket: `https://docs.fish.audio/api-reference/endpoint/websocket/tts-live.md` (the page ends with its AsyncAPI schema)
 
 This file condenses those into rules an agent can apply directly.
 

@@ -1,5 +1,6 @@
 ---
-title: "Keypad Menu and Input"
+title: "Keypad Menu and Input for Voice Agents"
+sidebarTitle: "Keypad Menu and Input"
 description: "Let phone callers use their keypad: a menu before the agent's first reply, and digits typed during the call"
 icon: "keyboard"
 ---
@@ -9,14 +10,7 @@ Callers can use their phone keypad in two ways:
 - **Keypad menu**: on inbound calls, before the agent's first reply, the agent plays a short menu ("For appointments, press 1"), takes one key press or a spoken option, and stores the choice in a [dynamic variable](/agents/build/dynamic-variables). The system prompt, first message, transfers, and webhook tools can act on it. It replaces a separate phone menu in front of the agent, so callers reach the agent without a second hop and a second greeting.
 - **Keypad input**: during inbound and outbound phone calls, digits the caller types, such as a member ID ending with `#`, reach the agent as one message.
 
-Both are off by default and only apply to phone calls.
-
-<Note>
-  Keypad menu and keypad input are rolling out to teams gradually. If you don't
-  see them in the console, contact
-  [support@fish.audio](mailto:support@fish.audio) to turn them on for your team.
-  Until then, turning either one on through the API returns `403`.
-</Note>
+Both are off by default and only apply to phone calls; [WhatsApp calls](/agents/telephony/whatsapp) carry no key presses.
 
 ## Keypad menu
 
@@ -54,7 +48,8 @@ While the menu runs, the agent doesn't reply. What the caller says or presses st
 
 ### Set up the menu
 
-#### In the console
+<Tabs className="console-api">
+<Tab title="Console" icon="browser">
 
 On the agent's **Phone** page, turn on the **Keypad menu** card and fill it in:
 
@@ -71,7 +66,8 @@ On the agent's **Phone** page, turn on the **Keypad menu** card and fill it in:
 
 Then [publish](/agents/deploy/versions-publishing). Calls always use the published configuration.
 
-#### Through the API
+</Tab>
+<Tab title="API" icon="code">
 
 Set `conversation.keypad_menu` in the config, then publish:
 
@@ -114,6 +110,9 @@ curl --request PATCH https://api.fish.audio/v1/agent/agents/YOUR_AGENT_ID/config
 
 `keypad_menu` is replaced as a whole: fields you leave out go back to their defaults, and `{}` resets the menu. An enabled menu needs a prompt and at least one option, with no key used twice. The prompt and retry message can't use the menu's own `{{variable}}`, because it has no value while the menu plays. A request that breaks these rules returns `422`.
 
+</Tab>
+</Tabs>
+
 ### Use the choice
 
 The menu's variable works like any [custom variable](/agents/build/dynamic-variables#custom-variables). Write `{{department}}` (your variable's name) in:
@@ -148,7 +147,7 @@ Don't greet the caller again. Confirm they want {{department}} and ask how you c
 
 #### Sessions without the menu
 
-Outbound calls, web and API sessions, preview calls, and agent tests skip the menu. There the variable renders like any other custom variable, from its [default value](/agents/build/dynamic-variables#default-values) and then `on_missing`. Give the menu's variable a default, usually the same as the fallback value, so these sessions read well. Without one, `on_missing: reject` rejects them.
+Outbound calls, [WhatsApp calls](/agents/telephony/whatsapp), web and API sessions, preview calls, and agent tests skip the menu. There the variable takes the menu's fallback value, so texts that mention it read well. Without a fallback value it renders like any other custom variable, from its [default value](/agents/build/dynamic-variables#default-values) and then `on_missing`; with neither, `on_missing: reject` rejects the session.
 
 ### See what callers chose
 

@@ -1,5 +1,6 @@
 ---
-title: "Call Transfers"
+title: "Voice Agent Call Transfers"
+sidebarTitle: "Call Transfers"
 description: "Let the agent hand a phone call to a human: a cold carrier handoff, or a warm transfer with hold music and a private briefing"
 icon: "phone-arrow-right"
 ---
@@ -21,11 +22,13 @@ Two modes decide what the handoff feels like:
 
 ## Configure destinations
 
-### In the console
+<Tabs className="console-api">
+<Tab title="Console" icon="browser">
 
 On the agent's **Phone** page, under **Inbound calls**, turn on **Call transfer** and fill in each destination: a name, the phone number or SIP URI, when to transfer there, its [announcement](#the-transfer-announcement), and the mode. A **Warm** destination also gets a handoff choice and the [warm transfer settings](#warm-transfer-settings). With more than one destination, each needs a distinct name. Changes take effect on live calls after you [publish](/agents/deploy/versions-publishing).
 
-### Through the API
+</Tab>
+<Tab title="API" icon="code">
 
 Transfer destinations live in the `conversation` section of the [agent config](/agents/build/configuration), as `transfer_destinations`. An empty list disables transfers; the list is replaced as a whole on every write.
 
@@ -87,7 +90,7 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 | `type`                         | `phone` (default) or `sip`. See [Transfer to a SIP endpoint](#transfer-to-a-sip-endpoint).                                                                                                                                                                                                                                                              |
 | `label`                        | Name for the destination, shown in the Builder and used by the agent to pick one. At most 64 characters. Required, and unique (case-insensitive), once there is more than one entry.                                                                                                                                                                    |
 | `description`                  | When to transfer here, in plain language ("Invoices, payments, account balance"). The agent reads it when choosing between destinations. At most 500 characters.                                                                                                                                                                                        |
-| `phone_number`                 | `phone` only: the destination in E.164 format, for example `+14155550123`.                                                                                                                                                                                                                                                                              |
+| `phone_number`                 | `phone` only: the destination, a number in E.164 format, for example `+14155550123`, or a [dynamic variable](/agents/build/dynamic-variables) such as `{{oncall_number}}` that is filled in for each call. See [Choosing the number per call](#choosing-the-number-per-call).                                                                                         |
 | `sip_uri`                      | `sip` only: the endpoint's SIP URI, for example `sip:support@pbx.example.com`.                                                                                                                                                                                                                                                                          |
 | `headers`                      | `sip` only: custom SIP headers sent to the endpoint, as a map of names to values. Values can use [dynamic variables](/agents/build/dynamic-variables). See [Custom SIP headers](#custom-sip-headers).                                                                                                                                                   |
 | `mode`                         | `cold` (default) or `warm`; see the comparison above.                                                                                                                                                                                                                                                                                                   |
@@ -99,7 +102,10 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 | `warm_confirm_timeout_seconds` | Warm `confirm` and `briefing` only: how long the agent waits after the human answers before giving up, in whole seconds from 10 to 300. Default 60. See [Timeouts](#timeouts).                                                                                                                                                                          |
 | `warm_human_detection`         | Warm `confirm` and `briefing` only: `true` makes the agent wait for the other side to speak and stop the transfer when voicemail or a phone menu answers. Default `false`. See [Waiting for a person to answer](#waiting-for-a-person-to-answer).                                                                                                       |
 
-Phone destinations must be E.164 and are limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list. A missing label, or two labels that differ only in case, is rejected the same way. There is no cap on the number of destinations, but every description is part of the agent's tool instructions on every turn, so keep the list to what a receptionist could hold in their head.
+</Tab>
+</Tabs>
+
+A literal phone destination number must be E.164 and is limited to a set of supported countries. A number outside the list is rejected with `422 Unprocessable Entity` and an error naming the allowed country codes. The transfer card in the console shows the current list. For a number that contains variables, see [Choosing the number per call](#choosing-the-number-per-call). A missing label, or two labels that differ only in case, is rejected the same way. There is no cap on the number of destinations, but every description is part of the agent's tool instructions on every turn, so keep the list to what a receptionist could hold in their head.
 
 ## Transfer to a SIP endpoint
 
@@ -191,11 +197,13 @@ These apply to every option:
 - The caller cannot interrupt the sentence.
 - Once the transfer starts, the caller can no longer answer, so the agent asks its questions before transferring (see [Questions before transferring](#questions-before-transferring)). Don't put a question in a fixed message either.
 
-### In the console
+<Tabs className="console-api">
+<Tab title="Console" icon="browser">
 
 On each destination card, the **Transfer announcement** control sits above the transfer mode. Choosing **Fixed message** shows a field for the line.
 
-### Through the API
+</Tab>
+<Tab title="API" icon="code">
 
 Set `announcement_mode` on the destination, plus `announcement_message` for `fixed`. The message can use [dynamic variables](/agents/build/dynamic-variables), filled in when the session starts. Since the destination list is replaced as a whole on every write, send every destination you want to keep, not just the one you are changing.
 
@@ -239,7 +247,12 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 
 </CodeGroup>
 
-To return to the default, set `announcement_mode` to `generated` or leave it out. As with every config edit, the change takes effect on live calls after you [publish](/agents/deploy/versions-publishing).
+To return to the default, set `announcement_mode` to `generated` or leave it out.
+
+</Tab>
+</Tabs>
+
+As with every config edit, the change takes effect on live calls after you [publish](/agents/deploy/versions-publishing).
 
 ### Questions before transferring
 
@@ -253,6 +266,54 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   --header "Content-Type: application/json" \
   --data '{ "conversation": { "transfer_refuse_questions": false } }'
 ```
+
+## Choosing the number per call
+
+When the right person to call changes often, such as an on-call rotation, don't republish the agent for every change. Put a [dynamic variable](/agents/build/dynamic-variables) in the destination's `phone_number` and supply the number for each call:
+
+```json
+{
+  "label": "On-call engineer",
+  "description": "Production incidents outside office hours",
+  "phone_number": "{{oncall_number}}",
+  "mode": "warm"
+}
+```
+
+A number with variables is saved as a template instead of being checked as a number. When you save, it is rejected with `422 Unprocessable Entity` unless it follows these rules:
+
+- The whole number can be one variable (`{{oncall_number}}`), or digits, a leading `+` and variables combined (`+1{{area}}{{local}}`).
+- A variable name starts with a letter and uses only letters, digits and underscores, or is a `{{system.*}}` variable that exists. Spaces just inside the braces are allowed. Anything else, such as `{{on-call}}` or `{{1st}}`, is not a variable, so the value is checked as a literal number and rejected.
+- Besides the variables, only digits and a `+` at the very start are allowed. Spaces, dashes, brackets, extensions (`+1 {{area}} 555 0199`) and unmatched braces (`{{oncall_number}}}`) are rejected.
+- At most 100 characters.
+
+The value comes from the call itself:
+
+- **Inbound calls**: your [inbound call webhook](/agents/monitor/webhooks#inbound-call-webhook) returns it in `dynamic_variables`.
+- **Outbound calls**: pass it in `dynamic_variables` on the [outbound call request](/agents/telephony/outbound-calls#request-fields).
+- **Neither supplies it**: the default value you set for that variable on the agent is used (see [Default values](/agents/build/dynamic-variables#default-values)). This is the fallback number: it applies when the webhook times out, fails, or leaves the variable out. There is no separate fallback field.
+
+```json Inbound call webhook response
+{
+  "dynamic_variables": {
+    "oncall_number": "+14155550199"
+  }
+}
+```
+
+In an [agent test](/agents/test/agent-tests), no inbound call webhook is called. The test uses its own dynamic variables and the agent's default values, so to try a transfer to a destination whose number is a variable, give that variable a value in the test's dynamic variables (`dynamic_variables` over the API) or set a default for it on the agent. Otherwise the destination does not exist in that test.
+
+The value must be an E.164 string with the leading `+`. Only surrounding whitespace is trimmed; the number is not reformatted. `"+14155550199"` works, while `"(415) 555-0199"`, `"415-555-0199"` and the JSON number `14155550199` (which renders without the `+`) do not.
+
+### When no valid number can be filled in
+
+The number is checked after it is filled in, with the same rules as a literal one: it must be E.164, and its country must be in the same supported list a literal number is checked against (the transfer card in the console shows it). If the call has no valid number, that call skips the destination and the rest of the list works as usual. This happens when:
+
+- the variable has no value from the call and no default, whatever the agent's **If a variable has no value** setting (`on_missing` in the API), and a missing transfer number never rejects the call;
+- the value is not a valid E.164 number, or its country is not supported;
+- a placeholder is still unfilled after substitution.
+
+The skipped destination is not offered to the agent on that call, so if the caller asks for it, the agent can only say it can't transfer. The next call fills the number in again from scratch. Give the variable a default that is a real number if callers should always have somewhere to go.
 
 ## What happens on a cold transfer
 
@@ -301,13 +362,15 @@ By default the agent introduces itself, reads out the caller's number, relays th
 
 The text is rendered with [dynamic variables](/agents/build/dynamic-variables) when the session starts, so it can carry facts the conversation may not mention. A custom text is spoken as written, so if it should include the caller's number, put it in yourself with `{{system.caller_number_spoken}}`, which arrives pre-grouped for speech (`+1; 4 1 5; 5 5 5; 0 1 2 3`) so the voice reads it digit by digit in any language; see [Reading a number out loud](/agents/build/dynamic-variables#reading-a-number-out-loud).
 
-Two things to keep in mind. The variables are filled in once, when the session is created, so an order number the caller mentions later reaches the colleague only through the notes. And a withheld caller ID renders as an empty string, so write the text to read well without it.
+Two things to keep in mind. The variables are filled in once, when the session is created, so an order number the caller mentions later reaches the colleague only through the notes. And a withheld caller ID (the carrier sent `anonymous`, no digits, or one of Twilio's placeholder numbers) renders as an empty string, so write the text to read well without it; `{{system.caller_id_withheld}}` is `"true"` then.
 
-#### In the console
+<Tabs className="console-api">
+<Tab title="Console" icon="browser">
 
 On the destination card, choosing **Warm** shows a **Briefing instructions** field beneath the handoff choice. Leave it empty to keep the default introduction.
 
-#### Through the API
+</Tab>
+<Tab title="API" icon="code">
 
 Set `warm_briefing_instructions` on the destination; it is ignored on cold destinations.
 
@@ -331,6 +394,9 @@ curl --request PATCH "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
   }'
 ```
 </CodeGroup>
+
+</Tab>
+</Tabs>
 
 ## Warm transfer settings
 
@@ -396,14 +462,16 @@ The choice is set on each phone number, and applies to every transfer on that nu
 
 If the caller hides their number, a warm transfer shows the agent's number instead.
 
-### In the console
+<Tabs className="console-api">
+<Tab title="Console" icon="browser">
 
 - **For all numbers of an agent**: open the agent's **Phone** page and use the **Show the caller's number on transfers** switch in the **Call transfer** section.
 - **For one number**: on the **Phone numbers** page, open the number's menu and choose **Transfer caller ID**.
 
-Only team owners and admins can change it. You don't need to publish the agent.
+You don't need to publish the agent.
 
-### Through the API
+</Tab>
+<Tab title="API" icon="code">
 
 Set `transfer_caller_id` on the number: `original_caller` shows the caller's number, `agent_number` shows the agent's number.
 
@@ -414,11 +482,14 @@ curl --request PATCH https://api.fish.audio/v1/agent/phone-numbers/$PHONE_NUMBER
   --data '{ "transfer_caller_id": "original_caller" }'
 ```
 
-The caller ID is a setting on the number, not part of the agent, so it needs no publish and rolling back the agent leaves it as it is. Warm transfers use a new choice from the next call.
-
 The response is the updated number, with `caller_id_sync_status` normally `synced`, which means cold transfers use the new choice too. If it reads `pending` or `error`, the change has not reached the phone carrier yet and cold transfers still use the previous choice. Send `{ "retry_caller_id_sync": true }` to try again.
 
 The older boolean `cold_transfer_use_original_caller` still works, but it is deprecated. Use `transfer_caller_id` instead.
+
+</Tab>
+</Tabs>
+
+The caller ID is a setting on the number, not part of the agent, so it needs no publish and rolling back the agent leaves it as it is. Warm transfers use a new choice from the next call.
 
 ## Transfer results
 
@@ -460,6 +531,26 @@ A session with a successful transfer ends with `end_reason` `escalated`, however
 | `failed`      | Any other failure                                  | Every other code                                          |
 
 `sip_status` is the carrier's final SIP response code as received, and `null` when the carrier gave none. When a cold handoff rings past the time limit with the caller still on the line, the attempt is `refer_failed` with `dial_status` `no_answer` and no `sip_status`.
+
+### Reason codes on the tool result
+
+The `_transfer_call` tool call that started a failed attempt has a `tool_result` with `status` `failed`. Its `error_detail` says why the attempt did not connect, as one code you can count, alert on and write rules against:
+
+| `status_code`   | What happened                                                                                                 | Warm `outcome` (`dial_status`)                         | Cold `outcome` (`dial_status`)                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `not_placed`    | The call never went out: the carrier refused it, the number or trunk has a problem, or it could not be set up | `dial_failed` (`failed` or none), `unavailable`        | `refer_failed` (`failed` or none)                                                       |
+| `busy`          | The line was busy, or the call was rejected (`486`, `600`, `603`)                                             | `dial_failed` (`busy`)                                 | `refer_failed` (`busy`)                                                                 |
+| `no_answer`     | It rang and nobody answered                                                                                   | `dial_failed` (`no_answer`), `consult_timeout`         | `refer_failed` (`no_answer`)                                                            |
+| `declined`      | Your team member said they could not take the call                                                            | `declined`                                             |                                                                                         |
+| `voicemail`     | Voicemail answered                                                                                            | `voicemail`                                            |                                                                                         |
+| `ivr`           | A phone menu answered and nobody took over                                                                    | `ivr`                                                  |                                                                                         |
+| `hung_up`       | Your team member hung up, or the line dropped, before the calls were merged                                   | `consult_closed`                                       |                                                                                         |
+| `merge_failed`  | Both sides were there, but connecting them failed                                                             | `merge_failed`                                         |                                                                                         |
+| `caller_hangup` | The caller hung up during the transfer; the destination was not at fault                                      | `caller_hangup`, or the caller had left when it failed | The caller hung up while the destination rang, or during the announcement (`cancelled`) |
+
+A cold transfer only sees the carrier's answer to the handoff, so on the destination's side it can only be `not_placed`, `busy` or `no_answer`. The caller hanging up takes precedence over the carrier's code: a caller who hangs up while a cold destination rings is `caller_hangup`, not `no_answer`, even though the carrier answers `487`. Leave `caller_hangup` out when you count unreachable destinations.
+
+`error_detail` also carries `sip_status`, the carrier's SIP response code when it gave one and `null` otherwise, and `status_message`, a readable explanation. The result's `error` text starts with `transfer_failed: <status_code> — `, so rules that match the text keep working. New codes may be added, so don't reject ones you don't recognize. Results recorded before reason codes existed have `error_detail` `null`. See [Item types](/agents/monitor/conversation-history#item-types) for the rest of the `tool_result`.
 
 ### After a successful transfer
 

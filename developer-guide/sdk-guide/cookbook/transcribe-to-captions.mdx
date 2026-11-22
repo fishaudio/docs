@@ -18,6 +18,8 @@ Call [`asr.transcribe()`](/api-reference/sdk/python/resources#transcribe) with `
 
 The recipe starts a new cue after a pause longer than 0.6 seconds, or when the cue would grow past 42 characters or 6 seconds. It joins words with a space, except between Chinese or Japanese characters, which are written without spaces. A segment can have `start` equal to `end`, so a cue with no duration gets a short one that ends no later than the next cue starts. Every cue therefore ends after it starts, as SRT and WebVTT players expect.
 
+Install the Python SDK first: `pip install fish-audio-sdk`.
+
 <CodeGroup>
 
 ```python Python
