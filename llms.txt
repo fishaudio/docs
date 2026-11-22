@@ -32,15 +32,22 @@
 
 ## SDKs
 
+- [SDK Quickstart](https://docs.fish.audio/developer-guide/sdk-guide/quickstart.md): Install the Python SDK (pip install fish-audio-sdk) or the JavaScript SDK (npm install fish-audio), authenticate with the FISH_API_KEY environment variable, and generate your first audio.
 - [Python SDK Overview](https://docs.fish.audio/api-reference/sdk/python/overview.md): Official Python SDK overview and setup.
 - [Python Authentication](https://docs.fish.audio/developer-guide/sdk-guide/python/authentication.md): Configure API authentication for the Fish Audio Python SDK.
-- [Realtime Streaming](https://docs.fish.audio/features/realtime-streaming.md): Stream audio as it generates for the lowest latency, from text you already have or from an LLM, with the SDKs or the WebSocket API.
-- [JavaScript SDK Reference](https://docs.fish.audio/api-reference/sdk/javascript/api-reference.md): Complete reference for the Fish Audio JavaScript SDK.
+- [JavaScript SDK Reference](https://docs.fish.audio/api-reference/sdk/javascript/api-reference.md): Reference for the Fish Audio JavaScript SDK, covering client setup with an API key, text to speech, realtime streaming over WebSocket with convertRealtime(), speech to text, and voice model creation with voices.ivc.create().
 - [Get Your API Key](https://docs.fish.audio/developer-guide/getting-started/api-key.md): Create a Fish Audio account, generate an API key, and make your first request.
+- [Instant Voice Cloning](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/instant-voice-cloning.md): Clone a voice on the fly for a single request from a short reference clip and its transcript, with Python SDK and JavaScript SDK examples.
+- [Clone a Voice and Wait Until It Is Ready](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/clone-and-wait-until-ready.md): Create a persistent voice from a reference clip, poll until training finishes, then synthesize with it, with Python SDK and JavaScript SDK examples.
+- [One-shot vs Persistent Voice Cloning](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/oneshot-vs-persistent-cloning.md): Choose between instant per-request cloning and a saved, reusable voice model, with Python SDK and JavaScript SDK examples.
+- [Stream TTS to a File](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/streaming-to-file.md): Generate long text-to-speech audio and write it to disk chunk by chunk without buffering it all in memory, with Python SDK and JavaScript SDK examples.
+- [Telephony-grade Audio (8 kHz)](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/telephony-8khz-audio.md): Generate 8 kHz mono WAV or PCM text-to-speech audio for IVR and phone playback, with Python SDK, JavaScript SDK, and curl examples.
+- [Realtime LLM Tokens to Speech](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/realtime-llm-to-speech.md): Pipe a streaming LLM response into speech over a WebSocket as tokens arrive, with stream_websocket() in the Python SDK.
+- [Build a Voice Agent Loop](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/voice-agent-loop.md): Transcribe an utterance, generate a reply with your own LLM, and stream the reply back as speech, with Python SDK and JavaScript SDK examples.
 
 ## Product Guides
 
-- [Text to Speech Guide](https://docs.fish.audio/features/text-to-speech.md): Convert text to natural-sounding speech with Fish Audio.
+- [Text to Speech Guide](https://docs.fish.audio/features/text-to-speech.md): Generate natural speech from text, with Python SDK, JavaScript SDK, and curl examples, plus voice selection, output formats, speed, and latency settings.
 - [Drama 3](https://docs.fish.audio/features/text-to-speech/drama-3.md): Text-to-speech model (drama-3) directed with plain-language directions in square brackets, sounds and pauses, paired tags for specific words, and multi-speaker dialogue.
 - [Audio Infill](https://docs.fish.audio/features/text-to-speech/audio-infill.md): Apply a script change to an existing recording with drama-3: send the take, the full revised transcript and the span to replace, and get the whole take back.
 - [Speech to Text Guide](https://docs.fish.audio/features/speech-to-text.md): Transcribe audio with transcribe-1-pro, including multi-speaker conversations with speaker turns, long recordings and inline emotion cues.
@@ -48,7 +55,8 @@
 - [Transcribe a Live Audio Stream](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/realtime-transcription.md): Python and Node.js clients for the realtime speech-to-text WebSocket (transcribe-stream-1, Preview), plus a browser microphone relay.
 - [Build a Realtime Voice Agent](https://docs.fish.audio/developer-guide/sdk-guide/cookbook/realtime-voice-agent.md): Agent loop on realtime speech to text (transcribe-stream-1, Preview): eager replies, agent_speaking, barge-in and backchannels.
 - [Voice Design Guide](https://docs.fish.audio/features/voice-design.md): Generate candidate voices from natural-language prompts.
-- [Creating Voice Models](https://docs.fish.audio/features/voice-cloning.md): Learn how to create custom voice models with Fish Audio.
+- [Voice Cloning](https://docs.fish.audio/features/voice-cloning.md): Create a custom voice model from audio samples and speak with it by passing its id as reference_id, with Python SDK, JavaScript SDK, and curl examples, plus instant vs. persistent clones and sample audio requirements.
+- [Realtime Streaming](https://docs.fish.audio/features/realtime-streaming.md): Stream text-to-speech audio as it generates for the lowest latency. HTTP streaming for text you already have, with Python SDK, JavaScript SDK, and curl examples, and WebSocket streaming for LLM tokens with the Python SDK.
 - [Emotion Control](https://docs.fish.audio/developer-guide/core-features/emotions.md): Add natural emotions and expressions to your AI-generated speech.
 - [Fine-grained Control](https://docs.fish.audio/developer-guide/core-features/fine-grained-control.md): Advanced control over speech generation.
 - [Pronunciation Dictionaries](https://docs.fish.audio/developer-guide/core-features/fine-grained-control/pronunciation-dictionaries.md): Create, preview, and publish pronunciation dictionaries in the web app and use them in TTS requests.
