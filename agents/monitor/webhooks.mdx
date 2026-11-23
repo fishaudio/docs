@@ -572,7 +572,7 @@ async def fish_webhooks(
         # skipped (the caller never spoke) or error: no verdict to trust.
         detail = f": {analysis['error']}" if analysis.get("error") else ""
         open_ticket(
-            subject=f"Unjudged call {payload['session']['id']}",
+            subject=f"Unjudged call {payload['session']['session_id']}",
             body=f"Analysis {analysis['status']}{detail}",
             customer=payload["session"]["end_user_id"],
         )
@@ -582,7 +582,7 @@ async def fish_webhooks(
     verdict = next((c for c in results if c["name"] == "issue_resolved"), None)
     if verdict and verdict["result"] != "success":
         open_ticket(
-            subject=f"Unresolved call {payload['session']['id']}",
+            subject=f"Unresolved call {payload['session']['session_id']}",
             body=f"{analysis['summary']}\n\n"
             f"issue_resolved: {verdict['result']}. {verdict['rationale']}",
             customer=payload["session"]["end_user_id"],
