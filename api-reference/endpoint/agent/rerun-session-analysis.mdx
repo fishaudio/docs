@@ -2,7 +2,21 @@
 openapi: post /v1/agent/sessions/{session_id}/analysis/rerun
 title: "Rerun Voice Agent Session Analysis"
 sidebarTitle: "Rerun Session Analysis"
-description: "Run a session's post-call analysis again, for example after you changed the\nagent's analysis settings or when the first run failed."
+description: "Run a session's post-call analysis again when the first run did not give you a usable result"
 icon: "rotate-right"
 iconType: "solid"
 ---
+
+There is no request body. You can rerun an analysis that:
+
+- ended in `error` or `skipped`,
+- finished on a transcript that was still incomplete, or
+- is stuck: `queued` for more than 5 minutes, or `running` for more than 15 minutes.
+
+Any other analysis, including one that already completed, returns `409`. A session whose content has been deleted under the data retention policy returns `410`. A session with no analysis record returns `404`.
+
+The rerun uses the analysis settings pinned when the session started, so changing the agent's analysis settings afterwards doesn't change what it produces.
+
+The call returns `201` with the analysis as it stands after it was queued: `status` is usually `queued` and the results are empty. The run finishes in the background, so poll [Get Voice Agent Session](/api-reference/endpoint/agent/get-agent-session) and read its `analysis` for the outcome. When the rerun finishes, Fish sends the `call.analyzed` webhook again; see [Webhooks](/agents/monitor/webhooks).
+
+For what the analysis contains, see [Post-call analysis](/agents/monitor/post-call-analysis).

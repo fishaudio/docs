@@ -2537,7 +2537,7 @@
     "/v1/agent/sessions/{session_id}/analysis/rerun": {
       "post": {
         "summary": "Rerun Session Analysis",
-        "description": "Run the session's post-call analysis again, for example after you changed\nthe agent's analysis settings or when the first run failed. There is no\nrequest body.\n\nOnly an analysis that ended in `error` or `skipped`, one that finished on a\ntranscript that was still incomplete, or one that has been stuck in\n`queued` or `running` for a long time can be rerun. Any other analysis\nreturns 409. A session whose content has been deleted under the data\nretention policy returns 410. A session with no analysis record returns\n404 with `Analysis not found`.\n\nThe call returns 201 with the analysis as it stands right after it was\nqueued: `status` is usually `queued` and the results are empty. The run\nfinishes in the background, so poll `GET /v1/agent/sessions/{session_id}`\nand read its `analysis` for the outcome. A finished rerun sends the\n`call.analyzed` webhook again.",
+        "description": "Run the session's post-call analysis again when the first run did not give\nyou a usable result. There is no request body.\n\nOnly an analysis that ended in `error` or `skipped`, one that finished on a\ntranscript that was still incomplete, or one that is stuck can be rerun. An\nanalysis is stuck when it has been `queued` for more than 5 minutes, or\n`running` for more than 15 minutes (its processing lease has expired). Any\nother analysis returns 409. A session whose content has been deleted under the data\nretention policy returns 410. A session with no analysis record returns\n404 with `Analysis not found`.\n\nThe rerun uses the analysis settings that were pinned when the session\nstarted, so changing the agent's analysis settings afterwards does not\nchange what a rerun produces. An analysis that already completed is\nrejected with 409.\n\nThe call returns 201 with the analysis as it stands right after it was\nqueued: `status` is usually `queued` and the results are empty. The run\nfinishes in the background, so poll `GET /v1/agent/sessions/{session_id}`\nand read its `analysis` for the outcome. A finished rerun sends the\n`call.analyzed` webhook again.",
         "security": [
           {
             "BearerAuth": []
@@ -2558,8 +2558,7 @@
         ],
         "responses": {
           "201": {
-            "description": "Document created, URL follows",
-            "headers": {},
+            "description": "The rerun was queued. The body is the session's analysis as it stands right now: `status` is usually `queued` and the results are empty. Poll `GET /v1/agent/sessions/{session_id}` and read its `analysis` for the outcome.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4751,7 +4750,7 @@
     "/v1/agent/agents/{agent_id}/llm/custom/test": {
       "post": {
         "summary": "Test Custom LLM Endpoint",
-        "description": "Check that an OpenAI-compatible endpoint works for this agent before you\nsave it as `llm.custom`. Fish sends one streamed chat-completions turn to\n`base_url` with the agent's draft system prompt, a fixed user message and\nthe draft's tools, and reports what came back.\n\nProblems with your endpoint (unreachable or blocked host, timeout, a\nnon-2xx status, a reply that is not a server-sent-event stream) are not\nHTTP errors: the call returns 200 and `error` says what went wrong. Look at\n`error` and `status_code` rather than the HTTP status.\n\nOmit `api_key` (or send null) to reuse the key saved in the draft's\n`llm.custom`. That works only while `base_url` is the saved endpoint's\naddress; for any other address the call returns 422 and nothing is sent,\nso a stored key never travels to a new host. Saved headers follow the same\nrule. Unknown request fields return 422.",
+        "description": "Check that an OpenAI-compatible endpoint works for this agent before you\nsave it as `llm.custom`. Fish sends one streamed chat-completions turn to\n`base_url` with the agent's draft system prompt, a fixed user message and\nthe draft's tools, and reports what came back.\n\nProblems with your endpoint (unreachable or blocked host, timeout, a\nnon-2xx status, a reply that is not a server-sent-event stream) are not\nHTTP errors: the call returns 200 and `error` says what went wrong. Look at\n`error` and `status_code` rather than the HTTP status.\n\nOmit `api_key` (or send null) to reuse the key saved in the draft's\n`llm.custom`. That works only while `base_url` is the saved endpoint's\naddress; for any other address the call returns 422 and nothing is sent,\nso a stored key never travels to a new host. Saved headers follow the same\nrule. Unknown request fields return 422.\n\nThe test itself has fixed limits. It sends one turn and does not retry.\nFish waits up to 10 seconds for the response headers and up to 10 seconds\nfor the first content, and gives up after 20 seconds in total. It reads at\nmost 256 KB of the response and does not follow redirects. The API key and\nyour custom headers are never written to logs or echoed back; where your\nendpoint's reply quotes them, they are masked in `error`.",
         "security": [
           {
             "BearerAuth": []

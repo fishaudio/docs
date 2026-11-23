@@ -2,7 +2,20 @@
 openapi: post /v1/agent/tools/{tool_id}/test
 title: "Test Voice Agent Webhook Tool"
 sidebarTitle: "Test Tool"
-description: "Send one real request to a webhook tool's endpoint, the way an agent would\nduring a conversation."
+description: "Send one real request to a webhook tool's endpoint, the way an agent would during a conversation"
 icon: "wrench"
 iconType: "solid"
 ---
+
+<Warning>
+  This sends a real request to your endpoint and can have side effects, such as
+  creating a record. Test against an endpoint where that is safe.
+</Warning>
+
+The tool's stored method, URL, headers (including credentials), body template and request signing are applied to the `arguments` you send, and the endpoint's response comes back in the result.
+
+The request body is optional. Leaving it out is the same as sending `{}`.
+
+A failure to reach your endpoint is not an HTTP error: the call returns `200` and `error` says what went wrong. The call returns `400` for a client tool, which has no server-side request, for a URL or host that isn't allowed, and for a header that doesn't render to a valid value.
+
+For how webhook tools are built and tested in the console, see [Webhook Tools](/agents/build/webhook-tools).
