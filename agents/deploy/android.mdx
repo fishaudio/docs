@@ -1,11 +1,11 @@
 ---
 title: "Voice Agents Android SDK"
 sidebarTitle: "Android SDK"
-description: "Add voice calls with your agent to a native Android app in Kotlin with the agent-android library"
+description: "Add voice calls with your agent to a native Android app in Kotlin with the agent-android-core library"
 icon: "android"
 ---
 
-The `agent-android` library adds voice calls with your agent to a native Android app, in Kotlin. It behaves like the [Web SDK](/agents/deploy/web-sdk) and the [React Native SDK](/agents/deploy/react-native): the same session options, events, error codes, and end reasons. On top of the call, it handles what a phone needs:
+The `agent-android-core` library adds voice calls with your agent to a native Android app, in Kotlin. It behaves like the [Web SDK](/agents/deploy/web-sdk) and the [React Native SDK](/agents/deploy/react-native): the same session options, events, error codes, and end reasons. On top of the call, it handles what a phone needs:
 
 - A foreground service that keeps the microphone running while your app is in the background
 - Audio routing (loudspeaker, earpiece, headsets)
@@ -65,7 +65,7 @@ Then add the SDK to your app module:
 
 ```kotlin build.gradle.kts
 dependencies {
-    implementation("com.fishaudio.agent:agent-android:0.1.0")
+    implementation("com.fishaudio.agent:agent-android-core:0.1.0")
 }
 ```
 
