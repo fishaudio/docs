@@ -14,9 +14,14 @@ import Prerequisites from "/snippets/prerequisites.mdx";
 
 A voice agent is three stages chained together: [`asr.transcribe()`](/api-reference/sdk/python/resources#transcribe) turns the caller's audio into text, your own LLM turns that text into a reply, and [`tts.stream()`](/api-reference/sdk/python/resources#stream) turns the reply back into speech. The transcript and the reply are just strings, so the only Fish Audio-specific parts are the first and last calls. Streaming the reply lets you start writing (or forwarding) audio before the whole sentence is synthesized.
 
-The recipe transcribes with `transcribe-1-pro`. Every tab selects it with the `model` request header; without that header, the request is served and billed as `transcribe-1`.
+The recipe transcribes with `transcribe-1-pro`. Every tab selects it with the `model` request header, which the Python SDK sends for its `model` argument; without that header, the request is served and billed as `transcribe-1`.
 
-Install the Python SDK first: `pip install fish-audio-sdk`.
+Install the Python SDK first: `pip install --upgrade fish-audio-sdk`.
+
+<Note>
+  The `model` argument of `asr.transcribe()` requires `fish-audio-sdk` 1.5.0 or
+  later.
+</Note>
 
 <CodeGroup>
 
@@ -24,7 +29,6 @@ Install the Python SDK first: `pip install fish-audio-sdk`.
 import re
 
 from fishaudio import FishAudio
-from fishaudio.core import RequestOptions
 from fishaudio.utils import save
 
 client = FishAudio()
@@ -39,10 +43,8 @@ def voice_agent_turn(audio_path: str, out_path: str) -> str:
     with open(audio_path, "rb") as f:
         heard = client.asr.transcribe(
             audio=f.read(),
+            model="transcribe-1-pro",
             include_timestamps=False,
-            request_options=RequestOptions(
-                additional_headers={"model": "transcribe-1-pro"}
-            ),
         )
 
     # Drop speaker markers such as <|speaker:0|>; keep cues such as [laughter].
@@ -62,7 +64,6 @@ import asyncio
 import re
 
 from fishaudio import AsyncFishAudio
-from fishaudio.core import RequestOptions
 from fishaudio.utils import save
 
 def reply_from_llm(text: str) -> str:
@@ -75,10 +76,8 @@ async def main():
         with open("speech.wav", "rb") as f:
             heard = await client.asr.transcribe(
                 audio=f.read(),
+                model="transcribe-1-pro",
                 include_timestamps=False,
-                request_options=RequestOptions(
-                    additional_headers={"model": "transcribe-1-pro"}
-                ),
             )
 
         # Drop speaker markers such as <|speaker:0|>; keep cues such as [laughter].

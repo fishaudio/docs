@@ -12,13 +12,18 @@ import Prerequisites from "/snippets/prerequisites.mdx";
 
 ## Recipe
 
-This recipe uses `transcribe-1-pro`, which handles recordings up to 60 minutes long. Every tab selects it with the `model` request header; without that header, the request is served and billed as `transcribe-1`.
+This recipe uses `transcribe-1-pro`, which handles recordings up to 60 minutes long. Every tab selects it with the `model` request header, which the Python SDK sends for its `model` argument; without that header, the request is served and billed as `transcribe-1`.
 
 Read each file's bytes from disk and pass them to [`asr.transcribe()`](/api-reference/sdk/python/resources#transcribe) with `language` set to a lowercase ISO 639-1 code such as `en`, `zh`, or `ja`. Other forms, such as `en-US` or `English`, may be rejected with 400. Pass `language` when you know the source language. Detection still runs, and the hint does not force the transcript into that language; the hint is reported as `language_code` when the language cannot be determined. See [Language](/features/speech-to-text#language) for details.
 
 Collect one result row per file as you go. If a file cannot be read, its request fails with a network error such as a timeout, or the API returns an error for it, record the error in that file's row and move on to the next file.
 
-Install the Python SDK first: `pip install fish-audio-sdk`.
+Install the Python SDK first: `pip install --upgrade fish-audio-sdk`.
+
+<Note>
+  The `model` argument of `asr.transcribe()` requires `fish-audio-sdk` 1.5.0 or
+  later.
+</Note>
 
 <CodeGroup>
 
@@ -32,10 +37,7 @@ client = FishAudio()
 
 paths = ["speech.wav"]  # add more file paths here
 language = "en"
-options = RequestOptions(
-    timeout=900,  # long recordings can take several minutes
-    additional_headers={"model": "transcribe-1-pro"},
-)
+options = RequestOptions(timeout=900)  # long recordings can take several minutes
 
 results = []
 for path in paths:
@@ -44,6 +46,7 @@ for path in paths:
             audio = f.read()
         transcript = client.asr.transcribe(
             audio=audio,
+            model="transcribe-1-pro",
             language=language,
             include_timestamps=False,
             request_options=options,
@@ -81,10 +84,8 @@ async def main():
     async with AsyncFishAudio() as client:
         paths = ["speech.wav"]  # add more file paths here
         language = "en"
-        options = RequestOptions(
-            timeout=900,  # long recordings can take several minutes
-            additional_headers={"model": "transcribe-1-pro"},
-        )
+        # long recordings can take several minutes
+        options = RequestOptions(timeout=900)
 
         results = []
         for path in paths:
@@ -93,6 +94,7 @@ async def main():
                     audio = f.read()
                 transcript = await client.asr.transcribe(
                     audio=audio,
+                    model="transcribe-1-pro",
                     language=language,
                     include_timestamps=False,
                     request_options=options,

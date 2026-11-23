@@ -51,17 +51,12 @@ curl --request POST https://api.fish.audio/v1/asr \
 
 ```python Python
 from fishaudio import FishAudio
-from fishaudio.core import RequestOptions
 
 client = FishAudio()  # reads FISH_API_KEY
 
 with open("speech.wav", "rb") as f:
-    result = client.asr.transcribe(
-        audio=f.read(),
-        request_options=RequestOptions(
-            additional_headers={"model": "transcribe-1-pro"}
-        ),
-    )
+    # model sends the header; it requires fish-audio-sdk 1.5.0 or later
+    result = client.asr.transcribe(audio=f.read(), model="transcribe-1-pro")
 
 print(result.text)
 ```

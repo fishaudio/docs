@@ -13,7 +13,222 @@ import Prerequisites from "/snippets/prerequisites.mdx";
 
 <Prerequisites />
 
-The SDKs do not wrap the realtime speech-to-text endpoint yet, so this recipe speaks the WebSocket protocol directly. Install a WebSocket client and a MessagePack library:
+Install the Python SDK:
+
+```bash
+pip install --upgrade fish-audio-sdk
+```
+
+<Note>
+  `client.asr.stream_websocket()` requires `fish-audio-sdk` 1.5.0 or later. The
+  TypeScript SDK does not support realtime speech to text yet: in JavaScript,
+  [connect to the WebSocket directly](#without-the-sdk).
+</Note>
+
+You also need a 16-bit PCM mono WAV file, at 8000, 12000, 16000, 22050, 24000, 32000, 44100 or 48000 Hz. To convert a recording, run `ffmpeg -i input.mp3 -ac 1 -ar 16000 -c:a pcm_s16le speech.wav`.
+
+## Recipe
+
+`client.asr.stream_websocket()` takes an iterator of audio chunks and returns the events the server sends. The script streams the file in 40 ms chunks at real-time speed, as a live microphone would, and prints every event until the session ends. The SDK opens the session, sends each chunk as it is yielded, and ends the session when the iterator is exhausted.
+
+<CodeGroup>
+
+```python Python
+"""Stream a WAV file to Fish Audio realtime speech-to-text and print the events.
+
+    pip install --upgrade fish-audio-sdk
+    export FISH_API_KEY=...
+    python transcribe_file.py speech.wav
+
+The WAV must be 16-bit PCM, mono, at 8000, 12000, 16000, 22050, 24000, 32000, 44100 or 48000 Hz.
+"""
+import sys
+import time
+import wave
+
+from fishaudio import FishAudio
+
+CHUNK_MS = 40  # ms of audio per chunk; 20-40 ms suits live audio
+
+
+def microphone(wav, rate):
+    """Yield the audio in real time, as a live microphone would."""
+    start = time.monotonic()
+    sent_ms = 0
+    while chunk := wav.readframes(rate * CHUNK_MS // 1000):
+        yield chunk
+        sent_ms += CHUNK_MS
+        time.sleep(max(0.0, start + sent_ms / 1000 - time.monotonic()))
+
+
+def show(event):
+    t = event.type
+    if t == "session_started":
+        print(f"session {event.session_id} (request {event.request_id})")
+    elif t == "draft":
+        print(f"  draft     #{event.turn_index}: {event.text}")
+    elif t == "eager_end_of_turn":
+        print(f"  eager     #{event.turn_index}: {event.text}")
+    elif t == "committed":
+        who = "user " if event.user_turn else "other"
+        print(f"committed   #{event.turn_index} [{who}] {event.audio_start_ms}-{event.audio_end_ms} ms "
+              f"({event.reason}, {event.language_code or '?'}): {event.text}")
+    elif t == "error":  # recoverable: the session continues
+        print(f"error {event.error_type} ({event.code}): {event.message} [request {event.request_id}]")
+    elif t == "session_done":
+        print(f"done: {event.stats.audio_ms} ms of audio, {event.stats.turns} turns")
+    else:  # speech_start, user_turn_taken, turn_resumed, ...
+        print(f"  {t} #{getattr(event, 'turn_index', '')}")
+
+
+def main(path):
+    wav = wave.open(path, "rb")
+    if wav.getsampwidth() != 2 or wav.getnchannels() != 1:
+        sys.exit("need a 16-bit mono WAV")
+    rate = wav.getframerate()
+
+    client = FishAudio()  # reads FISH_API_KEY
+    for event in client.asr.stream_websocket(
+        microphone(wav, rate), sample_rate=rate, eager=True, drafts=True
+    ):
+        show(event)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1])
+```
+
+```python Python (async)
+"""The same script with AsyncFishAudio: pass an async iterator, read with async for."""
+import asyncio
+import sys
+import wave
+
+from fishaudio import AsyncFishAudio
+
+CHUNK_MS = 40  # ms of audio per chunk; 20-40 ms suits live audio
+
+
+async def microphone(wav, rate):
+    """Yield the audio in real time, as a live microphone would."""
+    loop = asyncio.get_running_loop()
+    start = loop.time()
+    sent_ms = 0
+    while chunk := wav.readframes(rate * CHUNK_MS // 1000):
+        yield chunk
+        sent_ms += CHUNK_MS
+        await asyncio.sleep(max(0.0, start + sent_ms / 1000 - loop.time()))
+
+
+async def main(path):
+    wav = wave.open(path, "rb")
+    if wav.getsampwidth() != 2 or wav.getnchannels() != 1:
+        sys.exit("need a 16-bit mono WAV")
+    rate = wav.getframerate()
+
+    client = AsyncFishAudio()  # reads FISH_API_KEY
+    async for event in client.asr.stream_websocket(
+        microphone(wav, rate), sample_rate=rate, eager=True, drafts=True
+    ):
+        if event.type == "draft":
+            print(f"  draft     #{event.turn_index}: {event.text}")
+        elif event.type == "committed":
+            print(f"committed   #{event.turn_index}: {event.text}")
+        elif event.type == "session_done":
+            print(f"done: {event.stats.audio_ms} ms of audio, {event.stats.turns} turns")
+    await client.close()
+
+
+if __name__ == "__main__":
+    asyncio.run(main(sys.argv[1]))
+```
+
+</CodeGroup>
+
+Run it with your API key in `FISH_API_KEY`:
+
+```bash
+python transcribe_file.py speech.wav
+```
+
+For a 15-second customer-support clip, the output looks like this (`...` marks drafts left out):
+
+```text
+session s_ab12cd34 (request 0b6f4c1e-7d2a-4e8b-9f3c-5a1d2e3f4b6c)
+  speech_start #0
+  draft     #0: <|speaker:0|> Can you...
+  draft     #0: <|speaker:0|> Can you tell
+  user_turn_taken #0
+  draft     #0: <|speaker:0|> Can you tell me what...
+  ...
+  draft     #0: <|speaker:0|> Can you tell me what time the pharmacy on Main Street closes tonight?
+  eager     #0: <|speaker:0|> Can you tell me what time the pharmacy on Main Street closes tonight?
+committed   #0 [user ] 2768-8000 ms (eot, en): <|speaker:0|> Can you tell me what time the pharmacy on Main Street closes tonight?
+  speech_start #1
+  draft     #1: <|speaker:0|> Uh-huh.
+  user_turn_taken #1
+  eager     #1: <|speaker:0|> Uh-huh.
+committed   #1 [user ] 9840-11840 ms (eot, ?): <|speaker:0|> Uh-huh.
+  speech_start #2
+  draft     #2: <|speaker:0|> I'd like
+  user_turn_taken #2
+  ...
+  draft     #2: <|speaker:0|> I'd like to change my deli-
+committed   #2 [user ] 13168-14992 ms (audio_done, en): <|speaker:0|> I'd like to change my delivery
+done: 15000 ms of audio, 3 turns
+```
+
+The clip ends mid-sentence, so the last turn is committed by `audio_done`. Drafts can hold partial words, such as `deli-`; the committed text is final.
+
+## Read the events
+
+Each event is an object with a `type` and the fields of the server message as attributes; a field the server left out is `None`.
+
+- **`speech_start`** opens a turn when voice activity begins. In the default `auto` mode, noise and other voices open turns too.
+- **`draft`** is the whole turn so far, and replaces the previous draft. Drafts come only with `drafts=True` (`results.drafts: true` in the protocol); use them for live captions.
+- **`user_turn_taken`** says the server judged that the user is taking their turn, rather than noise or someone else nearby.
+- **`eager_end_of_turn`** comes with `eager=True` (`turn_detection.eager: true`) when the turn has probably ended. Its text equals the final transcript unless `turn_resumed` follows, so an agent can start its reply early.
+- **`committed`** is the final transcript of the turn. `user_turn: false` marks a non-user turn, such as background noise or a short acknowledgement while your agent is speaking. Speaker tags such as `<|speaker:0|>` are stable within the session; strip them and trim the text, or pass `diarize=False` (`results.diarize: false`). Text can also contain [sound tags](/api-reference/endpoint/websocket/asr-realtime#sound-tags) such as `[laughter]`; strip them too, or turn them off with `results.tag_audio_events: false`. `language_code` is missing when the text is too short to tell, as for "Uh-huh." above.
+- **`session_done`** is the last event. The SDK sends `audio_done` when your iterator is exhausted; the server answers with `session_done` and closes the connection with code 1000.
+
+The SDK skips message types it does not know; if you read the protocol yourself, ignore message types and fields you do not know, because new ones can be added. Every message is described in the [WebSocket reference](/api-reference/endpoint/websocket/asr-realtime#server-messages).
+
+<Tip>
+  The script streams the file at real-time speed so that the events arrive as
+  they would for live audio. To transcribe a recording you already have, use
+  [`POST /v1/asr`](/features/speech-to-text) instead; it is simpler and returns
+  the whole transcript at once.
+</Tip>
+
+## Choose what you receive
+
+The keyword arguments of `stream_websocket()` set the session's options:
+
+| Argument         | Default  | What it does                                                                                     |
+| ---------------- | -------- | ------------------------------------------------------------------------------------------------ |
+| `sample_rate`    | `16000`  | The sample rate of your audio, in Hz. The server converts it, so do not resample.                |
+| `drafts`         | off      | `True` sends live `draft` events while a turn is open.                                           |
+| `eager`          | off      | `True` sends `eager_end_of_turn` as soon as a turn has probably ended.                           |
+| `diarize`        | on       | `False` removes speaker tags from the text.                                                      |
+| `turn_detection` | `"auto"` | `"vad"` ends a turn after a fixed silence; `"manual"` ends it when you call `finalize()`.        |
+| `terms`          | none     | Names, products and jargon to recognize, for example `["Main Street"]`.                          |
+| `config`         |          | An `ASRRealtimeConfig` with every other option, such as word timestamps, sound tags and history. |
+
+By default, each transcript starts with a speaker tag, as in the output above. For plain text, pass `diarize=False`:
+
+```python
+for event in client.asr.stream_websocket(audio_chunks, sample_rate=16000, diarize=False):
+    if event.type == "committed":
+        print(event.text)  # Can you tell me what time the pharmacy on Main Street closes tonight?
+```
+
+The object that `stream_websocket()` returns also sends messages during the session: `finalize()` commits the current turn (push-to-talk), and `agent_speaking()`, `add_context()` and `configure()` are for [voice agents](/developer-guide/sdk-guide/cookbook/realtime-voice-agent). To stop before the audio ends, leave the loop, or use the stream in a `with` block; the SDK closes the connection.
+
+An error that ends the session raises `ASRRealtimeError` (from `fishaudio`), with the server's `error_type` and the WebSocket `close_code`. A refused connection raises `APIError`, such as `AuthenticationError` for an invalid API key.
+
+## Without the SDK
+
+In JavaScript, in other languages, or to control the connection yourself, speak the WebSocket protocol directly: connect to `wss://api.fish.audio/v1/asr/realtime`, send a `config` message, wait for `session_started`, then send `audio` messages and finish with `audio_done`. Every message is a MessagePack map in a binary frame. Install a WebSocket client and a MessagePack library:
 
 <CodeGroup>
 
@@ -27,15 +242,11 @@ npm install ws @msgpack/msgpack
 
 </CodeGroup>
 
-You also need a 16-bit PCM mono WAV file, at 8000, 12000, 16000, 22050, 24000, 32000, 44100 or 48000 Hz. To convert a recording, run `ffmpeg -i input.mp3 -ac 1 -ar 16000 -c:a pcm_s16le speech.wav`.
-
-## Recipe
-
-The script connects to `wss://api.fish.audio/v1/asr/realtime`, sends a `config` message, waits for `session_started`, and then streams the file in 40 ms messages at real-time speed, as a live microphone would. It prints every message the server sends until the session ends.
+These scripts do the same as the recipe above, and also print the close code when the session ends (`closed: 1000 done`):
 
 <CodeGroup>
 
-```python Python
+```python Python (websockets)
 """Stream a WAV file to Fish Audio realtime speech-to-text and print the events.
 
     pip install "websockets>=14" msgpack
@@ -125,7 +336,7 @@ if __name__ == "__main__":
     asyncio.run(main(sys.argv[1]))
 ```
 
-```javascript JavaScript
+```javascript JavaScript (ws)
 // npm install ws @msgpack/msgpack
 // FISH_API_KEY=... node transcribe_file.mjs speech.wav
 import { readFileSync } from "node:fs";
@@ -240,61 +451,13 @@ The audio goes in `data` as the raw PCM bytes, which must travel as MessagePack 
 
 The server closes a session after 30 seconds without any client message, but a WebSocket ping counts as one, and Python's `websockets` sends a ping every 20 seconds by default, so the session stays open even if your audio stops; see [Capture audio well](/developer-guide/sdk-guide/cookbook/realtime-voice-agent#capture-audio-well) for a live source that can stall.
 
-Run it with your API key in `FISH_API_KEY`:
+Run them with your API key in `FISH_API_KEY`:
 
 ```bash
 python transcribe_file.py speech.wav
 # or
 node transcribe_file.mjs speech.wav
 ```
-
-For a 15-second customer-support clip, the output looks like this (`...` marks drafts left out):
-
-```text
-session s_ab12cd34 (request 0b6f4c1e-7d2a-4e8b-9f3c-5a1d2e3f4b6c)
-  speech_start #0
-  draft     #0: <|speaker:0|> Can you...
-  draft     #0: <|speaker:0|> Can you tell
-  user_turn_taken #0
-  draft     #0: <|speaker:0|> Can you tell me what...
-  ...
-  draft     #0: <|speaker:0|> Can you tell me what time the pharmacy on Main Street closes tonight?
-  eager     #0: <|speaker:0|> Can you tell me what time the pharmacy on Main Street closes tonight?
-committed   #0 [user ] 2768-8000 ms (eot, en): <|speaker:0|> Can you tell me what time the pharmacy on Main Street closes tonight?
-  speech_start #1
-  draft     #1: <|speaker:0|> Uh-huh.
-  user_turn_taken #1
-  eager     #1: <|speaker:0|> Uh-huh.
-committed   #1 [user ] 9840-11840 ms (eot, ?): <|speaker:0|> Uh-huh.
-  speech_start #2
-  draft     #2: <|speaker:0|> I'd like
-  user_turn_taken #2
-  ...
-  draft     #2: <|speaker:0|> I'd like to change my deli-
-committed   #2 [user ] 13168-14992 ms (audio_done, en): <|speaker:0|> I'd like to change my delivery
-done: 15000 ms of audio, 3 turns
-closed: 1000 done
-```
-
-The clip ends mid-sentence, so the last turn is committed by `audio_done`. Drafts can hold partial words, such as `deli-`; the committed text is final.
-
-## Read the events
-
-- **`speech_start`** opens a turn when voice activity begins. In the default `auto` mode, noise and other voices open turns too.
-- **`draft`** is the whole turn so far, and replaces the previous draft. Drafts come only with `results.drafts: true`; use them for live captions.
-- **`user_turn_taken`** says the server judged that the user is taking their turn, rather than noise or someone else nearby.
-- **`eager_end_of_turn`** comes with `turn_detection.eager: true` when the turn has probably ended. Its text equals the final transcript unless `turn_resumed` follows, so an agent can start its reply early.
-- **`committed`** is the final transcript of the turn. `user_turn: false` marks a non-user turn, such as background noise or a short acknowledgement while your agent is speaking. Speaker tags such as `<|speaker:0|>` are stable within the session; strip them and trim the text, or send `results.diarize: false`. Text can also contain [sound tags](/api-reference/endpoint/websocket/asr-realtime#sound-tags) such as `[laughter]`; strip them too, or send `results.tag_audio_events: false`. `language_code` is omitted when the text is too short to tell, as for "Uh-huh." above.
-- **`session_done`** follows `audio_done`, and the server then closes the connection with code 1000.
-
-Ignore message types and fields you do not know: new ones can be added. Every message is described in the [WebSocket reference](/api-reference/endpoint/websocket/asr-realtime#server-messages).
-
-<Tip>
-  The script streams the file at real-time speed so that the events arrive as
-  they would for live audio. To transcribe a recording you already have, use
-  [`POST /v1/asr`](/features/speech-to-text) instead; it is simpler and returns
-  the whole transcript at once.
-</Tip>
 
 ## Capture from a browser microphone
 

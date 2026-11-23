@@ -76,7 +76,43 @@ The realtime endpoints of the [compatible APIs](/developer-guide/compat/capabili
 
 ## Quick start
 
-The SDKs do not wrap this endpoint; you connect with any WebSocket client and exchange MessagePack messages.
+With the Python SDK, pass an iterator of audio chunks to `client.asr.stream_websocket()` and read the events it returns. Install it with `pip install --upgrade fish-audio-sdk` and set `FISH_API_KEY` in your environment.
+
+```python
+import wave
+
+from fishaudio import FishAudio
+
+client = FishAudio()  # reads FISH_API_KEY
+
+
+def audio_chunks():
+    # From a microphone, yield each chunk as you capture it.
+    with wave.open("speech.wav", "rb") as wav:  # 16-bit mono PCM, 16 kHz
+        while chunk := wav.readframes(640):  # 40 ms
+            yield chunk
+
+
+for event in client.asr.stream_websocket(
+    audio_chunks(), sample_rate=16000, drafts=True, diarize=False
+):
+    if event.type == "draft":  # live text of the open turn, not final
+        print("...", event.text)
+    elif event.type == "committed":  # final transcript of the turn
+        print(event.text)
+```
+
+Transcripts start with a speaker tag such as `<|speaker:0|>` by default; `diarize=False` gives plain text. With `AsyncFishAudio`, pass an async iterator and read the events with `async for`.
+
+<Note>
+  `client.asr.stream_websocket()` requires `fish-audio-sdk` 1.5.0 or later. The
+  TypeScript SDK does not support realtime speech to text yet; use the WebSocket
+  protocol below.
+</Note>
+
+### Without the SDK
+
+In JavaScript and other languages, connect with any WebSocket client and exchange MessagePack messages. The Python SDK does these steps for you.
 
 <Steps>
   <Step title="Connect">
@@ -110,7 +146,7 @@ The SDKs do not wrap this endpoint; you connect with any WebSocket client and ex
 }
 ```
 
-[Transcribe a live audio stream](/developer-guide/sdk-guide/cookbook/realtime-transcription) has complete, tested clients in Python and Node.js, and a browser microphone page with a server relay.
+[Transcribe a live audio stream](/developer-guide/sdk-guide/cookbook/realtime-transcription) has a complete, tested recipe with the Python SDK, WebSocket clients in Python and Node.js, and a browser microphone page with a server relay.
 
 ## How a session works
 
@@ -198,7 +234,7 @@ Send 16-bit little-endian PCM, mono, at 8000, 12000, 16000, 22050, 24000, 32000,
 
 ### Speakers
 
-Transcripts contain speaker tags such as `<|speaker:0|>`, stable within a session. Strip them, or send `results.diarize: false` for plain text. Whitespace right after a tag can vary, so trim the text after you strip the tags. Transcripts can also contain sound tags such as `[laughter]` or `[pause]`. Strip them too, or send `results.tag_audio_events: false` to remove them; see [Sound tags](/api-reference/endpoint/websocket/asr-realtime#sound-tags).
+Transcripts contain speaker tags such as `<|speaker:0|>`, stable within a session. Strip them, or send `results.diarize: false` (`diarize=False` in the Python SDK) for plain text. Whitespace right after a tag can vary, so trim the text after you strip the tags. Transcripts can also contain sound tags such as `[laughter]` or `[pause]`. Strip them too, or send `results.tag_audio_events: false` to remove them; see [Sound tags](/api-reference/endpoint/websocket/asr-realtime#sound-tags).
 
 ### Keys and browsers
 

@@ -93,11 +93,10 @@ client = FishAudio()  # reads FISH_API_KEY
 with open("speech.wav", "rb") as f:
     result = client.asr.transcribe(
         audio=f.read(),
+        model="transcribe-1-pro",
         include_timestamps=True,
-        request_options=RequestOptions(
-            timeout=900,  # long recordings can take several minutes
-            additional_headers={"model": "transcribe-1-pro"},
-        ),
+        # long recordings can take several minutes
+        request_options=RequestOptions(timeout=900),
     )
 
 print(result.text)
@@ -140,10 +139,12 @@ The response contains `text`, `duration` (seconds), `segments`, and `request_id`
 The Python SDK currently returns only `text`, `duration`, and `segments`. To read the other fields, call the API directly (see [Direct API](#direct-api-messagepack)).
 
 <Note>
-  The Python SDK selects Pro through `RequestOptions.additional_headers`;
-  `asr.transcribe()` has no `model` argument, and it cannot send the
-  `transcribe-1-pro` fields such as `diarize`. The JavaScript example calls the
-  REST API directly so the header is explicit. For multipart uploads, let your
+  In the Python SDK, `model="transcribe-1-pro"` sends the `model` header. The
+  argument requires `fish-audio-sdk` 1.5.0 or later; on earlier versions, pass
+  `request_options=RequestOptions(additional_headers={"model": "transcribe-1-pro"})`
+  instead. `asr.transcribe()` cannot send the `transcribe-1-pro` fields such as
+  `diarize`. The JavaScript example calls the REST API directly so the header is
+  explicit. For multipart uploads, let your
   HTTP client set `Content-Type` and its boundary.
 </Note>
 
@@ -160,10 +161,8 @@ Each segment is `{ "text", "start", "end" }`, with times in **seconds**. Segment
 ```python Python
 result = client.asr.transcribe(
     audio=audio_bytes,
+    model="transcribe-1-pro",
     include_timestamps=True,
-    request_options=RequestOptions(
-        additional_headers={"model": "transcribe-1-pro"}
-    ),
 )
 
 print(f"{result.duration:.1f}s total")
@@ -371,14 +370,12 @@ If the language cannot be determined (for example, very short audio), `language_
 <CodeGroup>
 
 ```python Python
-pro = RequestOptions(additional_headers={"model": "transcribe-1-pro"})
-
 # Auto-detect
-result = client.asr.transcribe(audio=audio_bytes, request_options=pro)
+result = client.asr.transcribe(audio=audio_bytes, model="transcribe-1-pro")
 
 # Provide a language hint
 result = client.asr.transcribe(
-    audio=audio_bytes, language="zh", request_options=pro
+    audio=audio_bytes, language="zh", model="transcribe-1-pro"
 )
 
 ```
@@ -494,12 +491,7 @@ import json
 from fishaudio.exceptions import APIError
 
 try:
-    result = client.asr.transcribe(
-        audio=audio_bytes,
-        request_options=RequestOptions(
-            additional_headers={"model": "transcribe-1-pro"}
-        ),
-    )
+    result = client.asr.transcribe(audio=audio_bytes, model="transcribe-1-pro")
 except APIError as e:
     try:
         error = json.loads(e.body or "{}")
@@ -525,10 +517,8 @@ async def main():
     with open("speech.wav", "rb") as f:
         result = await client.asr.transcribe(
             audio=f.read(),
-            request_options=RequestOptions(
-                timeout=900,
-                additional_headers={"model": "transcribe-1-pro"},
-            ),
+            model="transcribe-1-pro",
+            request_options=RequestOptions(timeout=900),
         )
     print(result.text)
 
@@ -544,12 +534,13 @@ from fishaudio.core import RequestOptions
 
 async def transcribe_all(paths):
     client = AsyncFishAudio()
-    pro = RequestOptions(
-        timeout=900, additional_headers={"model": "transcribe-1-pro"}
-    )
+    options = RequestOptions(timeout=900)
     clips = [open(p, "rb").read() for p in paths]
     return await asyncio.gather(*[
-        client.asr.transcribe(audio=clip, request_options=pro) for clip in clips
+        client.asr.transcribe(
+            audio=clip, model="transcribe-1-pro", request_options=options
+        )
+        for clip in clips
     ])
 
 for result in asyncio.run(transcribe_all(["speech.wav"])):
