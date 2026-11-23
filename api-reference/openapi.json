@@ -2534,6 +2534,281 @@
         ]
       }
     },
+    "/v1/agent/sessions/{session_id}/analysis/rerun": {
+      "post": {
+        "summary": "Rerun Session Analysis",
+        "description": "Run the session's post-call analysis again, for example after you changed\nthe agent's analysis settings or when the first run failed. There is no\nrequest body.\n\nOnly an analysis that ended in `error` or `skipped`, one that finished on a\ntranscript that was still incomplete, or one that has been stuck in\n`queued` or `running` for a long time can be rerun. Any other analysis\nreturns 409. A session whose content has been deleted under the data\nretention policy returns 410. A session with no analysis record returns\n404 with `Analysis not found`.\n\nThe call returns 201 with the analysis as it stands right after it was\nqueued: `status` is usually `queued` and the results are empty. The run\nfinishes in the background, so poll `GET /v1/agent/sessions/{session_id}`\nand read its `analysis` for the outcome. A finished rerun sends the\n`call.analyzed` webhook again.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Document created, URL follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Public trim of the post-call analysis record: outcomes only, no run\ninternals (model, tokens, config hash).",
+                  "properties": {
+                    "status": {
+                      "enum": [
+                        "queued",
+                        "running",
+                        "completed",
+                        "skipped",
+                        "error"
+                      ],
+                      "title": "Status",
+                      "type": "string"
+                    },
+                    "summary": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Summary"
+                    },
+                    "data": {
+                      "items": {
+                        "$ref": "#/components/schemas/AgentSessionAnalysisDataValue"
+                      },
+                      "title": "Data",
+                      "type": "array"
+                    },
+                    "criteria_results": {
+                      "items": {
+                        "$ref": "#/components/schemas/AgentSessionAnalysisCriterionResult"
+                      },
+                      "title": "Criteria Results",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request conflict",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "URI no longer exists and has been permanently removed",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Sessions"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "Rerun Session Analysis",
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/agent/sessions/<session-id>/analysis/rerun \\\n  --header 'Authorization: Bearer <token>'"
+          }
+        ]
+      }
+    },
     "/v1/agent/agents": {
       "get": {
         "summary": "List Agents",
@@ -4469,6 +4744,279 @@
             "lang": "bash",
             "label": "Update Draft Config",
             "source": "curl --request PATCH \\\n  --url https://api.fish.audio/v1/agent/agents/<agent-id>/config \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --data '{\n    \"prompt\": {\n      \"system_prompt\": \"You are the receptionist for Fish Dental.\"\n    },\n    \"webhooks\": {\n      \"post_call\": [\n        {\n          \"url\": \"https://example.com/hooks/fish\",\n          \"secret\": \"<signing-secret>\"\n        }\n      ]\n    }\n  }'"
+          }
+        ]
+      }
+    },
+    "/v1/agent/agents/{agent_id}/llm/custom/test": {
+      "post": {
+        "summary": "Test Custom LLM Endpoint",
+        "description": "Check that an OpenAI-compatible endpoint works for this agent before you\nsave it as `llm.custom`. Fish sends one streamed chat-completions turn to\n`base_url` with the agent's draft system prompt, a fixed user message and\nthe draft's tools, and reports what came back.\n\nProblems with your endpoint (unreachable or blocked host, timeout, a\nnon-2xx status, a reply that is not a server-sent-event stream) are not\nHTTP errors: the call returns 200 and `error` says what went wrong. Look at\n`error` and `status_code` rather than the HTTP status.\n\nOmit `api_key` (or send null) to reuse the key saved in the draft's\n`llm.custom`. That works only while `base_url` is the saved endpoint's\naddress; for any other address the call returns 422 and nothing is sent,\nso a stored key never travels to a new host. Saved headers follow the same\nrule. Unknown request fields return 422.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Agent Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicAgentLLMCustomTestPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Probe outcome. Endpoint failures are data (`error`), never an HTTP error.",
+                  "properties": {
+                    "status_code": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "HTTP status from the endpoint; null when it was never reached.",
+                      "title": "Status Code"
+                    },
+                    "streams_content": {
+                      "default": false,
+                      "description": "True when at least one SSE `data:` chunk carried non-empty `choices[0].delta.content` or a `choices[0].delta.tool_calls` entry.",
+                      "title": "Streams Content",
+                      "type": "boolean"
+                    },
+                    "tools_sent": {
+                      "default": 0,
+                      "description": "OpenAI-format tools included in the request.",
+                      "title": "Tools Sent",
+                      "type": "integer"
+                    },
+                    "tool_calls_returned": {
+                      "default": 0,
+                      "description": "Distinct tool calls in the streamed response.",
+                      "title": "Tool Calls Returned",
+                      "type": "integer"
+                    },
+                    "ttft_ms": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Milliseconds from sending the request to the first content or tool-call delta; null when none arrived.",
+                      "title": "Ttft Ms"
+                    },
+                    "latency_ms": {
+                      "description": "Total probe time in milliseconds.",
+                      "title": "Latency Ms",
+                      "type": "integer"
+                    },
+                    "error": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Short reason when the probe failed; null on success.",
+                      "title": "Error"
+                    }
+                  },
+                  "required": [
+                    "latency_ms"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agents"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "Test Custom LLM Endpoint",
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/agent/agents/<agent-id>/llm/custom/test \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --data '{\n    \"base_url\": \"https://llm.example.com/v1\",\n    \"model\": \"my-model\",\n    \"api_key\": \"<endpoint-api-key>\"\n  }'"
           }
         ]
       }
@@ -10987,6 +11535,318 @@
         "tags": [
           "Agent Tools"
         ]
+      }
+    },
+    "/v1/agent/tools/{tool_id}/test": {
+      "post": {
+        "summary": "Test Tool",
+        "description": "Call a webhook tool's endpoint once, the way an agent would during a\nconversation: the stored method, URL, headers (credentials included),\nbody template and request signing are applied to `arguments`, and the\nresponse comes back in the result. **This is a real request to your\nendpoint and can have side effects**, such as creating a record.\n\nThe body is optional; leaving it out is the same as sending `{}`. Unknown\nrequest fields return 422. Client tools have no server-side request and\nreturn 400, as does a URL or host that is not allowed or a header that does\nnot render to a valid value.\n\nA failure to reach your endpoint is not an HTTP error: the call returns\n200 and `error` says what went wrong.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tool_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Tool Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status_code": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "HTTP status your endpoint returned; null when it was never reached.",
+                      "title": "Status Code"
+                    },
+                    "status_text": {
+                      "default": "",
+                      "description": "Reason phrase that came with the status, if any.",
+                      "title": "Status Text",
+                      "type": "string"
+                    },
+                    "latency_ms": {
+                      "description": "Time from sending the request to the response, in milliseconds.",
+                      "title": "Latency Ms",
+                      "type": "integer"
+                    },
+                    "response_body": {
+                      "default": "",
+                      "description": "Response body as text, cut to a size limit (see `response_truncated`).",
+                      "title": "Response Body",
+                      "type": "string"
+                    },
+                    "response_headers": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "Response headers from your endpoint.",
+                      "title": "Response Headers",
+                      "type": "object"
+                    },
+                    "response_truncated": {
+                      "default": false,
+                      "description": "True when `response_body` was cut because the response was larger than the limit.",
+                      "title": "Response Truncated",
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Short reason when the request could not be completed; null when your endpoint answered.",
+                      "title": "Error"
+                    }
+                  },
+                  "required": [
+                    "latency_ms"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tools"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "Test Webhook Tool",
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/agent/tools/<tool-id>/test \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --data '{\n    \"arguments\": {\"date\": \"2026-07-03\"}\n  }'"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "arguments": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Values for the tool's arguments, as the agent would supply them during a call. Omit for none."
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/agent/tools/{tool_id}/signing-secret": {
@@ -31625,6 +32485,62 @@
           "url"
         ],
         "title": "PublicPostCallWebhook",
+        "type": "object"
+      },
+      "PublicAgentLLMCustomTestPayload": {
+        "additionalProperties": false,
+        "description": "The console's probe request; unknown fields are refused here rather than\nignored, so a misspelled `api_key` does not silently reuse the stored one.",
+        "properties": {
+          "base_url": {
+            "description": "Endpoint base URL; same https/SSRF policy as `llm.custom.base_url`.",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Base Url",
+            "type": "string"
+          },
+          "model": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "api_key": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Bearer token for the probe. Omit to reuse the draft's stored key, allowed only while `base_url` equals the saved custom endpoint.",
+            "title": "Api Key"
+          },
+          "headers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Extra headers for the probe. Omit to reuse the draft's stored headers, sent only while `base_url` equals the saved custom endpoint.",
+            "title": "Headers"
+          }
+        },
+        "required": [
+          "base_url",
+          "model"
+        ],
+        "title": "PublicAgentLLMCustomTestPayload",
         "type": "object"
       },
       "PublicAgentConfigEntity": {

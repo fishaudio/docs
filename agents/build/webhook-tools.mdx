@@ -185,6 +185,8 @@ The tool editor's **Test** tab fires a real request at your endpoint. Fill in th
 
 Response bodies are captured up to 64 KB; larger bodies are cut off and flagged with `response_truncated`.
 
+The same test is available over the API: [Test Tool](/api-reference/endpoint/agent/test-tool) takes the arguments as an optional JSON body and sends the same real request.
+
 ## Create tools via the API
 
 `POST /v1/agent/tools` creates a tool in your workspace. Tools created this way are not attached to any agent. Enable them per agent afterwards.
