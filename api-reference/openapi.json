@@ -32489,7 +32489,7 @@
       },
       "PublicAgentLLMCustomTestPayload": {
         "additionalProperties": false,
-        "description": "The console's probe request; unknown fields are refused here rather than\nignored, so a misspelled `api_key` does not silently reuse the stored one.",
+        "description": "One test request to an OpenAI-compatible endpoint. Unknown fields are\nrejected, so a misspelled `api_key` never falls back to the saved key.",
         "properties": {
           "base_url": {
             "description": "Endpoint base URL; same https/SSRF policy as `llm.custom.base_url`.",
