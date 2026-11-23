@@ -134,9 +134,9 @@ curl "https://api.fish.audio/v1/agent/sessions?conversation_status=missed,error&
 ```
 
 <Note>
-  `pending` sessions (a session was created but no participant ever connected)
-  are excluded by default. Pass `status=pending` explicitly to see them. Preview
-  calls made from the Builder never appear in this API.
+  Without a `status` filter the list includes every status, `pending` sessions
+  (created, nobody connected yet) among them. Pass `status` to narrow it down.
+  Preview calls made from the Builder never appear in this API.
 </Note>
 
 ### Pagination
