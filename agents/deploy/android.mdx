@@ -147,7 +147,7 @@ If the agent has **Restrict origins** on, the platform checks the request's `Ori
 
 ```kotlin
 conversation.startSession(SessionAuth.AgentId("YOUR_AGENT_ID")) {
-    it.copy(origin = "https://www.example.com")
+    origin = "https://www.example.com"
 }
 ```
 
@@ -190,6 +190,20 @@ Conversation(context, defaults = SessionOptions(), mobile = MobileOptions())
 
 `SessionOptions` has the same fields as the Web SDK's [session options](/agents/deploy/web-sdk#options): `origin`, `serverUrl`, `language`, `timezone`, `context`, `overrides`, `dynamicVariables`, `endUserId`, `metadata`, `toolEvents`, `clientTools`, `clientToolTimeoutMs`, and `microphone`. `MobileOptions` adds `audioOutput` and `callNotification`.
 
+Options are built in a block, and a call can adjust the conversation's defaults the same way:
+
+```kotlin
+val conversation = Conversation(
+    context,
+    defaults = SessionOptions { language = "ja" },
+    mobile = MobileOptions { audioOutput = AudioOutputRoute.SPEAKER },
+)
+
+conversation.startSession(auth) { microphone = false }
+```
+
+Inside a block, a name is the option. When a variable of yours has the same name, write `this.origin = origin`.
+
 The same rules as the other SDKs apply:
 
 - A second `startSession` while one is on its way, or during a live call, joins that call.
@@ -210,6 +224,10 @@ Only one call can run in a process at a time, whichever `Conversation` makes it.
 
 You can call the methods from any thread. The flows are updated on the main thread, and client tools run there. Move slow work in a tool to another dispatcher.
 
+### Compatibility
+
+Options are built in blocks and events are made only by the SDK, so a new option or a new field on an event does not break an app built against an older version. `ConversationEvent` and the enums can gain cases in a minor release: keep an `else` branch when you switch over them.
+
 ### What is left out
 
 As in the React Native SDK, the browser-only members are not there: `startAudio`, `setOutputVolume`, `setInputDevice`, `setOutputDevice`, audio levels, and the screen wake lock. There is also no `getRoom()`: no LiveKit type appears in the SDK's API, so your app can move to a newer LiveKit 2.x without the SDK changing.
@@ -221,13 +239,13 @@ A [client tool](/agents/build/client-tools) is a suspending function from the ar
 ```kotlin
 val conversation = Conversation(
     context,
-    defaults = SessionOptions(
+    defaults = SessionOptions {
         clientTools = mapOf(
             "get_cart" to ClientToolHandler { params, _ ->
                 mapOf("items" to cart.items.size, "total" to cart.total)
             },
-        ),
-    ),
+        )
+    },
 )
 ```
 
@@ -239,7 +257,7 @@ During a call with the microphone on, the SDK runs a foreground service with an 
 
 - The service starts with the call and stops when the call ends, from either side.
 - A call started with `microphone = false` runs no service. The service starts on the first unmute.
-- Change the notification's text with `MobileOptions(callNotification = CallNotification(title = "…", text = "…"))`. Pass `null` to run no service at all.
+- Change the notification's text with `MobileOptions { callNotification = CallNotification { title = "…"; text = "…" } }`. Set it to `null` to run no service at all.
 - The notification is only visible if your app holds `POST_NOTIFICATIONS` (Android 13 and later). The service works either way. Asking for that permission is up to your app.
 - Google Play asks apps that declare a microphone foreground service to describe its use in the Play Console.
 
