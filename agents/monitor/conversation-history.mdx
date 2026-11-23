@@ -109,7 +109,7 @@ The same values appear on the [`call.ended` webhook](/agents/monitor/webhooks) a
 | `active`              | The session is not over yet: `status` is `pending`, `active` or `unknown`             | `null`                                                                              |
 | `resolved`            | The conversation ended normally                                                      | `user_hangup`, `agent_hangup`, `conversation_timeout`, or none on a completed session |
 | `escalated`           | The call was transferred to a person                                                 | `escalated`                                                                         |
-| `missed`              | Nobody connected, so no conversation took place                                      | `room_join_timeout`, `cancelled`, `dial_failed`                                     |
+| `missed`              | Nobody connected, so no conversation took place                                      | `room_join_timeout`, `cancelled`, `dial_failed`, or none or any non-error reason on a failed session |
 | `error`               | The platform ended the conversation because something failed, or no agent ever joined | `heartbeat_timeout`, `agent_join_timeout`, `internal_error`, `llm_endpoint_failure` |
 
 ### Filters
