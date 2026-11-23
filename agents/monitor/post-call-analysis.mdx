@@ -168,10 +168,23 @@ curl "https://api.fish.audio/v1/agent/sessions/$SESSION_ID" \
         "result": "success",
         "rationale": "The refund was issued and the caller confirmed they were satisfied."
       }
-    ]
+    ],
+    "error": null,
+    "transcript_incomplete": false,
+    "input_tokens": 1840,
+    "output_tokens": 212
   }
 }
 ```
+
+Besides the results, `analysis` tells you how the run went:
+
+| Field                   | What it is                                                                                                                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `error`                 | Why the analysis failed. It is set when `status` is `error` and `null` for every other status                                                                                               |
+| `transcript_incomplete` | `true` when the transcript still looked cut short after the analysis waited for it, so the summary, data and criteria may rest on an incomplete conversation. It can be `true` for `completed` and `skipped` |
+| `input_tokens`          | Tokens the analysis read. `0` when no language model was called                                                                                                                             |
+| `output_tokens`         | Tokens the analysis wrote. `0` when no language model was called                                                                                                                            |
 
 To push results into your CRM or data warehouse as soon as they're ready, configure a [post-call webhook](/agents/monitor/webhooks). `call.analyzed` fires as soon as the run settles, whatever the outcome, with `analysis.status` telling you which of the terminal statuses above it reached.
 

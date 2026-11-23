@@ -615,7 +615,7 @@
     "/v1/agent/sessions": {
       "get": {
         "summary": "List Agent Sessions",
-        "description": "List your team's sessions, newest first. Filter by agent, status, end\nreason, caller number, SIP Call-ID, end user ID, call_sid, or creation\ntime. Paginate with `cursor` (recommended; follow `next_cursor` while\n`has_more` is true) or with `page` for offset pagination with a `total`\ncount. The two are mutually exclusive.",
+        "description": "List your team's sessions, newest first. Filter by agent, status,\nconversation status, end reason, caller number, SIP Call-ID, end user ID, call_sid, or creation\ntime. Paginate with `cursor` (recommended; follow `next_cursor` while\n`has_more` is true) or with `page` for offset pagination with a `total`\ncount. The two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -676,6 +676,25 @@
               ],
               "default": null,
               "title": "End Reason"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "conversation_status",
+            "description": "Comma-separated filter on how the conversation went (active/resolved/escalated/missed/error); a session matches when it is any of the listed ones. Combines with the other filters: a session must match all of them. Each row reports its own `conversation_status`.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Conversation Status"
             },
             "deprecated": false
           },
@@ -1582,6 +1601,35 @@
                       "default": null,
                       "title": "End Reason"
                     },
+                    "conversation_status": {
+                      "description": "How the conversation went, derived from `status` and `end_reason`: `active` is still going; `resolved` is a conversation that ended normally; `escalated` was transferred to a person; `missed` is a call nobody connected to; `error` is a conversation the platform ended because something failed. Filter the list with `conversation_status`.",
+                      "enum": [
+                        "active",
+                        "resolved",
+                        "escalated",
+                        "missed",
+                        "error"
+                      ],
+                      "title": "Conversation Status",
+                      "type": "string"
+                    },
+                    "recording_status": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "processing",
+                            "failed"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "`failed` when the recording failed, `processing` when the session has a recording, null when it has none (recording off, content deleted, or the status could not be read). `complete` on the recording is also reported as `processing` here: whether it can be downloaded is decided by GET /sessions/{session_id}/recording.",
+                      "title": "Recording Status"
+                    },
                     "source": {
                       "enum": [
                         "api_key",
@@ -1619,6 +1667,32 @@
                       ],
                       "default": null,
                       "title": "Dial Status"
+                    },
+                    "dial_sip_status": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "busy, no_answer and failed: the final SIP response code the carrier or your SIP trunk gave to the outbound dial. Null on an answered call and when it gave none.",
+                      "title": "Dial Sip Status"
+                    },
+                    "dial_sip_reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The reason text the carrier or your SIP trunk sent with dial_sip_status, verbatim, for example `Busy here`. Null when it sent none.",
+                      "title": "Dial Sip Reason"
                     },
                     "answered_by": {
                       "anyOf": [
@@ -1882,6 +1956,30 @@
                       },
                       "title": "Engine Fallbacks",
                       "type": "array"
+                    },
+                    "startup_latency": {
+                      "description": "How long the session took to start, by phase.",
+                      "items": {
+                        "$ref": "#/components/schemas/AgentSessionLatencyEntry"
+                      },
+                      "title": "Startup Latency",
+                      "type": "array"
+                    },
+                    "turns": {
+                      "description": "Per-turn latency and knowledge retrievals, ascending by `turn_id`. A turn's messages and tool calls are in `items` with the same `turn_id`.",
+                      "items": {
+                        "$ref": "#/components/schemas/AgentSessionTurn"
+                      },
+                      "title": "Turns",
+                      "type": "array"
+                    },
+                    "unattributed_knowledge_retrievals": {
+                      "description": "Knowledge lookups that belong to no turn.",
+                      "items": {
+                        "$ref": "#/components/schemas/AgentSessionKnowledgeRetrieval"
+                      },
+                      "title": "Unattributed Knowledge Retrievals",
+                      "type": "array"
                     }
                   },
                   "required": [
@@ -1889,6 +1987,7 @@
                     "agent_id",
                     "agent_name",
                     "status",
+                    "conversation_status",
                     "source",
                     "created_at"
                   ],
@@ -2149,6 +2248,307 @@
                     "session_id",
                     "status",
                     "tracks"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "URI no longer exists and has been permanently removed",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid responses from another server/proxy",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Sessions"
+        ]
+      }
+    },
+    "/v1/agent/sessions/{session_id}/knowledge/{source_id}/{revision_id}/{chunk_id}": {
+      "get": {
+        "summary": "Get Agent Session Knowledge Chunk",
+        "description": "Read the text of a knowledge chunk the session retrieved, cut at 4000\ncharacters (`truncated` says whether it was). Only chunks the session's\nknowledge retrievals returned can be read; any other id answers 404.\n`source_id` is the `knowledge_source_id` of the knowledge APIs; take the\nthree ids from a hit in the session detail.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "path",
+            "name": "source_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Source Id",
+              "type": "string"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "path",
+            "name": "revision_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Revision Id",
+              "type": "string"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "path",
+            "name": "chunk_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Chunk Id",
+              "type": "string"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "The text of one knowledge chunk the session retrieved.",
+                  "properties": {
+                    "source_id": {
+                      "description": "The knowledge source's id, the `knowledge_source_id` of the knowledge APIs.",
+                      "title": "Source Id",
+                      "type": "string"
+                    },
+                    "revision_id": {
+                      "title": "Revision Id",
+                      "type": "string"
+                    },
+                    "chunk_id": {
+                      "title": "Chunk Id",
+                      "type": "string"
+                    },
+                    "chunk_index": {
+                      "title": "Chunk Index",
+                      "type": "integer"
+                    },
+                    "file_name": {
+                      "title": "File Name",
+                      "type": "string"
+                    },
+                    "content": {
+                      "description": "The chunk's text, cut at 4000 characters.",
+                      "title": "Content",
+                      "type": "string"
+                    },
+                    "truncated": {
+                      "description": "True when the chunk is longer than `content` shows.",
+                      "title": "Truncated",
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "source_id",
+                    "revision_id",
+                    "chunk_id",
+                    "chunk_index",
+                    "file_name",
+                    "content",
+                    "truncated"
                   ],
                   "type": "object"
                 }
@@ -25177,6 +25577,35 @@
             "default": null,
             "title": "End Reason"
           },
+          "conversation_status": {
+            "description": "How the conversation went, derived from `status` and `end_reason`: `active` is still going; `resolved` is a conversation that ended normally; `escalated` was transferred to a person; `missed` is a call nobody connected to; `error` is a conversation the platform ended because something failed. Filter the list with `conversation_status`.",
+            "enum": [
+              "active",
+              "resolved",
+              "escalated",
+              "missed",
+              "error"
+            ],
+            "title": "Conversation Status",
+            "type": "string"
+          },
+          "recording_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "processing",
+                  "failed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "`failed` when the recording failed, `processing` when the session has a recording, null when it has none (recording off, content deleted, or the status could not be read). `complete` on the recording is also reported as `processing` here: whether it can be downloaded is decided by GET /sessions/{session_id}/recording.",
+            "title": "Recording Status"
+          },
           "source": {
             "enum": [
               "api_key",
@@ -25214,6 +25643,32 @@
             ],
             "default": null,
             "title": "Dial Status"
+          },
+          "dial_sip_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "busy, no_answer and failed: the final SIP response code the carrier or your SIP trunk gave to the outbound dial. Null on an answered call and when it gave none.",
+            "title": "Dial Sip Status"
+          },
+          "dial_sip_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The reason text the carrier or your SIP trunk sent with dial_sip_status, verbatim, for example `Busy here`. Null when it sent none.",
+            "title": "Dial Sip Reason"
           },
           "answered_by": {
             "anyOf": [
@@ -25416,6 +25871,7 @@
           "agent_id",
           "agent_name",
           "status",
+          "conversation_status",
           "source",
           "created_at"
         ],
@@ -26147,7 +26603,7 @@
         "type": "object"
       },
       "AgentSessionAnalysisResult": {
-        "description": "Public trim of the post-call analysis record: outcomes only, no run\ninternals (model, tokens, config hash).",
+        "description": "Public trim of the post-call analysis record: the outcomes, why a run\nfailed, whether the transcript was complete, and token counts. The model,\nconfig hash and timings are not exposed.",
         "properties": {
           "status": {
             "enum": [
@@ -26185,12 +26641,61 @@
             },
             "title": "Criteria Results",
             "type": "array"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "error: why the analysis failed. Null for every other status.",
+            "title": "Error"
+          },
+          "transcript_incomplete": {
+            "default": false,
+            "description": "True when the transcript still looked cut short after the analysis waited for it, so the summary, data and criteria may rest on an incomplete conversation. Can be true for completed and skipped.",
+            "title": "Transcript Incomplete",
+            "type": "boolean"
+          },
+          "input_tokens": {
+            "default": 0,
+            "description": "Tokens the analysis read. 0 when no language model was called.",
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "output_tokens": {
+            "default": 0,
+            "description": "Tokens the analysis wrote. 0 when no language model was called.",
+            "title": "Output Tokens",
+            "type": "integer"
           }
         },
         "required": [
           "status"
         ],
         "title": "AgentSessionAnalysisResult",
+        "type": "object"
+      },
+      "AgentSessionAudioRange": {
+        "properties": {
+          "start_ms": {
+            "title": "Start Ms",
+            "type": "integer"
+          },
+          "end_ms": {
+            "title": "End Ms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "start_ms",
+          "end_ms"
+        ],
+        "title": "AgentSessionAudioRange",
         "type": "object"
       },
       "AgentSessionEngineFallback": {
@@ -26297,6 +26802,213 @@
           "engine"
         ],
         "title": "AgentSessionEngineRef",
+        "type": "object"
+      },
+      "AgentSessionKnowledgeHit": {
+        "properties": {
+          "source_id": {
+            "description": "The knowledge source's id, the `knowledge_source_id` of the knowledge APIs.",
+            "title": "Source Id",
+            "type": "string"
+          },
+          "revision_id": {
+            "title": "Revision Id",
+            "type": "string"
+          },
+          "chunk_id": {
+            "title": "Chunk Id",
+            "type": "string"
+          },
+          "chunk_index": {
+            "title": "Chunk Index",
+            "type": "integer"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "file_name": {
+            "title": "File Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "revision_id",
+          "chunk_id",
+          "chunk_index",
+          "score",
+          "source_name",
+          "file_name"
+        ],
+        "title": "AgentSessionKnowledgeHit",
+        "type": "object"
+      },
+      "AgentSessionKnowledgeRetrieval": {
+        "description": "One knowledge-base lookup the agent made. A failed lookup has no hits\nand an `error`.",
+        "properties": {
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "hits": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSessionKnowledgeHit"
+            },
+            "title": "Hits",
+            "type": "array"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "AgentSessionKnowledgeRetrieval",
+        "type": "object"
+      },
+      "AgentSessionLatencyEntry": {
+        "description": "One timing record: the session's startup, or one stage of a turn.",
+        "properties": {
+          "phase": {
+            "description": "Which stage this record times. In `startup_latency`: `session_create`, `session_startup`. In a turn's `latency`: `turn_heard`, `turn_playout_completed`, `turn_completed`. New values may be added; ignore phases you do not know.",
+            "title": "Phase",
+            "type": "string"
+          },
+          "timings": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "description": "Durations in milliseconds, keyed by step in snake_case, for example `total_ms`, `llm_ttft_ms`, `tts_first_byte_after_eou_ms`, `voice_to_voice_heard_ms`. Which keys appear depends on the phase, and new keys may be added.",
+            "title": "Timings",
+            "type": "object"
+          },
+          "markers": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "description": "Points in time as Unix milliseconds, keyed in snake_case, for example `speech_started_at`. Which keys appear depends on the phase, and new keys may be added.",
+            "title": "Markers",
+            "type": "object"
+          },
+          "text_length": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Characters of text this record covers, when it has a text.",
+            "title": "Text Length"
+          }
+        },
+        "required": [
+          "phase"
+        ],
+        "title": "AgentSessionLatencyEntry",
+        "type": "object"
+      },
+      "AgentSessionLatencySummary": {
+        "description": "First-response latency of one turn, in whole milliseconds; null when\nit could not be measured.",
+        "properties": {
+          "eou_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Delay of the end-of-utterance decision.",
+            "title": "Eou Ms"
+          },
+          "llm_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "LLM time to first token.",
+            "title": "Llm Ms"
+          },
+          "tts_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Speech synthesis time to first audio byte.",
+            "title": "Tts Ms"
+          },
+          "voice_to_voice_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "From the caller finishing speaking to the first agent audio.",
+            "title": "Voice To Voice Ms"
+          },
+          "voice_to_voice_heard_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The same interval as the caller's browser heard it. Only web sessions whose client reported playback timing have it.",
+            "title": "Voice To Voice Heard Ms"
+          }
+        },
+        "title": "AgentSessionLatencySummary",
         "type": "object"
       },
       "AgentSessionLlmCustomRef": {
@@ -26639,6 +27351,58 @@
             ],
             "default": null,
             "title": "Created At"
+          },
+          "interrupted": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "True when this assistant reply was cut off before it finished; `content` is then only the part that was actually spoken. Null on complete replies, on user messages and on messages from before the field existed (it is never false).",
+            "title": "Interrupted"
+          },
+          "interrupted_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "What cut the reply off, set together with `interrupted`: `user_speech` (the caller talked over it), `user_message` (the user typed a message), `keypad` (a key press), `client` (your client sent an interrupt), `session_end` (the session ended mid-reply, for example the caller hung up). New values may be added, so treat unknown values as an unspecified cause. Null when `interrupted` is null, and on older cut-off replies that did not record a cause.",
+            "title": "Interrupted By"
+          },
+          "audio_start_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Where this message starts, in milliseconds from the start of the speaker's own recording track in `GET /v1/agent/sessions/{session_id}/recording` (`tracks[]`): the track with `role: agent` for assistant messages, `role: user` for user messages. Null when there is no recording or the position cannot be told.",
+            "title": "Audio Start Ms"
+          },
+          "audio_end_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Where this message ends, on the same track as `audio_start_ms`.",
+            "title": "Audio End Ms"
           }
         },
         "required": [
@@ -26974,6 +27738,19 @@
             "description": "dial_failed and refer_failed: the final SIP response code the carrier gave. Null when it gave none.",
             "title": "Sip Status"
           },
+          "sip_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "dial_failed and refer_failed: the reason text the carrier or SIP server sent with sip_status, verbatim, for example `Proxy Authentication Required`. Null when it sent none.",
+            "title": "Sip Reason"
+          },
           "dial_status": {
             "anyOf": [
               {
@@ -27190,6 +27967,49 @@
           "content"
         ],
         "title": "AgentSessionTransferMessage",
+        "type": "object"
+      },
+      "AgentSessionTurn": {
+        "description": "What the platform measured and retrieved for one conversation turn. The\nturn's messages are in `items`, matched by `turn_id`.",
+        "properties": {
+          "turn_id": {
+            "title": "Turn Id",
+            "type": "integer"
+          },
+          "latency_summary": {
+            "$ref": "#/components/schemas/AgentSessionLatencySummary"
+          },
+          "latency": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSessionLatencyEntry"
+            },
+            "title": "Latency",
+            "type": "array"
+          },
+          "audio_range": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentSessionAudioRange"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "This turn's span in the recording. Usually null: sessions are recorded on one track per speaker, so locate a turn with the `audio_start_ms` and `audio_end_ms` of its messages instead."
+          },
+          "knowledge_retrievals": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSessionKnowledgeRetrieval"
+            },
+            "title": "Knowledge Retrievals",
+            "type": "array"
+          }
+        },
+        "required": [
+          "turn_id"
+        ],
+        "title": "AgentSessionTurn",
         "type": "object"
       },
       "LLMMessageTokenCost": {
