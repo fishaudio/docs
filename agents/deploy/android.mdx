@@ -43,6 +43,7 @@ It has no UI. You build the screen, and the SDK gives you the state to show.
 ## Requirements
 
 - **Android 7.0 (API 24) or later.** Built against API 36.
+- **Kotlin 2.1 or newer** in the app's build. The SDK is compiled with Kotlin 2.2, which older compilers cannot read.
 - **Kotlin coroutines.** State is exposed as `StateFlow`, events as `SharedFlow`.
 - **Your own backend** to create session tokens, or a [public agent](#public-agent). Never ship an API key inside an app.
 - **Tested with** `io.livekit:livekit-android` 2.30.0, Android Gradle Plugin 9.2, and Gradle 9.4, on a Pixel 8 with Android 17 and an Android 16 emulator. Other versions may work but are untested.
@@ -226,7 +227,7 @@ You can call the methods from any thread. The flows are updated on the main thre
 
 ### Compatibility
 
-Options are built in blocks and events are made only by the SDK, so a new option or a new field on an event does not break an app built against an older version. `ConversationEvent` and the enums can gain cases in a minor release: keep an `else` branch when you switch over them.
+Options are built in blocks and events are made only by the SDK, so a new option or a new field on an event does not break an app built against an older version. New events and new enum values (error codes, end reasons) can arrive in a minor release. A `when` over events always needs an `else` branch; keep one for the enums too. Inside a nested block only that block's own properties can be set.
 
 ### What is left out
 
