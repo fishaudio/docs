@@ -17,7 +17,7 @@ It has no UI. You build the screen, and the SDK gives you the state to show.
   Calls, the microphone, audio routes, reconnection, and calls in the background
   and with the screen locked were checked on a Pixel 8. Headsets, phone-call
   interruptions, and moving between Wi-Fi and cellular have not been checked
-  yet. See [Limitations](#limitations).
+  yet.
 </Note>
 
 <CardGroup cols={3}>
@@ -261,15 +261,6 @@ During a call with the microphone on, the SDK runs a foreground service with an 
 - Change the notification's text with `MobileOptions { callNotification = CallNotification { title = "…"; text = "…" } }`. Set it to `null` to run no service at all.
 - The notification is only visible if your app holds `POST_NOTIFICATIONS` (Android 13 and later). The service works either way. Asking for that permission is up to your app.
 - Google Play asks apps that declare a microphone foreground service to describe its use in the Play Console.
-
-## Limitations
-
-- **Not checked yet:** wired and Bluetooth headsets, an incoming phone call during a call, and moving between Wi-Fi and cellular. The [example's README](https://github.com/fishaudio/fish-agent-android/blob/main/example/README.md) lists what was checked on a phone and what was not.
-- **No audio levels.** There is nothing to drive a waveform or an orb from.
-- **`audioOutput` is the route that was asked for**, not the active device, and there is no event when the route changes.
-- **Bluetooth headsets need `BLUETOOTH_CONNECT`** on Android 12 and later. The SDK neither declares nor asks for it. Without it a Bluetooth headset is not seen and `AUTO` falls through to the wired headset or the loudspeaker. Bluetooth is untested.
-- **Phone calls and other audio focus changes are not handled.** What LiveKit does by default is what happens.
-- **An end forced by your backend is reported as `user_hangup`.** That is the reason the runtime announces for `POST /v1/agent/sessions/{id}/end`.
 
 ## Troubleshooting
 
