@@ -75,7 +75,7 @@ Returns `201` with the number object. Imported numbers land in your default work
 | `termination_auth_password` | The matching digest password.                                                                                                              |
 | `termination_headers`       | Optional: custom `X-` headers for every call through the termination, up to 20; see [Custom SIP headers](#custom-sip-headers).             |
 
-At least one inbound factor (digest credentials and/or allowed addresses) is required; a `422` reports what is missing. A `409` means the number is already on the platform. A `502` means trunk provisioning failed; the number stays visible with status `error` and is safe to release and retry.
+At least one inbound factor (digest credentials and/or allowed addresses) is required; a `422` reports what is missing. A `409` means the number is already on the platform. A `502` means trunk provisioning failed. The number is not added, so correct the settings and import it again.
 
 <Note>
   Digest passwords are stored only in the underlying trunk objects and are never
