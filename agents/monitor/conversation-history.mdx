@@ -313,7 +313,7 @@ Each entry of `turns` has:
 | `voice_to_voice_ms`       | From the caller finishing speaking to the first agent audio                                                                |
 | `voice_to_voice_heard_ms` | The same interval as the caller's browser heard it. Only web sessions whose client reported playback timing have it         |
 
-`timings` has a fixed set of keys, all durations in milliseconds. A step the turn has no measurement for is `null`. Steps that do not apply to a session (the `client_*` ones exist only for web sessions) are `null` too.
+`timings` has a fixed set of keys, all durations in whole milliseconds. A step the turn has no measurement for is `null`. Steps that do not apply to a session (the `client_*` ones exist only for web sessions) are `null` too.
 
 | Key                                       | What it measures                                                                         |
 | ----------------------------------------- | ---------------------------------------------------------------------------------------- |

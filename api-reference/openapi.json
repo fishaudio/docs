@@ -27924,12 +27924,12 @@
         "type": "object"
       },
       "AgentSessionTurnTimings": {
-        "description": "The timing steps of one turn, in milliseconds, the same ones the\nconsole's latency popover shows. A step the turn has no measure for is\nnull. A new step is added as a new field.",
+        "description": "The timing steps of one turn, in whole milliseconds, the same ones the\nconsole's latency popover shows. A step the turn has no measure for is\nnull. A new step is added as a new field.",
         "properties": {
           "eou_delay_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -27942,7 +27942,7 @@
           "llm_ttft_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -27955,7 +27955,7 @@
           "tts_ttfb_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -27968,7 +27968,7 @@
           "speaking_after_speech_stop_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -27981,7 +27981,7 @@
           "speech_duration_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -27994,7 +27994,7 @@
           "transcription_delay_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -28007,7 +28007,7 @@
           "on_user_turn_completed_delay_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -28020,7 +28020,7 @@
           "thinking_after_transcript_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -28033,7 +28033,7 @@
           "thinking_to_speaking_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -28046,7 +28046,7 @@
           "llm_duration_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -28059,7 +28059,7 @@
           "tts_first_byte_after_eou_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -28072,7 +28072,7 @@
           "tts_duration_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -28085,7 +28085,7 @@
           "tts_audio_duration_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -28098,7 +28098,7 @@
           "assistant_complete_after_speech_stop_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -28111,7 +28111,7 @@
           "voice_to_voice_heard_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -28124,7 +28124,7 @@
           "client_delay_estimate_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -28137,7 +28137,7 @@
           "client_rtt_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -28150,7 +28150,7 @@
           "client_jitter_buffer_ms": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
