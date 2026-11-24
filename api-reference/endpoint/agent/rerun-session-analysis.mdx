@@ -19,4 +19,6 @@ The rerun uses the analysis settings pinned when the session started, so changin
 
 The call returns `201` with the analysis as it stands after it was queued: `status` is usually `queued` and the results are empty. The run finishes in the background, so poll [Get Voice Agent Session](/api-reference/endpoint/agent/get-agent-session) and read its `analysis` for the outcome. When the rerun finishes, Fish sends the `call.analyzed` webhook again; see [Webhooks](/agents/monitor/webhooks).
 
+Each team can make 30 calls per minute to this endpoint. The 31st call within the same minute returns `429`, and the count starts again in the next minute.
+
 For what the analysis contains, see [Post-call analysis](/agents/monitor/post-call-analysis).

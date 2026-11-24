@@ -2537,7 +2537,7 @@
     "/v1/agent/sessions/{session_id}/analysis/rerun": {
       "post": {
         "summary": "Rerun Session Analysis",
-        "description": "Run the session's post-call analysis again when the first run did not give\nyou a usable result. There is no request body.\n\nOnly an analysis that ended in `error` or `skipped`, one that finished on a\ntranscript that was still incomplete, or one that is stuck can be rerun. An\nanalysis is stuck when it has been `queued` for more than 5 minutes, or\n`running` for more than 15 minutes (its processing lease has expired). Any\nother analysis returns 409. A session whose content has been deleted under the data\nretention policy returns 410. A session with no analysis record returns\n404 with `Analysis not found`.\n\nThe rerun uses the analysis settings that were pinned when the session\nstarted, so changing the agent's analysis settings afterwards does not\nchange what a rerun produces. An analysis that completed on a full\ntranscript is rejected with 409.\n\nThe call returns 201 with the analysis as it stands right after it was\nqueued: `status` is usually `queued` and the results are empty. The run\nfinishes in the background, so poll `GET /v1/agent/sessions/{session_id}`\nand read its `analysis` for the outcome. A finished rerun sends the\n`call.analyzed` webhook again.",
+        "description": "Run the session's post-call analysis again when the first run did not give\nyou a usable result. There is no request body.\n\nOnly an analysis that ended in `error` or `skipped`, one that finished on a\ntranscript that was still incomplete, or one that is stuck can be rerun. An\nanalysis is stuck when it has been `queued` for more than 5 minutes, or\n`running` for more than 15 minutes (its processing lease has expired). Any\nother analysis returns 409. A session whose content has been deleted under the data\nretention policy returns 410. A session with no analysis record returns\n404 with `Analysis not found`.\n\nThe rerun uses the analysis settings that were pinned when the session\nstarted, so changing the agent's analysis settings afterwards does not\nchange what a rerun produces. An analysis that completed on a full\ntranscript is rejected with 409.\n\nThe call returns 201 with the analysis as it stands right after it was\nqueued: `status` is usually `queued` and the results are empty. The run\nfinishes in the background, so poll `GET /v1/agent/sessions/{session_id}`\nand read its `analysis` for the outcome. A finished rerun sends the\n`call.analyzed` webhook again.\n\nEach team can make 30 of these calls per minute; the 31st within the same\nminute returns 429 and the count starts again the next minute.",
         "security": [
           {
             "BearerAuth": []
@@ -2723,6 +2723,43 @@
           },
           "410": {
             "description": "URI no longer exists and has been permanently removed",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The user has sent too many requests in a given amount of time (\"rate limiting\")",
             "headers": {},
             "content": {
               "application/json": {
@@ -4750,7 +4787,7 @@
     "/v1/agent/agents/{agent_id}/llm/custom/test": {
       "post": {
         "summary": "Test Custom LLM Endpoint",
-        "description": "Check that an OpenAI-compatible endpoint works for this agent before you\nsave it as `llm.custom`. Fish sends one streamed chat-completions turn to\n`base_url` with the agent's draft system prompt, a fixed user message and\nthe draft's tools, and reports what came back.\n\nProblems with your endpoint (unreachable or blocked host, timeout, a\nnon-2xx status, a reply that is not a server-sent-event stream) are not\nHTTP errors: the call returns 200 and `error` says what went wrong. Look at\n`error` and `status_code` rather than the HTTP status.\n\nOmit `api_key` (or send null) to reuse the key saved in the draft's\n`llm.custom`. That works only while `base_url` is the saved endpoint's\naddress; for any other address the call returns 422 and nothing is sent,\nso a stored key never travels to a new host. Saved headers follow the same\nrule. Unknown request fields return 422.\n\nThe test itself has fixed limits. It sends one turn and does not retry.\nFish waits up to 10 seconds for the response headers and up to 10 seconds\nfor the first content, and gives up after 20 seconds in total. It reads at\nmost 256 KB of the response and does not follow redirects. The API key and\nyour custom headers are never written to logs or echoed back; where your\nendpoint's reply quotes them, they are masked in `error`.",
+        "description": "Check that an OpenAI-compatible endpoint works for this agent before you\nsave it as `llm.custom`. Fish sends one streamed chat-completions turn to\n`base_url` with the agent's draft system prompt, a fixed user message and\nthe draft's tools, and reports what came back.\n\nProblems with your endpoint (unreachable or blocked host, timeout, a\nnon-2xx status, a reply that is not a server-sent-event stream) are not\nHTTP errors: the call returns 200 and `error` says what went wrong. To\nbranch on the outcome, read `type` and `reason`: they use the same values\nas `llm_endpoint_errors` in the session detail, so an error found here is\nthe one you would see on a call. `error` stays as a readable explanation.\n\nOmit `api_key` (or send null) to reuse the key saved in the draft's\n`llm.custom`. That works only while `base_url` is the saved endpoint's\naddress; for any other address the call returns 422 and nothing is sent,\nso a stored key never travels to a new host. Saved headers follow the same\nrule. Unknown request fields return 422.\n\nThe test itself has fixed limits. It sends one turn and does not retry.\nFish waits up to 10 seconds for the response headers and up to 10 seconds\nfor the first content, and gives up after 20 seconds in total. It reads at\nmost 256 KB of the response and does not follow redirects. The API key and\nyour custom headers are never written to logs or echoed back; where your\nendpoint's reply quotes them, they are masked in `error`.\n\nEach team can make 30 of these calls per minute; the 31st within the same\nminute returns 429 and the count starts again the next minute.",
         "security": [
           {
             "BearerAuth": []
@@ -4786,7 +4823,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "Probe outcome. Endpoint failures are data (`error`), never an HTTP error.",
+                  "description": "Result of testing a custom LLM endpoint. A problem with your endpoint is\nreported here, not as an HTTP error: `error` explains it and `type` and\n`reason` name it.",
                   "properties": {
                     "status_code": {
                       "anyOf": [
@@ -4798,24 +4835,24 @@
                         }
                       ],
                       "default": null,
-                      "description": "HTTP status from the endpoint; null when it was never reached.",
+                      "description": "HTTP status your endpoint returned; null when it was never reached.",
                       "title": "Status Code"
                     },
                     "streams_content": {
                       "default": false,
-                      "description": "True when at least one SSE `data:` chunk carried non-empty `choices[0].delta.content` or a `choices[0].delta.tool_calls` entry.",
+                      "description": "True when your endpoint streamed at least one chunk with text or a tool call.",
                       "title": "Streams Content",
                       "type": "boolean"
                     },
                     "tools_sent": {
                       "default": 0,
-                      "description": "OpenAI-format tools included in the request.",
+                      "description": "Number of the agent's tools included in the request, in OpenAI function format.",
                       "title": "Tools Sent",
                       "type": "integer"
                     },
                     "tool_calls_returned": {
                       "default": 0,
-                      "description": "Distinct tool calls in the streamed response.",
+                      "description": "Number of distinct tool calls your endpoint streamed back.",
                       "title": "Tool Calls Returned",
                       "type": "integer"
                     },
@@ -4829,11 +4866,11 @@
                         }
                       ],
                       "default": null,
-                      "description": "Milliseconds from sending the request to the first content or tool-call delta; null when none arrived.",
+                      "description": "Milliseconds from sending the request to the first chunk with text or a tool call; null when none arrived.",
                       "title": "Ttft Ms"
                     },
                     "latency_ms": {
-                      "description": "Total probe time in milliseconds.",
+                      "description": "Total test time in milliseconds.",
                       "title": "Latency Ms",
                       "type": "integer"
                     },
@@ -4847,8 +4884,52 @@
                         }
                       ],
                       "default": null,
-                      "description": "Short reason when the probe failed; null on success.",
+                      "description": "Readable explanation when the test failed; null on success. It is written for people and may change, so branch on `type` and `reason` instead.",
                       "title": "Error"
+                    },
+                    "type": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "http_error",
+                            "timeout",
+                            "connection_error",
+                            "invalid_response"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Kind of failure, with the same values as `type` in a session's `llm_endpoint_errors`: `http_error` (your endpoint answered with a non-2xx status), `timeout`, `connection_error` (no answer) or `invalid_response` (a 2xx reply that was not usable). Null when the test succeeded.",
+                      "title": "Type"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "dns_failed",
+                            "connection_refused",
+                            "connection_reset",
+                            "tls_failed",
+                            "address_not_allowed",
+                            "not_event_stream",
+                            "stream_incomplete",
+                            "empty_reply",
+                            "refused",
+                            "unknown"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Detail for `connection_error` and `invalid_response`, with the same values as `reason` in `llm_endpoint_errors`. For `connection_error`: `dns_failed`, `connection_refused`, `connection_reset`, `tls_failed`, `address_not_allowed` (an address Fish does not call) or `unknown`. For `invalid_response`: `not_event_stream` (the reply was not a stream), `empty_reply` (no text and no tool call) or `unknown` (the stream carried an error). Null otherwise.",
+                      "title": "Reason"
                     }
                   },
                   "required": [
@@ -4935,6 +5016,43 @@
           },
           "422": {
             "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The user has sent too many requests in a given amount of time (\"rate limiting\")",
             "headers": {},
             "content": {
               "application/json": {
@@ -11539,7 +11657,7 @@
     "/v1/agent/tools/{tool_id}/test": {
       "post": {
         "summary": "Test Tool",
-        "description": "Call a webhook tool's endpoint once, the way an agent would during a\nconversation: the stored method, URL, headers (credentials included),\nbody template and request signing are applied to `arguments`, and the\nresponse comes back in the result. **This is a real request to your\nendpoint and can have side effects**, such as creating a record.\n\nThe body is optional; leaving it out is the same as sending `{}`. Unknown\nrequest fields return 422. Client tools have no server-side request and\nreturn 400, as does a URL or host that is not allowed or a header that does\nnot render to a valid value.\n\nA failure to reach your endpoint is not an HTTP error: the call returns\n200 and `error` says what went wrong.",
+        "description": "Call a webhook tool's endpoint once, the way an agent would during a\nconversation: the stored method, URL, headers (credentials included),\nbody template and request signing are applied to `arguments`, and the\nresponse comes back in the result. `{{name}}` placeholders in the URL are\nfilled in from `arguments` too, with each value URI-encoded as in\nJavaScript's `encodeURIComponent`; a placeholder with no value becomes\nempty. The URL is checked again after that, so a host that is not allowed\nreturns 400. **This is a real request to your\nendpoint and can have side effects**, such as creating a record.\n\nThe body is optional; leaving it out is the same as sending `{}`. Unknown\nrequest fields return 422. Client tools have no server-side request and\nreturn 400, as does a URL or host that is not allowed or a header that does\nnot render to a valid value.\n\nA failure to reach your endpoint is not an HTTP error: the call returns\n200 and `error` says what went wrong.\n\nEach team can make 30 of these calls per minute; the 31st within the same\nminute returns 429 and the count starts again the next minute.",
         "security": [
           {
             "BearerAuth": []
@@ -11565,6 +11683,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "description": "Result of one real request to a webhook tool's endpoint. A failure to\nreach your endpoint is reported in `error`, not as an HTTP error.",
                   "properties": {
                     "status_code": {
                       "anyOf": [
@@ -11745,6 +11864,43 @@
           },
           "422": {
             "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The user has sent too many requests in a given amount of time (\"rate limiting\")",
             "headers": {},
             "content": {
               "application/json": {
@@ -32491,13 +32647,14 @@
         "description": "One test request to an OpenAI-compatible endpoint. Unknown fields are\nrejected, so a misspelled `api_key` never falls back to the saved key.",
         "properties": {
           "base_url": {
-            "description": "Endpoint base URL; same https/SSRF policy as `llm.custom.base_url`.",
+            "description": "Base URL of your OpenAI-compatible endpoint, such as `https://llm.example.com/v1`. It must use https and point to a public host, with no credentials or query string in it. A trailing `/` or `/chat/completions` is removed; the request goes to `{base_url}/chat/completions`.",
             "maxLength": 2000,
             "minLength": 1,
             "title": "Base Url",
             "type": "string"
           },
           "model": {
+            "description": "Model name sent to your endpoint in the request.",
             "maxLength": 256,
             "minLength": 1,
             "title": "Model",
@@ -32515,7 +32672,7 @@
               }
             ],
             "default": null,
-            "description": "Bearer token for the probe. Omit to reuse the draft's stored key, allowed only while `base_url` equals the saved custom endpoint.",
+            "description": "Bearer token sent to your endpoint. Omit it, or send null, to reuse the key saved in the agent's draft `llm.custom`. That works only while `base_url` is the address saved there; for any other address the call returns 422 and nothing is sent.",
             "title": "Api Key"
           },
           "headers": {
@@ -32531,7 +32688,7 @@
               }
             ],
             "default": null,
-            "description": "Extra headers for the probe. Omit to reuse the draft's stored headers, sent only while `base_url` equals the saved custom endpoint.",
+            "description": "Extra HTTP headers sent to your endpoint, at most 20; reserved headers such as `Authorization` and `Content-Type` are not allowed. Omit it, or send null, to reuse the headers saved in the agent's draft `llm.custom`, under the same rule as `api_key`. Send `{}` to send none.",
             "title": "Headers"
           }
         },

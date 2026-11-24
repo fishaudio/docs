@@ -9,10 +9,12 @@ iconType: "solid"
 
 Fish sends one streamed chat-completions turn to your `base_url` with the agent's draft system prompt and tools, and reports what came back. Use it to check an endpoint before you save it as `llm.custom`.
 
-A problem with your endpoint is not an HTTP error. An unreachable or blocked host, a timeout, a non-2xx reply, or a reply that isn't a server-sent-event stream all return `200`; read `error` and `status_code` to see what went wrong, not the HTTP status.
+A problem with your endpoint is not an HTTP error. An unreachable or blocked host, a timeout, a non-2xx reply, or a reply that isn't a server-sent-event stream all return `200`; read `error` and `status_code` to see what went wrong, not the HTTP status. To branch on the outcome, use `type` and `reason`. They take the same values as `llm_endpoint_errors` in [Get Voice Agent Session](/api-reference/endpoint/agent/get-agent-session), so an error you find here is the one you would see on a call. `error` is a readable explanation that can change, so don't match on its text.
 
 Omit `api_key`, or send `null`, to reuse the key saved in the draft's `llm.custom`. That works only while `base_url` is the saved endpoint's address. For any other address the call returns `422` and nothing is sent, so a stored key never travels to a new host. Saved headers follow the same rule.
 
 The test sends one turn and doesn't retry. It waits up to 10 seconds for the response headers and 10 seconds for the first content, gives up after 20 seconds in total, reads at most 256 KB of the reply, and doesn't follow redirects. Your key and custom headers are never logged or returned; if your endpoint's reply quotes them, they are masked in `error`.
+
+Each team can make 30 calls per minute to this endpoint. The 31st call within the same minute returns `429`, and the count starts again in the next minute.
 
 For setup in the console and the `llm.custom` fields, see [Custom LLM](/agents/build/custom-llm).
