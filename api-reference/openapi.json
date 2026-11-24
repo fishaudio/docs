@@ -4155,7 +4155,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default),\n`elevenlabs:scribe_v2_realtime`, `elevenlabs:scribe_v2_medical`, or\n`fish_audio:transcribe-stream-1` (Fish realtime recognition, which\nalso decides end of turn and whether the caller is interrupting).\nIts former id `fish_audio:transcribe-1-pro-realtime` is still accepted\nand reads back as the current id.\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best.\n`voice.background_sound` sets a looping ambience the worker mixes under\nthe agent's voice: `preset` is `off` (default) or one of `office`,\n`call_center`, `restaurant`, `cafe`, `city_street`, `phone_line`, `phone_line_digital`,\n`custom`. `volume` (0-1, default 0.15) is the\nambience's gain relative to the voice. `custom_asset_id` names a clip\nuploaded through `POST /v1/agent/background-sounds`; required with\n`preset: \"custom\"`, refused otherwise (422). Replaces the whole object;\nan explicit null resets it to off. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null. `llm.fallback` sets what the agent tries after its\nmodel fails: `platform` (default), `manual` (`models` in order, 1 to 3)\nor `off`. In `manual`, each model and `primary` (the agent's own model)\ntake optional `ttft_timeout_ms` (500-30000, default 5000 ms, i.e. 5\nseconds, when not set) and `total_timeout_ms` (1000-120000, at least\n`ttft_timeout_ms` when both are set, no limit when not set), and the\nfirst model can set\n`parallel.kick_in_ms` (300-10000, default 1500) to run alongside the\nagent's own model.\n\nThe response is the draft as stored, which can differ from the request:\n- Every field comes back. Omitted fields keep their value or default.\n- `asr.keyterms` and `voice.pronunciation_dictionary_ids` are trimmed\n  and de-duplicated in order. `tool_ids` is de-duplicated in order.\n- A tool that was archived drops out of `tool_ids` at the next tools\n  write.\n- `conversation.interruption_ignore_phrases` collapses inner spaces and\n  drops case-insensitive duplicates.\n- `conversation.timezone`, transfer phone numbers and transfer text\n  fields are trimmed.\n- `conversation.eagerness` and `conversation.response_wait_ms` move\n  together. The wait wins when both are sent, and the tier is derived\n  from it.\n- `conversation.response_max_wait_ms: 0` reads back as `null`\n  (automatic).\n- `conversation.backchannel` keeps the fields you omit.\n  `strength: null` goes back to the speech engine's own setting.\n- `conversation.reengage` keeps the fields you omit, and\n  `conversation.reengage.schedule` reads back as\n  `conversation.reengage.steps`.\n- `conversation` also returns `reengage_enabled`, copied from\n  `reengage.enabled`. It is deprecated.\n- `knowledge_base.enabled` becomes `true` when you attach sources and\n  omit it.\n- `llm.custom.base_url` drops a trailing `/` and `/chat/completions`.\n  `llm.custom.model` is trimmed. Setting `llm.custom` resets `llm.model`\n  to the platform default.\n- Secrets read back as `has_secret`, and `llm.custom.api_key` as `null`.\n- `voice.voice_id` reads back as the name while the agent speaks one of\n  the `live3` voices. Switching `voice.engine` to `fish_tts` returns it\n  to the agent's Voice Library voice, and switching back to `live3`\n  restores the name. A new agent, and one still on the default voice\n  when it switches to `live3`, starts on `clara`.\n- `voice.live3_voice` is deprecated and mirrors that name capitalized\n  (`Clara`), `null` when `voice.voice_id` is a Voice Library voice.\n- `voice` also returns `keyterms`, `multilingual_asr` and `asr_model`\n  copied from `asr`. They are deprecated.\n- `config_hash` and `updated_at` are set by the server.\n\nCompare against this response, or against `config_hash`, rather than the\nrequest body. Publishing never rewrites these values.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default) or\n`fish_audio:transcribe-stream-1` (Fish realtime recognition, which\nalso decides end of turn and whether the caller is interrupting).\nIts former id `fish_audio:transcribe-1-pro-realtime` is still accepted\nand reads back as the current id.\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best.\n`voice.background_sound` sets a looping ambience the worker mixes under\nthe agent's voice: `preset` is `off` (default) or one of `office`,\n`call_center`, `restaurant`, `cafe`, `city_street`, `phone_line`, `phone_line_digital`,\n`custom`. `volume` (0-1, default 0.15) is the\nambience's gain relative to the voice. `custom_asset_id` names a clip\nuploaded through `POST /v1/agent/background-sounds`; required with\n`preset: \"custom\"`, refused otherwise (422). Replaces the whole object;\nan explicit null resets it to off. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null. `llm.fallback` sets what the agent tries after its\nmodel fails: `platform` (default), `manual` (`models` in order, 1 to 3)\nor `off`. In `manual`, each model and `primary` (the agent's own model)\ntake optional `ttft_timeout_ms` (500-30000, default 5000 ms, i.e. 5\nseconds, when not set) and `total_timeout_ms` (1000-120000, at least\n`ttft_timeout_ms` when both are set, no limit when not set), and the\nfirst model can set\n`parallel.kick_in_ms` (300-10000, default 1500) to run alongside the\nagent's own model.\n\nThe response is the draft as stored, which can differ from the request:\n- Every field comes back. Omitted fields keep their value or default.\n- `asr.keyterms` and `voice.pronunciation_dictionary_ids` are trimmed\n  and de-duplicated in order. `tool_ids` is de-duplicated in order.\n- A tool that was archived drops out of `tool_ids` at the next tools\n  write.\n- `conversation.interruption_ignore_phrases` collapses inner spaces and\n  drops case-insensitive duplicates.\n- `conversation.timezone`, transfer phone numbers and transfer text\n  fields are trimmed.\n- `conversation.eagerness` and `conversation.response_wait_ms` move\n  together. The wait wins when both are sent, and the tier is derived\n  from it.\n- `conversation.response_max_wait_ms: 0` reads back as `null`\n  (automatic).\n- `conversation.backchannel` keeps the fields you omit.\n  `strength: null` goes back to the speech engine's own setting.\n- `conversation.reengage` keeps the fields you omit, and\n  `conversation.reengage.schedule` reads back as\n  `conversation.reengage.steps`.\n- `conversation` also returns `reengage_enabled`, copied from\n  `reengage.enabled`. It is deprecated.\n- `knowledge_base.enabled` becomes `true` when you attach sources and\n  omit it.\n- `llm.custom.base_url` drops a trailing `/` and `/chat/completions`.\n  `llm.custom.model` is trimmed. Setting `llm.custom` resets `llm.model`\n  to the platform default.\n- Secrets read back as `has_secret`, and `llm.custom.api_key` as `null`.\n- `voice.voice_id` reads back as the name while the agent speaks one of\n  the `live3` voices. Switching `voice.engine` to `fish_tts` returns it\n  to the agent's Voice Library voice, and switching back to `live3`\n  restores the name. A new agent, and one still on the default voice\n  when it switches to `live3`, starts on `clara`.\n- `voice.live3_voice` is deprecated and mirrors that name capitalized\n  (`Clara`), `null` when `voice.voice_id` is a Voice Library voice.\n- `voice` also returns `keyterms`, `multilingual_asr` and `asr_model`\n  copied from `asr`. They are deprecated.\n- `config_hash` and `updated_at` are set by the server.\n\nCompare against this response, or against `config_hash`, rather than the\nrequest body. Publishing never rewrites these values.",
         "security": [
           {
             "BearerAuth": []
@@ -14342,7 +14342,7 @@
       },
       "post": {
         "summary": "Purchase or Import Phone Number",
-        "description": "`provider` discriminates two variants. `twilio` buys a number from the\nmanaged inventory: it lands in your default workspace, any `agent_id` you\nbind must live there too, and billing is the monthly price charged in\ndaily slices; the first day is charged before anything is bought (402\ncosts you nothing) and the daily run advances it from there. `sip`\nimports a number you already own at your carrier: point your trunk's\norigination at our SIP host, provide inbound authentication (digest\nand/or source CIDRs) and optionally a termination host so the number can\nplace calls; nothing is rented and there is no monthly fee. Either way,\n409 means the number is already on the platform; 502 means the provider\nor trunk provisioning refused, and the number stays visible with status\n`error` and is safe to release. 403 with\n`reason: phone_number_limit_reached` means your team already holds as\nmany numbers as it may. An account that has never added credit holds one.",
+        "description": "`provider` discriminates two variants. `twilio` buys a number from the\nmanaged inventory: it lands in your default workspace, any `agent_id` you\nbind must live there too, and billing is the monthly price charged in\ndaily slices; the first day is charged before anything is bought (402\ncosts you nothing) and the daily run advances it from there. `sip`\nimports a number you already own at your carrier: point your trunk's\norigination at our SIP host, provide inbound authentication (digest\nand/or source CIDRs) and optionally a termination host so the number can\nplace calls; nothing is rented and there is no monthly fee. Either way,\n409 means the number is already on the platform, and 502 means the\nprovider or trunk provisioning refused. Nothing is charged and no number\nis added, so pick another number or correct the trunk settings and try\nagain. If the provider did not answer, the number can stay in `error`\nwith `status_reason` `provisioning_failed`, and releasing it cleans up.\n403 with\n`reason: phone_number_limit_reached` means your team already holds as\nmany numbers as it may. An account that has never added credit holds one.",
         "security": [
           {
             "BearerAuth": []
@@ -14485,6 +14485,23 @@
                       ],
                       "title": "Status",
                       "type": "string"
+                    },
+                    "status_reason": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "out_of_credit",
+                            "provisioning_failed"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Why the number is in `error`, `null` in every other status. `out_of_credit` means the API credit balance could not pay the number's daily fee, so the number is suspended and refuses calls. Top up API credit and it resumes by itself. A number left unpaid for 30 days is released. `provisioning_failed` means buying or importing the number did not finish and it cannot take calls. Release it, then buy or import the number again. More values may be added, so treat an unknown one as a generic error.",
+                      "title": "Status Reason"
                     },
                     "status_detail": {
                       "default": "",
@@ -15037,6 +15054,23 @@
                       "title": "Status",
                       "type": "string"
                     },
+                    "status_reason": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "out_of_credit",
+                            "provisioning_failed"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Why the number is in `error`, `null` in every other status. `out_of_credit` means the API credit balance could not pay the number's daily fee, so the number is suspended and refuses calls. Top up API credit and it resumes by itself. A number left unpaid for 30 days is released. `provisioning_failed` means buying or importing the number did not finish and it cannot take calls. Release it, then buy or import the number again. More values may be added, so treat an unknown one as a generic error.",
+                      "title": "Status Reason"
+                    },
                     "status_detail": {
                       "default": "",
                       "description": "What failed when status is `error`; empty otherwise.",
@@ -15410,6 +15444,23 @@
                       ],
                       "title": "Status",
                       "type": "string"
+                    },
+                    "status_reason": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "out_of_credit",
+                            "provisioning_failed"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Why the number is in `error`, `null` in every other status. `out_of_credit` means the API credit balance could not pay the number's daily fee, so the number is suspended and refuses calls. Top up API credit and it resumes by itself. A number left unpaid for 30 days is released. `provisioning_failed` means buying or importing the number did not finish and it cannot take calls. Release it, then buy or import the number again. More values may be added, so treat an unknown one as a generic error.",
+                      "title": "Status Reason"
                     },
                     "status_detail": {
                       "default": "",
@@ -16039,6 +16090,23 @@
                       ],
                       "title": "Status",
                       "type": "string"
+                    },
+                    "status_reason": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "out_of_credit",
+                            "provisioning_failed"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Why the number is in `error`, `null` in every other status. `out_of_credit` means the API credit balance could not pay the number's daily fee, so the number is suspended and refuses calls. Top up API credit and it resumes by itself. A number left unpaid for 30 days is released. `provisioning_failed` means buying or importing the number did not finish and it cannot take calls. Release it, then buy or import the number again. More values may be added, so treat an unknown one as a generic error.",
+                      "title": "Status Reason"
                     },
                     "status_detail": {
                       "default": "",
@@ -34720,6 +34788,23 @@
             ],
             "title": "Status",
             "type": "string"
+          },
+          "status_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "out_of_credit",
+                  "provisioning_failed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Why the number is in `error`, `null` in every other status. `out_of_credit` means the API credit balance could not pay the number's daily fee, so the number is suspended and refuses calls. Top up API credit and it resumes by itself. A number left unpaid for 30 days is released. `provisioning_failed` means buying or importing the number did not finish and it cannot take calls. Release it, then buy or import the number again. More values may be added, so treat an unknown one as a generic error.",
+            "title": "Status Reason"
           },
           "status_detail": {
             "default": "",
