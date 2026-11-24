@@ -1620,6 +1620,32 @@
                       "default": null,
                       "title": "Dial Status"
                     },
+                    "dial_sip_status": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "busy, no_answer and failed: the final SIP response code the carrier or your SIP trunk gave to the outbound dial. Null on an answered call and when it gave none.",
+                      "title": "Dial Sip Status"
+                    },
+                    "dial_sip_reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The reason text the carrier or your SIP trunk sent with dial_sip_status, verbatim, for example `Busy here`. Null when it sent none.",
+                      "title": "Dial Sip Reason"
+                    },
                     "answered_by": {
                       "anyOf": [
                         {
@@ -25215,6 +25241,32 @@
             "default": null,
             "title": "Dial Status"
           },
+          "dial_sip_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "busy, no_answer and failed: the final SIP response code the carrier or your SIP trunk gave to the outbound dial. Null on an answered call and when it gave none.",
+            "title": "Dial Sip Status"
+          },
+          "dial_sip_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The reason text the carrier or your SIP trunk sent with dial_sip_status, verbatim, for example `Busy here`. Null when it sent none.",
+            "title": "Dial Sip Reason"
+          },
           "answered_by": {
             "anyOf": [
               {
@@ -25492,6 +25544,10 @@
                   "google/gemini-3.6-flash-priority",
                   "google/gemini-3.8-flash-priority",
                   "google/gemini-3.5-flash-lite-priority",
+                  "google/gemini-4-hydrogen",
+                  "google/gemini-4-neon",
+                  "google/gemini-4-hydrogen-priority",
+                  "google/gemini-4-neon-priority",
                   "google/gemini-2.5-flash",
                   "google/gemma-4-26b-a4b-it",
                   "anthropic/claude-haiku-4.5",
@@ -25506,6 +25562,8 @@
                   "openai/gpt-6.1-sol",
                   "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
+                  "openai/gpt-6.2-sol",
+                  "openai/gpt-6.2-astra",
                   "openai/gpt-4o",
                   "openai/gpt-4.1",
                   "openai/gpt-5.6-luna-fast",
@@ -25513,6 +25571,8 @@
                   "openai/gpt-6.1-terra-fast",
                   "openai/gpt-6.1-sol-fast",
                   "openai/gpt-6-astra-fast",
+                  "openai/gpt-6.2-sol-fast",
+                  "openai/gpt-6.2-astra-fast",
                   "openai/gpt-4o-fast",
                   "openai/gpt-4.1-fast"
                 ],
@@ -29219,6 +29279,10 @@
                   "google/gemini-3.6-flash-priority",
                   "google/gemini-3.8-flash-priority",
                   "google/gemini-3.5-flash-lite-priority",
+                  "google/gemini-4-hydrogen",
+                  "google/gemini-4-neon",
+                  "google/gemini-4-hydrogen-priority",
+                  "google/gemini-4-neon-priority",
                   "google/gemini-2.5-flash",
                   "google/gemma-4-26b-a4b-it",
                   "anthropic/claude-haiku-4.5",
@@ -29233,6 +29297,8 @@
                   "openai/gpt-6.1-sol",
                   "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
+                  "openai/gpt-6.2-sol",
+                  "openai/gpt-6.2-astra",
                   "openai/gpt-4o",
                   "openai/gpt-4.1",
                   "openai/gpt-5.6-luna-fast",
@@ -29240,6 +29306,8 @@
                   "openai/gpt-6.1-terra-fast",
                   "openai/gpt-6.1-sol-fast",
                   "openai/gpt-6-astra-fast",
+                  "openai/gpt-6.2-sol-fast",
+                  "openai/gpt-6.2-astra-fast",
                   "openai/gpt-4o-fast",
                   "openai/gpt-4.1-fast"
                 ],
@@ -29323,6 +29391,10 @@
                   "google/gemini-3.6-flash-priority",
                   "google/gemini-3.8-flash-priority",
                   "google/gemini-3.5-flash-lite-priority",
+                  "google/gemini-4-hydrogen",
+                  "google/gemini-4-neon",
+                  "google/gemini-4-hydrogen-priority",
+                  "google/gemini-4-neon-priority",
                   "google/gemini-2.5-flash",
                   "google/gemma-4-26b-a4b-it",
                   "anthropic/claude-haiku-4.5",
@@ -29337,6 +29409,8 @@
                   "openai/gpt-6.1-sol",
                   "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
+                  "openai/gpt-6.2-sol",
+                  "openai/gpt-6.2-astra",
                   "openai/gpt-4o",
                   "openai/gpt-4.1",
                   "openai/gpt-5.6-luna-fast",
@@ -29344,6 +29418,8 @@
                   "openai/gpt-6.1-terra-fast",
                   "openai/gpt-6.1-sol-fast",
                   "openai/gpt-6-astra-fast",
+                  "openai/gpt-6.2-sol-fast",
+                  "openai/gpt-6.2-astra-fast",
                   "openai/gpt-4o-fast",
                   "openai/gpt-4.1-fast"
                 ],
@@ -30657,6 +30733,10 @@
               "google/gemini-3.6-flash-priority",
               "google/gemini-3.8-flash-priority",
               "google/gemini-3.5-flash-lite-priority",
+              "google/gemini-4-hydrogen",
+              "google/gemini-4-neon",
+              "google/gemini-4-hydrogen-priority",
+              "google/gemini-4-neon-priority",
               "google/gemini-2.5-flash",
               "google/gemma-4-26b-a4b-it",
               "anthropic/claude-haiku-4.5",
@@ -30671,6 +30751,8 @@
               "openai/gpt-6.1-sol",
               "openai/gpt-6.1-terra",
               "openai/gpt-6-astra",
+              "openai/gpt-6.2-sol",
+              "openai/gpt-6.2-astra",
               "openai/gpt-4o",
               "openai/gpt-4.1",
               "openai/gpt-5.6-luna-fast",
@@ -30678,6 +30760,8 @@
               "openai/gpt-6.1-terra-fast",
               "openai/gpt-6.1-sol-fast",
               "openai/gpt-6-astra-fast",
+              "openai/gpt-6.2-sol-fast",
+              "openai/gpt-6.2-astra-fast",
               "openai/gpt-4o-fast",
               "openai/gpt-4.1-fast"
             ],
@@ -30755,6 +30839,10 @@
                   "google/gemini-3.6-flash-priority",
                   "google/gemini-3.8-flash-priority",
                   "google/gemini-3.5-flash-lite-priority",
+                  "google/gemini-4-hydrogen",
+                  "google/gemini-4-neon",
+                  "google/gemini-4-hydrogen-priority",
+                  "google/gemini-4-neon-priority",
                   "google/gemini-2.5-flash",
                   "google/gemma-4-26b-a4b-it",
                   "anthropic/claude-haiku-4.5",
@@ -30769,6 +30857,8 @@
                   "openai/gpt-6.1-sol",
                   "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
+                  "openai/gpt-6.2-sol",
+                  "openai/gpt-6.2-astra",
                   "openai/gpt-4o",
                   "openai/gpt-4.1",
                   "openai/gpt-5.6-luna-fast",
@@ -30776,6 +30866,8 @@
                   "openai/gpt-6.1-terra-fast",
                   "openai/gpt-6.1-sol-fast",
                   "openai/gpt-6-astra-fast",
+                  "openai/gpt-6.2-sol-fast",
+                  "openai/gpt-6.2-astra-fast",
                   "openai/gpt-4o-fast",
                   "openai/gpt-4.1-fast"
                 ],
@@ -35041,6 +35133,10 @@
               "google/gemini-3.6-flash-priority",
               "google/gemini-3.8-flash-priority",
               "google/gemini-3.5-flash-lite-priority",
+              "google/gemini-4-hydrogen",
+              "google/gemini-4-neon",
+              "google/gemini-4-hydrogen-priority",
+              "google/gemini-4-neon-priority",
               "google/gemini-2.5-flash",
               "google/gemma-4-26b-a4b-it",
               "anthropic/claude-haiku-4.5",
@@ -35055,6 +35151,8 @@
               "openai/gpt-6.1-sol",
               "openai/gpt-6.1-terra",
               "openai/gpt-6-astra",
+              "openai/gpt-6.2-sol",
+              "openai/gpt-6.2-astra",
               "openai/gpt-4o",
               "openai/gpt-4.1",
               "openai/gpt-5.6-luna-fast",
@@ -35062,6 +35160,8 @@
               "openai/gpt-6.1-terra-fast",
               "openai/gpt-6.1-sol-fast",
               "openai/gpt-6-astra-fast",
+              "openai/gpt-6.2-sol-fast",
+              "openai/gpt-6.2-astra-fast",
               "openai/gpt-4o-fast",
               "openai/gpt-4.1-fast"
             ],
