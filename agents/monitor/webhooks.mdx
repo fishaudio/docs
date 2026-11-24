@@ -152,7 +152,12 @@ Every payload carries the `event` name, a unique `event_id`, and a `session` obj
     ],
     "criteria_results": [
       { "name": "issue_resolved", "result": "success", "rationale": "…" }
-    ]
+    ],
+    "error": null,
+    "transcript_incomplete": false,
+    "input_tokens": 1840,
+    "output_tokens": 212,
+    "finished_at": "2026-07-23T12:05:07.250000Z"
   },
   "items": [
     {
@@ -218,6 +223,23 @@ Every payload carries the `event` name, a unique `event_id`, and a `session` obj
 `event_id` is `evt_` followed by 32 hex characters. It identifies one event. Every endpoint and every retry of that event gets the same value, and it is also sent in the `X-Fish-Webhook-Id` header. Use it to drop duplicates. See [Idempotency](#idempotency).
 
 `items` on `call.analyzed` is the same timeline as `items` in [`GET /v1/agent/sessions/{session_id}`](/agents/monitor/conversation-history#get-a-session): messages, tool calls, tool results, and transfers, in the order they happened. See [Item types](/agents/monitor/conversation-history#item-types) for the fields. Each `message` carries `interrupted` and `interrupted_by` (set when an agent reply was cut off before it finished, with what cut it off) and `audio_start_ms` and `audio_end_ms` (where the message sits in the speaker's own recording track); see [Interrupted replies and audio position](/agents/monitor/conversation-history#interrupted-replies-and-audio-position). Per-turn latency and knowledge lookups are not in the webhook: fetch the session to get them. `items` is `[]` when the session's content was already deleted by data retention, and `null` when it could not be read. In that case, fetch the session from the sessions API.
+
+The `analysis` object on `call.analyzed` has the same fields as the `analysis` object in the [session detail](/agents/monitor/post-call-analysis#read-the-results), and these five mean the same thing in both:
+
+| Field                   | What it is                                                                                                                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `error`                 | Why the analysis failed. It is set when `status` is `error` and `null` for every other status                                                                                               |
+| `transcript_incomplete` | `true` when the transcript still looked cut short after the analysis waited for it, so the summary, data and criteria may rest on an incomplete conversation. It can be `true` for `completed` and `skipped` |
+| `input_tokens`          | Tokens the analysis read. `0` when no language model was called                                                                                                                             |
+| `output_tokens`         | Tokens the analysis wrote. `0` when no language model was called                                                                                                                            |
+| `finished_at`           | When the analysis finished, as an RFC 3339 timestamp in UTC, for example `2026-07-20T06:05:07.250000Z`. `null` while it has not finished                                                    |
+
+The webhook's `analysis` also carries fields that the session detail does not. None of them is part of the stable contract:
+
+| Field                                                                                | Status                                                                                                                          |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `id`, `session_kind`, `model`, `config_hash`, `latency_ms`, `started_at`, `created_at` | Internal, may change. They are still sent today, but do not build on them                                                        |
+| `session_id`, `agent_id`                                                             | Deprecated. They repeat what the `session` object already carries and are still sent. Read them from `session` instead          |
 
 `ended_reason` is the same value as `session.end_reason` and uses the [sessions API vocabulary](/agents/monitor/conversation-history#status-and-end-reason): `user_hangup`, `agent_hangup`, `escalated`, `conversation_timeout`, `heartbeat_timeout`, `agent_join_timeout`, `internal_error`, or `llm_endpoint_failure`. `call.ended` is only sent for sessions in which a participant connected, so the never-connected reasons (`room_join_timeout`, `cancelled`, `dial_failed`) do not appear here; query the sessions API with `status=failed` for those. A caller who connected and waited for an agent that never joined does produce `call.ended`, with `session.status` set to `failed` and `ended_reason` set to `agent_join_timeout`. In the rare case the reason is not settled yet at delivery time, both fields are `null`. New values may be added; treat unrecognized values as informational rather than rejecting the event.
 

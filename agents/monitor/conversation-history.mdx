@@ -58,7 +58,6 @@ Each row carries the session facts:
       "status": "completed",
       "end_reason": "user_hangup",
       "conversation_status": "resolved",
-      "recording_status": "processing",
       "source": "phone",
       "caller_number": "+15551234567",
       "caller_id_withheld": false,
@@ -76,7 +75,7 @@ Each row carries the session facts:
 }
 ```
 
-`caller_number` and `dialed_number` are set for phone sessions only (E.164) and are `null` for web sessions. `caller_id_withheld` is `true` when the carrier hid the caller's number, and then `caller_number` is `null` too (`anonymous` and Twilio's placeholder numbers count as hidden). It is `false` on phone and WhatsApp sessions whose caller number was shown, on outbound calls, and on calls made before the field existed, and `null` on web and other non-call sessions. `sip_call_id` is the SIP `Call-ID` of the call's INVITE. It is `null` on web sessions and on outbound calls that were never answered. See [Match calls with your SIP records](/agents/telephony/byo-sip#match-calls-with-your-sip-records). `call_sid` is the carrier's id of the call: Twilio's CallSid on an inbound call through a Twilio number, the same value the [inbound call webhook](/agents/monitor/webhooks#inbound-call-webhook) sends. It is `null` on other sessions. `name` is the display name you passed when creating the session (`null` when omitted), `end_user_id` is the end-user identifier you passed (`null` when omitted), and `metadata` echoes back whatever you attached when creating the session. `conversation_status` says how the conversation went (see [Conversation status](#conversation-status)), and `recording_status` says whether the session has a recording (see [Recording status](#recording-status)).
+`caller_number` and `dialed_number` are set for phone sessions only (E.164) and are `null` for web sessions. `caller_id_withheld` is `true` when the carrier hid the caller's number, and then `caller_number` is `null` too (`anonymous` and Twilio's placeholder numbers count as hidden). It is `false` on phone and WhatsApp sessions whose caller number was shown, on outbound calls, and on calls made before the field existed, and `null` on web and other non-call sessions. `sip_call_id` is the SIP `Call-ID` of the call's INVITE. It is `null` on web sessions and on outbound calls that were never answered. See [Match calls with your SIP records](/agents/telephony/byo-sip#match-calls-with-your-sip-records). `call_sid` is the carrier's id of the call: Twilio's CallSid on an inbound call through a Twilio number, the same value the [inbound call webhook](/agents/monitor/webhooks#inbound-call-webhook) sends. It is `null` on other sessions. `name` is the display name you passed when creating the session (`null` when omitted), `end_user_id` is the end-user identifier you passed (`null` when omitted), and `metadata` echoes back whatever you attached when creating the session. `conversation_status` says how the conversation went (see [Conversation status](#conversation-status)). Whether a session has a recording you can download is answered by the [recording endpoint](#download-recordings).
 
 ### Status and end reason
 
@@ -102,12 +101,12 @@ The same values appear on the [`call.ended` webhook](/agents/monitor/webhooks) a
 
 ### Conversation status
 
-`conversation_status` is one label for how the conversation went. It is derived from `status` and `end_reason`, it is on every row of the list and on the session detail, and you can [filter the list](#filters) by it.
+`conversation_status` is one label for how the conversation went. It is derived from `status` and `end_reason`, it is on every row of the list and on the session detail, and you can [filter the list](#filters) by it. The five values below are the current ones; more may be added later, so treat a value you do not recognise as a status you have no special handling for, not as an error. The filter accepts only these five.
 
 | `conversation_status` | Meaning                                                                              | `end_reason`                                                                        |
 | --------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
 | `active`              | The session is not over yet: `status` is `pending`, `active` or `unknown`             | `null`                                                                              |
-| `resolved`            | The conversation ended normally                                                      | `user_hangup`, `agent_hangup`, `conversation_timeout`, or none on a completed session |
+| `resolved`            | The conversation ended normally. It does not mean the caller's problem was solved   | `user_hangup`, `agent_hangup`, `conversation_timeout`, or none on a completed session |
 | `escalated`           | The call was transferred to a person                                                 | `escalated`                                                                         |
 | `missed`              | Nobody connected, so no conversation took place                                      | `room_join_timeout`, `cancelled`, `dial_failed`, or none or any non-error reason on a failed session |
 | `error`               | The platform ended the conversation because something failed, or no agent ever joined | `heartbeat_timeout`, `agent_join_timeout`, `internal_error`, `llm_endpoint_failure` |
@@ -165,7 +164,6 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
   "status": "completed",
   "end_reason": "user_hangup",
   "conversation_status": "resolved",
-  "recording_status": "processing",
   "items": [
     {
       "type": "message",
@@ -212,14 +210,7 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
       "audio_end_ms": 18600
     }
   ],
-  "startup_latency": [
-    {
-      "phase": "session_startup",
-      "timings": { "total_ms": 1310 },
-      "markers": { "entry_started_at": 1784711640000 },
-      "text_length": null
-    }
-  ],
+  "startup_ms": 1310,
   "turns": [
     {
       "turn_id": 3,
@@ -230,15 +221,17 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
         "voice_to_voice_ms": 1210,
         "voice_to_voice_heard_ms": null
       },
-      "latency": [
-        {
-          "phase": "turn_heard",
-          "timings": { "eou_delay_ms": 290, "llm_ttft_ms": 610 },
-          "markers": { "speech_started_at": 1784711654000 },
-          "text_length": null
-        }
-      ],
-      "audio_range": null,
+      "timings": {
+        "eou_delay_ms": 290,
+        "llm_ttft_ms": 610,
+        "tts_ttfb_ms": 240,
+        "speaking_after_speech_stop_ms": 1210,
+        "speech_duration_ms": 1800,
+        "llm_duration_ms": 940,
+        "tts_duration_ms": 1530,
+        "tts_audio_duration_ms": 3290,
+        "voice_to_voice_heard_ms": null
+      },
       "knowledge_retrievals": []
     }
   ],
@@ -247,7 +240,12 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
     "status": "completed",
     "summary": "…",
     "data": [],
-    "criteria_results": []
+    "criteria_results": [],
+    "error": null,
+    "transcript_incomplete": false,
+    "input_tokens": 2140,
+    "output_tokens": 312,
+    "finished_at": "2026-07-22T09:16:31.250000Z"
   }
 }
 ```
@@ -290,23 +288,22 @@ New values may be added, so treat a value you don't know as an unspecified cause
 
 ### Latency and knowledge retrievals
 
-`startup_latency`, `turns` and `unattributed_knowledge_retrievals` are lists on the session detail. They are empty on a session that never recorded them.
+`startup_ms`, `turns` and `unattributed_knowledge_retrievals` are on the session detail. `turns` and `unattributed_knowledge_retrievals` are empty lists on a session that never recorded them.
 
-- **`startup_latency`**: how long the session took to start, one record per phase.
+- **`startup_ms`**: how long the session took to start, in whole milliseconds, from the request that created it until the agent was ready to talk. It is `null` when either end was not recorded, for example while the session is still starting.
 - **`turns`**: one entry per conversation turn, ascending by `turn_id`. The `turn_id` is the one on the `items` of that turn, so you can put a turn's messages and its measurements together.
 - **`unattributed_knowledge_retrievals`**: knowledge lookups that belong to no turn.
 
 Each entry of `turns` has:
 
-| Field                  | What it is                                                                                                                                                  |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `turn_id`              | The turn number, as on `items`                                                                                                                              |
-| `latency_summary`      | The turn's first-response latency, in whole milliseconds. Each value is `null` when it could not be measured                                              |
-| `latency`              | The timing records of the turn, one per phase                                                                                                               |
-| `audio_range`          | The turn's span in the recording, `{ "start_ms", "end_ms" }`. Usually `null`: a session is recorded on one track per speaker, so locate a turn with the `audio_start_ms` and `audio_end_ms` of its messages instead |
-| `knowledge_retrievals` | The knowledge lookups the agent made in this turn                                                                                                            |
+| Field                  | What it is                                                                                                                       |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `turn_id`              | The turn number, as on `items`                                                                                                   |
+| `latency_summary`      | The turn's first-response latency, in whole milliseconds. Each value is `null` when it could not be measured                    |
+| `timings`              | The turn's timing steps in milliseconds. When a step was reported more than once, the latest value is shown                      |
+| `knowledge_retrievals` | The knowledge lookups the agent made in this turn                                                                                |
 
-`latency_summary` has these fields:
+`latency_summary` is a short, stable summary of the turn. Use it for dashboards and alerts. It has these fields:
 
 | Field                     | What it measures                                                                                                           |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -316,22 +313,39 @@ Each entry of `turns` has:
 | `voice_to_voice_ms`       | From the caller finishing speaking to the first agent audio                                                                |
 | `voice_to_voice_heard_ms` | The same interval as the caller's browser heard it. Only web sessions whose client reported playback timing have it         |
 
-A timing record, in `startup_latency` and in a turn's `latency`, has a `phase`, a `timings` object, a `markers` object and `text_length` (the characters of text the record covers, `null` when it has none):
+`timings` has a fixed set of keys, all durations in milliseconds. A step the turn has no measurement for is `null`. Steps that do not apply to a session (the `client_*` ones exist only for web sessions) are `null` too.
 
-- **`phase`**: in `startup_latency` it is `session_create` or `session_startup`. In a turn's `latency` it is `turn_heard`, `turn_playout_completed` or `turn_completed`. New phases may be added, so ignore a phase you do not know.
-- **`timings`**: durations in milliseconds, keyed by step in `snake_case`. Which keys appear depends on the phase, and new keys may be added. The main keys are `total_ms`, `eou_delay_ms`, `llm_ttft_ms`, `tts_ttfb_ms`, `speaking_after_speech_stop_ms` and `voice_to_voice_heard_ms`.
-- **`markers`**: points in time as Unix milliseconds, keyed in `snake_case`. Which keys appear depends on the phase, and new keys may be added. The main keys are `speech_started_at`, `speech_stopped_at`, `agent_speaking_at`, `agent_speaking_ended_at` and `assistant_completed_at`.
+| Key                                       | What it measures                                                                         |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `eou_delay_ms`                            | Delay of the end-of-utterance decision after the caller stopped speaking                 |
+| `llm_ttft_ms`                             | Time from the LLM request to its first token                                             |
+| `tts_ttfb_ms`                             | Time from the speech request to the first audio byte                                     |
+| `speaking_after_speech_stop_ms`           | From the caller finishing speaking to the agent's first audio (voice to voice)           |
+| `speech_duration_ms`                      | How long the caller spoke in this turn                                                   |
+| `transcription_delay_ms`                  | Delay before the caller's speech was transcribed                                         |
+| `on_user_turn_completed_delay_ms`         | Time spent in the step that runs before the LLM request                                  |
+| `thinking_after_transcript_ms`            | Time from the finished transcript until the agent started to think                       |
+| `thinking_to_speaking_ms`                 | Time from the agent starting to think until it started to speak                          |
+| `llm_duration_ms`                         | How long the LLM took to finish its reply                                                |
+| `tts_first_byte_after_eou_ms`             | Time from the end-of-utterance decision to the first audio byte                          |
+| `tts_duration_ms`                         | How long speech synthesis took                                                           |
+| `tts_audio_duration_ms`                   | Length of the audio that was synthesized                                                 |
+| `assistant_complete_after_speech_stop_ms` | From the caller finishing speaking to the agent's reply being complete                   |
+| `voice_to_voice_heard_ms`                 | Voice to voice as the caller's browser heard it. Only web sessions whose client reported playback timing have it |
+| `client_delay_estimate_ms`                | The caller's own estimate of playback delay, from WebRTC statistics                      |
+| `client_rtt_ms`                           | Round trip time between the caller and the platform's edge                               |
+| `client_jitter_buffer_ms`                 | The caller's jitter buffer                                                               |
 
-Read `timings` and `markers` by key and skip the keys you don't know, instead of expecting a fixed set.
+New steps may be added as new keys over time, so read `timings` by key and ignore the keys you do not know.
 
-A knowledge lookup in `knowledge_retrievals` or `unattributed_knowledge_retrievals` has the `query` the agent searched for, the `hits` it got back, and an `error` that is set when the lookup failed (the `hits` are then empty and the turn ran without the knowledge). A hit carries `source_id`, `revision_id`, `chunk_id`, `chunk_index`, `score`, `source_name` and `file_name`. `source_id` is the `knowledge_source_id` of the [knowledge APIs](/api-reference/endpoint/agent/list-knowledge-sources). To read the text of a hit, see [Read a knowledge chunk](#read-a-knowledge-chunk).
+A knowledge lookup in `knowledge_retrievals` or `unattributed_knowledge_retrievals` has the `query` the agent searched for, the `hits` it got back, and an `error` that is set when the lookup failed (the `hits` are then empty and the turn ran without the knowledge). A hit carries `knowledge_source_id`, `revision_id`, `chunk_id`, `chunk_index`, `score`, `source_name` and `file_name`. `knowledge_source_id` is the id of the source in the [knowledge APIs](/api-reference/endpoint/agent/list-knowledge-sources). To read the text of a hit, see [Read a knowledge chunk](#read-a-knowledge-chunk).
 
 ```json
 {
   "query": "return policy",
   "hits": [
     {
-      "source_id": "ks_8f2…",
+      "knowledge_source_id": "ks_8f2…",
       "revision_id": "rev_41c…",
       "chunk_id": "chunk_77d…",
       "chunk_index": 3,
@@ -346,16 +360,16 @@ A knowledge lookup in `knowledge_retrievals` or `unattributed_knowledge_retrieva
 
 ### Read a knowledge chunk
 
-A hit names a chunk but not its text. `GET /v1/agent/sessions/{session_id}/knowledge/{source_id}/{revision_id}/{chunk_id}` returns the text, so you can see what the agent was given. Take the three ids from a hit.
+A hit names a chunk but not its text. `GET /v1/agent/sessions/{session_id}/knowledge-chunks/{chunk_id}` returns the text, so you can see what the agent was given. Take `chunk_id` from a hit, and pass the hit's `knowledge_source_id` and `revision_id` as the two required query parameters.
 
 ```bash API (curl)
-curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID/knowledge/SOURCE_ID/REVISION_ID/CHUNK_ID" \
+curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID/knowledge-chunks/CHUNK_ID?knowledge_source_id=KNOWLEDGE_SOURCE_ID&revision_id=REVISION_ID" \
   --header "Authorization: Bearer $FISH_API_KEY"
 ```
 
 ```json
 {
-  "source_id": "ks_8f2…",
+  "knowledge_source_id": "ks_8f2…",
   "revision_id": "rev_41c…",
   "chunk_id": "chunk_77d…",
   "chunk_index": 3,
@@ -365,7 +379,7 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID/knowledge/SOURCE_ID/RE
 }
 ```
 
-`content` is cut at 4000 characters, and `truncated` is `true` when the chunk is longer. The endpoint only reads chunks that this session's own retrievals returned: any other id answers `404`, and so does a chunk that has since been removed from the knowledge base. It returns `410` when the session's content was already deleted by data retention. See the [endpoint reference](/api-reference/endpoint/agent/get-agent-session-knowledge-chunk).
+`content` is cut at 4000 characters, and `truncated` is `true` when the chunk is longer. Both query parameters are required. The endpoint only reads chunks that this session's own retrievals returned: any other combination of ids answers `404`, and so does a chunk that has since been removed from the knowledge base. It returns `410` when the session's content was already deleted by data retention. See the [endpoint reference](/api-reference/endpoint/agent/get-agent-session-knowledge-chunk).
 
 ### LLM endpoint errors
 
@@ -542,17 +556,7 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID/recording" \
 
 Signed URLs are short-lived: store the `session_id` and request fresh URLs when you need the audio. For the same reason, recordings are not embedded in the session detail response.
 
-### Recording status
-
-The list and the session detail carry `recording_status`, so you can tell which sessions have audio without calling the recording endpoint for each one:
-
-| `recording_status` | Meaning                                                                          |
-| ------------------ | -------------------------------------------------------------------------------- |
-| `processing`       | The session has a recording                                                      |
-| `failed`           | The recording failed                                                             |
-| `null`             | The session has no recording: recording was off, its content was deleted, or the status could not be read |
-
-`processing` also covers a recording that has finished. It means the session has a recording, not that the audio can be downloaded yet: whether it can be downloaded is decided by the recording endpoint above, which answers with the status and URLs of each track.
+Neither the list nor the session detail says whether a session has a recording. Ask the recording endpoint: it answers with the status and URLs of each track, and `404` when the session has none.
 
 ## Access semantics
 

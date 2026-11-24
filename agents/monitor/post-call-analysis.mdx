@@ -172,7 +172,8 @@ curl "https://api.fish.audio/v1/agent/sessions/$SESSION_ID" \
     "error": null,
     "transcript_incomplete": false,
     "input_tokens": 1840,
-    "output_tokens": 212
+    "output_tokens": 212,
+    "finished_at": "2026-07-22T09:16:31.250000Z"
   }
 }
 ```
@@ -185,6 +186,7 @@ Besides the results, `analysis` tells you how the run went:
 | `transcript_incomplete` | `true` when the transcript still looked cut short after the analysis waited for it, so the summary, data and criteria may rest on an incomplete conversation. It can be `true` for `completed` and `skipped` |
 | `input_tokens`          | Tokens the analysis read. `0` when no language model was called                                                                                                                             |
 | `output_tokens`         | Tokens the analysis wrote. `0` when no language model was called                                                                                                                            |
+| `finished_at`           | When the analysis finished, as an RFC 3339 timestamp in UTC, for example `2026-07-20T06:05:07.250000Z`. `null` while it has not finished                                                    |
 
 To push results into your CRM or data warehouse as soon as they're ready, configure a [post-call webhook](/agents/monitor/webhooks). `call.analyzed` fires as soon as the run settles, whatever the outcome, with `analysis.status` telling you which of the terminal statuses above it reached.
 
