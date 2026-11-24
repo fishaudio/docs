@@ -5712,7 +5712,7 @@
     "/v1/agent/agents/{agent_id}/tests/run": {
       "post": {
         "summary": "Run Tests",
-        "description": "Start a batch that runs the agent's attached tests against its current\ndraft, one run per test and repeat. A simulation test repeats\n`simulation.repeat_count` times, and a `repeat_count` in the body repeats\nevery selected test that many times instead. A batch starts at most 1000\nruns. Runs are queued and finish in the background, simulations take\nminutes. Poll `GET /v1/agent/agents/{agent_id}/test-batches/{batch_id}`\nuntil `completed` is true, then gate on `pass_rate`, which leaves out\n`error` runs.\n\nEach simulation run that ends `passed` or `failed` is billed: a platform\nfee per agent reply plus the LLM tokens of the agent, the simulated user\nand the judge. `error` runs are not billed. A batch with a simulation\ntest returns 402 when the account has no trial balance or API credit\nleft, and 403 when the team's agreement does not allow agent usage.",
+        "description": "Start a batch that runs the agent's attached tests against its current\ndraft, one run per test and repeat. A simulation test repeats\n`simulation.repeat_count` times, and a `repeat_count` in the body repeats\nevery selected test that many times instead. A batch starts at most 1000\nruns. Runs are queued and finish in the background, simulations take\nminutes. Poll `GET /v1/agent/agents/{agent_id}/test-batches/{batch_id}`\nuntil `completed` is true, then gate on `pass_rate`, which leaves out\n`error` runs.\n\nEach run that ends `passed` or `failed` is billed a platform fee per\nagent reply plus the LLM tokens it used. A `next_reply` or `tool` run is\none reply, with the tokens of the agent and, on `next_reply`, of the\njudge. A simulation run bills every agent reply, with the tokens of the\nagent, the simulated user and the judge. `error` runs are not billed. A\nbatch returns 402 when the account has no trial balance or API credit\nleft, and 403 when the team's agreement does not allow agent usage.",
         "security": [
           {
             "BearerAuth": []
@@ -25563,7 +25563,6 @@
                   "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
                   "openai/gpt-6.2-sol",
-                  "openai/gpt-6.2-astra",
                   "openai/gpt-4o",
                   "openai/gpt-4.1",
                   "openai/gpt-5.6-luna-fast",
@@ -25572,7 +25571,6 @@
                   "openai/gpt-6.1-sol-fast",
                   "openai/gpt-6-astra-fast",
                   "openai/gpt-6.2-sol-fast",
-                  "openai/gpt-6.2-astra-fast",
                   "openai/gpt-4o-fast",
                   "openai/gpt-4.1-fast"
                 ],
@@ -26741,6 +26739,19 @@
             "title": "Input",
             "type": "string"
           },
+          "transfer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Set when the agent made this tool call on a warm transfer's consult call, the call to the transfer destination while the caller is on hold. It is the `call_id` of that transfer item. Null for a tool call made in the conversation with the caller.",
+            "title": "Transfer Id"
+          },
           "turn_id": {
             "anyOf": [
               {
@@ -26895,6 +26906,19 @@
             "default": null,
             "title": "Rejected By"
           },
+          "transfer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Set when the agent made this tool call on a warm transfer's consult call, the call to the transfer destination while the caller is on hold. It is the `call_id` of that transfer item. Null for a tool call made in the conversation with the caller.",
+            "title": "Transfer Id"
+          },
           "latency_ms": {
             "anyOf": [
               {
@@ -27033,6 +27057,19 @@
             "default": null,
             "description": "dial_failed and refer_failed: the final SIP response code the carrier gave. Null when it gave none.",
             "title": "Sip Status"
+          },
+          "sip_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "dial_failed and refer_failed: the reason text the carrier or SIP server sent with sip_status, verbatim, for example `Proxy Authentication Required`. Null when it sent none.",
+            "title": "Sip Reason"
           },
           "dial_status": {
             "anyOf": [
@@ -28224,6 +28261,10 @@
             "title": "Warm Human Detection",
             "type": "boolean"
           },
+          "warm_press_keys": {
+            "$ref": "#/components/schemas/AgentTransferPressKeysPatch",
+            "description": "Beta. Key presses on the call in which the agent reaches this destination, for a number that an automated phone menu answers before a person does. Applies to warm transfers whose warm_connect is `confirm` or `briefing`, and is ignored for cold transfers and `direct`. It has no effect while warm_human_detection is true, because that setting ends the transfer when a phone menu answers. The time spent in the menu counts toward `warm_confirm_timeout_seconds`, so such a destination usually needs a longer one. Absent means off. The list of destinations is replaced as a whole, so a destination sent without the field has it off."
+          },
           "warm_consult_uses_agent_settings": {
             "default": true,
             "description": "Compatibility option for warm transfers whose warm_connect is `confirm` or `briefing`, ignored for cold transfers and `direct`. Absent or true (recommended): on the call in which the agent briefs the destination, the agent uses the same turn-taking (response timing: `eagerness`, `response_wait_ms` and `response_max_wait_ms`), interruption (`interruption_sensitivity` and `interruption_ignore_phrases`) and language (`voice.speaking_language`) settings as on the call with the caller. False: that call keeps the older fixed behavior. Destinations that existed before this setting were set to false so their behavior did not change. Either way the destination can always interrupt the agent on that call, whatever `interruptible` is set to. A destination sent without the field keeps the value of the existing destination it replaces (same label, else a renamed one with the same phone number or SIP URI) and is true when it is new. Send true to switch a destination to the agent's settings.",
@@ -28297,6 +28338,25 @@
           }
         },
         "title": "AgentTransferOnFailurePatch",
+        "type": "object"
+      },
+      "AgentTransferPressKeysPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "default": false,
+            "description": "When true, on the call to this destination the agent can press phone keys to get through the menu (`_press_keys`), and stay silent while the menu or a hold message plays (`_skip_turn`), before it briefs the person who answers. It works the same whether the caller's own call is inbound or outbound, and does not depend on `tools.system_tools.press_keys`.",
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "instructions": {
+            "default": "",
+            "description": "How to get through this number's phone menu, written for the agent, such as `Press 2 for billing, then enter extension 204.` Optional, at most 500 characters. `{{variable}}` placeholders are filled in for each session. Without it the agent picks keys from the destination's label and description and from what the caller asked for. Used only while enabled is true, and kept when it is false.",
+            "title": "Instructions",
+            "type": "string"
+          }
+        },
+        "title": "AgentTransferPressKeysPatch",
         "type": "object"
       },
       "AgentTurnDetectorPatch": {
@@ -29298,7 +29358,6 @@
                   "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
                   "openai/gpt-6.2-sol",
-                  "openai/gpt-6.2-astra",
                   "openai/gpt-4o",
                   "openai/gpt-4.1",
                   "openai/gpt-5.6-luna-fast",
@@ -29307,7 +29366,6 @@
                   "openai/gpt-6.1-sol-fast",
                   "openai/gpt-6-astra-fast",
                   "openai/gpt-6.2-sol-fast",
-                  "openai/gpt-6.2-astra-fast",
                   "openai/gpt-4o-fast",
                   "openai/gpt-4.1-fast"
                 ],
@@ -29410,7 +29468,6 @@
                   "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
                   "openai/gpt-6.2-sol",
-                  "openai/gpt-6.2-astra",
                   "openai/gpt-4o",
                   "openai/gpt-4.1",
                   "openai/gpt-5.6-luna-fast",
@@ -29419,7 +29476,6 @@
                   "openai/gpt-6.1-sol-fast",
                   "openai/gpt-6-astra-fast",
                   "openai/gpt-6.2-sol-fast",
-                  "openai/gpt-6.2-astra-fast",
                   "openai/gpt-4o-fast",
                   "openai/gpt-4.1-fast"
                 ],
@@ -29962,6 +30018,26 @@
         "title": "PublicPostCallWebhookPayload",
         "type": "object"
       },
+      "PublicPressKeysPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "When true, the agent gets two tools on outbound phone calls. `_press_keys` presses phone keys to get through an automated phone menu, and `_skip_turn` stays silent for a turn while a menu or a hold message plays. Inbound calls, web and API sessions and tests ignore it.",
+            "title": "Enabled"
+          }
+        },
+        "title": "PublicPressKeysPatch",
+        "type": "object"
+      },
       "PublicSystemToolsPatch": {
         "additionalProperties": false,
         "properties": {
@@ -30018,6 +30094,18 @@
             ],
             "default": null,
             "title": "Hang Up Call Refuse Questions"
+          },
+          "press_keys": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicPressKeysPatch"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Beta. Key presses on outbound phone calls, for calls that reach an automated phone menu before a person. The fields sent are written, the others stay as they are."
           }
         },
         "title": "PublicSystemToolsPatch",
@@ -30752,7 +30840,6 @@
               "openai/gpt-6.1-terra",
               "openai/gpt-6-astra",
               "openai/gpt-6.2-sol",
-              "openai/gpt-6.2-astra",
               "openai/gpt-4o",
               "openai/gpt-4.1",
               "openai/gpt-5.6-luna-fast",
@@ -30761,7 +30848,6 @@
               "openai/gpt-6.1-sol-fast",
               "openai/gpt-6-astra-fast",
               "openai/gpt-6.2-sol-fast",
-              "openai/gpt-6.2-astra-fast",
               "openai/gpt-4o-fast",
               "openai/gpt-4.1-fast"
             ],
@@ -30858,7 +30944,6 @@
                   "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
                   "openai/gpt-6.2-sol",
-                  "openai/gpt-6.2-astra",
                   "openai/gpt-4o",
                   "openai/gpt-4.1",
                   "openai/gpt-5.6-luna-fast",
@@ -30867,7 +30952,6 @@
                   "openai/gpt-6.1-sol-fast",
                   "openai/gpt-6-astra-fast",
                   "openai/gpt-6.2-sol-fast",
-                  "openai/gpt-6.2-astra-fast",
                   "openai/gpt-4o-fast",
                   "openai/gpt-4.1-fast"
                 ],
@@ -31059,6 +31143,18 @@
         "title": "AgentOutboundVoicemailConfig",
         "type": "object"
       },
+      "AgentPressKeysConfig": {
+        "properties": {
+          "enabled": {
+            "default": false,
+            "description": "When true, the agent gets two tools on outbound phone calls. `_press_keys` presses phone keys to get through an automated phone menu, and `_skip_turn` stays silent for a turn while a menu or a hold message plays. Inbound calls, web and API sessions and tests ignore it.",
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "title": "AgentPressKeysConfig",
+        "type": "object"
+      },
       "AgentPromptConfig": {
         "properties": {
           "system_prompt": {
@@ -31173,6 +31269,10 @@
             "default": false,
             "title": "Hang Up Call Refuse Questions",
             "type": "boolean"
+          },
+          "press_keys": {
+            "$ref": "#/components/schemas/AgentPressKeysConfig",
+            "description": "Beta. Key presses on outbound phone calls, for calls that reach an automated phone menu before a person."
           }
         },
         "title": "AgentSystemToolsConfig",
@@ -31285,6 +31385,10 @@
             "title": "Warm Human Detection",
             "type": "boolean"
           },
+          "warm_press_keys": {
+            "$ref": "#/components/schemas/AgentTransferPressKeys",
+            "description": "Beta. Key presses on the call in which the agent reaches this destination, for a number that an automated phone menu answers before a person does. Applies to warm transfers whose warm_connect is `confirm` or `briefing`, and is ignored for cold transfers and `direct`. It has no effect while warm_human_detection is true, because that setting ends the transfer when a phone menu answers. The time spent in the menu counts toward `warm_confirm_timeout_seconds`, so such a destination usually needs a longer one. Absent means off. The list of destinations is replaced as a whole, so a destination sent without the field has it off."
+          },
           "warm_consult_uses_agent_settings": {
             "default": true,
             "description": "Compatibility option for warm transfers whose warm_connect is `confirm` or `briefing`, ignored for cold transfers and `direct`. Absent or true (recommended): on the call in which the agent briefs the destination, the agent uses the same turn-taking (response timing: `eagerness`, `response_wait_ms` and `response_max_wait_ms`), interruption (`interruption_sensitivity` and `interruption_ignore_phrases`) and language (`voice.speaking_language`) settings as on the call with the caller. False: that call keeps the older fixed behavior. Destinations that existed before this setting were set to false so their behavior did not change. Either way the destination can always interrupt the agent on that call, whatever `interruptible` is set to. A destination sent without the field keeps the value of the existing destination it replaces (same label, else a renamed one with the same phone number or SIP URI) and is true when it is new. Send true to switch a destination to the agent's settings.",
@@ -31344,6 +31448,24 @@
           }
         },
         "title": "AgentTransferOnFailure",
+        "type": "object"
+      },
+      "AgentTransferPressKeys": {
+        "properties": {
+          "enabled": {
+            "default": false,
+            "description": "When true, on the call to this destination the agent can press phone keys to get through the menu (`_press_keys`), and stay silent while the menu or a hold message plays (`_skip_turn`), before it briefs the person who answers. It works the same whether the caller's own call is inbound or outbound, and does not depend on `tools.system_tools.press_keys`.",
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "instructions": {
+            "default": "",
+            "description": "How to get through this number's phone menu, written for the agent, such as `Press 2 for billing, then enter extension 204.` Optional, at most 500 characters. `{{variable}}` placeholders are filled in for each session. Without it the agent picks keys from the destination's label and description and from what the caller asked for. Used only while enabled is true, and kept when it is false.",
+            "title": "Instructions",
+            "type": "string"
+          }
+        },
+        "title": "AgentTransferPressKeys",
         "type": "object"
       },
       "AgentTurnDetector": {
@@ -35152,7 +35274,6 @@
               "openai/gpt-6.1-terra",
               "openai/gpt-6-astra",
               "openai/gpt-6.2-sol",
-              "openai/gpt-6.2-astra",
               "openai/gpt-4o",
               "openai/gpt-4.1",
               "openai/gpt-5.6-luna-fast",
@@ -35161,7 +35282,6 @@
               "openai/gpt-6.1-sol-fast",
               "openai/gpt-6-astra-fast",
               "openai/gpt-6.2-sol-fast",
-              "openai/gpt-6.2-astra-fast",
               "openai/gpt-4o-fast",
               "openai/gpt-4.1-fast"
             ],
