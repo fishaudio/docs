@@ -339,7 +339,7 @@ Deliveries can arrive more than once, and a retry can arrive after a later event
 
 At-least-once delivery means the same event can arrive more than once. Retries of one event carry an identical body, so store each `event_id` you process and drop any event whose `event_id` you have already seen.
 
-A skipped or failed analysis can be re-run from the console. The recovered result arrives as a new `call.analyzed` with a new `event_id` and a newer `analysis.finished_at`. It supersedes the earlier one, so keep the `call.analyzed` with the latest `finished_at` for each `session.id`.
+A skipped or failed analysis can be re-run from the console or with [Rerun Session Analysis](/api-reference/endpoint/agent/rerun-session-analysis). The recovered result arrives as a new `call.analyzed` with a new `event_id` and a newer `analysis.finished_at`. It supersedes the earlier one, so keep the `call.analyzed` with the latest `finished_at` for each `session.id`.
 
 ### Forward compatibility
 

@@ -181,9 +181,11 @@ A tool can store mock responses: canned payloads, each with a `name`, a `status_
 
 ## Test your tool
 
-The tool editor's **Test** tab fires a real request at your endpoint. Fill in the arguments as JSON (pre-filled with a sample based on your declared arguments) and send. You get back the status code, latency, response headers, and response body. A failing test never blocks saving the tool. There is no live call behind a test, so custom variables and `{{system.*}}` placeholders have no value: in header values and the body template they render empty unless you add the values to the arguments JSON, for example `{"patient_id": "pt_123"}` for a custom variable or a nested object such as `{"system": {"caller_number": "+15551234567"}}` for a system variable. The URL is sent exactly as saved; placeholders in it are not substituted by a test request.
+The tool editor's **Test** tab fires a real request at your endpoint. Fill in the arguments as JSON (pre-filled with a sample based on your declared arguments) and send. You get back the status code, latency, response headers, and response body. A failing test never blocks saving the tool. There is no live call behind a test, so custom variables and `{{system.*}}` placeholders have no value: in the URL, header values and the body template they render empty unless you add the values to the arguments JSON, for example `{"patient_id": "pt_123"}` for a custom variable or a nested object such as `{"system": {"caller_number": "+15551234567"}}` for a system variable. Placeholders in the URL are filled from the arguments the same way a live call fills them, with each value URL-encoded.
 
 Response bodies are captured up to 64 KB; larger bodies are cut off and flagged with `response_truncated`.
+
+The same test is available over the API: [Test Tool](/api-reference/endpoint/agent/test-tool) takes the arguments as an optional JSON body and sends the same real request.
 
 ## Create tools via the API
 
