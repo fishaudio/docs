@@ -16,6 +16,7 @@ Supported inference surfaces:
 - `POST /v1/tts/stream/with-timestamp`
 - `POST /v1/asr`
 - `wss://api.fish.audio/v1/tts/live`
+- `wss://api.fish.audio/v1/asr/realtime`
 
 If `traceparent` is omitted or invalid, Fish Audio starts a new trace for the
 request. Tracing does not change authentication, rate limits, billing, request
@@ -163,7 +164,8 @@ provider and exporter.
   <Tab title="Python">
 
     **OpenTelemetry auto-instrumentation.** The SDK sends every request through
-    `httpx`, including the WebSocket upgrade of `tts.stream_websocket`.
+    `httpx`, including the WebSocket upgrades of `tts.stream_websocket` and
+    `asr.stream_websocket`.
     Install `opentelemetry-instrumentation-httpx` and instrument `httpx` once
     at startup. Each Fish Audio request then gets its own child span and
     `traceparent`.
@@ -202,8 +204,8 @@ provider and exporter.
         )
     ```
 
-    `tts.stream_websocket` does not take `request_options`. To add the header
-    there without auto-instrumentation, pass your own `httpx` client with a
+    `tts.stream_websocket` and `asr.stream_websocket` do not take
+    `request_options`. To add the header there without auto-instrumentation, pass your own `httpx` client with a
     request hook. A client you pass in does not get the SDK's `base_url` or
     `timeout`, so set both on it.
 
@@ -271,8 +273,8 @@ provider and exporter.
     ```
 
     **By hand.** A client header can be a function. The SDK calls it for every
-    HTTP request, so each request carries the span that is active at that
-    moment:
+    HTTP request and when `speechToText.convertRealtime` connects, so each
+    request carries the span that is active at that moment:
 
     ```typescript
     import { context, propagation, trace } from "@opentelemetry/api";
@@ -410,6 +412,29 @@ const ws = new WebSocket("wss://api.fish.audio/v1/tts/live", {
   inject `traceparent` from a trusted server-side proxy or use REST endpoints
   where your frontend can send the header through `fetch`.
 </Note>
+
+## Trace ID in Responses
+
+Inference responses include an `x-fish-trace-id` header with the trace ID Fish
+Audio used for the request. This applies to the inference endpoints listed
+above, including the WebSocket upgrade response. When you send a valid
+`traceparent`, the value is your trace ID. When you omit `traceparent` or send
+an invalid one, it is the new trace ID Fish Audio started. Include it when you
+contact support about a request.
+
+```bash
+curl --request POST https://api.fish.audio/v1/tts \
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --header "traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01" \
+  --data '{ "text": "Hello from a traced request.", "format": "mp3" }' \
+  --dump-header - \
+  --output out.mp3
+```
+
+```text
+x-fish-trace-id: 4bf92f3577b34da6a3ce929d0e0e4736
+```
 
 ## Speech-to-Text Request IDs
 
