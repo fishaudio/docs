@@ -1620,6 +1620,32 @@
                       "default": null,
                       "title": "Dial Status"
                     },
+                    "dial_sip_status": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "busy, no_answer and failed: the final SIP response code the carrier or your SIP trunk gave to the outbound dial. Null on an answered call and when it gave none.",
+                      "title": "Dial Sip Status"
+                    },
+                    "dial_sip_reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The reason text the carrier or your SIP trunk sent with dial_sip_status, verbatim, for example `Busy here`. Null when it sent none.",
+                      "title": "Dial Sip Reason"
+                    },
                     "answered_by": {
                       "anyOf": [
                         {
@@ -4129,7 +4155,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default),\n`elevenlabs:scribe_v2_realtime`, `elevenlabs:scribe_v2_medical`, or\n`fish_audio:transcribe-stream-1` (Fish realtime recognition, which\nalso decides end of turn and whether the caller is interrupting).\nIts former id `fish_audio:transcribe-1-pro-realtime` is still accepted\nand reads back as the current id.\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best.\n`voice.background_sound` sets a looping ambience the worker mixes under\nthe agent's voice: `preset` is `off` (default) or one of `office`,\n`call_center`, `restaurant`, `cafe`, `city_street`, `phone_line`, `phone_line_digital`,\n`custom`. `volume` (0-1, default 0.15) is the\nambience's gain relative to the voice. `custom_asset_id` names a clip\nuploaded through `POST /v1/agent/background-sounds`; required with\n`preset: \"custom\"`, refused otherwise (422). Replaces the whole object;\nan explicit null resets it to off. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null. `llm.fallback` sets what the agent tries after its\nmodel fails: `platform` (default), `manual` (`models` in order, 1 to 3)\nor `off`. In `manual`, each model and `primary` (the agent's own model)\ntake optional `ttft_timeout_ms` (500-30000, default 5000 ms, i.e. 5\nseconds, when not set) and `total_timeout_ms` (1000-120000, at least\n`ttft_timeout_ms` when both are set, no limit when not set), and the\nfirst model can set\n`parallel.kick_in_ms` (300-10000, default 1500) to run alongside the\nagent's own model.\n\nThe response is the draft as stored, which can differ from the request:\n- Every field comes back. Omitted fields keep their value or default.\n- `asr.keyterms` and `voice.pronunciation_dictionary_ids` are trimmed\n  and de-duplicated in order. `tool_ids` is de-duplicated in order.\n- A tool that was archived drops out of `tool_ids` at the next tools\n  write.\n- `conversation.interruption_ignore_phrases` collapses inner spaces and\n  drops case-insensitive duplicates.\n- `conversation.timezone`, transfer phone numbers and transfer text\n  fields are trimmed.\n- `conversation.eagerness` and `conversation.response_wait_ms` move\n  together. The wait wins when both are sent, and the tier is derived\n  from it.\n- `conversation.response_max_wait_ms: 0` reads back as `null`\n  (automatic).\n- `conversation.backchannel` keeps the fields you omit.\n  `strength: null` goes back to the speech engine's own setting.\n- `conversation.reengage` keeps the fields you omit, and\n  `conversation.reengage.schedule` reads back as\n  `conversation.reengage.steps`.\n- `conversation` also returns `reengage_enabled`, copied from\n  `reengage.enabled`. It is deprecated.\n- `knowledge_base.enabled` becomes `true` when you attach sources and\n  omit it.\n- `llm.custom.base_url` drops a trailing `/` and `/chat/completions`.\n  `llm.custom.model` is trimmed. Setting `llm.custom` resets `llm.model`\n  to the platform default.\n- Secrets read back as `has_secret`, and `llm.custom.api_key` as `null`.\n- `voice.voice_id` reads back as the name while the agent speaks one of\n  the `live3` voices. Switching `voice.engine` to `fish_tts` returns it\n  to the agent's Voice Library voice, and switching back to `live3`\n  restores the name. A new agent, and one still on the default voice\n  when it switches to `live3`, starts on `clara`.\n- `voice.live3_voice` is deprecated and mirrors that name capitalized\n  (`Clara`), `null` when `voice.voice_id` is a Voice Library voice.\n- `voice` also returns `keyterms`, `multilingual_asr` and `asr_model`\n  copied from `asr`. They are deprecated.\n- `config_hash` and `updated_at` are set by the server.\n\nCompare against this response, or against `config_hash`, rather than the\nrequest body. Publishing never rewrites these values.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default) or\n`fish_audio:transcribe-stream-1` (Fish realtime recognition, which\nalso decides end of turn and whether the caller is interrupting).\nIts former id `fish_audio:transcribe-1-pro-realtime` is still accepted\nand reads back as the current id.\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best.\n`voice.background_sound` sets a looping ambience the worker mixes under\nthe agent's voice: `preset` is `off` (default) or one of `office`,\n`call_center`, `restaurant`, `cafe`, `city_street`, `phone_line`, `phone_line_digital`,\n`custom`. `volume` (0-1, default 0.15) is the\nambience's gain relative to the voice. `custom_asset_id` names a clip\nuploaded through `POST /v1/agent/background-sounds`; required with\n`preset: \"custom\"`, refused otherwise (422). Replaces the whole object;\nan explicit null resets it to off. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null. `llm.fallback` sets what the agent tries after its\nmodel fails: `platform` (default), `manual` (`models` in order, 1 to 3)\nor `off`. In `manual`, each model and `primary` (the agent's own model)\ntake optional `ttft_timeout_ms` (500-30000, default 5000 ms, i.e. 5\nseconds, when not set) and `total_timeout_ms` (1000-120000, at least\n`ttft_timeout_ms` when both are set, no limit when not set), and the\nfirst model can set\n`parallel.kick_in_ms` (300-10000, default 1500) to run alongside the\nagent's own model.\n\nThe response is the draft as stored, which can differ from the request:\n- Every field comes back. Omitted fields keep their value or default.\n- `asr.keyterms` and `voice.pronunciation_dictionary_ids` are trimmed\n  and de-duplicated in order. `tool_ids` is de-duplicated in order.\n- A tool that was archived drops out of `tool_ids` at the next tools\n  write.\n- `conversation.interruption_ignore_phrases` collapses inner spaces and\n  drops case-insensitive duplicates.\n- `conversation.timezone`, transfer phone numbers and transfer text\n  fields are trimmed.\n- `conversation.eagerness` and `conversation.response_wait_ms` move\n  together. The wait wins when both are sent, and the tier is derived\n  from it.\n- `conversation.response_max_wait_ms: 0` reads back as `null`\n  (automatic).\n- `conversation.backchannel` keeps the fields you omit.\n  `strength: null` goes back to the speech engine's own setting.\n- `conversation.reengage` keeps the fields you omit, and\n  `conversation.reengage.schedule` reads back as\n  `conversation.reengage.steps`.\n- `conversation` also returns `reengage_enabled`, copied from\n  `reengage.enabled`. It is deprecated.\n- `knowledge_base.enabled` becomes `true` when you attach sources and\n  omit it.\n- `llm.custom.base_url` drops a trailing `/` and `/chat/completions`.\n  `llm.custom.model` is trimmed. Setting `llm.custom` resets `llm.model`\n  to the platform default.\n- Secrets read back as `has_secret`, and `llm.custom.api_key` as `null`.\n- `voice.voice_id` reads back as the name while the agent speaks one of\n  the `live3` voices. Switching `voice.engine` to `fish_tts` returns it\n  to the agent's Voice Library voice, and switching back to `live3`\n  restores the name. A new agent, and one still on the default voice\n  when it switches to `live3`, starts on `clara`.\n- `voice.live3_voice` is deprecated and mirrors that name capitalized\n  (`Clara`), `null` when `voice.voice_id` is a Voice Library voice.\n- `voice` also returns `keyterms`, `multilingual_asr` and `asr_model`\n  copied from `asr`. They are deprecated.\n- `config_hash` and `updated_at` are set by the server.\n\nCompare against this response, or against `config_hash`, rather than the\nrequest body. Publishing never rewrites these values.",
         "security": [
           {
             "BearerAuth": []
@@ -5686,7 +5712,7 @@
     "/v1/agent/agents/{agent_id}/tests/run": {
       "post": {
         "summary": "Run Tests",
-        "description": "Start a batch that runs the agent's attached tests against its current\ndraft, one run per test and repeat. A simulation test repeats\n`simulation.repeat_count` times, and a `repeat_count` in the body repeats\nevery selected test that many times instead. A batch starts at most 1000\nruns. Runs are queued and finish in the background, simulations take\nminutes. Poll `GET /v1/agent/agents/{agent_id}/test-batches/{batch_id}`\nuntil `completed` is true, then gate on `pass_rate`, which leaves out\n`error` runs.\n\nEach simulation run that ends `passed` or `failed` is billed: a platform\nfee per agent reply plus the LLM tokens of the agent, the simulated user\nand the judge. `error` runs are not billed. A batch with a simulation\ntest returns 402 when the account has no trial balance or API credit\nleft, and 403 when the team's agreement does not allow agent usage.",
+        "description": "Start a batch that runs the agent's attached tests against its current\ndraft, one run per test and repeat. A simulation test repeats\n`simulation.repeat_count` times, and a `repeat_count` in the body repeats\nevery selected test that many times instead. A batch starts at most 1000\nruns. Runs are queued and finish in the background, simulations take\nminutes. Poll `GET /v1/agent/agents/{agent_id}/test-batches/{batch_id}`\nuntil `completed` is true, then gate on `pass_rate`, which leaves out\n`error` runs.\n\nEach run that ends `passed` or `failed` is billed a platform fee per\nagent reply plus the LLM tokens it used. A `next_reply` or `tool` run is\none reply, with the tokens of the agent and, on `next_reply`, of the\njudge. A simulation run bills every agent reply, with the tokens of the\nagent, the simulated user and the judge. `error` runs are not billed. A\nbatch returns 402 when the account has no trial balance or API credit\nleft, and 403 when the team's agreement does not allow agent usage.",
         "security": [
           {
             "BearerAuth": []
@@ -14316,7 +14342,7 @@
       },
       "post": {
         "summary": "Purchase or Import Phone Number",
-        "description": "`provider` discriminates two variants. `twilio` buys a number from the\nmanaged inventory: it lands in your default workspace, any `agent_id` you\nbind must live there too, and billing is the monthly price charged in\ndaily slices; the first day is charged before anything is bought (402\ncosts you nothing) and the daily run advances it from there. `sip`\nimports a number you already own at your carrier: point your trunk's\norigination at our SIP host, provide inbound authentication (digest\nand/or source CIDRs) and optionally a termination host so the number can\nplace calls; nothing is rented and there is no monthly fee. Either way,\n409 means the number is already on the platform; 502 means the provider\nor trunk provisioning refused, and the number stays visible with status\n`error` and is safe to release. 403 with\n`reason: phone_number_limit_reached` means your team already holds as\nmany numbers as it may. An account that has never added credit holds one.",
+        "description": "`provider` discriminates two variants. `twilio` buys a number from the\nmanaged inventory: it lands in your default workspace, any `agent_id` you\nbind must live there too, and billing is the monthly price charged in\ndaily slices; the first day is charged before anything is bought (402\ncosts you nothing) and the daily run advances it from there. `sip`\nimports a number you already own at your carrier: point your trunk's\norigination at our SIP host, provide inbound authentication (digest\nand/or source CIDRs) and optionally a termination host so the number can\nplace calls; nothing is rented and there is no monthly fee. Either way,\n409 means the number is already on the platform, and 502 means the\nprovider or trunk provisioning refused. Nothing is charged and no number\nis added, so pick another number or correct the trunk settings and try\nagain. If the provider did not answer, the number can stay in `error`\nwith `status_reason` `provisioning_failed`, and releasing it cleans up.\n403 with\n`reason: phone_number_limit_reached` means your team already holds as\nmany numbers as it may. An account that has never added credit holds one.",
         "security": [
           {
             "BearerAuth": []
@@ -14459,6 +14485,23 @@
                       ],
                       "title": "Status",
                       "type": "string"
+                    },
+                    "status_reason": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "out_of_credit",
+                            "provisioning_failed"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Why the number is in `error`, `null` in every other status. `out_of_credit` means the API credit balance could not pay the number's daily fee, so the number is suspended and refuses calls. Top up API credit and it resumes by itself. A number left unpaid for 30 days is released. `provisioning_failed` means buying or importing the number did not finish and it cannot take calls. Release it, then buy or import the number again. More values may be added, so treat an unknown one as a generic error.",
+                      "title": "Status Reason"
                     },
                     "status_detail": {
                       "default": "",
@@ -15011,6 +15054,23 @@
                       "title": "Status",
                       "type": "string"
                     },
+                    "status_reason": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "out_of_credit",
+                            "provisioning_failed"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Why the number is in `error`, `null` in every other status. `out_of_credit` means the API credit balance could not pay the number's daily fee, so the number is suspended and refuses calls. Top up API credit and it resumes by itself. A number left unpaid for 30 days is released. `provisioning_failed` means buying or importing the number did not finish and it cannot take calls. Release it, then buy or import the number again. More values may be added, so treat an unknown one as a generic error.",
+                      "title": "Status Reason"
+                    },
                     "status_detail": {
                       "default": "",
                       "description": "What failed when status is `error`; empty otherwise.",
@@ -15384,6 +15444,23 @@
                       ],
                       "title": "Status",
                       "type": "string"
+                    },
+                    "status_reason": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "out_of_credit",
+                            "provisioning_failed"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Why the number is in `error`, `null` in every other status. `out_of_credit` means the API credit balance could not pay the number's daily fee, so the number is suspended and refuses calls. Top up API credit and it resumes by itself. A number left unpaid for 30 days is released. `provisioning_failed` means buying or importing the number did not finish and it cannot take calls. Release it, then buy or import the number again. More values may be added, so treat an unknown one as a generic error.",
+                      "title": "Status Reason"
                     },
                     "status_detail": {
                       "default": "",
@@ -16013,6 +16090,23 @@
                       ],
                       "title": "Status",
                       "type": "string"
+                    },
+                    "status_reason": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "out_of_credit",
+                            "provisioning_failed"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Why the number is in `error`, `null` in every other status. `out_of_credit` means the API credit balance could not pay the number's daily fee, so the number is suspended and refuses calls. Top up API credit and it resumes by itself. A number left unpaid for 30 days is released. `provisioning_failed` means buying or importing the number did not finish and it cannot take calls. Release it, then buy or import the number again. More values may be added, so treat an unknown one as a generic error.",
+                      "title": "Status Reason"
                     },
                     "status_detail": {
                       "default": "",
@@ -25215,6 +25309,32 @@
             "default": null,
             "title": "Dial Status"
           },
+          "dial_sip_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "busy, no_answer and failed: the final SIP response code the carrier or your SIP trunk gave to the outbound dial. Null on an answered call and when it gave none.",
+            "title": "Dial Sip Status"
+          },
+          "dial_sip_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The reason text the carrier or your SIP trunk sent with dial_sip_status, verbatim, for example `Busy here`. Null when it sent none.",
+            "title": "Dial Sip Reason"
+          },
           "answered_by": {
             "anyOf": [
               {
@@ -25492,6 +25612,10 @@
                   "google/gemini-3.6-flash-priority",
                   "google/gemini-3.8-flash-priority",
                   "google/gemini-3.5-flash-lite-priority",
+                  "google/gemini-4-hydrogen",
+                  "google/gemini-4-neon",
+                  "google/gemini-4-hydrogen-priority",
+                  "google/gemini-4-neon-priority",
                   "google/gemini-2.5-flash",
                   "google/gemma-4-26b-a4b-it",
                   "anthropic/claude-haiku-4.5",
@@ -25506,6 +25630,7 @@
                   "openai/gpt-6.1-sol",
                   "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
+                  "openai/gpt-6.2-sol",
                   "openai/gpt-4o",
                   "openai/gpt-4.1",
                   "openai/gpt-5.6-luna-fast",
@@ -25513,6 +25638,7 @@
                   "openai/gpt-6.1-terra-fast",
                   "openai/gpt-6.1-sol-fast",
                   "openai/gpt-6-astra-fast",
+                  "openai/gpt-6.2-sol-fast",
                   "openai/gpt-4o-fast",
                   "openai/gpt-4.1-fast"
                 ],
@@ -26681,6 +26807,19 @@
             "title": "Input",
             "type": "string"
           },
+          "transfer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Set when the agent made this tool call on a warm transfer's consult call, the call to the transfer destination while the caller is on hold. It is the `call_id` of that transfer item. Null for a tool call made in the conversation with the caller.",
+            "title": "Transfer Id"
+          },
           "turn_id": {
             "anyOf": [
               {
@@ -26835,6 +26974,19 @@
             "default": null,
             "title": "Rejected By"
           },
+          "transfer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Set when the agent made this tool call on a warm transfer's consult call, the call to the transfer destination while the caller is on hold. It is the `call_id` of that transfer item. Null for a tool call made in the conversation with the caller.",
+            "title": "Transfer Id"
+          },
           "latency_ms": {
             "anyOf": [
               {
@@ -26973,6 +27125,19 @@
             "default": null,
             "description": "dial_failed and refer_failed: the final SIP response code the carrier gave. Null when it gave none.",
             "title": "Sip Status"
+          },
+          "sip_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "dial_failed and refer_failed: the reason text the carrier or SIP server sent with sip_status, verbatim, for example `Proxy Authentication Required`. Null when it sent none.",
+            "title": "Sip Reason"
           },
           "dial_status": {
             "anyOf": [
@@ -28164,6 +28329,10 @@
             "title": "Warm Human Detection",
             "type": "boolean"
           },
+          "warm_press_keys": {
+            "$ref": "#/components/schemas/AgentTransferPressKeysPatch",
+            "description": "Beta. Key presses on the call in which the agent reaches this destination, for a number that an automated phone menu answers before a person does. Applies to warm transfers whose warm_connect is `confirm` or `briefing`, and is ignored for cold transfers and `direct`. It has no effect while warm_human_detection is true, because that setting ends the transfer when a phone menu answers. The time spent in the menu counts toward `warm_confirm_timeout_seconds`, so such a destination usually needs a longer one. Absent means off. The list of destinations is replaced as a whole, so a destination sent without the field has it off."
+          },
           "warm_consult_uses_agent_settings": {
             "default": true,
             "description": "Compatibility option for warm transfers whose warm_connect is `confirm` or `briefing`, ignored for cold transfers and `direct`. Absent or true (recommended): on the call in which the agent briefs the destination, the agent uses the same turn-taking (response timing: `eagerness`, `response_wait_ms` and `response_max_wait_ms`), interruption (`interruption_sensitivity` and `interruption_ignore_phrases`) and language (`voice.speaking_language`) settings as on the call with the caller. False: that call keeps the older fixed behavior. Destinations that existed before this setting were set to false so their behavior did not change. Either way the destination can always interrupt the agent on that call, whatever `interruptible` is set to. A destination sent without the field keeps the value of the existing destination it replaces (same label, else a renamed one with the same phone number or SIP URI) and is true when it is new. Send true to switch a destination to the agent's settings.",
@@ -28237,6 +28406,25 @@
           }
         },
         "title": "AgentTransferOnFailurePatch",
+        "type": "object"
+      },
+      "AgentTransferPressKeysPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "default": false,
+            "description": "When true, on the call to this destination the agent can press phone keys to get through the menu (`_press_keys`), and stay silent while the menu or a hold message plays (`_skip_turn`), before it briefs the person who answers. It works the same whether the caller's own call is inbound or outbound, and does not depend on `tools.system_tools.press_keys`.",
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "instructions": {
+            "default": "",
+            "description": "How to get through this number's phone menu, written for the agent, such as `Press 2 for billing, then enter extension 204.` Optional, at most 500 characters. `{{variable}}` placeholders are filled in for each session. Without it the agent picks keys from the destination's label and description and from what the caller asked for. Used only while enabled is true, and kept when it is false.",
+            "title": "Instructions",
+            "type": "string"
+          }
+        },
+        "title": "AgentTransferPressKeysPatch",
         "type": "object"
       },
       "AgentTurnDetectorPatch": {
@@ -29219,6 +29407,10 @@
                   "google/gemini-3.6-flash-priority",
                   "google/gemini-3.8-flash-priority",
                   "google/gemini-3.5-flash-lite-priority",
+                  "google/gemini-4-hydrogen",
+                  "google/gemini-4-neon",
+                  "google/gemini-4-hydrogen-priority",
+                  "google/gemini-4-neon-priority",
                   "google/gemini-2.5-flash",
                   "google/gemma-4-26b-a4b-it",
                   "anthropic/claude-haiku-4.5",
@@ -29233,6 +29425,7 @@
                   "openai/gpt-6.1-sol",
                   "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
+                  "openai/gpt-6.2-sol",
                   "openai/gpt-4o",
                   "openai/gpt-4.1",
                   "openai/gpt-5.6-luna-fast",
@@ -29240,6 +29433,7 @@
                   "openai/gpt-6.1-terra-fast",
                   "openai/gpt-6.1-sol-fast",
                   "openai/gpt-6-astra-fast",
+                  "openai/gpt-6.2-sol-fast",
                   "openai/gpt-4o-fast",
                   "openai/gpt-4.1-fast"
                 ],
@@ -29323,6 +29517,10 @@
                   "google/gemini-3.6-flash-priority",
                   "google/gemini-3.8-flash-priority",
                   "google/gemini-3.5-flash-lite-priority",
+                  "google/gemini-4-hydrogen",
+                  "google/gemini-4-neon",
+                  "google/gemini-4-hydrogen-priority",
+                  "google/gemini-4-neon-priority",
                   "google/gemini-2.5-flash",
                   "google/gemma-4-26b-a4b-it",
                   "anthropic/claude-haiku-4.5",
@@ -29337,6 +29535,7 @@
                   "openai/gpt-6.1-sol",
                   "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
+                  "openai/gpt-6.2-sol",
                   "openai/gpt-4o",
                   "openai/gpt-4.1",
                   "openai/gpt-5.6-luna-fast",
@@ -29344,6 +29543,7 @@
                   "openai/gpt-6.1-terra-fast",
                   "openai/gpt-6.1-sol-fast",
                   "openai/gpt-6-astra-fast",
+                  "openai/gpt-6.2-sol-fast",
                   "openai/gpt-4o-fast",
                   "openai/gpt-4.1-fast"
                 ],
@@ -29886,6 +30086,26 @@
         "title": "PublicPostCallWebhookPayload",
         "type": "object"
       },
+      "PublicPressKeysPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "When true, the agent gets two tools on outbound phone calls. `_press_keys` presses phone keys to get through an automated phone menu, and `_skip_turn` stays silent for a turn while a menu or a hold message plays. Inbound calls, web and API sessions and tests ignore it.",
+            "title": "Enabled"
+          }
+        },
+        "title": "PublicPressKeysPatch",
+        "type": "object"
+      },
       "PublicSystemToolsPatch": {
         "additionalProperties": false,
         "properties": {
@@ -29942,6 +30162,18 @@
             ],
             "default": null,
             "title": "Hang Up Call Refuse Questions"
+          },
+          "press_keys": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicPressKeysPatch"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Beta. Key presses on outbound phone calls, for calls that reach an automated phone menu before a person. The fields sent are written, the others stay as they are."
           }
         },
         "title": "PublicSystemToolsPatch",
@@ -30657,6 +30889,10 @@
               "google/gemini-3.6-flash-priority",
               "google/gemini-3.8-flash-priority",
               "google/gemini-3.5-flash-lite-priority",
+              "google/gemini-4-hydrogen",
+              "google/gemini-4-neon",
+              "google/gemini-4-hydrogen-priority",
+              "google/gemini-4-neon-priority",
               "google/gemini-2.5-flash",
               "google/gemma-4-26b-a4b-it",
               "anthropic/claude-haiku-4.5",
@@ -30671,6 +30907,7 @@
               "openai/gpt-6.1-sol",
               "openai/gpt-6.1-terra",
               "openai/gpt-6-astra",
+              "openai/gpt-6.2-sol",
               "openai/gpt-4o",
               "openai/gpt-4.1",
               "openai/gpt-5.6-luna-fast",
@@ -30678,6 +30915,7 @@
               "openai/gpt-6.1-terra-fast",
               "openai/gpt-6.1-sol-fast",
               "openai/gpt-6-astra-fast",
+              "openai/gpt-6.2-sol-fast",
               "openai/gpt-4o-fast",
               "openai/gpt-4.1-fast"
             ],
@@ -30755,6 +30993,10 @@
                   "google/gemini-3.6-flash-priority",
                   "google/gemini-3.8-flash-priority",
                   "google/gemini-3.5-flash-lite-priority",
+                  "google/gemini-4-hydrogen",
+                  "google/gemini-4-neon",
+                  "google/gemini-4-hydrogen-priority",
+                  "google/gemini-4-neon-priority",
                   "google/gemini-2.5-flash",
                   "google/gemma-4-26b-a4b-it",
                   "anthropic/claude-haiku-4.5",
@@ -30769,6 +31011,7 @@
                   "openai/gpt-6.1-sol",
                   "openai/gpt-6.1-terra",
                   "openai/gpt-6-astra",
+                  "openai/gpt-6.2-sol",
                   "openai/gpt-4o",
                   "openai/gpt-4.1",
                   "openai/gpt-5.6-luna-fast",
@@ -30776,6 +31019,7 @@
                   "openai/gpt-6.1-terra-fast",
                   "openai/gpt-6.1-sol-fast",
                   "openai/gpt-6-astra-fast",
+                  "openai/gpt-6.2-sol-fast",
                   "openai/gpt-4o-fast",
                   "openai/gpt-4.1-fast"
                 ],
@@ -30967,6 +31211,18 @@
         "title": "AgentOutboundVoicemailConfig",
         "type": "object"
       },
+      "AgentPressKeysConfig": {
+        "properties": {
+          "enabled": {
+            "default": false,
+            "description": "When true, the agent gets two tools on outbound phone calls. `_press_keys` presses phone keys to get through an automated phone menu, and `_skip_turn` stays silent for a turn while a menu or a hold message plays. Inbound calls, web and API sessions and tests ignore it.",
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "title": "AgentPressKeysConfig",
+        "type": "object"
+      },
       "AgentPromptConfig": {
         "properties": {
           "system_prompt": {
@@ -31081,6 +31337,10 @@
             "default": false,
             "title": "Hang Up Call Refuse Questions",
             "type": "boolean"
+          },
+          "press_keys": {
+            "$ref": "#/components/schemas/AgentPressKeysConfig",
+            "description": "Beta. Key presses on outbound phone calls, for calls that reach an automated phone menu before a person."
           }
         },
         "title": "AgentSystemToolsConfig",
@@ -31193,6 +31453,10 @@
             "title": "Warm Human Detection",
             "type": "boolean"
           },
+          "warm_press_keys": {
+            "$ref": "#/components/schemas/AgentTransferPressKeys",
+            "description": "Beta. Key presses on the call in which the agent reaches this destination, for a number that an automated phone menu answers before a person does. Applies to warm transfers whose warm_connect is `confirm` or `briefing`, and is ignored for cold transfers and `direct`. It has no effect while warm_human_detection is true, because that setting ends the transfer when a phone menu answers. The time spent in the menu counts toward `warm_confirm_timeout_seconds`, so such a destination usually needs a longer one. Absent means off. The list of destinations is replaced as a whole, so a destination sent without the field has it off."
+          },
           "warm_consult_uses_agent_settings": {
             "default": true,
             "description": "Compatibility option for warm transfers whose warm_connect is `confirm` or `briefing`, ignored for cold transfers and `direct`. Absent or true (recommended): on the call in which the agent briefs the destination, the agent uses the same turn-taking (response timing: `eagerness`, `response_wait_ms` and `response_max_wait_ms`), interruption (`interruption_sensitivity` and `interruption_ignore_phrases`) and language (`voice.speaking_language`) settings as on the call with the caller. False: that call keeps the older fixed behavior. Destinations that existed before this setting were set to false so their behavior did not change. Either way the destination can always interrupt the agent on that call, whatever `interruptible` is set to. A destination sent without the field keeps the value of the existing destination it replaces (same label, else a renamed one with the same phone number or SIP URI) and is true when it is new. Send true to switch a destination to the agent's settings.",
@@ -31252,6 +31516,24 @@
           }
         },
         "title": "AgentTransferOnFailure",
+        "type": "object"
+      },
+      "AgentTransferPressKeys": {
+        "properties": {
+          "enabled": {
+            "default": false,
+            "description": "When true, on the call to this destination the agent can press phone keys to get through the menu (`_press_keys`), and stay silent while the menu or a hold message plays (`_skip_turn`), before it briefs the person who answers. It works the same whether the caller's own call is inbound or outbound, and does not depend on `tools.system_tools.press_keys`.",
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "instructions": {
+            "default": "",
+            "description": "How to get through this number's phone menu, written for the agent, such as `Press 2 for billing, then enter extension 204.` Optional, at most 500 characters. `{{variable}}` placeholders are filled in for each session. Without it the agent picks keys from the destination's label and description and from what the caller asked for. Used only while enabled is true, and kept when it is false.",
+            "title": "Instructions",
+            "type": "string"
+          }
+        },
+        "title": "AgentTransferPressKeys",
         "type": "object"
       },
       "AgentTurnDetector": {
@@ -34507,6 +34789,23 @@
             "title": "Status",
             "type": "string"
           },
+          "status_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "out_of_credit",
+                  "provisioning_failed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Why the number is in `error`, `null` in every other status. `out_of_credit` means the API credit balance could not pay the number's daily fee, so the number is suspended and refuses calls. Top up API credit and it resumes by itself. A number left unpaid for 30 days is released. `provisioning_failed` means buying or importing the number did not finish and it cannot take calls. Release it, then buy or import the number again. More values may be added, so treat an unknown one as a generic error.",
+            "title": "Status Reason"
+          },
           "status_detail": {
             "default": "",
             "description": "What failed when status is `error`; empty otherwise.",
@@ -35041,6 +35340,10 @@
               "google/gemini-3.6-flash-priority",
               "google/gemini-3.8-flash-priority",
               "google/gemini-3.5-flash-lite-priority",
+              "google/gemini-4-hydrogen",
+              "google/gemini-4-neon",
+              "google/gemini-4-hydrogen-priority",
+              "google/gemini-4-neon-priority",
               "google/gemini-2.5-flash",
               "google/gemma-4-26b-a4b-it",
               "anthropic/claude-haiku-4.5",
@@ -35055,6 +35358,7 @@
               "openai/gpt-6.1-sol",
               "openai/gpt-6.1-terra",
               "openai/gpt-6-astra",
+              "openai/gpt-6.2-sol",
               "openai/gpt-4o",
               "openai/gpt-4.1",
               "openai/gpt-5.6-luna-fast",
@@ -35062,6 +35366,7 @@
               "openai/gpt-6.1-terra-fast",
               "openai/gpt-6.1-sol-fast",
               "openai/gpt-6-astra-fast",
+              "openai/gpt-6.2-sol-fast",
               "openai/gpt-4o-fast",
               "openai/gpt-4.1-fast"
             ],

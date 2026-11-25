@@ -63,8 +63,8 @@ Each row carries the session facts:
       "dialed_number": "+14155550100",
       "sip_call_id": "7f3a9c@sbc.example.com",
       "call_sid": "CA5d3a…",
-      "started_at": "2026-07-22T09:14:02Z",
-      "ended_at": "2026-07-22T09:16:05Z",
+      "started_at": "2026-07-22T09:14:02+00:00",
+      "ended_at": "2026-07-22T09:16:05+00:00",
       "duration_seconds": 123,
       "metadata": { "crm_ticket": "T-4821" }
     }
@@ -206,6 +206,7 @@ Details worth knowing:
 - **Payloads**: `input` and `output` are JSON strings, symmetric with the live SDK events, so one parser covers both. `output` and `error` are stored up to 256 KB; beyond that the text is cut and `output_truncated` is `true`.
 - **Mid-call queries**: you can fetch an `active` session; you get the items persisted so far, and `analysis` is `null` until [post-call analysis](/agents/monitor/post-call-analysis) completes.
 - A `tool_call` without a matching `tool_result` means the execution never resolved.
+- **`transfer_id`**: on a `tool_call` and its `tool_result`, set when the agent made the call on a warm transfer's consult call, for example a [key it pressed](/agents/telephony/transfers#pressing-keys-on-a-transfer) in the destination's phone menu. It is the `call_id` of that [transfer item](#transfer-items). `null` for a tool called in the conversation with the caller.
 - **`rejected_by`**: on a `tool_result`, `"parameter_validation"` when the tool [validates its parameters](/agents/build/webhook-tools#parameters-and-validation) and refused the call before it ran, so `status` is `failed` and `error` is the rejection the model was shown. `null` for every other result, including a tool that ran and failed. New values may be added.
 - **`error_detail`**: on a failed `tool_result`, the structured reason beside the `error` text: `status_code`, a stable code to count and match on; `sip_status`, the carrier's SIP response code, or `null`; and `status_message`, a readable explanation. Only `_transfer_call` sets it so far; see [reason codes on the tool result](/agents/telephony/transfers#reason-codes-on-the-tool-result) for its codes. `null` on completed results, on tools that only set `error`, and on results recorded before the field existed.
 
