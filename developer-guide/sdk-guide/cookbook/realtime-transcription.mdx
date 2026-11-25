@@ -222,7 +222,9 @@ for event in client.asr.stream_websocket(audio_chunks, sample_rate=16000, diariz
         print(event.text)  # Can you tell me what time the pharmacy on Main Street closes tonight?
 ```
 
-The object that `stream_websocket()` returns also sends messages during the session: `finalize()` commits the current turn (push-to-talk), and `agent_speaking()`, `add_context()` and `configure()` are for [voice agents](/developer-guide/sdk-guide/cookbook/realtime-voice-agent). To stop before the audio ends, leave the loop, or use the stream in a `with` block; the SDK closes the connection.
+The object that `stream_websocket()` returns also sends messages during the session: `finalize()` commits the current turn (push-to-talk), and `agent_speaking()`, `add_context()` and `configure()` are for [voice agents](/developer-guide/sdk-guide/cookbook/realtime-voice-agent). To stop before the audio ends, leave the loop, or use the stream in a `with` block; the SDK closes the connection. If the server has stopped reading, closing does not wait for it: after half a second the SDK cuts the connection.
+
+Read the events from one place at a time. With `AsyncFishAudio`, a second read started while another is waiting raises `RuntimeError`; a read cancelled by a timeout, such as `asyncio.wait_for()`, loses no event, so read again.
 
 An error that ends the session raises `ASRRealtimeError` (from `fishaudio`), with the server's `error_type` and the WebSocket `close_code`. A refused connection raises `APIError`, such as `AuthenticationError` for an invalid API key.
 
