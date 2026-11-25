@@ -148,7 +148,9 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
       "role": "user",
       "content": "Can you check order A1?",
       "turn_id": 3,
-      "created_at": "2026-07-22T09:14:05Z"
+      "created_at": "2026-07-22T09:14:05+00:00",
+      "started_at": null,
+      "ended_at": null
     },
     {
       "type": "tool_call",
@@ -156,7 +158,7 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
       "tool_name": "lookup_order",
       "tool_source": "webhook",
       "input": "{\"order_id\":\"A1\"}",
-      "created_at": "2026-07-22T09:14:06Z"
+      "created_at": "2026-07-22T09:14:06+00:00"
     },
     {
       "type": "tool_result",
@@ -170,14 +172,16 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
       "rejected_by": null,
       "error_detail": null,
       "latency_ms": 812,
-      "created_at": "2026-07-22T09:14:07Z"
+      "created_at": "2026-07-22T09:14:07+00:00"
     },
     {
       "type": "message",
       "role": "assistant",
       "content": "Order A1 shipped yesterday.",
       "turn_id": 3,
-      "created_at": "2026-07-22T09:14:07Z"
+      "created_at": "2026-07-22T09:14:10.240000+00:00",
+      "started_at": "2026-07-22T09:14:07.910000+00:00",
+      "ended_at": "2026-07-22T09:14:10.200000+00:00"
     }
   ],
   "analysis": {
@@ -202,6 +206,7 @@ Details worth knowing:
 
 - **Role vocabulary**: the history API's `assistant` is the same speaker the [SDK's live events](/agents/deploy/web-sdk) call `agent`.
 - **Order**: items are sorted by `created_at` ascending; a `tool_result`'s timestamp is its completion time, so long-running tools appear where they actually finished, with messages in between. Items sharing a timestamp order `message`, then `tool_call`, then `tool_result`.
+- **Message times**: a message's `created_at` is when it was written to the session record. An `assistant` message is written once the agent has finished saying it, so its `created_at` falls after the end of its speech. It is not the moment the agent started to speak. `started_at` is that moment: when the platform began to play the message's first audio, or sent its first text when the reply went out as text. `ended_at` is when the audio ended, or when it was cut off if the agent was interrupted. To measure how long a caller waited for the agent, measure to `started_at`, not `created_at`. Both are `null` on `user` messages, on an `assistant` line that was written without being spoken, and on sessions recorded before the fields existed.
 - **`tool_source`**: where the tool ran, one of `client`, `webhook`, `builtin` (platform tools such as call transfer and hang-up), `mcp` (tools from a connected MCP server), `background` (work the agent delegated to a background task), or `unknown` (calls recorded before source attribution). Treat it as an open set. See [Tools](/agents/build/tools).
 - **Payloads**: `input` and `output` are JSON strings, symmetric with the live SDK events, so one parser covers both. `output` and `error` are stored up to 256 KB; beyond that the text is cut and `output_truncated` is `true`.
 - **Mid-call queries**: you can fetch an `active` session; you get the items persisted so far, and `analysis` is `null` until [post-call analysis](/agents/monitor/post-call-analysis) completes.
@@ -299,27 +304,31 @@ When the agent [transfers a phone call](/agents/telephony/transfers), each attem
   "dial_status": null,
   "decline_reason": null,
   "consult_end_reason": null,
-  "hold_started_at": "2026-07-22T09:15:40Z",
-  "hold_ended_at": "2026-07-22T09:16:25Z",
-  "dial_started_at": "2026-07-22T09:15:41Z",
-  "answered_at": "2026-07-22T09:15:57Z",
-  "ended_at": "2026-07-22T09:16:25Z",
-  "transferred_call_ended_at": "2026-07-22T09:30:11Z",
+  "hold_started_at": "2026-07-22T09:15:40+00:00",
+  "hold_ended_at": "2026-07-22T09:16:25+00:00",
+  "dial_started_at": "2026-07-22T09:15:41+00:00",
+  "answered_at": "2026-07-22T09:15:57+00:00",
+  "ended_at": "2026-07-22T09:16:25+00:00",
+  "transferred_call_ended_at": "2026-07-22T09:30:11+00:00",
   "transferred_call_duration_seconds": 826,
   "transferred_call_end_reason": "caller_hangup",
   "messages": [
     {
       "role": "assistant",
       "content": "Hi, I have a caller who needs help with a delivery. Can you take the call?",
-      "created_at": "2026-07-22T09:15:59Z"
+      "created_at": "2026-07-22T09:16:04.130000+00:00",
+      "started_at": "2026-07-22T09:15:59.350000+00:00",
+      "ended_at": "2026-07-22T09:16:04.090000+00:00"
     },
     {
       "role": "transfer_target",
       "content": "Sure, put them through.",
-      "created_at": "2026-07-22T09:16:21Z"
+      "created_at": "2026-07-22T09:16:21+00:00",
+      "started_at": null,
+      "ended_at": null
     }
   ],
-  "created_at": "2026-07-22T09:15:39Z"
+  "created_at": "2026-07-22T09:15:39+00:00"
 }
 ```
 
@@ -345,6 +354,8 @@ When the agent [transfers a phone call](/agents/telephony/transfers), each attem
 | `transferred_call_duration_seconds` | `merged` and `referred` only: how long that call lasted. Warm: from `ended_at` to `transferred_call_ended_at`. Cold: the duration on the carrier's call record.                                           |
 | `transferred_call_end_reason`       | `merged` only: how that call ended. Always `null` on cold transfers.                                                                                                                                      |
 | `messages`                          | Warm: the transcript of the private consult call. `role` is `assistant` (the agent briefing) or `transfer_target` (the person it dialed). These lines never appear among the caller's `message` items.    |
+
+An `assistant` line in `messages` carries `started_at` and `ended_at`, with the same meaning as on an `assistant` [message item](#item-types): when the agent started and stopped saying it on the consult call. Its `created_at` is when the line was written, after the agent finished saying it. To measure how long your team member waited for the agent after picking up, measure from `answered_at` to the first `assistant` line's `started_at`. Both are `null` on `transfer_target` lines.
 
 A warm transfer's consult call is also recorded when the session [records audio](#what-gets-stored). Its tracks are under `transfers` in the [recording response](#download-recordings), where `transfer_id` is the item's `call_id`.
 
