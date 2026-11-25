@@ -30,14 +30,14 @@ Authorization: Bearer <API key>
 model: transcribe-stream-1
 ```
 
-| Header          | Required | Description                                                                                                                                   |
-| --------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Authorization` | Yes      | `Bearer <API key>`. Write the scheme exactly as `Bearer`, followed by a space and the key.                                                    |
-| `model`         | No       | `transcribe-stream-1` (Preview), the default and the only realtime model. The legacy name `transcribe-1-pro-realtime` reaches the same model. |
+| Header          | Required | Description                                                                                                        |
+| --------------- | -------- | ------------------------------------------------------------------------------------------------------------------ |
+| `Authorization` | Yes      | `Bearer <API key>`. Write the scheme exactly as `Bearer`, followed by a space and the key.                         |
+| `model`         | No       | The realtime model: `transcribe-stream-1` (Preview), the default, or `transcribe-stream-2`. See [Models](#models). |
 
 Each open connection counts against the same concurrency limit as your other API requests, from the moment it opens until it closes, even while you send no audio. See [Concurrent request limits](/developer-guide/models-pricing/pricing-and-rate-limits#concurrent-request-limits). A session cannot be resumed: a new connection is a new session.
 
-Sessions are billed per second of session duration, as Realtime ASR. See [ASR pricing](/developer-guide/models-pricing/pricing-and-rate-limits#automatic-speech-recognition-asr-models).
+Sessions are billed per second of session duration, as Realtime ASR, at the price of the session's model. See [ASR pricing](/developer-guide/models-pricing/pricing-and-rate-limits#automatic-speech-recognition-asr-models).
 
 If the server refuses the upgrade, it answers with a plain HTTP response whose JSON body is `{"status": <int>, "message": <str>}`:
 
@@ -46,9 +46,24 @@ If the server refuses the upgrade, it answers with a plain HTTP response whose J
 | 401    | The API key is missing or invalid, or the `Authorization` header does not start with `Bearer `. | Check the key and the header.                         |
 | 402    | Insufficient API credit.                                                                        | Top up your balance.                                  |
 | 429    | Your team is at its concurrency limit, or the service is at capacity.                           | Retry with backoff. Honor `Retry-After` when present. |
-| 503    | The service is restarting.                                                                      | Retry.                                                |
+| 502    | The service could not be reached.                                                               | Retry with backoff.                                   |
+| 503    | The service is restarting or temporarily unavailable.                                           | Retry with backoff.                                   |
+| 504    | The service did not answer in time.                                                             | Retry with backoff.                                   |
 
-The `101 Switching Protocols` response carries an `x-request-id` header, and so do the capacity 429 and 503 refusals. It is the same value as `request_id` in `session_started`, `error` and `session_done`. Log it, and include it when you contact support. Refusals for the key, balance and your concurrency limit (401, 402 and concurrency 429) happen before a session is assigned and carry no `x-request-id`.
+The `101 Switching Protocols` response carries an `x-request-id` header, and so does the capacity 429 refusal. It is the same value as `request_id` in `session_started`, `error` and `session_done`. Log it, and include it when you contact support. Refusals for the key, balance and your concurrency limit (401, 402 and concurrency 429) happen before a session is assigned and carry no `x-request-id`. A 502, 503 or 504 refusal can come with or without one.
+
+### Models
+
+| Model                           | Price                | Notes                                                                         |
+| ------------------------------- | -------------------- | ----------------------------------------------------------------------------- |
+| `transcribe-stream-1` (Preview) | $0.36 / session hour | The default.                                                                  |
+| `transcribe-stream-2`           | $0.12 / session hour | Takes [`results.text_format`](#text-format), the style for numbers and times. |
+
+Both models use this endpoint and the protocol on this page: the same messages, turn detection modes, errors and limits. The one difference is `results.text_format`, which only `transcribe-stream-2` takes.
+
+Choose the model with the `model` header, written exactly as shown. A connection without the header, or with any other value, gets a `transcribe-stream-1` session, billed as `transcribe-stream-1`, and no error is returned.
+
+A connection that names `transcribe-stream-2` is meant to be served by `transcribe-stream-2`. While that model is temporarily unavailable, the handshake can be [refused](#connect) with a 5xx status; connect again with backoff. Or the session can start, and its turns can get `error` with [`engine_error`](#errors-and-close-codes), each followed by a [degraded `committed`](#degraded-commits); the session continues. `session_started.config.model` names the model that serves the session, and the session is billed at that model's price, so check it when the session starts.
 
 ## Framing
 
@@ -115,13 +130,14 @@ Audio sent before `session_started` is not lost: once the session has started, t
 | `results.ignore_timestamps`         | No       | `true`          | `false` adds word timings (`words`) to `committed`.                                                                                                                       |
 | `results.diarize`                   | No       | `true`          | `true`, `false` or `"auto"` (same as `true`); the strings `"true"` and `"false"` are accepted too. `false` removes speaker tags from the text. See [Speakers](#speakers). |
 | `results.tag_audio_events`          | No       | `true`          | `false` removes sound tags such as `[laughter]` from the text. See [Sound tags](#sound-tags).                                                                             |
+| `results.text_format`               | No       | `"written"`     | `transcribe-stream-2` only. The style for numbers, amounts and times: `"spoken"` (words) or `"written"` (digits and symbols). See [Text format](#text-format).            |
 | `results.vad_events`                | No       | `false`         | `true` sends [`vad`](#vad) messages.                                                                                                                                      |
 | `results.eot_events`                | No       | `false`         | `true` sends [`eot_prob`](#eot_prob) messages.                                                                                                                            |
 | `context.history`                   | No       | `[]`            | Earlier conversation, oldest first: up to 32 items of `{ "role": "user" \| "assistant", "text": str }`, each up to 2,000 characters.                                      |
 | `context.terms`                     | No       | `[]`            | Up to 100 terms of up to 32 characters each: names, products and jargon to recognize.                                                                                     |
 | `client_reference_id`               | No       |                 | Your own ID for the session, up to 256 characters. It is recorded with the session and not sent back.                                                                     |
 
-A value of the wrong type for `ignore_timestamps` or `tag_audio_events` (both take only `true` or `false`), or a `diarize` value other than those listed, is `invalid_config`. So is an unknown field, including a misspelled one; the error's `message` names the field. `invalid_config` closes the connection with 4400. Send only the fields listed here: not every other field is refused, so check `session_started.config`, which shows the settings in effect.
+A value of the wrong type for `ignore_timestamps` or `tag_audio_events` (both take only `true` or `false`), a `diarize` value other than those listed, or a `text_format` other than `"spoken"`, `"written"` or `null`, is `invalid_config`. So is an unknown field, including a misspelled one; the error's `message` names the field. `invalid_config` closes the connection with 4400. Send only the fields listed here: not every other field is refused, so check `session_started.config`, which shows the settings in effect.
 
 #### Audio format
 
@@ -198,7 +214,7 @@ Commit the current turn now, with `reason: "finalize"`. In `auto` mode, the serv
 }
 ```
 
-Change settings during the session. `turn_detection`, `results` and `context` take the same values as in `config`; every field is optional, and a field you leave out keeps its current value. `context` accepts `terms` only, and the new list replaces the old one; send earlier lines with [`context_add`](#context_add). The server answers with [`configured`](#configured). If any value is invalid, nothing in the message is applied.
+Change settings during the session. `turn_detection`, `results` and `context` take the same values as in `config`, except `results.text_format`, which is set in `config` for the whole session. Every field is optional, and a field you leave out keeps its current value. `context` accepts `terms` only, and the new list replaces the old one; send earlier lines with [`context_add`](#context_add). The server answers with [`configured`](#configured). If any value is invalid, nothing in the message is applied.
 
 `audio` is fixed for the session: to change the audio format, open a new session. A `configure` with an unknown field, with an `audio` that differs from the session's, or with `context.history` gets `configured` with `ok: false`, and nothing in it is applied. An `audio` identical to the session's is accepted. As with `config`, send only the fields listed here; `configured.config` shows the settings in effect.
 
@@ -258,12 +274,12 @@ For voice agents in `auto` mode: tell the server when your agent's reply is in p
 
 ### `session_started`
 
-| Field        | Type   | Description                                                                       |
-| ------------ | ------ | --------------------------------------------------------------------------------- |
-| `session_id` | string | The session's ID.                                                                 |
-| `request_id` | string | The same value as the `x-request-id` header. Include it when you contact support. |
-| `config`     | map    | The effective configuration, with defaults filled in.                             |
-| `limits`     | map    | `max_session_ms`, `max_turn_ms` and `max_frame_bytes`. See [Limits](#limits).     |
+| Field        | Type   | Description                                                                                     |
+| ------------ | ------ | ----------------------------------------------------------------------------------------------- |
+| `session_id` | string | The session's ID.                                                                               |
+| `request_id` | string | The same value as the `x-request-id` header. Include it when you contact support.               |
+| `config`     | map    | The effective configuration, with defaults filled in. `config.model` names the session's model. |
+| `limits`     | map    | `max_session_ms`, `max_turn_ms` and `max_frame_bytes`. See [Limits](#limits).                   |
 
 Send audio after this message.
 
@@ -453,6 +469,22 @@ Or send `results.tag_audio_events: false` to get no sound tags at all. Every tag
 
 Speaker tags still depend on `diarize` alone. A turn that holds only tags still gets its `committed`, without a language, and with a `text` that is empty with `diarize: false`, or holds only the turn's speaker tags with `diarize` on.
 
+## Text format
+
+With `transcribe-stream-2`, `results.text_format` sets the style for numbers, amounts, times and similar in the transcript:
+
+| Value                 | Style                         | Example                                         |
+| --------------------- | ----------------------------- | ----------------------------------------------- |
+| `"written"` (default) | Digits and symbols            | "I paid $25 at 3:30 pm"                         |
+| `"spoken"`            | Words, the way they were said | "I paid twenty five dollars at three thirty pm" |
+
+- Choose it in `config`, for the whole session.
+- It applies to `draft`, `eager_end_of_turn` and `committed` alike.
+- `session_started.config.results` shows the value in effect. `null` is the same as not sending the field.
+- Any other value, such as another string (`"Written"` included), a number or a boolean, is `invalid_config`, which closes the connection with 4400. The message is `results.text_format must be "spoken" or "written"`.
+
+Only `transcribe-stream-2` takes `text_format`. `transcribe-stream-1` refuses a `config` that sends it, whatever its value, `null` included, with `invalid_config` and close 4400; the error's `message` names the field. With `transcribe-stream-1`, `session_started.config.results` and `configured` have no `text_format`.
+
 ## Language
 
 `draft`, `eager_end_of_turn` and `committed` carry the language of their own `text`. Use `language_code` (ISO 639-1) in your code; `language` is its English name, for display, with the same names as [`POST /v1/asr`](/api-reference/endpoint/openapi-v1/speech-to-text). The language is detected from that message's text alone, ignoring speaker tags, sound tags in `[` and `]`, and interjections such as "okay", "hmm" or "uh". With `tag_audio_events: false`, the label can also reflect text that is not shown: the rest of a draft after an unclosed opening bracket, the inside of a tag that holds another tag, or a tag in full-width or lenticular brackets. It is one of:
@@ -543,7 +575,7 @@ Turn 0 is the user's turn. The agent prepared its reply on `eager_end_of_turn`; 
 
 ## Related
 
-- [Realtime Speech to Text](/features/speech-to-text/realtime): what the realtime model does and when to use it.
+- [Realtime Speech to Text](/features/speech-to-text/realtime): what the realtime models do and when to use them.
 - [Transcribe a live audio stream](/developer-guide/sdk-guide/cookbook/realtime-transcription): a complete client in Python and Node.js, and a browser microphone relay.
 - [Build a realtime voice agent](/developer-guide/sdk-guide/cookbook/realtime-voice-agent): turn-taking, barge-in and backchannels.
 - [Speech to Text](/api-reference/endpoint/openapi-v1/speech-to-text): transcribe a complete audio file with `POST /v1/asr`.
