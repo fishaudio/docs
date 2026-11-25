@@ -196,7 +196,8 @@ save(result.audio, "hello.mp3")
 
 for segment in result.segments:
     print(f"{segment.start:.2f}-{segment.end:.2f}  {segment.text}")
-print(f"{result.duration:.2f} seconds")
+if result.duration is not None:
+    print(f"{result.duration:.2f} seconds")
 ```
 
 ```text
@@ -210,7 +211,7 @@ print(f"{result.duration:.2f} seconds")
 
 - `start` and `end` are seconds from the start of `result.audio`, also for long text that is generated in several chunks.
 - A segment is usually one word without punctuation. Text written without spaces, such as Chinese, comes back one character per segment, and numbers follow the spoken reading after [normalization](#language): `$42.50` gives the segments `42` and `50`. Don't expect segments to match your input text.
-- When the API can't time the text, for example text that is only punctuation or a sound tag such as `[sigh]`, the audio is still complete, but `segments` is `[]` and `duration` is `None`. Check for that before you use them, as the example above does not. `duration` is the length the API reports, not one measured from the audio.
+- When the API can't time the text, for example text that is only punctuation or a sound tag such as `[sigh]`, the audio is still complete, but `segments` is `[]` and `duration` is `None`. In a long text, only some parts can lack timings: `segments` then has the timed words, and `duration` is `None` if the end of the audio has no timings. `duration` is the length the API reports, not one measured from the audio.
 
 To use audio and timings while they arrive, call `tts.stream_with_timestamps()`. Each event carries the next piece of audio in `event.audio`, which can be empty, and `stream.segments` holds the timings received so far on the timeline of the complete audio:
 

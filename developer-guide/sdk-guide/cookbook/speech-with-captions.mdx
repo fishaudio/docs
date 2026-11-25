@@ -16,7 +16,7 @@ This recipe needs `fish-audio-sdk` 1.6.0 or later: `pip install -U fish-audio-sd
 
 [`tts.convert_with_timestamps()`](/features/text-to-speech#word-timestamps) returns the audio together with timed segments, so the captions match the generated speech exactly. Segments are word-level (one character in Chinese and Japanese) and carry no punctuation, so the recipe groups consecutive segments into caption-sized cues before it writes them. Segment `start` / `end` are in **seconds**; SRT wants `HH:MM:SS,mmm` (comma), WebVTT wants `HH:MM:SS.mmm` (dot).
 
-The recipe starts a new cue after a pause longer than 0.6 seconds, or when the cue would grow past 42 characters or 6 seconds. It joins words with a space, except between Chinese or Japanese characters. A segment can have `start` equal to `end`, so a cue with no duration gets a short one that ends no later than the next cue starts.
+The recipe starts a new cue after a pause longer than 0.6 seconds, or when the cue would grow past 42 characters or 6 seconds. It joins words with a space, except between Chinese or Japanese characters. A segment can have `start` equal to `end`, so a cue with no duration gets a short one that ends no later than the next cue starts. If the next cue starts at the same millisecond, that cue is moved 1 ms later, so every cue ends after it starts and cues never overlap.
 
 ```python Python
 import re
@@ -75,6 +75,10 @@ def group_cues(segments) -> list[dict]:
             if i + 1 < len(cues):
                 end = min(end, cues[i + 1]["start"])
             cue["end"] = max(end, cue["start"] + 1)
+            # If the next cue starts at the same millisecond, move it 1 ms later
+            # so the two cues don't overlap.
+            if i + 1 < len(cues) and cues[i + 1]["start"] < cue["end"]:
+                cues[i + 1]["start"] = cue["end"]
     return cues
 
 
@@ -90,7 +94,7 @@ result = client.tts.convert_with_timestamps(text=TEXT, format="mp3")
 save(result.audio, "narration.mp3")
 
 # Text without words (only punctuation or a sound tag such as "[sigh]") still
-# produces audio, but no timings.
+# produces audio, but no timings. Parts of a long text can also lack timings.
 if not result.segments:
     raise SystemExit("No word timings for this text; captions not written.")
 
@@ -111,7 +115,9 @@ with open("narration.vtt", "w", encoding="utf-8") as vtt:
         end = format_timestamp(cue["end"], ".")
         vtt.write(f"{start} --> {end}\n{cue['text']}\n\n")
 
-print(f"Wrote narration.mp3 ({result.duration:.2f}s) with {len(cues)} cues")
+# duration is None when the end of the audio has no timings.
+length = f"{result.duration:.2f}s" if result.duration is not None else "length not reported"
+print(f"Wrote narration.mp3 ({length}) with {len(cues)} cues")
 ```
 
 Play `narration.mp3` with `narration.vtt` as its text track, or load `narration.srt` next to it in a video editor. Tune `MAX_CHARS`, `MAX_MS`, and `MAX_GAP_MS` for your player and audience.
