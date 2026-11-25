@@ -66,11 +66,13 @@ Then add the SDK to your app module:
 
 ```kotlin build.gradle.kts
 dependencies {
-    implementation("com.fishaudio.agent:agent-android-core:0.1.0")
+    implementation("com.fishaudio.agent:agent-android-core:1.0.0")
 }
 ```
 
-The SDK's manifest is merged into your app. It adds the permissions a call needs (`INTERNET`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MICROPHONE`, `POST_NOTIFICATIONS`) and the call service. Release builds need no extra R8 rules.
+The SDK's manifest is merged into your app. It adds the permissions a call needs (`INTERNET`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MICROPHONE`, `POST_NOTIFICATIONS`) and the call service, `com.fishaudio.agent.FishCallService`. Release builds need no extra R8 rules.
+
+LiveKit's own manifest also declares the camera permission and a screen capture service, for video calls. The SDK takes both out again: a voice call uses neither, and the camera permission would hide your app from devices without a camera on Google Play. If your app uses the camera, declare `CAMERA` in its own manifest as usual; that declaration is kept.
 
 ## Quick start
 
@@ -95,7 +97,7 @@ lifecycleScope.launch {
         viewModel.conversation.startSession(SessionAuth.Token(token))
     } catch (_: ConversationStartCancelledException) {
         // The user hung up while the call was starting.
-    } catch (error: FishAgentError) {
+    } catch (error: FishAgentException) {
         showError(error.code, error.message)
     }
 }
@@ -115,7 +117,7 @@ Hang up with `conversation.endSession()`. The [example app](https://github.com/f
 
 `startSession` checks `RECORD_AUDIO` and does not ask for it: a permission dialog has to come from an Activity, and the SDK does not own one. Without the permission, a call that uses the microphone fails with `mic_permission_denied` before any session is created.
 
-`FishAgentPermissions.requestMicrophonePermission(activity)` shows the system dialog if needed and returns whether your app holds the permission. You can call it at any time while the Activity is started, for example from a click handler. It needs a `ComponentActivity` (`AppCompatActivity` and Compose activities are).
+`FishAgentPermissions.requestMicrophonePermission(activity)` shows the system dialog if needed and returns whether your app holds the permission. You can call it at any time while the Activity is started, for example from a click handler. It needs a `ComponentActivity` (`AppCompatActivity` and Compose activities are). If the Activity is destroyed while the dialog is showing (a rotation, for example), the answer cannot reach the call: it returns whether the permission is held at that moment, usually `false`. Ask again, or check `hasMicrophonePermission` when the new Activity starts.
 
 This is one step more than the React Native SDK, whose `startSession` asks by itself.
 
@@ -147,8 +149,11 @@ conversation.startSession(SessionAuth.AgentId("YOUR_AGENT_ID"))
 If the agent has **Restrict origins** on, the platform checks the request's `Origin` header against the agent's allowed origins. An app sends none, so pass one that is on the list:
 
 ```kotlin
-conversation.startSession(SessionAuth.AgentId("YOUR_AGENT_ID")) {
-    origin = "https://www.example.com"
+@OptIn(ExperimentalFishAgentApi::class)
+suspend fun startRestrictedCall() {
+    conversation.startSession(SessionAuth.AgentId("YOUR_AGENT_ID")) {
+        origin = "https://www.example.com"
+    }
 }
 ```
 
@@ -156,7 +161,9 @@ Without it, a restricted agent answers `origin_forbidden`.
 
 <Warning>
   The `origin` option is experimental and may change in a minor release: a
-  dedicated way for apps to identify themselves may replace it.
+  dedicated way for apps to identify themselves may replace it. It is marked
+  `@ExperimentalFishAgentApi`, and code that uses it does not compile without
+  `@OptIn(ExperimentalFishAgentApi::class)`.
 </Warning>
 
 Anyone with the agent id can start sessions, billed to you. For a production app, especially one with signed-in users, prefer your backend: it decides who gets a token and can attribute sessions to your users. The React Native page says more about [what a public agent exposes](/agents/deploy/react-native#public-agent); all of it applies here.
@@ -166,7 +173,7 @@ Anyone with the agent id can start sessions, billed to you. For a production app
 One object for your app's calls. It can make any number of calls, one at a time.
 
 ```kotlin
-Conversation(context, defaults = SessionOptions(), mobile = MobileOptions())
+Conversation(context, defaults = SessionOptions(), options = ConversationOptions())
 ```
 
 | Member                                     | Description                                                                                                                                                                |
@@ -179,6 +186,7 @@ Conversation(context, defaults = SessionOptions(), mobile = MobileOptions())
 | `endReason: StateFlow<EndReason?>`         | Why the last call ended                                                                                                                                                    |
 | `events: SharedFlow<ConversationEvent>`    | What happened. Nothing is replayed; see [Events](#events)                                                                                                                  |
 | `sessionId`, `isSpeaking`                  | The id of the current or last call's session, and whether `mode` is `SPEAKING`                                                                                             |
+| `transcript: List<TranscriptSegment>`      | Every transcript segment of the current or last call, in conversation order. A snapshot: later segments are not added to it                                                |
 | `suspend startSession(auth, configure)`    | Starts a call. Returns the session id once connected                                                                                                                       |
 | `suspend endSession()`                     | Hangs up. Safe at any time                                                                                                                                                 |
 | `suspend setMicMuted(muted)`               | Mutes or unmutes the microphone                                                                                                                                            |
@@ -186,10 +194,9 @@ Conversation(context, defaults = SessionOptions(), mobile = MobileOptions())
 | `sendUserActivity()`, `interrupt()`        | Tells the agent the user is active (typing, for example), or stops the agent's current reply                                                                               |
 | `setAudioOutput(route)`                    | `AUTO`, `SPEAKER`, or `EARPIECE`, during a call or before one                                                                                                              |
 | `registerClientTool(name, handler)`        | Registers a client tool for the current call and every later one                                                                                                           |
-| `getTranscript()`                          | Every transcript segment of the current or last call, in conversation order                                                                                                |
 | `close()`                                  | Ends the call and releases the conversation                                                                                                                                |
 
-`SessionOptions` has the same fields as the Web SDK's [session options](/agents/deploy/web-sdk#options): `origin`, `serverUrl`, `language`, `timezone`, `context`, `overrides`, `dynamicVariables`, `endUserId`, `metadata`, `toolEvents`, `clientTools`, `clientToolTimeoutMs`, and `microphone`. `MobileOptions` adds `audioOutput` and `callNotification`.
+`SessionOptions` has the same fields as the Web SDK's [session options](/agents/deploy/web-sdk#options): `origin`, `serverUrl`, `language`, `timezone`, `context`, `overrides`, `dynamicVariables`, `endUserId`, `metadata`, `toolEvents`, `clientTools`, `clientToolTimeout`, and `microphone`. `clientToolTimeout` is a `kotlin.time.Duration` (`15.seconds` by default) where the Web SDK counts milliseconds. `ConversationOptions` holds what the phone needs around calls: `audioOutput` (an `AudioOutputRoute`, in the package `com.fishaudio.agent.audio`) and `callNotification`.
 
 Options are built in a block, and a call can adjust the conversation's defaults the same way:
 
@@ -197,18 +204,18 @@ Options are built in a block, and a call can adjust the conversation's defaults 
 val conversation = Conversation(
     context,
     defaults = SessionOptions { language = "ja" },
-    mobile = MobileOptions { audioOutput = AudioOutputRoute.SPEAKER },
+    options = ConversationOptions { audioOutput = AudioOutputRoute.SPEAKER },
 )
 
 conversation.startSession(auth) { microphone = false }
 ```
 
-Inside a block, a name is the option. When a variable of yours has the same name, write `this.origin = origin`.
+Inside a block, a name is the option. When a variable of yours has the same name, write `this.origin = origin`. A nested block (`overrides = SessionOverrides { … }`) sets only its own options, and naming one of the outer block there does not compile.
 
 The same rules as the other SDKs apply:
 
 - A second `startSession` while one is on its way, or during a live call, joins that call.
-- `endSession` during a start cancels it: `startSession` throws `ConversationStartCancelledException`, and the session, if one was created, is closed.
+- `endSession` during a start stops it where it is, before the microphone is captured if the call had not got that far: `startSession` throws `ConversationStartCancelledException`, and the session, if one was created, is closed.
 - A failed start puts `status` back to `IDLE`.
 - `sendUserMessage`, `sendUserActivity`, and `interrupt` do nothing when there is no call.
 - The start belongs to the conversation. Cancelling the coroutine that called `startSession` stops the wait, not the call. Call `endSession` to hang up.
@@ -227,7 +234,12 @@ You can call the methods from any thread. The flows are updated on the main thre
 
 ### Compatibility
 
-Options are built in blocks and events are made only by the SDK, so a new option or a new field on an event does not break an app built against an older version. New events and new enum values (error codes, end reasons) can arrive in a minor release. A `when` over events always needs an `else` branch; keep one for the enums too. Inside a nested block only that block's own properties can be set.
+Options are built in blocks and events are made only by the SDK, so a new option or a new field on an event does not break an app built against an older version. What can gain cases in a minor release is shaped so that your code already handles a case it does not know.
+
+- **Events.** `ConversationEvent` is not a sealed class, so a `when` over events has an `else` branch.
+- **End reasons, error codes, error stages, tool sources, and audio routes.** `EndReason`, `FishAgentErrorCode`, `FishAgentErrorStage`, `ToolCallSource`, and `AudioOutputRoute` are classes with constants, not enums. Compare with the constants (`reason == EndReason.USER_HANGUP`) and keep an `else` branch. Their `value` is the text the API and the other SDKs use (`"user_hangup"`), which is also how this page writes them.
+
+`ConversationStatus`, `AgentMode`, and `MessageRole` are enums. They are closed sets, and a minor release adds no value to them, so a `when` over one of them needs no `else` branch.
 
 ### What is left out
 
@@ -258,7 +270,8 @@ During a call with the microphone on, the SDK runs a foreground service with an 
 
 - The service starts with the call and stops when the call ends, from either side.
 - A call started with `microphone = false` runs no service. The service starts on the first unmute.
-- Change the notification's text with `MobileOptions { callNotification = CallNotification { title = "…"; text = "…" } }`. Set it to `null` to run no service at all.
+- Change the notification with `ConversationOptions { callNotification = CallNotification { title = "…"; text = "…"; smallIcon = R.drawable.ic_call; channelName = "…" } }`. Set it to `null` to run no service at all.
+- Give it a `smallIcon`: a flat, one-colour drawable. Without one the app's launcher icon is used, which Android usually shows as a plain square. `channelName` is what the user sees in the system's notification settings; translate it.
 - The notification is only visible if your app holds `POST_NOTIFICATIONS` (Android 13 and later). The service works either way. Asking for that permission is up to your app.
 - Google Play asks apps that declare a microphone foreground service to describe its use in the Play Console.
 
