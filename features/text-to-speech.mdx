@@ -116,7 +116,7 @@ curl --request POST https://api.fish.audio/v1/tts \
 - **`s2-pro`**: previous-generation S2 model with multi-speaker and natural-language expression control.
 - **`s1`**: previous generation, `(parenthesis)` emotion tags. S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro`. See [Migrate from S1](/developer-guide/models-pricing/migrate-from-s1).
 
-In the API, select with the `model` request header; requests without it use `s2.1-pro`. The Python SDK always sends a model and defaults to `model="s2-pro"`. See [Choosing a Model](/developer-guide/models-pricing/choosing-a-model).
+In the API, select with the `model` request header; requests without it use `s2.1-pro`. The Python SDK always sends a model and defaults to `model="s2.1-pro"` (`fish-audio-sdk` 1.4.0 and later; earlier versions default to `s2-pro`). See [Choosing a Model](/developer-guide/models-pricing/choosing-a-model).
 
 ### Output formats
 

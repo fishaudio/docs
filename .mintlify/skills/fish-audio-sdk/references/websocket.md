@@ -20,7 +20,7 @@ def text_chunks():
     yield "streaming speech."
 
 # Consume audio chunks as they arrive...
-for chunk in client.tts.stream_websocket(text_chunks(), reference_id="<voice-id>", model="s2-pro"):
+for chunk in client.tts.stream_websocket(text_chunks(), reference_id="<voice-id>", model="s2.1-pro"):
     sink.write(chunk)
 
 # ...or just play the whole stream locally:
@@ -47,7 +47,7 @@ async def main():
 asyncio.run(main())
 ```
 
-`stream_websocket` keyword params mirror `convert`: `reference_id`, `references`, `format`, `latency`, `speed`, `config`, `model` (default `"s2-pro"`), plus `ws_options` (a `WebSocketOptions` for keepalive/message-size tuning). The sync version also accepts `max_workers` (default `10`) for its background sender thread; the async version does not.
+`stream_websocket` keyword params mirror `convert`: `reference_id`, `references`, `format`, `latency`, `speed`, `config`, `model` (default `"s2.1-pro"`), plus `ws_options` (a `WebSocketOptions` for keepalive/message-size tuning). The sync version also accepts `max_workers` (default `10`) for its background sender thread; the async version does not.
 
 For manual control, yield events instead of strings:
 

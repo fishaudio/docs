@@ -21,7 +21,7 @@ audio = client.tts.convert(
 )
 
 # Pick a model and adjust speed
-audio = client.tts.convert(text="Speaking faster.", model="s2-pro", speed=1.5)
+audio = client.tts.convert(text="Speaking faster.", model="s2.1-pro", speed=1.5)
 ```
 
 ### `tts.convert` parameters
@@ -37,7 +37,7 @@ All keyword-only:
 | `latency`         | `"normal" \| "balanced"`            | `"balanced"`  | `normal` = higher quality, `balanced` = faster. (No `"low"`.)    |
 | `speed`           | `float`                             | —             | Shortcut for prosody speed (0.5–2.0).                            |
 | `config`          | `TTSConfig`                         | `TTSConfig()` | Reusable bundle of the settings below.                           |
-| `model`           | `"s2-pro" \| "s1"`                  | `"s2-pro"`    | Synthesis model per current SDK typing. The API also accepts `"s2.1-pro"` / `"s2.1-pro-free"`, forwarded fine at runtime, but add `# type: ignore` for static checkers. `s1` is deprecated and will be retired on December 31, 2026; after that date, requests that specify `s1` are served by `s2.1-pro`. `speech-1.5` / `speech-1.6` are deprecated. |
+| `model`           | `"s2.1-pro" \| "s2.1-pro-free" \| "s2-pro" \| "drama-3" \| "s1"` or any `str` | `"s2.1-pro"`  | Synthesis model (`fish-audio-sdk` 1.4.0 and later; 1.3.0 and earlier defaulted to `"s2-pro"`). `s1` is deprecated and will be retired on December 31, 2026; after that date, requests that specify `s1` are served by `s2.1-pro`. `speech-1.5` / `speech-1.6` are deprecated. |
 | `request_options` | `RequestOptions \| None`            | `None`        | Per-request timeout / headers; see [errors.md](errors.md).      |
 
 Direct params (`reference_id`, `format`, `latency`, `speed`) override the matching field on `config` when set.
@@ -118,5 +118,5 @@ await new Promise((resolve, reject) =>
 
 ## Model & expression notes
 
-- `s2.1-pro` is recommended for production; `s2-pro` is the Python SDK default. `s1` is the previous generation: S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro`. Migration: `https://docs.fish.audio/developer-guide/models-pricing/migrate-from-s1`.
+- `s2.1-pro` is recommended for production and is the Python SDK default (`fish-audio-sdk` 1.4.0 and later). `s1` is the previous generation: S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro`. Migration: `https://docs.fish.audio/developer-guide/models-pricing/migrate-from-s1`.
 - Emotion/expression is controlled inline in `text` (S2-Pro uses free-form `[bracket]` tags; the deprecated S1 uses legacy `(parenthesis)` tags, and the API does not convert between them); there is no separate SDK parameter. Full tag list: `https://docs.fish.audio/api-reference/emotion-reference`.
