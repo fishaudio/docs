@@ -13,23 +13,32 @@ import Prerequisites from "/snippets/prerequisites.mdx";
 
 <Prerequisites />
 
-Install the Python SDK:
+Install the Python or TypeScript SDK:
 
-```bash
+<CodeGroup>
+
+```bash Python
 pip install --upgrade fish-audio-sdk
 ```
 
+```bash TypeScript
+npm install fish-audio
+```
+
+</CodeGroup>
+
 <Note>
-  `client.asr.stream_websocket()` requires `fish-audio-sdk` 1.5.0 or later. The
-  TypeScript SDK does not support realtime speech to text yet: in JavaScript,
-  [connect to the WebSocket directly](#without-the-sdk).
+  `client.asr.stream_websocket()` requires `fish-audio-sdk` 1.5.0 or later, and
+  `client.speechToText.convertRealtime()` requires `fish-audio` 0.2.0 or later
+  (Node.js only). In browsers or other languages, [connect to the WebSocket
+  directly](#without-the-sdk).
 </Note>
 
 You also need a 16-bit PCM mono WAV file, at 8000, 12000, 16000, 22050, 24000, 32000, 44100 or 48000 Hz. To convert a recording, run `ffmpeg -i input.mp3 -ac 1 -ar 16000 -c:a pcm_s16le speech.wav`.
 
 ## Recipe
 
-`client.asr.stream_websocket()` takes an iterator of audio chunks and returns the events the server sends. The script streams the file in 40 ms chunks at real-time speed, as a live microphone would, and prints every event until the session ends. The SDK opens the session, sends each chunk as it is yielded, and ends the session when the iterator is exhausted.
+`client.asr.stream_websocket()` in Python and `client.speechToText.convertRealtime()` in TypeScript take an iterator of audio chunks and return the events the server sends. The script streams the file in 40 ms chunks at real-time speed, as a live microphone would, and prints every event until the session ends. The SDK opens the session, sends each chunk as it is yielded, and ends the session when the iterator is exhausted.
 
 <CodeGroup>
 
@@ -143,13 +152,116 @@ if __name__ == "__main__":
     asyncio.run(main(sys.argv[1]))
 ```
 
+```typescript TypeScript
+// npm install fish-audio
+// FISH_API_KEY=... node transcribe_file.ts speech.wav   (Node.js 22.18+ runs TypeScript directly)
+import { readFileSync } from "node:fs";
+import { setTimeout as sleep } from "node:timers/promises";
+import {
+  FishAudioClient,
+  type RealtimeSTTEvent,
+  type RealtimeSTTSampleRate,
+} from "fish-audio";
+
+const CHUNK_MS = 40; // ms of audio per chunk; 20-40 ms suits live audio
+
+// Read a 16-bit mono PCM WAV file: its sample rate and its samples.
+function readWav(path: string) {
+  const buf = readFileSync(path);
+  let rate = 0,
+    channels = 0,
+    bits = 0;
+  let data: Buffer | undefined;
+  for (let pos = 12; pos + 8 <= buf.length; ) {
+    const id = buf.toString("ascii", pos, pos + 4);
+    const size = buf.readUInt32LE(pos + 4);
+    if (id === "fmt ") {
+      channels = buf.readUInt16LE(pos + 10);
+      rate = buf.readUInt32LE(pos + 12);
+      bits = buf.readUInt16LE(pos + 22);
+    } else if (id === "data") {
+      data = buf.subarray(pos + 8, pos + 8 + size);
+    }
+    pos += 8 + size + (size % 2);
+  }
+  if (bits !== 16 || channels !== 1 || !data)
+    throw new Error("need a 16-bit mono WAV");
+  return { rate, data };
+}
+
+// Yield the audio in real time, as a live microphone would.
+async function* microphone(data: Buffer, rate: number) {
+  const bytesPerChunk = ((rate * CHUNK_MS) / 1000) * 2;
+  const start = Date.now();
+  for (let i = 0; i < data.length; i += bytesPerChunk) {
+    yield data.subarray(i, i + bytesPerChunk);
+    const sentMs = (i / bytesPerChunk + 1) * CHUNK_MS;
+    await sleep(Math.max(0, start + sentMs - Date.now()));
+  }
+}
+
+function show(event: RealtimeSTTEvent) {
+  switch (event.type) {
+    case "session_started":
+      console.log(`session ${event.session_id} (request ${event.request_id})`);
+      break;
+    case "draft":
+      console.log(`  draft     #${event.turn_index}: ${event.text}`);
+      break;
+    case "eager_end_of_turn":
+      console.log(`  eager     #${event.turn_index}: ${event.text}`);
+      break;
+    case "committed": {
+      const who = event.user_turn ? "user " : "other";
+      console.log(
+        `committed   #${event.turn_index} [${who}] ${event.audio_start_ms}-${event.audio_end_ms} ms ` +
+          `(${event.reason}, ${event.language_code ?? "?"}): ${event.text}`
+      );
+      break;
+    }
+    case "error": // recoverable: the session continues
+      console.log(
+        `error ${event.error_type} (${event.code}): ${event.message} [request ${event.request_id}]`
+      );
+      break;
+    case "session_done":
+      console.log(
+        `done: ${event.stats.audio_ms} ms of audio, ${event.stats.turns} turns`
+      );
+      break;
+    default: // speech_start, user_turn_taken, turn_resumed, ...
+      console.log(
+        `  ${event.type} #${"turn_index" in event ? event.turn_index : ""}`
+      );
+  }
+}
+
+const { rate, data } = readWav(process.argv[2]);
+const client = new FishAudioClient(); // reads FISH_API_KEY
+const stream = client.speechToText.convertRealtime(
+  { sample_rate: rate as RealtimeSTTSampleRate, eager: true, drafts: true },
+  microphone(data, rate)
+);
+for await (const event of stream) show(event);
+```
+
 </CodeGroup>
 
 Run it with your API key in `FISH_API_KEY`:
 
-```bash
+<CodeGroup>
+
+```bash Python
 python transcribe_file.py speech.wav
 ```
+
+```bash TypeScript
+node transcribe_file.ts speech.wav
+```
+
+</CodeGroup>
+
+Node.js 22.18 or later runs TypeScript files directly; on an earlier version, compile the script with `tsc` first.
 
 For a 15-second customer-support clip, the output looks like this (`...` marks drafts left out):
 
@@ -182,7 +294,7 @@ The clip ends mid-sentence, so the last turn is committed by `audio_done`. Draft
 
 ## Read the events
 
-Each event is an object with a `type` and the fields of the server message as attributes; a field the server left out is `None`.
+Each event is an object with a `type` and the fields of the server message as attributes; a field the server left out is `None` in Python and `undefined` in TypeScript. The options have the same names in both SDKs: `drafts=True` in Python is `drafts: true` in TypeScript.
 
 - **`speech_start`** opens a turn when voice activity begins. In the default `auto` mode, noise and other voices open turns too.
 - **`draft`** is the whole turn so far, and replaces the previous draft. Drafts come only with `drafts=True` (`results.drafts: true` in the protocol); use them for live captions.
@@ -191,7 +303,7 @@ Each event is an object with a `type` and the fields of the server message as at
 - **`committed`** is the final transcript of the turn. `user_turn: false` marks a non-user turn, such as background noise or a short acknowledgement while your agent is speaking. Speaker tags such as `<|speaker:0|>` are stable within the session; strip them and trim the text, or pass `diarize=False` (`results.diarize: false`). Text can also contain [sound tags](/api-reference/endpoint/websocket/asr-realtime#sound-tags) such as `[laughter]`; strip them too, or turn them off with `results.tag_audio_events: false`. `language_code` is missing when the text is too short to tell, as for "Uh-huh." above.
 - **`session_done`** is the last event. The SDK sends `audio_done` when your iterator is exhausted; the server answers with `session_done` and closes the connection with code 1000.
 
-The SDK skips message types it does not know; if you read the protocol yourself, ignore message types and fields you do not know, because new ones can be added. Every message is described in the [WebSocket reference](/api-reference/endpoint/websocket/asr-realtime#server-messages).
+The SDKs skip message types they do not know; if you read the protocol yourself, ignore message types and fields you do not know, because new ones can be added. Every message is described in the [WebSocket reference](/api-reference/endpoint/websocket/asr-realtime#server-messages).
 
 <Tip>
   The script streams the file at real-time speed so that the events arrive as
@@ -202,35 +314,49 @@ The SDK skips message types it does not know; if you read the protocol yourself,
 
 ## Choose what you receive
 
-The keyword arguments of `stream_websocket()` set the session's options:
+The keyword arguments of `stream_websocket()`, and the fields of the first argument of `convertRealtime()`, set the session's options:
 
-| Argument         | Default  | What it does                                                                                     |
-| ---------------- | -------- | ------------------------------------------------------------------------------------------------ |
-| `sample_rate`    | `16000`  | The sample rate of your audio, in Hz. The server converts it, so do not resample.                |
-| `drafts`         | off      | `True` sends live `draft` events while a turn is open.                                           |
-| `eager`          | off      | `True` sends `eager_end_of_turn` as soon as a turn has probably ended.                           |
-| `diarize`        | on       | `False` removes speaker tags from the text.                                                      |
-| `turn_detection` | `"auto"` | `"vad"` ends a turn after a fixed silence; `"manual"` ends it when you call `finalize()`.        |
-| `terms`          | none     | Names, products and jargon to recognize, for example `["Main Street"]`.                          |
-| `config`         |          | An `ASRRealtimeConfig` with every other option, such as word timestamps, sound tags and history. |
+| Argument         | Default  | What it does                                                                                                                                                                        |
+| ---------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sample_rate`    | `16000`  | The sample rate of your audio, in Hz. The server converts it, so do not resample.                                                                                                   |
+| `drafts`         | off      | Turn on to receive live `draft` events while a turn is open.                                                                                                                        |
+| `eager`          | off      | Turn on to receive `eager_end_of_turn` as soon as a turn has probably ended.                                                                                                        |
+| `diarize`        | on       | Turn off to remove speaker tags from the text.                                                                                                                                      |
+| `turn_detection` | `"auto"` | `"vad"` ends a turn after a fixed silence; `"manual"` ends it when you call `finalize()`.                                                                                           |
+| `terms`          | none     | Names, products and jargon to recognize, for example `["Main Street"]`.                                                                                                             |
+| `config`         |          | Python only: an `ASRRealtimeConfig` with every other option, such as word timestamps, sound tags and history. In TypeScript, pass `results` and `context` next to the fields above. |
 
-By default, each transcript starts with a speaker tag, as in the output above. For plain text, pass `diarize=False`:
+By default, each transcript starts with a speaker tag, as in the output above. For plain text, turn `diarize` off:
 
-```python
+<CodeGroup>
+
+```python Python
 for event in client.asr.stream_websocket(audio_chunks, sample_rate=16000, diarize=False):
     if event.type == "committed":
         print(event.text)  # Can you tell me what time the pharmacy on Main Street closes tonight?
 ```
 
-The object that `stream_websocket()` returns also sends messages during the session: `finalize()` commits the current turn (push-to-talk), and `agent_speaking()`, `add_context()` and `configure()` are for [voice agents](/developer-guide/sdk-guide/cookbook/realtime-voice-agent). To stop before the audio ends, leave the loop, or use the stream in a `with` block; the SDK closes the connection. If the server has stopped reading, closing does not wait for it: after half a second the SDK cuts the connection.
+```typescript TypeScript
+const stream = client.speechToText.convertRealtime(
+  { sample_rate: 16000, diarize: false },
+  audioChunks
+);
+for await (const event of stream) {
+  if (event.type === "committed") console.log(event.text);
+}
+```
 
-Read the events from one place at a time. With `AsyncFishAudio`, a second read started while another is waiting raises `RuntimeError`; a read cancelled by a timeout, such as `asyncio.wait_for()`, loses no event, so read again.
+</CodeGroup>
 
-An error that ends the session raises `ASRRealtimeError` (from `fishaudio`), with the server's `error_type` and the WebSocket `close_code`. A refused connection raises `APIError`, such as `AuthenticationError` for an invalid API key.
+The stream that both calls return also sends messages during the session: `finalize()` commits the current turn (push-to-talk), and `agent_speaking()`, `add_context()` and `configure()` are for [voice agents](/developer-guide/sdk-guide/cookbook/realtime-voice-agent); in TypeScript they are `agentSpeaking()`, `addContext()` and `configure()`. To stop before the audio ends, leave the loop; the SDK closes the connection. You can also use the stream in a `with` block in Python, or call `close()` in TypeScript. If the server has stopped reading, the Python SDK does not wait for it when closing: after half a second it cuts the connection.
+
+Read the events from one place at a time. In Python with `AsyncFishAudio`, a second read started while another is waiting raises `RuntimeError`; a read cancelled by a timeout, such as `asyncio.wait_for()`, loses no event, so read again.
+
+An error that ends the session raises `ASRRealtimeError` (from `fishaudio`), with the server's `error_type` and the WebSocket `close_code`. A refused connection raises `APIError`, such as `AuthenticationError` for an invalid API key. In TypeScript, the stream throws `RealtimeSTTError` (from `fish-audio`), with `errorType` and `closeCode`, and a refused connection throws an API error such as `UnauthorizedError`.
 
 ## Without the SDK
 
-In JavaScript, in other languages, or to control the connection yourself, speak the WebSocket protocol directly: connect to `wss://api.fish.audio/v1/asr/realtime`, send a `config` message, wait for `session_started`, then send `audio` messages and finish with `audio_done`. Every message is a MessagePack map in a binary frame. Install a WebSocket client and a MessagePack library:
+In other languages, or to control the connection yourself, speak the WebSocket protocol directly: connect to `wss://api.fish.audio/v1/asr/realtime`, send a `config` message, wait for `session_started`, then send `audio` messages and finish with `audio_done`. Every message is a MessagePack map in a binary frame. Install a WebSocket client and a MessagePack library:
 
 <CodeGroup>
 

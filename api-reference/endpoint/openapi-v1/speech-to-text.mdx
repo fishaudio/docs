@@ -100,9 +100,10 @@ A field that is not returned is absent from the JSON, never `null`. Do not depen
   pass `model="transcribe-1-pro"` to `asr.transcribe()` (`fish-audio-sdk` 1.5.0
   or later; on earlier versions, pass
   `request_options=RequestOptions(additional_headers={"model": "transcribe-1-pro"})`).
-  In JavaScript, pass
-  `{ headers: { model: "transcribe-1-pro" } }` as the second argument to
-  `speechToText.convert()`. The Python SDK currently returns only `text`,
+  In JavaScript, pass `model: "transcribe-1-pro"` in the request to
+  `speechToText.convert()` (`fish-audio` 0.2.0 or later; on 0.1.0, pass
+  `{ headers: { model: "transcribe-1-pro" } }` as the second argument). The
+  Python SDK currently returns only `text`,
   `duration`, and `segments`, and neither SDK can send `tag_audio_events`,
   `diarize`, or the speaker-count hints. To use them, call the API directly, as
   in the examples above. The JavaScript SDK returns the whole response body,
