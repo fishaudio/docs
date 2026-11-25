@@ -108,13 +108,11 @@ function replyFromLlm(text) {
 }
 
 async function voiceAgentTurn(audioPath, outPath) {
-  const heard = await client.speechToText.convert(
-    {
-      audio: new File([await readFile(audioPath)], audioPath),
-      language: "en",
-    },
-    { headers: { model: "transcribe-1-pro" } }
-  );
+  const heard = await client.speechToText.convert({
+    audio: new File([await readFile(audioPath)], audioPath),
+    language: "en",
+    model: "transcribe-1-pro", // requires fish-audio 0.2.0 or later
+  });
 
   // Drop speaker markers such as <|speaker:0|>; keep cues such as [laughter].
   const said = heard.text.replace(/\s*<\|speaker:\d+\|>\s*/g, " ").trim();

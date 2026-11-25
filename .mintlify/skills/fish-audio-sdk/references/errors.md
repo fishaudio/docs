@@ -90,11 +90,13 @@ try {
 
 What the JS client actually throws:
 
-| Error                                                 | When                                                                                         |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `UnprocessableEntityError` (extends `FishAudioError`) | 422, the **only** typed HTTP subclass thrown; `.body` is `{ detail: [{ loc, msg, type }] }` |
-| `FishAudioError`                                      | every other non-2xx response; read `.statusCode`, `.body`, `.rawResponse`                    |
-| `FishAudioTimeoutError`                               | request exceeded the timeout                                                                 |
+| Error                                                 | When                                                                                                                 |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `UnprocessableEntityError` (extends `FishAudioError`) | 422, the **only** typed HTTP subclass thrown; `.body` is `{ detail: [{ loc, msg, type }] }`                          |
+| `FishAudioError`                                      | every other non-2xx response; read `.statusCode`, `.body`, `.rawResponse`                                            |
+| `FishAudioTimeoutError`                               | request exceeded the timeout                                                                                         |
+| `RealtimeSTTError` (extends `FishAudioError`)         | realtime STT session failed or the connection was lost; read `.errorType`, `.statusCode`, `.closeCode`, `.requestId` |
+| `UnauthorizedError`                                   | realtime STT handshake refused with 401 (`speechToText.convertRealtime`)                                             |
 
 > The package also exports `BadRequestError`, `UnauthorizedError`, `ForbiddenError`, `NotFoundError`, and `TooEarlyError`, but the current client throws a generic `FishAudioError` for those statuses. **Branch on `err.statusCode`** rather than relying on `instanceof NotFoundError`.
 

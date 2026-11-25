@@ -1,6 +1,6 @@
 ---
 name: fish-audio-sdk
-description: Write code with the official Fish Audio SDKs, Python (`fishaudio`, PyPI `fish-audio-sdk`) and JavaScript/TypeScript (`fish-audio`). Use when the user wants text-to-speech, speech-to-text, voice cloning / voice-model management, or realtime WebSocket TTS through the installed SDK rather than raw HTTP. Covers install and auth, sync + async Python, the TypeScript client, exact method signatures and defaults, model selection (including the S2.1 typing caveat), the real exception types, and the Python↔JavaScript naming differences. For raw REST/WebSocket calls without an SDK (curl, unsupported languages, edge runtimes), use the `fish-audio-api` skill instead.
+description: Write code with the official Fish Audio SDKs, Python (`fishaudio`, PyPI `fish-audio-sdk`) and JavaScript/TypeScript (`fish-audio`). Use when the user wants text-to-speech, speech-to-text (including realtime transcription in JavaScript), voice cloning / voice-model management, or realtime WebSocket TTS through the installed SDK rather than raw HTTP. Covers install and auth, sync + async Python, the TypeScript client, exact method signatures and defaults, model selection (including the S2.1 typing caveat), the real exception types, and the Python↔JavaScript naming differences. For raw REST/WebSocket calls without an SDK (curl, unsupported languages, edge runtimes), use the `fish-audio-api` skill instead.
 ---
 
 # Fish Audio SDK Skill
@@ -8,7 +8,7 @@ description: Write code with the official Fish Audio SDKs, Python (`fishaudio`, 
 Use this skill to generate correct, runnable code with the **official Fish Audio SDKs**:
 
 - **Python**: package `fish-audio-sdk` on PyPI, imported as `fishaudio`. (The same wheel still ships a separate legacy `fish_audio_sdk` package. Do **not** mix them; everything here is the modern `fishaudio` package.)
-- **JavaScript / TypeScript**: package `fish-audio` on npm, imported as `FishAudioClient`.
+- **JavaScript / TypeScript**: package `fish-audio` on npm (0.2.0), imported as `FishAudioClient`. Node.js 20+; `import` and `require` both work.
 
 If the user wants raw `curl` / HTTP / WebSocket without installing an SDK, use the **`fish-audio-api`** skill instead.
 
@@ -18,8 +18,8 @@ If the user wants raw `curl` / HTTP / WebSocket without installing an SDK, use t
 
 - **Auth:** both SDKs read the API key from the `FISH_API_KEY` environment variable automatically. Get keys at `https://fish.audio/app/api-keys`. Never hardcode a key.
 - **Base URL:** `https://api.fish.audio` (override with `base_url=` in Python / `baseUrl:` in JS).
-- **TTS models:** the API supports `s1` (deprecated), `s2-pro`, `s2.1-pro` (recommended for production), and `s2.1-pro-free` (free tier). Do not choose `s1` for new code: S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro` (migration: `https://docs.fish.audio/developer-guide/models-pricing/migrate-from-s1`). However, the Python SDK types `model` as only `s1` and `s2-pro` (plus the deprecated `speech-1.x`), default `s2-pro`. The JS package on npm (`fish-audio` 0.1.0) types `backend` without `s2-pro` or `s2.1-pro` and defaults it to `"s1"` at runtime (its README says `"s2-pro"`), so in JS always pass `backend` explicitly. Both SDKs forward the model value without runtime validation, so `"s2.1-pro"` works over the wire. Static type checkers will flag it, so add `# type: ignore` (Python) / an `as` cast (TS), or use the `fish-audio-api` skill for raw calls. `speech-1.5` / `speech-1.6` are **deprecated**. In Python pass `model="s2-pro"` (keyword); in JS pass the **positional** `backend` argument.
-- **ASR models:** use `transcribe-1-pro` (recommended: speaker turns, long recordings, emotion cues). Neither SDK has an ASR `model` argument: send the `model: transcribe-1-pro` HTTP header on every request (Python `RequestOptions(additional_headers=...)`, JS `requestOptions.headers`). A request without it is served and billed as `transcribe-1`, the model for short recordings. See [references/speech-to-text.md](references/speech-to-text.md).
+- **TTS models:** the API supports `s1` (deprecated), `s2-pro`, `s2.1-pro` (recommended for production), and `s2.1-pro-free` (free tier). Do not choose `s1` for new code: S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro` (migration: `https://docs.fish.audio/developer-guide/models-pricing/migrate-from-s1`). However, the Python SDK types `model` as only `s1` and `s2-pro` (plus the deprecated `speech-1.x`), default `s2-pro`; it forwards the value without runtime validation, so `"s2.1-pro"` works over the wire but type checkers flag it (add `# type: ignore`, or use the `fish-audio-api` skill for raw calls). The JS SDK (`fish-audio` 0.2.0) defaults to `"s2.1-pro"`, and its `Backends` type names `s2.1-pro`, `s2.1-pro-free`, `drama-3`, `s2-pro`, `s1` and accepts any other string, so no cast is needed. `fish-audio` 0.1.0 defaulted to the deprecated `"s1"`; if a project is on 0.1.0, upgrade it or pass the model explicitly. `speech-1.5` / `speech-1.6` are **deprecated**. In Python pass `model="s2-pro"` (keyword); in JS pass the **positional** `backend` argument.
+- **ASR models:** use `transcribe-1-pro` (recommended: speaker turns, long recordings, emotion cues). It is selected by the `model` HTTP header: in JS pass `model: "transcribe-1-pro"` in the `convert()` request (`fish-audio` 0.2.0+), in Python send the header with `RequestOptions(additional_headers=...)`. A request without it is served and billed as `transcribe-1`, the model for short recordings. See [references/speech-to-text.md](references/speech-to-text.md).
 - **Audio formats:** `mp3` (default), `wav`, `pcm`, `opus`.
 - **Playback in examples:** `play()` shells out to a system audio tool: Python uses **ffmpeg/ffplay** (or `mpv`), JS uses **ffplay**. It is for local/desktop use; in a server, `save()` to a file or stream the bytes instead. See [references/installation.md](references/installation.md).
 
@@ -63,32 +63,29 @@ const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 // convert() returns audio you can play or pipe to a file
 const audio = await client.textToSpeech.convert({
   text: "Hello from Fish Audio!",
-}); // npm 0.1.0 defaults to the deprecated "s1"; pass a model as shown below
+}); // defaults to "s2.1-pro" (fish-audio 0.2.0+)
 await play(audio); // local playback (needs ffplay)
 ```
 
 To pick a model in JS, pass `backend` as the **positional** argument (not a named option):
 
 ```ts
-import type { Backends } from "fish-audio";
-
-// The cast is needed because the npm 0.1.0 `Backends` type omits "s2.1-pro".
 const audio = await client.textToSpeech.convert(
   { text: "Hi" },
-  "s2.1-pro" as Backends
+  "s2.1-pro-free"
 );
 ```
 
 ## Capabilities → references
 
-| Task                                                             | Reference                                                    |
-| ---------------------------------------------------------------- | ------------------------------------------------------------ |
-| Install, auth, playback deps, verify a key                       | [references/installation.md](references/installation.md)     |
-| Text-to-Speech (convert, stream, formats, prosody, model select) | [references/text-to-speech.md](references/text-to-speech.md) |
-| Voice cloning (instant references + persistent voice models)     | [references/voice-cloning.md](references/voice-cloning.md)   |
-| Speech-to-Text (models, timestamps, fields the SDK drops)        | [references/speech-to-text.md](references/speech-to-text.md) |
-| Realtime WebSocket TTS (stream text → audio)                     | [references/websocket.md](references/websocket.md)           |
-| Errors, retries, and timeouts (the **real** exception types)     | [references/errors.md](references/errors.md)                 |
+| Task                                                                      | Reference                                                    |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Install, auth, playback deps, verify a key                                | [references/installation.md](references/installation.md)     |
+| Text-to-Speech (convert, stream, formats, prosody, model select)          | [references/text-to-speech.md](references/text-to-speech.md) |
+| Voice cloning (instant references + persistent voice models)              | [references/voice-cloning.md](references/voice-cloning.md)   |
+| Speech-to-Text (models, timestamps, fields the SDK drops, realtime in JS) | [references/speech-to-text.md](references/speech-to-text.md) |
+| Realtime WebSocket TTS (stream text → audio)                              | [references/websocket.md](references/websocket.md)           |
+| Errors, retries, and timeouts (the **real** exception types)              | [references/errors.md](references/errors.md)                 |
 
 ## Python ↔ JavaScript name map
 
@@ -101,6 +98,7 @@ The two SDKs do **not** use the same names. Use this map when porting code betwe
 | TTS HTTP stream       | `client.tts.stream(...)` → `AudioStream`          | (use `convert`; realtime streaming is `convertRealtime`)   |
 | Realtime WebSocket    | `client.tts.stream_websocket(text_stream)`        | `client.textToSpeech.convertRealtime(request, textStream)` |
 | Speech-to-Text        | `client.asr.transcribe(audio=...)`                | `client.speechToText.convert({ audio })`                   |
+| Realtime STT          | see the Python SDK reference                      | `client.speechToText.convertRealtime(request, audio)`      |
 | List voice models     | `client.voices.list()`                            | `client.voices.search()`                                   |
 | Get voice model       | `client.voices.get(id)`                           | `client.voices.get(id)`                                    |
 | Create voice (clone)  | `client.voices.create(title=..., voices=[bytes])` | `client.voices.ivc.create({ title, voices: [File] })`      |
@@ -108,7 +106,7 @@ The two SDKs do **not** use the same names. Use this map when porting code betwe
 | Credit balance        | `client.account.get_credits()`                    | `client.user.get_api_credit()`                             |
 | Subscription package  | `client.account.get_package()`                    | `client.user.get_package()`                                |
 | Choose model          | `model="s2-pro"` keyword arg                      | positional `backend` arg, e.g. `convert(req, "s2-pro")`    |
-| ASR model (header)    | `RequestOptions(additional_headers=...)`          | `convert(req, { headers: { model: "transcribe-1-pro" } })` |
+| ASR model (header)    | `RequestOptions(additional_headers=...)`          | `convert({ audio, model: "transcribe-1-pro" })`            |
 
 ## Decision shortcuts
 
@@ -117,7 +115,8 @@ The two SDKs do **not** use the same names. Use this map when porting code betwe
 - **Clone a voice instantly from a clip** → pass `references=[ReferenceAudio(audio=..., text=...)]` (Python) / `references: [{ audio, text }]` (JS). See [voice-cloning](references/voice-cloning.md).
 - **Persistent custom voice to reuse** → create a voice model, then use its `id` as `reference_id`.
 - **Stream tokens from an LLM and play speech as it arrives** → `tts.stream_websocket` (Python) / `textToSpeech.convertRealtime` (JS). See [websocket](references/websocket.md).
-- **Transcribe audio** → `asr.transcribe` (Python) / `speechToText.convert` (JS) with the `model: transcribe-1-pro` header (recommended; without it, the request runs on `transcribe-1`). Pro request fields, `speaker_turns`, `request_id`, and the language fields need raw HTTP in Python (`fish-audio-sdk` 1.3.0). See [speech-to-text](references/speech-to-text.md).
+- **Transcribe audio** → `asr.transcribe` (Python) / `speechToText.convert` (JS) with `transcribe-1-pro` selected (recommended; without it, the request runs on `transcribe-1`). Pro request fields, `speaker_turns`, `request_id`, and the language fields need raw HTTP in Python (`fish-audio-sdk` 1.3.0). See [speech-to-text](references/speech-to-text.md).
+- **Transcribe live audio turn by turn** → `speechToText.convertRealtime` (JS, Node.js only); see the realtime section of the speech-to-text reference.
 
 ## Gotchas (verified against the SDK source)
 

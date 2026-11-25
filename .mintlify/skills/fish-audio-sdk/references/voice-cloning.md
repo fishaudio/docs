@@ -47,7 +47,7 @@ const audio = await client.textToSpeech.convert({
 await play(audio);
 ```
 
-In JS, `ReferenceAudio.audio` is a `File`.
+In JS, `ReferenceAudio.audio` must be a `File` or `Blob`. In `fish-audio` 0.2.0 a `Buffer` or `Uint8Array` fails with `ref.audio.arrayBuffer is not a function`; wrap it in a `File` as above.
 
 ## 2. Persistent voice models
 
