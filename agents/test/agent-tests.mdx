@@ -69,21 +69,24 @@ A Single Turn test hands your agent a scripted conversation and asks it to produ
 
 The conversation is the history the agent sees. Each message is an agent or a user turn, and at least one must be a user turn. The expectation says what a correct reply must do. Success and failure examples calibrate the judge but aren't required.
 
+**Channel** sets the kind of call the test plays, **Web voice** (the default), **Phone inbound** or **Phone outbound**. The agent speaks in that channel's register and has the tools it has there in production. Client tools are only on Web voice, transfers only on the phone channels, and key presses only on Phone outbound. `{{system.channel}}` in the agent's prompt takes the same value. No real call is placed. Tool tests have the same setting.
+
 ### Create a Single Turn test
 
 <Tabs className="console-api">
 <Tab title="Console" icon="browser">
 
-Under **Conversation**, click **Add message** to build the history, and set each message to **Agent** or **User**. Under **Judging**, write the **Expectation**, and optionally click **Add example** to provide success and failure examples.
+Under **Conversation**, click **Add message** to build the history, and set each message to **Agent** or **User**. Under **Judging**, write the **Expectation**, and optionally click **Add example** to provide success and failure examples. Set **Channel** to the kind of call the test plays.
 
 </Tab>
 <Tab title="API" icon="code">
 
-| Console                      | API field                                                           |
-| ---------------------------- | ------------------------------------------------------------------- |
-| Conversation                 | `conversation`: messages with `role` (`agent` or `user`) and `text` |
-| Expectation                  | `expectation`, required                                             |
-| Success and failure examples | `success_examples` and `failure_examples`, lists of strings         |
+| Console                      | API field                                                                           |
+| ---------------------------- | ----------------------------------------------------------------------------------- |
+| Conversation                 | `conversation`: messages with `role` (`agent` or `user`) and `text`                 |
+| Expectation                  | `expectation`, required                                                             |
+| Success and failure examples | `success_examples` and `failure_examples`, lists of strings                         |
+| Channel                      | `channel`: `web_voice`, `phone_inbound`, or `phone_outbound`. Omit it for Web voice |
 
 ```json
 {
@@ -117,26 +120,38 @@ A Tool test scripts the conversation the same way, but instead of judging the re
 
 A test names one tool and whether the agent should or should not have called it. A test without a tool checks that the agent called no tool at all. It can also give the parameter values the call must carry, typed as string, number, or boolean. The result names the tool the agent actually called.
 
-Integration tools, such as calendar tools, can only be checked in a Simulation test.
+A Tool test can check the agent's [system tools](/agents/build/system-tools) as well as its webhook and client tools. So a test can check that the agent hangs up, transfers to the right destination, or presses the right key on a phone menu (see [Test key presses](/agents/build/system-tools#test-key-presses)).
+
+Which tools a test can check depends on its **Channel**.
+
+| Tool                           | Channels that have it            |
+| ------------------------------ | -------------------------------- |
+| Webhook tools and `_end_call`  | Every channel                    |
+| Client tools                   | Web voice                        |
+| `_transfer_call`               | Phone inbound and Phone outbound |
+| `_press_keys` and `_skip_turn` | Phone outbound                   |
+
+A test cannot check a tool its channel does not have. Integration tools, such as calendar tools, can only be checked in a Simulation test.
 
 ### Create a Tool test
 
 <Tabs className="console-api">
 <Tab title="Console" icon="browser">
 
-Under **Require tool execution**, pick a tool from the library and choose **Should have been called** or **Should not be called**. Leave the tool empty to check that the agent called no tool at all. Under **Tool parameters**, optionally add the parameter values the call must carry.
+Under **Require tool execution**, pick a tool from the library and choose **Should have been called** or **Should not be called**. Leave the tool empty to check that the agent called no tool at all. Under **Tool parameters**, optionally add the parameter values the call must carry. A tool the test's **Channel** does not have is listed with the channels that have it, and cannot be chosen until you change the channel.
 
 </Tab>
 <Tab title="API" icon="code">
 
-| Console                                        | API field                                                                                                    |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Conversation                                   | `conversation`, as in Single Turn                                                                            |
-| Tool                                           | `referenced_tool`: `id`, `name`, and `type` (`webhook` or `client`). Omit it to check that no tool is called |
-| Should have been called / Should not be called | `verify_absence`: `false` or `true`                                                                          |
-| Tool parameters                                | `tool_parameters`: `name`, `value`, and `type` (`string`, `number`, or `boolean`)                            |
+| Console                                        | API field                                                                                                               |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Conversation                                   | `conversation`, as in Single Turn                                                                                       |
+| Tool                                           | `referenced_tool`: `id`, `name`, and `type` (`webhook`, `client`, or `system`). Omit it to check that no tool is called |
+| Should have been called / Should not be called | `verify_absence`: `false` or `true`                                                                                     |
+| Tool parameters                                | `tool_parameters`: `name`, `value`, and `type` (`string`, `number`, or `boolean`)                                       |
+| Channel                                        | `channel`, as in Single Turn. The request is refused when the channel does not have the referenced tool                 |
 
-[List Test Tools](/api-reference/endpoint/agent/list-test-tools) returns the tool ids an agent's tests can reference.
+[List Test Tools](/api-reference/endpoint/agent/list-test-tools) returns the tool ids an agent's tests can reference. A system tool has the type `system` and its tool name as `id`, for example `{"id": "_end_call", "type": "system"}`, and needs no `name`.
 
 ```json
 {
@@ -198,7 +213,7 @@ Set `simulation.scenario` and `simulation.max_turns`, 1 to 50, default 10. An op
 
 ### Channel
 
-**Channel** sets the register the agent speaks in during the simulation, the same one it uses on that channel in production: **Web voice**, **Phone inbound**, or **Phone outbound**. On a phone channel, for example, the agent repeats important numbers back in small groups. Phone outbound speaks in the same phone register as Phone inbound and only `{{system.channel}}` differs, so if the agent should open an outbound call differently, branch on `{{system.channel}}` in its prompt. **Auto**, the default, uses Phone inbound when a phone number is assigned to the agent and Web voice otherwise, so set Phone outbound yourself for an agent that only places calls. As in production, client tools are not available on phone channels, and transfers only happen on phone channels. `{{system.channel}}` in the agent's prompt and in the scenario takes the same value. No real call is placed, so `{{system.caller_number}}` and `{{system.dialed_number}}` are empty on every channel.
+**Channel** sets the register the agent speaks in during the simulation, the same one it uses on that channel in production: **Web voice**, **Phone inbound**, or **Phone outbound**. On a phone channel, for example, the agent repeats important numbers back in small groups. Phone outbound speaks in the same phone register as Phone inbound and only `{{system.channel}}` differs, so if the agent should open an outbound call differently, branch on `{{system.channel}}` in its prompt. **Auto**, the default, uses Phone inbound when a phone number is assigned to the agent and Web voice otherwise, so set Phone outbound yourself for an agent that only places calls. As in production, client tools are not available on phone channels, transfers only happen on phone channels, and the agent presses keys only on Phone outbound. `{{system.channel}}` in the agent's prompt and in the scenario takes the same value. No real call is placed, so `{{system.caller_number}}` and `{{system.dialed_number}}` are empty on every channel.
 
 <Tabs className="console-api">
 <Tab title="Console" icon="browser">
@@ -244,7 +259,7 @@ Simulated conversations usually run many times, so by default tool calls never r
 
 A mock entry is the tool, the result it returns (JSON or plain text), an optional HTTP status for webhook tools, and optional parameter conditions so the mock only applies when the agent calls the tool with matching arguments (exact match, regular expression, or any value). An entry can return an error, which makes the tool fail with that result instead, for example to test how the agent handles an outage. A webhook tool set to hide errors shows the agent only that the call failed, as in production. When a tool has several entries, the ones with conditions are checked first, in order, and an entry without conditions is the fallback that answers only when none of them match, wherever it sits in the list. Regular expressions, in mock conditions and in required tool call parameters alike, use JavaScript syntax without Unicode mode. Python forms such as `(?i)` or `(?P<name>...)` are refused when you save. Write a named group as `(?<name>...)`, and ignore case with `(?i:...)` around the part it applies to. Forms that JavaScript reads as literal text without Unicode mode are refused too: Unicode escapes such as `\p{L}` or `\u{1F600}` (list the characters in a class instead, for example `[A-Za-zÀ-ÿ]`) and Python escapes such as `\A`, `\z` or `\N{...}` (write `\A` as `^` and `\z` as `$`). The platform checks required tool call parameters itself, so there back-references, emoji and other characters outside the Basic Multilingual Plane, non-ASCII characters under `(?i:...)`, `\S` inside a class without `\s` (`[\s\S]` is fine) and `\c` are refused as well.
 
-Under **Mock all**, a tool without an entry in the test answers with its own first mock response. A tool with neither fails, and the agent gets the same error it would get if the tool were unavailable in production. Tools whose result the agent never waits for, client tools that don't wait for an answer and webhook tools in fire and forget mode, need no mock: as in production, the agent only ever hears their acknowledgement, whether the call ran for real, answered from a mock, or was skipped. Such a client tool can't be mocked at all. A simulation has no client, so a client tool that waits for an answer always answers from its mock entries, under every strategy including **Mock none**, and needs one. To let specific tools reach their real endpoint while everything else stays mocked, list them under **Call the real endpoint**. Only webhook tools and read-only integration tools can go there. Every other tool still needs a mock, so a tool you attach to the agent later fails instead of reaching its endpoint until you mock it. A tool there can still have mock entries: a matching entry answers, and any other call reaches the endpoint. Integration tools, such as calendar tools, are mocked like any other tool. An integration that writes only after the caller confirms, such as creating a calendar event, answers the first call with a confirmation request and commits through its **Confirm write** tool. Mock both, the way production answers them. If you mock only the write tool and the model then calls Confirm write, that call goes unanswered and the run needs review.
+Under **Mock all**, a tool without an entry in the test answers with its own first mock response. A tool with neither fails, and the agent gets the same error it would get if the tool were unavailable in production. Tools whose result the agent never waits for, client tools that don't wait for an answer and webhook tools in fire and forget mode, need no mock: as in production, the agent only ever hears their acknowledgement, whether the call ran for real, answered from a mock, or was skipped. Such a client tool can't be mocked at all. A simulation has no client, so a client tool that waits for an answer always answers from its mock entries, under every strategy including **Mock none**, and needs one. To let specific tools reach their real endpoint while everything else stays mocked, list them under **Call the real endpoint**. Only webhook tools and read-only integration tools can go there. Every other tool still needs a mock, so a tool you attach to the agent later fails instead of reaching its endpoint until you mock it. A tool there can still have mock entries: a matching entry answers, and any other call reaches the endpoint. System tools need no mock and cannot have one, because the simulation plays hanging up, transfers and key presses itself. Integration tools, such as calendar tools, are mocked like any other tool. An integration that writes only after the caller confirms, such as creating a calendar event, answers the first call with a confirmation request and commits through its **Confirm write** tool. Mock both, the way production answers them. If you mock only the write tool and the model then calls Confirm write, that call goes unanswered and the run needs review.
 
 <Tabs className="console-api">
 <Tab title="Console" icon="browser">
@@ -263,7 +278,7 @@ A run in which a tool call went unanswered never passes: the tool had no mock, o
 
 If you are used to tools without a mock calling their real endpoint, your first runs will show **No mock** on those calls. Add a mock for each of those tools, or add read-only tools to **Call the real endpoint**.
 
-Mocks and assertions apply to the tools attached to the agent under test. A tool the agent does not have is never mocked and counts as never called: a required call on it fails with _This tool is not on the agent_, while a forbidden tool or a maximum-only check passes. Client tools on a phone channel are treated the same way. This keeps a shared guard such as "never call issue_refund" passing on agents that cannot call the tool.
+Mocks and assertions apply to the tools attached to the agent under test. A tool the agent does not have is never mocked and counts as never called: a required call on it fails with _This tool is not on the agent_, while a forbidden tool or a maximum-only check passes. Client tools on a phone channel are treated the same way, and so is a system tool that is off on the agent or that the simulation's channel does not have. This keeps a shared guard such as "never call issue_refund" passing on agents that cannot call the tool.
 
 ### Assertions
 
@@ -354,7 +369,7 @@ Every Simulation field lives under `simulation`. An optional `conversation`, up 
 | Current date and time             | `context.current_time`: `true` or `false`, default `false`                               |
 | Repeat                            | `repeat_count`, 1 to 20                                                                  |
 
-Tools are referenced by `id`, `name`, and `type`, as in Tool tests, and integration tools use the `<provider_key>:<tool_name>` ids that [List Test Tools](/api-reference/endpoint/agent/list-test-tools) returns. Parameter conditions (`when` on a mock entry, `params` on a required call) map a parameter name to `{"type": "exact" | "regex" | "any", "value": "..."}`.
+Tools are referenced by `id`, `name`, and `type`, as in Tool tests, and integration tools use the `<provider_key>:<tool_name>` ids that [List Test Tools](/api-reference/endpoint/agent/list-test-tools) returns. Assertions can name system tools, a mock entry and `real_tools` cannot. Parameter conditions (`when` on a mock entry, `params` on a required call) map a parameter name to `{"type": "exact" | "regex" | "any", "value": "..."}`.
 
 ```json
 {
