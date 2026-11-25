@@ -170,7 +170,7 @@ await stream.close(); // end the session and close the connection
 Errors are thrown from the `for await` loop:
 
 - `RealtimeSTTError` when the server ends the session or the connection is lost. It carries `errorType` (such as `unsupported_audio`; match on this field), `statusCode`, `requestId`, `closeCode` and `recoverable`.
-- `UnauthorizedError`, or `FishAudioError` with a `statusCode` such as 402 or 429, when the connection is refused.
+- When the connection is refused: `BadRequestError` (400), `UnauthorizedError` (401), `ForbiddenError` (403) or `NotFoundError` (404), and `FishAudioError` with a `statusCode` for any other status, such as 402 or 429. All of them extend `FishAudioError`, so `err.statusCode` works for each.
 - The audio source's own error when the audio source throws.
 
 ```typescript
@@ -348,7 +348,7 @@ Speech-to-text parameters.
 Fields: `audio`, `model?`, `language?`, `ignore_timestamps?`
 
 ### ReferenceAudio
-Reference audio for zero-shot voice cloning. `audio` must be a `File` or `Blob`; wrap a `Buffer` in a `File`:
+Reference audio for zero-shot voice cloning. `audio` is typed as `File`. At runtime the SDK also accepts a `Blob`, but TypeScript rejects one, so wrap a `Blob` or a `Buffer` in a `File` (`new File([blob], "reference.wav")`):
 
 ```typescript
 import { readFile } from "node:fs/promises";
@@ -470,7 +470,7 @@ Upgrading from 0.1.0 to 0.2.0:
 
 - **The default TTS model is now `s2.1-pro`**, for `textToSpeech.convert()` and `textToSpeech.convertRealtime()`. The published 0.1.0 package sent the deprecated `s1` when you passed no model. To use another model, pass it: `convert(request, "s2-pro")`.
 - **`opus_bitrate` is in bits per second.** Code that passes `24`, `32`, `48` or `64` no longer compiles: multiply the value by 1000.
-- **`ReferenceAudio.audio` must be a `File` or `Blob`.** A `Buffer` or `Uint8Array` passed with a type cast now fails with `ref.audio.arrayBuffer is not a function`. Wrap it: `new File([buffer], "sample.mp3")`.
+- **`ReferenceAudio.audio` must be a `File`** (a `Blob` also works at runtime, but the TypeScript type is `File`). A `Buffer` or `Uint8Array` passed with a type cast now fails with `ref.audio.arrayBuffer is not a function`. Wrap it: `new File([buffer], "sample.mp3")`.
 - **Model names are no longer cast.** `Backends` names `s2.1-pro`, `s2.1-pro-free` and `drama-3` and accepts any other string, so remove `as Backends` casts. `speech-1.5`, `speech-1.6`, `agent-x0` and `s1-mini` no longer autocomplete.
 - **Node.js 20 or later is required.**
 - **`require("fish-audio")` works.** In 0.1.0 it threw `ReferenceError: exports is not defined in ES module scope`.

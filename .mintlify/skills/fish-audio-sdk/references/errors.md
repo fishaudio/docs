@@ -88,17 +88,25 @@ try {
 }
 ```
 
-What the JS client actually throws:
+What the JS client actually throws for ordinary HTTP requests (`convert`, `voices.*`, `user.*`, ...):
 
-| Error                                                 | When                                                                                                                 |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `UnprocessableEntityError` (extends `FishAudioError`) | 422, the **only** typed HTTP subclass thrown; `.body` is `{ detail: [{ loc, msg, type }] }`                          |
-| `FishAudioError`                                      | every other non-2xx response; read `.statusCode`, `.body`, `.rawResponse`                                            |
-| `FishAudioTimeoutError`                               | request exceeded the timeout                                                                                         |
-| `RealtimeSTTError` (extends `FishAudioError`)         | realtime STT session failed or the connection was lost; read `.errorType`, `.statusCode`, `.closeCode`, `.requestId` |
-| `UnauthorizedError`                                   | realtime STT handshake refused with 401 (`speechToText.convertRealtime`)                                             |
+| Error                                                 | When                                                                                        |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `UnprocessableEntityError` (extends `FishAudioError`) | 422, the **only** typed HTTP subclass thrown; `.body` is `{ detail: [{ loc, msg, type }] }` |
+| `FishAudioError`                                      | every other non-2xx response; read `.statusCode`, `.body`, `.rawResponse`                   |
+| `FishAudioTimeoutError`                               | request exceeded the timeout                                                                |
 
-> The package also exports `BadRequestError`, `UnauthorizedError`, `ForbiddenError`, `NotFoundError`, and `TooEarlyError`, but the current client throws a generic `FishAudioError` for those statuses. **Branch on `err.statusCode`** rather than relying on `instanceof NotFoundError`.
+> For HTTP requests, the package also exports `BadRequestError`, `UnauthorizedError`, `ForbiddenError`, `NotFoundError`, and `TooEarlyError`, but the client throws a generic `FishAudioError` for those statuses. **Branch on `err.statusCode`** rather than relying on `instanceof NotFoundError`.
+
+Realtime speech-to-text (`speechToText.convertRealtime`) throws from the `for await` loop:
+
+| Error                                                                        | When                                                                                                          |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `BadRequestError` / `UnauthorizedError` / `ForbiddenError` / `NotFoundError` | the WebSocket handshake was refused with 400 / 401 / 403 / 404 (an invalid API key gives `UnauthorizedError`) |
+| `FishAudioError`                                                             | the handshake was refused with any other status, such as 402 or 429; read `.statusCode` and `.body`           |
+| `RealtimeSTTError` (extends `FishAudioError`)                                | the session failed or the connection was lost; read `.errorType`, `.statusCode`, `.closeCode`, `.requestId`   |
+
+All of these extend `FishAudioError`, so `err.statusCode` works for each of them.
 
 ### Retries & timeouts (JavaScript)
 
