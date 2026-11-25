@@ -100,6 +100,7 @@ The two SDKs do **not** use the same names. Use this map when porting code betwe
 | Text-to-Speech        | `client.tts.convert(text=...)` → `bytes`          | `client.textToSpeech.convert({ text })`                    |
 | TTS HTTP stream       | `client.tts.stream(...)` → `AudioStream`          | (use `convert`; realtime streaming is `convertRealtime`)   |
 | Realtime WebSocket    | `client.tts.stream_websocket(text_stream)`        | `client.textToSpeech.convertRealtime(request, textStream)` |
+| TTS + word timestamps | `client.tts.convert_with_timestamps(text=...)`    | not in the SDK; call the HTTP endpoint                     |
 | Speech-to-Text        | `client.asr.transcribe(audio=...)`                | `client.speechToText.convert({ audio })`                   |
 | List voice models     | `client.voices.list()`                            | `client.voices.search()`                                   |
 | Get voice model       | `client.voices.get(id)`                           | `client.voices.get(id)`                                    |
@@ -113,6 +114,7 @@ The two SDKs do **not** use the same names. Use this map when porting code betwe
 ## Decision shortcuts
 
 - **Audio from text** → `tts.convert` (Python) / `textToSpeech.convert` (JS).
+- **Audio plus the time of each word (captions, highlighting)** → `tts.convert_with_timestamps` / `tts.stream_with_timestamps` (Python, `fish-audio-sdk` 1.6.0+). See "Word timestamps" in `references/text-to-speech.md`.
 - **Reuse a saved voice** → pass `reference_id` (the voice model `id`).
 - **Clone a voice instantly from a clip** → pass `references=[ReferenceAudio(audio=..., text=...)]` (Python) / `references: [{ audio, text }]` (JS). See [voice-cloning](references/voice-cloning.md).
 - **Persistent custom voice to reuse** → create a voice model, then use its `id` as `reference_id`.
