@@ -3975,7 +3975,7 @@
                       "type": "string"
                     },
                     "prompt": {
-                      "$ref": "#/components/schemas/AgentPromptConfig"
+                      "$ref": "#/components/schemas/AgentPromptConfigView"
                     },
                     "voice": {
                       "$ref": "#/components/schemas/PublicAgentVoiceConfig"
@@ -4202,7 +4202,7 @@
                       "type": "string"
                     },
                     "prompt": {
-                      "$ref": "#/components/schemas/AgentPromptConfig"
+                      "$ref": "#/components/schemas/AgentPromptConfigView"
                     },
                     "voice": {
                       "$ref": "#/components/schemas/PublicAgentVoiceConfig"
@@ -6110,7 +6110,7 @@
     "/v1/agent/agents/{agent_id}/test-tools": {
       "get": {
         "summary": "List Test Tools",
-        "description": "The tools a test can reference for this agent, exactly what a\nconversation on its draft offers. Use these ids in a test's tool mocks,\nassertions and `referenced_tool`, including integration tools such as\n`google_calendar:create_event`.",
+        "description": "The tools a test can reference for this agent, exactly what a\nconversation on its draft offers. Use these ids in a test's tool mocks,\nassertions and `referenced_tool`, including integration tools such as\n`google_calendar:create_event` and the system tools the agent has turned\non, such as `_end_call`. A system tool can be checked but never mocked.",
         "security": [
           {
             "BearerAuth": []
@@ -12227,7 +12227,7 @@
       },
       "post": {
         "summary": "Create Test",
-        "description": "Create a test: `next_reply` judges the agent's next reply against an\nexpectation, `tool` checks the tool the agent calls next, and `simulation`\nlets a simulated user hold a whole conversation that is scored against\nsuccess conditions. Pass `agent_ids` to attach the test right away.\n\nThe body of `GET /v1/agent/tests/{test_id}` posts back as is, so tests can\nbe exported and imported. Tool references use your workspace's tool ids\n(list them with `GET /v1/agent/agents/{agent_id}/test-tools`), so an export\nimports cleanly within the same team and needs its tool ids remapped\nelsewhere.",
+        "description": "Create a test: `next_reply` judges the agent's next reply against an\nexpectation, `tool` checks the tool the agent calls next, and `simulation`\nlets a simulated user hold a whole conversation that is scored against\nsuccess conditions. Pass `agent_ids` to attach the test right away.\n`channel` sets the channel a `next_reply` or `tool` test plays.\n\nThe body of `GET /v1/agent/tests/{test_id}` posts back as is, so tests can\nbe exported and imported. Tool references use your workspace's tool ids\n(list them with `GET /v1/agent/agents/{agent_id}/test-tools`), so an export\nimports cleanly within the same team and needs its tool ids remapped\nelsewhere. System tools go by their tool name, the same in every team.",
         "security": [
           {
             "BearerAuth": []
@@ -12349,6 +12349,24 @@
                         }
                       ],
                       "default": null
+                    },
+                    "channel": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "web_voice",
+                            "phone_inbound",
+                            "phone_outbound"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The channel a Single Turn or Tool test plays. null is web_voice. A Simulation test has its own in simulation.channel.",
+                      "title": "Channel"
                     },
                     "dynamic_variables": {
                       "additionalProperties": {
@@ -12674,6 +12692,24 @@
                       ],
                       "default": null
                     },
+                    "channel": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "web_voice",
+                            "phone_inbound",
+                            "phone_outbound"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The channel a Single Turn or Tool test plays. null is web_voice. A Simulation test has its own in simulation.channel.",
+                      "title": "Channel"
+                    },
                     "dynamic_variables": {
                       "additionalProperties": {
                         "anyOf": [
@@ -12961,6 +12997,24 @@
                         }
                       ],
                       "default": null
+                    },
+                    "channel": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "web_voice",
+                            "phone_inbound",
+                            "phone_outbound"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The channel a Single Turn or Tool test plays. null is web_voice. A Simulation test has its own in simulation.channel.",
+                      "title": "Channel"
                     },
                     "dynamic_variables": {
                       "additionalProperties": {
@@ -13855,6 +13909,7 @@
                         }
                       ],
                       "default": null,
+                      "description": "The channel the run played.",
                       "title": "Channel"
                     },
                     "turns_used": {
@@ -17471,7 +17526,8 @@
               "default": "transcribe-1",
               "enum": [
                 "transcribe-1",
-                "transcribe-1-pro"
+                "transcribe-1-pro",
+                "transcribe-2-pro"
               ],
               "title": "Model",
               "type": "string"
@@ -26077,6 +26133,51 @@
             "default": null,
             "title": "First Message Prompt"
           },
+          "first_message_start": {
+            "anyOf": [
+              {
+                "enum": [
+                  "agent_first",
+                  "wait_for_caller"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "When the opener plays in this session instead of the agent's `prompt.first_message_start`: `agent_first` or `wait_for_caller`. Rides the same `first_message` override switch. `wait_for_caller` is rejected with 422 when the agent's opener is off and the session brings no `first_message` or `first_message_prompt`.",
+            "title": "First Message Start"
+          },
+          "first_message_max_wait_ms": {
+            "anyOf": [
+              {
+                "maximum": 5000,
+                "minimum": 1000,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Milliseconds (1000-5000) a `wait_for_caller` session waits before it speaks anyway, instead of the agent's `prompt.first_message_max_wait_ms`.",
+            "title": "First Message Max Wait Ms"
+          },
+          "first_message_interruptible": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Whether the caller can cut the opener off in this session, instead of the agent's `prompt.first_message_interruptible`. `false` protects it: it always plays to the end and what the caller says meanwhile is dropped. Omit it or send `null` to keep the agent's value.",
+            "title": "First Message Interruptible"
+          },
           "system_prompt": {
             "anyOf": [
               {
@@ -29643,6 +29744,51 @@
             ],
             "default": null,
             "title": "First Message Prompt"
+          },
+          "first_message_start": {
+            "anyOf": [
+              {
+                "enum": [
+                  "agent_first",
+                  "wait_for_caller"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "When the opener plays. `agent_first` (default): the agent speaks as soon as the call connects. `wait_for_caller`: the agent waits for the caller to speak first and plays the opener anyway once `first_message_max_wait_ms` has passed. `wait_for_caller` needs a `fixed` or `prompt` opener: with `first_message_mode` `off` the write is rejected with 422, and the stored values stay as they were. With a `fixed` opener the agent speaks after the caller does, or when the wait runs out; with a `prompt` opener it answers what the caller said first.",
+            "title": "First Message Start"
+          },
+          "first_message_max_wait_ms": {
+            "anyOf": [
+              {
+                "maximum": 5000,
+                "minimum": 1000,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Milliseconds (1000-5000, default 3000) a `wait_for_caller` agent waits before it speaks anyway. Stored but has no effect while `first_message_start` is `agent_first`.",
+            "title": "First Message Max Wait Ms"
+          },
+          "first_message_interruptible": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Whether the caller can cut the opener off. `true`: interruptible. `false`: protected, the opener always plays to the end and what the caller says meanwhile is dropped, not answered afterwards. `null` or omitted (default): interruptible, the same as `true`. It does not follow `conversation.interruptible`. Reads always return `true` or `false`.",
+            "title": "First Message Interruptible"
           }
         },
         "title": "PublicAgentPromptPatch",
@@ -30099,7 +30245,7 @@
               }
             ],
             "default": null,
-            "description": "When true, the agent gets two tools on outbound phone calls. `_press_keys` presses phone keys to get through an automated phone menu, and `_skip_turn` stays silent for a turn while a menu or a hold message plays. Inbound calls, web and API sessions and tests ignore it.",
+            "description": "When true, the agent gets two tools on outbound phone calls. `_press_keys` presses phone keys to get through an automated phone menu, and `_skip_turn` stays silent for a turn while a menu or a hold message plays. An agent test on the `phone_outbound` channel has them as well. Inbound calls and web and API sessions ignore it.",
             "title": "Enabled"
           }
         },
@@ -31215,7 +31361,7 @@
         "properties": {
           "enabled": {
             "default": false,
-            "description": "When true, the agent gets two tools on outbound phone calls. `_press_keys` presses phone keys to get through an automated phone menu, and `_skip_turn` stays silent for a turn while a menu or a hold message plays. Inbound calls, web and API sessions and tests ignore it.",
+            "description": "When true, the agent gets two tools on outbound phone calls. `_press_keys` presses phone keys to get through an automated phone menu, and `_skip_turn` stays silent for a turn while a menu or a hold message plays. An agent test on the `phone_outbound` channel has them as well. Inbound calls and web and API sessions ignore it.",
             "title": "Enabled",
             "type": "boolean"
           }
@@ -31223,7 +31369,8 @@
         "title": "AgentPressKeysConfig",
         "type": "object"
       },
-      "AgentPromptConfig": {
+      "AgentPromptConfigView": {
+        "description": "The prompt section as a read returns it: the opener's interruption choice\nis always `true` or `false`. Nothing is stored for it (a stored `null` and\na row from before the field both read `true`), so a write and the config\nhash are untouched.",
         "properties": {
           "system_prompt": {
             "default": "",
@@ -31249,9 +31396,33 @@
             "default": "Greet the caller and ask what you can help with.",
             "title": "First Message Prompt",
             "type": "string"
+          },
+          "first_message_start": {
+            "default": "agent_first",
+            "description": "When the opener plays. `agent_first` (default): the agent speaks as soon as the call connects. `wait_for_caller`: the agent waits for the caller to speak first and plays the opener anyway once `first_message_max_wait_ms` has passed. `wait_for_caller` needs a `fixed` or `prompt` opener: with `first_message_mode` `off` the write is rejected with 422, and the stored values stay as they were. With a `fixed` opener the agent speaks after the caller does, or when the wait runs out; with a `prompt` opener it answers what the caller said first.",
+            "enum": [
+              "agent_first",
+              "wait_for_caller"
+            ],
+            "title": "First Message Start",
+            "type": "string"
+          },
+          "first_message_max_wait_ms": {
+            "default": 3000,
+            "description": "Milliseconds (1000-5000, default 3000) a `wait_for_caller` agent waits before it speaks anyway. Stored but has no effect while `first_message_start` is `agent_first`.",
+            "maximum": 5000,
+            "minimum": 1000,
+            "title": "First Message Max Wait Ms",
+            "type": "integer"
+          },
+          "first_message_interruptible": {
+            "default": true,
+            "description": "Whether the caller can cut the opener off. `true`: interruptible. `false`: protected, the opener always plays to the end and what the caller says meanwhile is dropped, not answered afterwards. `null` or omitted (default): interruptible, the same as `true`. It does not follow `conversation.interruptible`. Reads always return `true` or `false`.",
+            "title": "First Message Interruptible",
+            "type": "boolean"
           }
         },
-        "title": "AgentPromptConfig",
+        "title": "AgentPromptConfigView",
         "type": "object"
       },
       "AgentReengageConfig": {
@@ -31921,7 +32092,7 @@
             "type": "string"
           },
           "prompt": {
-            "$ref": "#/components/schemas/AgentPromptConfig"
+            "$ref": "#/components/schemas/AgentPromptConfigView"
           },
           "voice": {
             "$ref": "#/components/schemas/PublicAgentVoiceConfig"
@@ -32062,7 +32233,8 @@
                 "enum": [
                   "webhook",
                   "client",
-                  "integration"
+                  "integration",
+                  "system"
                 ],
                 "type": "string"
               },
@@ -32144,7 +32316,8 @@
                 "enum": [
                   "webhook",
                   "client",
-                  "integration"
+                  "integration",
+                  "system"
                 ],
                 "type": "string"
               },
@@ -32566,6 +32739,7 @@
               }
             ],
             "default": null,
+            "description": "The channel the run played.",
             "title": "Channel"
           },
           "turns_used": {
@@ -32782,7 +32956,7 @@
       "PublicAgentTestTool": {
         "properties": {
           "id": {
-            "description": "The id to reference in tests. Webhook and client tools use their tool id, integration tools use <provider_key>:<tool_name>.",
+            "description": "The id to reference in tests. Webhook and client tools use their tool id, integration tools use <provider_key>:<tool_name>, system tools use their tool name, such as _end_call.",
             "title": "Id",
             "type": "string"
           },
@@ -32794,7 +32968,8 @@
             "enum": [
               "webhook",
               "client",
-              "integration"
+              "integration",
+              "system"
             ],
             "title": "Type",
             "type": "string"
@@ -32825,7 +33000,7 @@
           },
           "has_own_mock": {
             "default": false,
-            "description": "The tool answers from its own mock when a simulation mocks every tool and the test has no entry for it.",
+            "description": "The tool answers from its own mock when a simulation mocks every tool and the test has no entry for it. Always true for a system tool, which never takes a mock.",
             "title": "Has Own Mock",
             "type": "boolean"
           },
@@ -32840,6 +33015,19 @@
             "description": "False for client tools, which need a client and never run on phone calls.",
             "title": "Available On Phone",
             "type": "boolean"
+          },
+          "channels": {
+            "description": "The channels the agent has the tool on. Client tools are on web_voice only, _transfer_call on the two phone channels, _press_keys and _skip_turn on phone_outbound.",
+            "items": {
+              "enum": [
+                "web_voice",
+                "phone_inbound",
+                "phone_outbound"
+              ],
+              "type": "string"
+            },
+            "title": "Channels",
+            "type": "array"
           }
         },
         "required": [
@@ -33899,7 +34087,7 @@
       },
       "AgentTestReferencedTool": {
         "additionalProperties": false,
-        "description": "Tool the runner should (or should not) observe on the next turn. A\nwebhook or client tool is referenced by its library id, an integration\ntool by \"<provider_key>:<tool_name>\" (for example\n\"google_calendar:create_event\").",
+        "description": "Tool the runner should (or should not) observe on the next turn. A\nwebhook or client tool is referenced by its library id, an integration\ntool by \"<provider_key>:<tool_name>\" (for example\n\"google_calendar:create_event\"), a system tool by its tool name (for\nexample \"_end_call\"). `name` may be left out for a system tool.",
         "properties": {
           "id": {
             "maxLength": 64,
@@ -33918,7 +34106,8 @@
             "enum": [
               "webhook",
               "client",
-              "integration"
+              "integration",
+              "system"
             ],
             "title": "Type",
             "type": "string"
@@ -34096,7 +34285,7 @@
       },
       "AgentTestToolCallAssertion": {
         "additionalProperties": false,
-        "description": "The agent must have called this library tool, optionally with matching\narguments, between min_calls and max_calls times (calls that match).",
+        "description": "The agent must have called this tool, optionally with matching\narguments, between min_calls and max_calls times (calls that match).",
         "properties": {
           "tool": {
             "$ref": "#/components/schemas/AgentTestReferencedTool"
@@ -34138,7 +34327,7 @@
       },
       "AgentTestToolMock": {
         "additionalProperties": false,
-        "description": "A canned result for one library tool, optionally gated on the call arguments.",
+        "description": "A canned result for one library or integration tool, optionally gated\non the call arguments. A system tool takes no mock.",
         "properties": {
           "tool": {
             "$ref": "#/components/schemas/AgentTestReferencedTool"
@@ -34362,6 +34551,24 @@
             ],
             "default": null
           },
+          "channel": {
+            "anyOf": [
+              {
+                "enum": [
+                  "web_voice",
+                  "phone_inbound",
+                  "phone_outbound"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The channel a `next_reply` or `tool` test plays, `web_voice` when left out. The agent speaks and has the tools as on that channel: client tools on `web_voice` only, `_transfer_call` on the two phone channels, `_press_keys` and `_skip_turn` on `phone_outbound`. A `tool` test cannot reference a tool its channel lacks. A `simulation` test has its own in `simulation.channel`.",
+            "title": "Channel"
+          },
           "dynamic_variables": {
             "additionalProperties": {
               "anyOf": [
@@ -34560,6 +34767,24 @@
               }
             ],
             "default": null
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "enum": [
+                  "web_voice",
+                  "phone_inbound",
+                  "phone_outbound"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The channel a `next_reply` or `tool` test plays. `null` puts it back on `web_voice`.",
+            "title": "Channel"
           },
           "dynamic_variables": {
             "anyOf": [
