@@ -105,7 +105,7 @@ The `context` section holds the facts the platform tells your agent on its own, 
 
 There is no Save button. Each change is written to the agent's draft moments after you stop editing, and the **Saving… / Saved** indicator at the bottom-left of the page shows the current state. If a save fails, the Builder tells you and keeps your pending edits so nothing is lost.
 
-Drafts never affect live traffic: active integrations keep using the last published version until you press **Publish**, which snapshots the draft as a new immutable version. The Publish button lights up whenever the draft differs from what is published. See [Versions & publishing](/agents/deploy/versions-publishing).
+Drafts never affect live traffic: active integrations keep using the live version until you press **Publish**, which snapshots the draft as a new immutable version. The Publish button lights up whenever the draft differs from the live version. See [Versions & publishing](/agents/deploy/versions-publishing).
 
 ## Configure through the API
 
@@ -154,7 +154,7 @@ curl --request GET "https://api.fish.audio/v1/agent/agents/$AGENT_ID/config" \
 }
 ```
 
-The response also includes the `tools`, `knowledge_base`, `analysis`, and `webhooks` sections, each covered on its own page. `config_hash` identifies this draft revision; a mismatch with the published version is what marks an agent as having unpublished changes.
+The response also includes the `tools`, `knowledge_base`, `analysis`, and `webhooks` sections, each covered on its own page. `config_hash` identifies this draft revision; a mismatch with the live version is what marks an agent as having unpublished changes.
 
 ### Update sections
 

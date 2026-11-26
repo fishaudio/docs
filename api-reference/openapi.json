@@ -4151,7 +4151,7 @@
     "/v1/agent/agents/{agent_id}/config": {
       "get": {
         "summary": "Get Draft Config",
-        "description": "Read the agent's current draft configuration — the state the next publish\nwill freeze. Sessions run the latest published version, not the draft; use\nthe versions endpoints to see what is live. Webhook signing secrets are\nwrite-only and reported as `has_secret`.",
+        "description": "Read the agent's current draft configuration — the state the next publish\nwill freeze. Sessions run the live version (`is_live: true` in the versions\nendpoints), not the draft, and after a rollback the live version is not\nnecessarily the newest one. Webhook signing secrets are write-only and\nreported as `has_secret`.",
         "security": [
           {
             "BearerAuth": []
@@ -9214,7 +9214,7 @@
       },
       "delete": {
         "summary": "Delete Knowledge Source",
-        "description": "Delete a knowledge source. Returns 409 while any agent still references it\n— in its draft or in its currently published version (sessions resolve\nsources at call time, so deleting a published reference would change a\nrunning agent). Check `GET /v1/agent/knowledge-sources/{source_id}/agents`,\ndetach via the agent config, and republish if needed before deleting.",
+        "description": "Delete a knowledge source. Returns 409 while any agent still references it\n— in its draft or in its live version (sessions resolve sources at call\ntime, so deleting a live reference would change a running agent). Check\n`GET /v1/agent/knowledge-sources/{source_id}/agents`, detach via the agent\nconfig, and republish if needed before deleting.",
         "security": [
           {
             "BearerAuth": []
@@ -9395,7 +9395,7 @@
     "/v1/agent/knowledge-sources/{source_id}/agents": {
       "get": {
         "summary": "List Agents Using Knowledge Source",
-        "description": "Every agent that references this source in its draft or currently\npublished configuration — the pre-flight check before a delete.",
+        "description": "Every agent that references this source in its draft or live\nversion's configuration — the pre-flight check before a delete.",
         "security": [
           {
             "BearerAuth": []

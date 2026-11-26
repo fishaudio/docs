@@ -56,10 +56,10 @@ Phone number settings are not part of the agent, so they are not versioned. Whic
     saved** indicator in the top bar shows the current state.
   </Step>
   <Step title="Watch the unpublished-changes indicator">
-    When the draft differs from the last published version, the **Publish**
-    button becomes active with an unpublished-changes hint next to it. When
-    there is nothing new to publish, the button is disabled. An agent that has
-    never been published always counts as having changes.
+    When the draft differs from the live version, the **Publish** button becomes
+    active with an unpublished-changes hint next to it. When there is nothing
+    new to publish, the button is disabled. An agent that has never been
+    published always counts as having changes.
   </Step>
   <Step title="Publish">
     Click **Publish**. Any pending edits are saved first, then the draft is
@@ -154,7 +154,7 @@ The response is the updated version record, without the configuration snapshot.
 
 ## Roll back the live version
 
-A rollback switches the live version to any published version, older or newer than the current one. It moves the live pointer and nothing else: no version is created, and your draft keeps its current content, including edits you have not published. New sessions and incoming calls use the target version at once; sessions already in progress keep the version they started on.
+A rollback switches the live version to any published version, older or newer than the current one. It changes only which version is live: no version is created, and your draft keeps its current content, including edits you have not published. New sessions and incoming calls use the target version at once; sessions already in progress keep the version they started on.
 
 ```bash Switch the live version to version 1
 curl --request POST "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions/1/rollback" \

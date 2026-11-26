@@ -40,7 +40,7 @@ Every agent has exactly one **draft** and any number of immutable **published ve
   <Step title="Publish">
     **Publish** snapshots the draft into a numbered, immutable version and makes
     it the version that live traffic uses. The button is only enabled when the
-    draft actually differs from the latest published version.
+    draft actually differs from the live version.
   </Step>
   <Step title="Keep iterating">
     Continue editing the draft without affecting live conversations. When you're
@@ -62,7 +62,7 @@ Editing the draft of a Live agent does not change its badge. The Builder shows a
 ### Which configuration runs
 
 - [Preview calls](/agents/test/preview-calls) in the Builder always run the **current draft**, so you can hear changes before anyone else does.
-- Sessions from the SDK, phone calls, and public agent links run the **latest published version**.
+- Sessions from the SDK, phone calls, and public agent links run the **live version**: the one you last published, or the one you switched to in a rollback.
 
 <Tip>
   This split is the core workflow: iterate on the draft, verify with a preview
