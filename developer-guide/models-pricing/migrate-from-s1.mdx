@@ -33,7 +33,7 @@ The steps below cover each of these changes.
 
 In the API, you select the model with the `model` request header. Change `s1` to `s2.1-pro` wherever you set the model, including SDK and integration settings.
 
-If you use the JavaScript SDK (`fish-audio` on npm) without passing a model, your requests use `s1`, because that is the SDK's default backend. Pass the model explicitly.
+If you use the JavaScript SDK (`fish-audio` on npm) 0.1.0 without passing a model, your requests use `s1`, because that is its default backend. Upgrade to 0.2.0 or later, which defaults to `s2.1-pro` (check the [upgrade notes](/api-reference/sdk/javascript/api-reference#upgrade-notes) for other breaking changes first), or pass the model explicitly.
 
 This example also converts the emotion tags, as described in the next step:
 

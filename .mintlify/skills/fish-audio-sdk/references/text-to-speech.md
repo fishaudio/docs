@@ -102,19 +102,18 @@ with client.tts.stream_with_timestamps(text="Long passage...", format="opus") as
 
 ## JavaScript: `client.textToSpeech`
 
-`convert(request, backend?, requestOptions?)` resolves to a `ReadableStream<Uint8Array>` you can `play()` or pipe to a file. `backend` is the **second positional** argument, **not** a named option. Always pass it: the npm release (`fish-audio` 0.1.0) defaults it to the deprecated `"s1"` at runtime, although its README says `"s2-pro"`.
+`convert(request, backend?, requestOptions?)` resolves to a `ReadableStream<Uint8Array>` you can `play()` or pipe to a file. `backend` is the **second positional** argument, **not** a named option. It defaults to `"s2.1-pro"` in `fish-audio` 0.2.0 (0.1.0 defaulted to the deprecated `"s1"`, so pass it explicitly if a project is still on 0.1.0).
 
 ```ts
-import { FishAudioClient, play, type Backends } from "fish-audio";
-import { createWriteStream } from "node:fs";
-import { Readable } from "node:stream";
+import { FishAudioClient, play } from "fish-audio";
+import { writeFile } from "node:fs/promises";
 
 const client = new FishAudioClient();
 
-// model only (the cast is needed: the npm 0.1.0 `Backends` type omits "s2.1-pro")
+// model only
 const audio = await client.textToSpeech.convert(
   { text: "Hello, world!" },
-  "s2.1-pro" as Backends
+  "s2.1-pro"
 );
 await play(audio);
 
@@ -124,21 +123,16 @@ const audio2 = await client.textToSpeech.convert(
     text: "Using a saved voice.",
     reference_id: "9a9cf47702da476aa4629e2506d4a857",
   },
-  "s2.1-pro" as Backends // <-- positional backend, not { backend: "s2.1-pro" }
+  "s2.1-pro" // <-- positional backend, not { backend: "s2.1-pro" }
 );
 
-// pipe to a file instead of playing
-await new Promise((resolve, reject) =>
-  Readable.fromWeb(audio2)
-    .pipe(createWriteStream("out.mp3"))
-    .on("finish", resolve)
-    .on("error", reject)
-);
+// write to a file instead of playing (writeFile consumes the stream chunk by chunk)
+await writeFile("out.mp3", audio2);
 ```
 
-`TTSRequest` (the first argument) fields: `text` (required), `reference_id?`, `references?`, `format?`, `latency?`, `prosody?: { speed?; volume? }`, `temperature?`, `top_p?`, `chunk_length?`, `mp3_bitrate?`, `opus_bitrate?`, `sample_rate?`, `normalize?`, plus the advanced generation knobs (`max_new_tokens`, `repetition_penalty`, etc.). Field names are `snake_case`, matching the API.
+`TTSRequest` (the first argument) fields: `text` (required), `reference_id?` (a voice ID, or an array of IDs for multi-speaker text with `<|speaker:N|>` tags, S2 family only), `references?`, `format?`, `latency?` (`"low" | "normal" | "balanced"`), `prosody?: { speed?; volume?; normalize_loudness? }`, `temperature?`, `top_p?`, `chunk_length?`, `mp3_bitrate?`, `opus_bitrate?` (bits per second: `-1000 | 24000 | 32000 | 48000 | 64000`), `sample_rate?`, `normalize?`, plus the advanced generation knobs (`max_new_tokens`, `repetition_penalty`, `min_chunk_length`, `condition_on_previous_chunks`, `early_stop_threshold`, `features`). Field names are `snake_case`, matching the API.
 
-> The npm 0.1.0 JS `Backends` type is `'speech-1.5' | 'speech-1.6' | 'agent-x0' | 's1' | 's1-mini'`; the API also accepts `s2-pro`, `s2.1-pro`, and `s2.1-pro-free`, so pass those with an `as Backends` cast. Prefer `s2.1-pro` for production. Do not choose `s1` or `s1-mini`.
+> The JS `Backends` type (`fish-audio` 0.2.0) is `'s1' | 's2-pro' | 's2.1-pro' | 's2.1-pro-free' | 'drama-3'` plus any other string, so do not cast. Prefer `s2.1-pro` for production. Do not choose `s1`. Code written for 0.1.0 may still have `as Backends` casts; they are harmless but unnecessary.
 
 ## Model & expression notes
 

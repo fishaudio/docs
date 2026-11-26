@@ -1,6 +1,6 @@
 # Speech-to-Text (ASR)
 
-Both SDKs wrap `POST /v1/asr`: one audio file per request, and the response arrives when the whole file has been transcribed. Use `transcribe-1-pro`, the recommended model. Neither SDK has a `model` argument for ASR, so select it with the `model` HTTP header on every request. Full guide: `https://docs.fish.audio/features/speech-to-text`.
+Both SDKs wrap `POST /v1/asr`: one audio file per request, and the response arrives when the whole file has been transcribed. Use `transcribe-1-pro`, the recommended model, selected by the `model` HTTP header on every request. The JS SDK (`fish-audio` 0.2.0+) also streams live audio to `transcribe-stream-1`; see [JavaScript realtime](#javascript-realtime-speechtotextconvertrealtime). Full guide: `https://docs.fish.audio/features/speech-to-text`.
 
 ## Choose a model
 
@@ -10,7 +10,7 @@ Both SDKs wrap `POST /v1/asr`: one audio file per request, and the response arri
 Select `transcribe-1-pro` with the `model` header:
 
 - Python: `request_options=RequestOptions(additional_headers={"model": "transcribe-1-pro"})`, with `from fishaudio.core import RequestOptions`.
-- JavaScript: pass `{ headers: { model: "transcribe-1-pro" } }` as the second argument of `convert`.
+- JavaScript: pass `model: "transcribe-1-pro"` in the `convert` request (`fish-audio` 0.2.0+; on 0.1.0, pass `{ headers: { model: "transcribe-1-pro" } }` as the second argument).
 - Write the value exactly, in lowercase. A missing or unrecognized value (for example `Transcribe-1-Pro` or `transcribe-1pro`) is served and billed as `transcribe-1`, and no error is returned. If you expected `transcribe-1-pro` but the transcript has no speaker markers and you did not send `diarize=false`, check the header.
 
 ## Python: `client.asr.transcribe`
@@ -136,8 +136,9 @@ const result = await client.speechToText.convert(
     audio: new File([buf], "audio.wav"),
     language: "en", // optional hint; omit to auto-detect
     ignore_timestamps: false, // false → word-level segments (and speaker_turns on Pro)
+    model: "transcribe-1-pro", // sent as the model header
   },
-  { headers: { model: "transcribe-1-pro" }, timeoutInSeconds: 900 }
+  { timeoutInSeconds: 900 }
 );
 
 console.log(result.text);
@@ -146,7 +147,7 @@ for (const seg of result.segments) {
 }
 ```
 
-`STTRequest` = `{ audio: File; language?: string; ignore_timestamps?: boolean }`, sent as multipart. JS uses `ignore_timestamps` (the inverse of Python's `include_timestamps`), and the server default is `true`, so you get no `segments` unless you pass `false`.
+`STTRequest` = `{ audio: File; model?: string; language?: string; ignore_timestamps?: boolean }`, sent as multipart (`model` goes in the header and wins over a `model` header in `requestOptions`). JS uses `ignore_timestamps` (the inverse of Python's `include_timestamps`), and the server default is `true`, so you get no `segments` unless you pass `false`.
 
 In Node.js, the built-in `fetch` that the SDK uses stops waiting for response headers after 300 s, whatever `timeoutInSeconds` says (the call fails with `fetch failed`). For long Pro recordings, raise that limit once at startup with the `undici` package (`undici@7` runs on Node.js 20.18.1+; `undici@8` needs Node.js 22.19+ and fails at import on older versions):
 
@@ -179,6 +180,40 @@ for (const turn of body.speaker_turns ?? []) {
 ```
 
 The JS SDK cannot send `tag_audio_events`, `diarize`, or the speaker counts; use `fetch` with `FormData` for those (see the `fish-audio-api` skill).
+
+## JavaScript realtime: `speechToText.convertRealtime`
+
+`client.speechToText.convertRealtime(request, audioStream, requestOptions?)` (`fish-audio` 0.2.0+, **Node.js only**) streams live 16-bit little-endian mono PCM to `transcribe-stream-1` (Preview) over a WebSocket and returns a `RealtimeSTTStream` **synchronously** (no `await`). Iterate it with `for await`; events are narrowed by `type`, and their fields are the protocol's snake_case names. Guide: `https://docs.fish.audio/features/speech-to-text/realtime`.
+
+```ts
+import { createReadStream } from "node:fs";
+import { FishAudioClient } from "fish-audio";
+
+const client = new FishAudioClient();
+
+// 16 kHz PCM, 40 ms (1280 bytes) per chunk. A microphone yields chunks as it captures them.
+async function* audioChunks() {
+  yield* createReadStream("speech.pcm", { highWaterMark: 1280 });
+}
+
+const stream = client.speechToText.convertRealtime(
+  { sample_rate: 16000, drafts: true, diarize: false },
+  audioChunks()
+);
+for await (const event of stream) {
+  if (event.type === "draft")
+    console.log("...", event.text); // not final
+  else if (event.type === "committed") console.log(event.text); // final text of the turn
+}
+```
+
+- `request` (`{}` is valid): `sample_rate` (8000, 12000, 16000 default, 22050, 24000, 32000, 44100, 48000), `turn_detection` (`"auto"` default, `"vad"`, `"manual"`, or `{ mode, eager, silence_timeout_ms }`), `eager`, `drafts`, `diarize` (server default `true`: text starts with `<|speaker:0|>`), `terms`, `results`, `context`, `client_reference_id`, `model` (`transcribe-stream-1`). Top-level `eager`/`drafts`/`diarize`/`terms` win over the nested objects.
+- `audioStream`: `Iterable` or `AsyncIterable` of `Buffer` / typed array / `ArrayBuffer` chunks (20–40 ms each). A control message object in it is sent at that position. The session ends with `session_done` once the source is exhausted.
+- `requestOptions`: `abortSignal` (ends the session; the loop throws the signal's reason), `timeoutInSeconds` (opening the connection, default 30).
+- Events: `session_started`, `speech_start`, `user_turn_taken`, `draft`, `eager_end_of_turn`, `turn_resumed`, `user_backchannel`, `committed` (`text`, `user_turn`, `reason`, `audio_start_ms`, `audio_end_ms`; exactly one per turn), `vad`, `eot_prob`, `configured`, `progress`, `error` (recoverable only), `session_done`.
+- Control methods: `finalize()`, `agentSpeaking(boolean)`, `addContext(items, { resetHistory? })`, `configure(update)`, `keepalive()` (the SDK sends none; a session closes after 30 s without client messages), `send(message)`, `close()`.
+- Errors thrown from the loop: `RealtimeSTTError` (session failed or connection lost; `errorType`, `statusCode`, `requestId`, `closeCode`, `recoverable`), `UnauthorizedError` / `FishAudioError` with `statusCode` (402, 429) when the handshake is refused, or the audio source's own error.
+- Stopping: leaving the loop or `close()` closes the connection and calls `return()` on the source's iterator without awaiting it. An async generator blocked on a read is not interrupted by that, so race its read against an `AbortSignal`, release the device in its `finally`, and abort the signal in a `finally` around the loop. Full pattern: `https://docs.fish.audio/api-reference/sdk/javascript/api-reference#close-the-session-and-stop-the-audio-source`.
 
 ## Limits and formats (both SDKs)
 

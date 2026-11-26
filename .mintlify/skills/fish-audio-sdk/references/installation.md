@@ -17,7 +17,9 @@ npm install fish-audio
 # or: pnpm add fish-audio  / yarn add fish-audio
 ```
 
-- Requires Node.js 18+ (uses the global `fetch` / Web Streams).
+- Requires Node.js 20+ (uses the global `fetch`, `File` and Web Streams).
+- Ships ES module and CommonJS builds: `import { FishAudioClient } from "fish-audio"` and `const { FishAudioClient } = require("fish-audio")` both work (`require` needs `fish-audio` 0.2.0+).
+- The WebSocket methods (`textToSpeech.convertRealtime`, `speechToText.convertRealtime`) are Node.js only.
 
 ## Authentication
 
