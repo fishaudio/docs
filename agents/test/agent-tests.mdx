@@ -461,6 +461,8 @@ Each run's `judge` names the model and level that judged it.
 
 A run keeps the judge it started with. Judges can disagree on the same conversation, so after you switch, compare a few runs before you read a change in pass rate as your agent's.
 
+If a verdict looks wrong, try a more capable judge model, or add success and failure examples to the test to show the judge what passes and what fails.
+
 ## Attach tests to agents
 
 A test only runs against agents it's attached to. One test can be attached to many agents, and each agent keeps its own last result. Detaching a test removes it from that agent only. Deleting a test removes it from all agents.
