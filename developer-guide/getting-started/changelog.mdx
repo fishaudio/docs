@@ -4,6 +4,14 @@ description: "Complete release history and version updates for all Fish Audio pr
 icon: "clock-rotate-left"
 rss: true
 ---
+<Update label="Python SDK 1.6.0: word timestamps" description="November 25, 2026" tags={["Fish Audio"]}>
+  ## Python SDK 1.6.0: word timestamps
+
+  `fish-audio-sdk` 1.6.0 adds text to speech with word-level timestamps. `client.tts.convert_with_timestamps()` returns the audio with the start and end time of each word, and `client.tts.stream_with_timestamps()` yields audio and timings as they arrive, in both the sync and async clients. Timings are already on the timeline of the complete audio, also for long text generated in several chunks.
+
+  [Word timestamps](/features/text-to-speech#word-timestamps) | [Generate speech with captions](/developer-guide/sdk-guide/cookbook/speech-with-captions) | [Release notes](https://github.com/fishaudio/fish-audio-python/releases/tag/fish-audio-sdk-v1.6.0)
+</Update>
+
 <Update label="Voice Agents React Native SDK and widget" description="November 21, 2026" tags={["Fish Audio"]}>
   ## Voice Agents React Native SDK and widget
 

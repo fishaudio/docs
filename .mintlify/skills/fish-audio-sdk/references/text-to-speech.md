@@ -76,6 +76,30 @@ audio = client.tts.stream(text="Hello!").collect()
 
 Async: every method mirrors onto `AsyncFishAudio`; `await client.tts.convert(...)`, and `client.tts.stream(...)` must be awaited before iterating with `async for`.
 
+### Word timestamps (`fish-audio-sdk` 1.6.0+)
+
+`convert_with_timestamps()` / `stream_with_timestamps()` take the same keyword arguments as `convert()` / `stream()` and call `POST /v1/tts/stream/with-timestamp`.
+
+```python
+result = client.tts.convert_with_timestamps(text="Hello! Welcome to Fish Audio.")
+result.audio      # bytes, complete audio
+result.segments   # list[TTSTimestampSegment(text, start, end)], seconds from the start of result.audio
+result.duration   # float | None, length reported by the API
+
+with client.tts.stream_with_timestamps(text="Long passage...", format="opus") as stream:
+    for event in stream:         # TTSTimestampEvent
+        sink.write(event.audio)  # may be b"" on a closing event that only corrects timings
+        show(stream.segments)    # timings so far on the full-audio timeline; re-read after every event
+```
+
+- Segments are words without punctuation; Chinese/Japanese come back one character per segment; numbers follow the spoken reading (`$42.50` → `42`, `50`). Never match segments against the input text.
+- Text the API can't time (only punctuation, or only a tag like `[sigh]`): audio is complete, `segments == []`, `duration is None`. Guard before formatting `duration`.
+- `stream.collect()` returns the same `TTSTimestampResult`; call it instead of iterating. After iteration has started it raises `RuntimeError`.
+- Leaving the `with` block (e.g. `break`) closes the connection; without `with`, call `stream.close()` (`await stream.aclose()` async).
+- Async: `await client.tts.convert_with_timestamps(...)`; `async with await client.tts.stream_with_timestamps(...) as stream: async for event in stream: ...`.
+- Do not add `event.chunk_audio_offset_sec` to `stream.segments` or `result.segments`: they are already global. (`event.alignment` is the raw per-chunk snapshot, chunk-local times, `None` when absent.)
+- No timestamps from `stream_websocket()`, and the JS SDK has no timestamp method; use the HTTP/WebSocket endpoints from the `fish-audio-api` skill.
+
 ## JavaScript: `client.textToSpeech`
 
 `convert(request, backend?, requestOptions?)` resolves to a `ReadableStream<Uint8Array>` you can `play()` or pipe to a file. `backend` is the **second positional** argument, **not** a named option. Always pass it: the npm release (`fish-audio` 0.1.0) defaults it to the deprecated `"s1"` at runtime, although its README says `"s2-pro"`.
