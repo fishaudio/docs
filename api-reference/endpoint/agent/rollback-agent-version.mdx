@@ -1,7 +1,7 @@
 ---
 openapi: post /v1/agent/agents/{agent_id}/versions/{version_number}/rollback
 title: "Roll Back To Version"
-description: "Restore the agent to a published version: overwrite the draft with that\nversion's configuration and publish the result as a new version."
+description: "Make a published version the live one: the version new sessions run.\nNo version is created and the draft is not touched."
 icon: "robot"
 iconType: "solid"
 ---

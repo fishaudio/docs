@@ -69,9 +69,9 @@ Editing the draft of a Live agent does not change its badge. The Builder shows a
   call, then publish to roll the change out to real traffic.
 </Tip>
 
-### Restore and clone
+### Roll back and clone
 
-Past versions stay in the agent's history. Review them or restore one back into the draft from [Versions & publishing](/agents/deploy/versions-publishing).
+Past versions stay in the agent's history. To undo a bad release, switch the live version back to an earlier one without touching your draft: see [Versions & publishing](/agents/deploy/versions-publishing#roll-back-the-live-version).
 
 **Clone** creates a new agent from an existing one's current draft: prompt, voice, and tool and knowledge attachments carry over (shared resources are referenced, not copied). The clone is named `{name} copy`, starts as Draft, and does not inherit the source's publish history.
 
@@ -104,13 +104,13 @@ An agent talks with callers in one of two ways, set by its [speech model](/agent
 - **Cascade** (Drama 3, S2.1 Pro): three models in a chain. Speech recognition transcribes the caller, the LLM writes the reply, and a text-to-speech model speaks it. The agent listens while the caller talks and speaks once they finish.
 - **Full duplex** ([Live 3](/agents/build/voice-language#live-3-full-duplex)): one speech model listens while it speaks and decides when to talk. It backchannels naturally while the caller talks and acknowledges when they finish, then speaks the reply.
 
-|                   | Cascade                                                       | Full duplex                                                  |
-| ----------------- | ------------------------------------------------------------- | ------------------------------------------------------------ |
-| Models            | Drama 3, S2.1 Pro                                             | Live 3                                                       |
-| Turn-taking       | Takes turns: listens, then speaks                             | Listens while it speaks, and acknowledges the caller         |
-| Languages         | All 52 speaking languages                                     | English. Sessions in other languages use the cascade         |
-| Voices            | Any Voice Library voice, including your clones                | Live 3's own voices, or a Voice Library voice                |
-| Delivery controls | Speaking speed, expressive mode, pronunciation dictionaries  | Set by the model, tuned with a situation prompt              |
+|                   | Cascade                                                     | Full duplex                                          |
+| ----------------- | ----------------------------------------------------------- | ---------------------------------------------------- |
+| Models            | Drama 3, S2.1 Pro                                           | Live 3                                               |
+| Turn-taking       | Takes turns: listens, then speaks                           | Listens while it speaks, and acknowledges the caller |
+| Languages         | All 52 speaking languages                                   | English. Sessions in other languages use the cascade |
+| Voices            | Any Voice Library voice, including your clones              | Live 3's own voices, or a Voice Library voice        |
+| Delivery controls | Speaking speed, expressive mode, pronunciation dictionaries | Set by the model, tuned with a situation prompt      |
 
 New agents start on Live 3. Switch to the cascade for languages other than English, for the closest match to a cloned voice, or for control over delivery.
 

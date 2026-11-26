@@ -4,7 +4,7 @@ description: "Edit safely in a draft, then publish an immutable version that liv
 icon: "code-branch"
 ---
 
-Every agent has one **draft** and a linear history of **published versions**. Edits in the Builder or via the API always land in the draft. Production sessions never see them until you publish. Publishing snapshots the draft into an immutable, numbered version.
+Every agent has one **draft** and a linear history of **published versions**. Edits in the Builder or via the API always land in the draft. Production sessions never see them until you publish. Publishing snapshots the draft into an immutable, numbered version and makes it the **live** version, the one new sessions run. A [rollback](#roll-back-the-live-version) can later make an earlier version live again.
 
 <CardGroup cols={3}>
   <Card
@@ -34,8 +34,8 @@ Every agent has one **draft** and a linear history of **published versions**. Ed
 
 |            | Draft                                                                                   | Published version                             |
 | ---------- | --------------------------------------------------------------------------------------- | --------------------------------------------- |
-| Mutability | Editable: Builder and `PATCH .../config` write here                                    | Immutable snapshot                            |
-| Used by    | [Preview calls](/agents/test/preview-calls) and [agent tests](/agents/test/agent-tests) | Production sessions: web, SDK, and phone     |
+| Mutability | Editable: Builder and `PATCH .../config` write here                                     | Immutable snapshot                            |
+| Used by    | [Preview calls](/agents/test/preview-calls) and [agent tests](/agents/test/agent-tests) | Production sessions: web, SDK, and phone      |
 | History    | One per agent, always current                                                           | `version_number` increments with each publish |
 
 <Note>
@@ -52,9 +52,8 @@ Phone number settings are not part of the agent, so they are not versioned. Whic
 
 <Steps>
   <Step title="Edit: changes autosave">
-    Every change is written to the draft automatically;
-    the **Saving… / Draft saved** indicator in the top bar shows the current
-    state.
+    Every change is written to the draft automatically; the **Saving… / Draft
+    saved** indicator in the top bar shows the current state.
   </Step>
   <Step title="Watch the unpublished-changes indicator">
     When the draft differs from the last published version, the **Publish**
@@ -90,7 +89,7 @@ curl --request POST "https://api.fish.audio/v1/agent/agents/$AGENT_ID/publish" \
   --data '{ "version_title": "Tighten support tone" }'
 ```
 
-The publish response includes the new `version_number`.
+The publish response includes the new `version_number`. If the draft is identical to the live version, no version is created and the response has `created: false`. Each publish that creates a version is recorded in the [deployment history](#deployment-history).
 
 </Tab>
 </Tabs>
@@ -113,26 +112,28 @@ curl "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions/3" \
 
 Each version record includes:
 
-| Field                 | Description                                                                    |
-| --------------------- | ------------------------------------------------------------------------------ |
-| `version_number`      | Auto-incrementing, unique per agent                                            |
-| `version_title`       | Optional label sent when publishing                                            |
-| `version_description` | Optional description sent when publishing                                      |
-| `config_hash`         | Fingerprint of the configuration snapshot                                      |
-| `published_at`        | When the version was published                                                 |
-| `rolled_back_from`    | The version this one was restored from, or `null` if it was published normally |
+| Field                 | Description                                                                                |
+| --------------------- | ------------------------------------------------------------------------------------------ |
+| `version_number`      | Auto-incrementing, unique per agent                                                        |
+| `version_title`       | Optional label sent when publishing                                                        |
+| `version_description` | Optional description sent when publishing                                                  |
+| `config_hash`         | Fingerprint of the configuration snapshot                                                  |
+| `published_at`        | When the version was published                                                             |
+| `is_live`             | `true` for the version new sessions run. Exactly one version of an agent is live at a time |
+
+The live version is not always the highest `version_number`: after a [rollback](#roll-back-the-live-version) an older version is live. Check `is_live` to see which version is serving production.
 
 Fetching a single version returns the full configuration as it was published. Because `GET .../config` always shows the draft, the snapshot endpoint is how you read back what is actually running in production.
 
 <Warning>
   Version snapshots never echo credential secrets. Write-only fields (such as
   webhook secrets and tool authorization headers) return a `has_secret: true`
-  marker instead of the value, and the custom LLM
-  [`api_key` and `headers`](/agents/build/custom-llm) read back as `null`, in
-  every version including historical ones.
+  marker instead of the value, and the custom LLM [`api_key` and
+  `headers`](/agents/build/custom-llm) read back as `null`, in every version
+  including historical ones.
 </Warning>
 
-## Edit a version's title and description
+## Edit a version title and description
 
 The title and description of a published version can be changed at any time, including on the version that is live. Only the labels change: the frozen configuration and its `config_hash` stay as they were.
 
@@ -151,54 +152,186 @@ Each field behaves the same way:
 
 The response is the updated version record, without the configuration snapshot.
 
-## Roll back to a previous version
+## Roll back the live version
 
-A rollback restores the agent to a published version in one call. The draft is overwritten with that version's configuration, and the result is published as a new version. The rollback becomes part of the linear history, so the audit trail stays intact, and the new version's `rolled_back_from` is the version you restored.
+A rollback switches the live version to any published version, older or newer than the current one. It moves the live pointer and nothing else: no version is created, and your draft keeps its current content, including edits you have not published. New sessions and incoming calls use the target version at once; sessions already in progress keep the version they started on.
 
-```bash Roll back to version 2
-curl --request POST "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions/2/rollback" \
+```bash Switch the live version to version 1
+curl --request POST "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions/1/rollback" \
   --header "Authorization: Bearer $FISH_API_KEY" \
   --header "Content-Type: application/json" \
-  --data '{ "version_title": "Revert the broken greeting" }'
+  --data '{
+    "expected_live_version": 2,
+    "reason": "New booking tool returns 404 until the backend ships"
+  }'
 ```
 
-The request body is optional. Without one, the new version is titled `Rollback to v<version_number>` and has no description.
+The request body is optional. Every field in it is optional too:
 
-| Field                  | Description                                                                                                                                     |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `version_title`        | Label for the new version (up to 120 characters)                                                                                                |
-| `version_description`  | Longer note for the new version (up to 2000 characters)                                                                                         |
-| `expected_config_hash` | Roll back only while the draft still has this `config_hash`; see [Roll back only if the draft is unchanged](#roll-back-only-if-the-draft-is-unchanged) |
+| Field                   | Description                                                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `expected_live_version` | Switch only while this is the live version number; see [Switch only if nobody else has](#switch-only-if-nobody-else-has) |
+| `reason`                | Why the live version is moving (up to 500 characters). It is kept on the [deployment record](#deployment-history)        |
 
-The response has the same shape as [Publish Agent](/api-reference/endpoint/agent/publish-agent): the version record, the published `config`, and `created`.
+The response describes the switch:
 
-<Warning>
-  A rollback **overwrites the whole draft**. Any edits you have not published
-  are discarded. Publish or copy out what you want to keep first.
-</Warning>
+| Field                     | Description                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------------ |
+| `version`                 | The version that is live now, with `is_live: true`. It has no configuration snapshot |
+| `previous_version_number` | The version that was live before the call                                            |
+| `changed`                 | `true` when the live version moved, `false` when the target was already live         |
 
-### When nothing new is created
-
-If the restored content is identical to the live version, no version is created. The call returns the live version unchanged with `created: false`, and the draft is still overwritten. That live version keeps its own title, description, and `rolled_back_from`, which may differ from the version in the path, so check `created` rather than comparing version numbers to tell whether a new version was made. `version_title` and `version_description` in the request are ignored in this case.
-
-### Roll back only if the draft is unchanged
-
-Read the draft with [Get Draft Config](/api-reference/endpoint/agent/get-draft-config) and pass its `config_hash` as `expected_config_hash`. If the draft has changed since you read it, the call fails with `409` and `reason: "draft_changed"`, returns the draft's current `config_hash`, and writes nothing.
-
-```bash Roll back only if the draft is unchanged
-curl --request POST "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions/2/rollback" \
-  --header "Authorization: Bearer $FISH_API_KEY" \
-  --header "Content-Type: application/json" \
-  --data '{ "expected_config_hash": "<config_hash from Get Draft Config>" }'
+```json Response
+{
+  "version": {
+    "version_number": 1,
+    "version_title": "Initial release",
+    "version_description": null,
+    "config_hash": "sha256:4e7a1c9d…",
+    "published_at": "2026-11-10T08:15:42.120000Z",
+    "is_live": true
+  },
+  "previous_version_number": 2,
+  "changed": true
+}
 ```
 
-### What the restored configuration contains
+To read the configuration that is now running, fetch it with `GET .../versions/{version_number}`.
 
-- **Knowledge sources** are resolved again against today's sources. Sources that have since been archived or deleted drop out, and the rest point at their current revision, so the new version's `config_hash` can differ from the version you restored. More than 100 knowledge attachments returns `400`.
-- **Credentials** come back from the version itself and read back the same way as everywhere else: webhook secrets show `has_secret: true`, and the custom LLM [`api_key` and `headers`](/agents/build/custom-llm) read back as `null`.
-- **Agent-level settings** such as the name, description, public access, allowed origins, and session overrides are not part of a version, so a rollback does not change them. Phone number settings stay as they are.
+When the target is already the live version, the call changes nothing and returns `changed: false`. No deployment record is written either.
 
-To bring back only part of an old version, read its snapshot with `GET .../versions/{version_number}` and `PATCH` just those sections into the draft config. That updates the draft without publishing: [preview](/agents/test/preview-calls) it, then publish. Because snapshots never echo secrets, credential fields keep their current draft values unless you set them again.
+The draft is not touched, so it can differ from the version that is now live. Compare the `config_hash` from [Get Draft Config](/api-reference/endpoint/agent/get-draft-config) with the live version's to see whether it does. If the draft still carries the change that caused the problem, fix it before you publish again.
+
+### Switch only if nobody else has
+
+Read the live version from the version list and pass its number as `expected_live_version`. If someone has published or rolled back in the meantime, the call fails with `409` and `reason: "live_changed"`, returns the version that is live now, and writes nothing.
+
+```json 409 live_changed
+{
+  "status": 409,
+  "reason": "live_changed",
+  "message": "Live version does not match expected_live_version; read the versions again before rolling back",
+  "live_version_number": 3
+}
+```
+
+### When the target version needs something that is gone
+
+A version is a frozen snapshot, so a rollback runs it exactly as it was published. If that snapshot points at a resource that no longer exists, the call fails with `409` and `reason: "missing_references"`, and the live version stays as it is. `missing` lists what could not be found:
+
+| `type`                      | What is missing                                             |
+| --------------------------- | ----------------------------------------------------------- |
+| `integration_connection`    | An integration connection that was deleted                  |
+| `knowledge_source`          | A knowledge source that was deleted or archived             |
+| `knowledge_source_revision` | The pinned revision of a knowledge source that still exists |
+
+```json 409 missing_references
+{
+  "status": 409,
+  "reason": "missing_references",
+  "message": "The version references resources that are no longer available; restore or detach them first",
+  "missing": [{ "type": "integration_connection", "id": "<connection id>" }]
+}
+```
+
+Restore the resource, or choose another version.
+
+Rolling back from the console's version history works the same way: it moves the live version without creating a version or changing the draft.
+
+### Publishing after a rollback
+
+[Publishing](#publish-the-draft) always starts from the draft. After a rollback the draft usually differs from the live version, so the next publish creates a new version with the next number and makes it live. Edit the draft first if it still contains the change you rolled back from. If the draft happens to match the live version, nothing is created and the response has `created: false`.
+
+### Example: switch back, then forward again
+
+Version 2 added a booking tool, but your backend is not ready for it and the tool returns `404` on live calls. Version 1 is fine.
+
+<Steps>
+  <Step title="Find the live version">
+    List the versions and look for `is_live`. Here it is version 2.
+  </Step>
+  <Step title="Switch back to version 1">
+    Call the rollback endpoint with `expected_live_version: 2` and a `reason`
+    as above. The response has `changed: true`. New calls use version 1. Your
+    draft still has the booking tool, so you can keep working on it.
+  </Step>
+  <Step title="Fix the problem">
+    Fix the backend, or change the configuration in the draft and test it with
+    a [preview call](/agents/test/preview-calls).
+  </Step>
+  <Step title="Go forward again">
+    If the fix was in the backend, switch to version 2 with the same call,
+    now against version 2. No new version is created.
+
+    ```bash Switch the live version back to version 2
+    curl --request POST "https://api.fish.audio/v1/agent/agents/$AGENT_ID/versions/2/rollback" \
+      --header "Authorization: Bearer $FISH_API_KEY" \
+      --header "Content-Type: application/json" \
+      --data '{
+        "expected_live_version": 1,
+        "reason": "Backend is fixed"
+      }'
+    ```
+
+    If you fixed it by changing the configuration instead,
+    [publish](#publish-the-draft) the draft: that creates version 3 and makes
+    it live.
+
+  </Step>
+</Steps>
+
+To bring back only part of an old version into the draft, read its snapshot with `GET .../versions/{version_number}` and `PATCH` just those sections into the draft config. That updates the draft without publishing: [preview](/agents/test/preview-calls) it, then publish. Because snapshots never echo secrets, credential fields keep their current draft values unless you set them again.
+
+## Deployment history
+
+Every change of the live version is recorded: each publish that creates a version, and each rollback that moves the live version. A publish that finds nothing new and a rollback to the version that is already live are not recorded. Read the history to see what was live when, and who or what moved it:
+
+```bash List deployments
+curl "https://api.fish.audio/v1/agent/agents/$AGENT_ID/deployments?page_size=10" \
+  --header "Authorization: Bearer $FISH_API_KEY"
+```
+
+```json Response
+{
+  "deployments": [
+    {
+      "deployment_id": "5b0c9e2f7a1d4e8b9c3f6a0d2e7b4c19",
+      "action": "rollback",
+      "version_number": 1,
+      "previous_version_number": 2,
+      "source": "api",
+      "reason": "New booking tool returns 404 until the backend ships",
+      "created_at": "2026-11-23T08:12:40.118000Z"
+    },
+    {
+      "deployment_id": "a3d71e0c5b2f4986b1e7c4d90f6a2b53",
+      "action": "publish",
+      "version_number": 2,
+      "previous_version_number": 1,
+      "source": "console",
+      "reason": null,
+      "created_at": "2026-11-22T14:03:11.402000Z"
+    }
+  ],
+  "has_more": true,
+  "next_cursor": "<cursor>",
+  "total": null
+}
+```
+
+The newest change comes first. Each record has:
+
+| Field                     | Description                                                                                                                        |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `deployment_id`           | Identifier of this record                                                                                                          |
+| `action`                  | `publish` when a published draft became a new version and went live, `rollback` when the live version moved to an existing version |
+| `version_number`          | The version that went live                                                                                                         |
+| `previous_version_number` | The version that was live before, or `null` for the agent's first publish                                                          |
+| `source`                  | Where the change was made: `console`, `api`, or `unknown` for changes from before deployments were recorded                        |
+| `reason`                  | The `reason` sent with a rollback, or `null`                                                                                       |
+| `created_at`              | When the live version changed                                                                                                      |
+
+Page through the list with `page_size` (1 to 100, default 30) and either `cursor` (the `next_cursor` of the previous page) or `page` (starting at 1). The two are mutually exclusive and sending both returns `400`. The response also has `has_more`; `total` is included in `page` mode, or when you send `include_total=true`.
 
 ## Clone an agent
 
@@ -213,7 +346,7 @@ The response is the new agent, with status `201`. It is named `<name> copy` (tru
 
 | Copied                                                                                        | Not copied                                                                           |
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| The draft configuration, including credentials such as webhook secrets and the custom LLM key | Published versions and version history                                               |
+| The draft configuration, including credentials such as webhook secrets and the custom LLM key | Published versions and deployment history                                            |
 | Attached tools and integration connections                                                    | Agent-private knowledge sources                                                      |
 | Workspace knowledge sources                                                                   | Phone numbers bound to the source agent                                              |
 | The data retention setting                                                                    | Agent tests                                                                          |

@@ -4715,7 +4715,7 @@
     "/v1/agent/agents/{agent_id}/publish": {
       "post": {
         "summary": "Publish Agent",
-        "description": "Freeze the current draft into an immutable version and make it the live\nconfiguration for new sessions. Each new version gets the next\nversion_number. If the draft already matches the live version, no version\nis created and the live version comes back with `created: false`.\n\nThe response describes what was published:\n- `version_number` and `config_hash` identify the version.\n- `config` is the configuration exactly as published. Check your\n  read-back against it, not against the request you sent.\n- `created` tells whether this call made a new version.\n\nPublishing copies the draft as it is stored. It does not change any field.\nWrites do normalize some values, see Update Draft Config.\n\nThe body is optional:\n- `expected_config_hash` publishes only while the draft still has that\n  config_hash. Take it from Get Draft Config or Update Draft Config. On a\n  mismatch the call returns 409 with `reason: \"draft_changed\"` and the\n  draft's current `config_hash`. Nothing is written.\n- `config` applies draft changes first, in the same shape as Update Draft\n  Config. The changes and the publish are one atomic step. If either fails,\n  the draft stays as it was.\n- With both, `expected_config_hash` is checked against the draft before\n  `config` is applied.\n- `version_title` and `version_description` label a new version.",
+        "description": "Freeze the current draft into an immutable version and make it the live\nconfiguration for new sessions. Each new version gets the next\nversion_number. If the draft already matches the live version, no version\nis created and the live version comes back with `created: false`. A publish\nthat creates a version is recorded, see List Deployments.\n\nThe response describes what was published:\n- `version_number` and `config_hash` identify the version.\n- `config` is the configuration exactly as published. Check your\n  read-back against it, not against the request you sent.\n- `created` tells whether this call made a new version.\n\nPublishing copies the draft as it is stored. It does not change any field.\nWrites do normalize some values, see Update Draft Config.\n\nThe body is optional:\n- `expected_config_hash` publishes only while the draft still has that\n  config_hash. Take it from Get Draft Config or Update Draft Config. On a\n  mismatch the call returns 409 with `reason: \"draft_changed\"` and the\n  draft's current `config_hash`. Nothing is written.\n- `config` applies draft changes first, in the same shape as Update Draft\n  Config. The changes and the publish are one atomic step. If either fails,\n  the draft stays as it was.\n- With both, `expected_config_hash` is checked against the draft before\n  `config` is applied.\n- `version_title` and `version_description` label a new version.",
         "security": [
           {
             "BearerAuth": []
@@ -4779,18 +4779,10 @@
                       "title": "Published At",
                       "type": "string"
                     },
-                    "rolled_back_from": {
-                      "anyOf": [
-                        {
-                          "type": "integer"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "description": "The version this one was restored from when it came from a rollback; null for versions published normally.",
-                      "title": "Rolled Back From"
+                    "is_live": {
+                      "description": "Whether this is the version new sessions run. Exactly one version of an agent is live, and after a rollback it is not necessarily the highest version_number.",
+                      "title": "Is Live",
+                      "type": "boolean"
                     },
                     "config": {
                       "$ref": "#/components/schemas/PublicAgentConfigEntity",
@@ -4806,6 +4798,7 @@
                     "version_number",
                     "config_hash",
                     "published_at",
+                    "is_live",
                     "config",
                     "created"
                   ],
@@ -5051,7 +5044,7 @@
     "/v1/agent/agents/{agent_id}/versions": {
       "get": {
         "summary": "List Agent Versions",
-        "description": "The publish history, newest first. The highest version_number is what live\nsessions run. Compare a version's config_hash with the draft's to detect\nunpublished changes. A version published before a change in how the hash\nis computed keeps the hash it froze with; a publish that finds the draft\nunchanged realigns the live version's hash instead of creating an\nidentical version. Superseded versions keep their frozen hash.",
+        "description": "The publish history, newest first. The version with `is_live: true` is what\nnew sessions run; after a rollback it is not necessarily the highest\nversion_number. Compare a version's config_hash with the draft's to detect\nunpublished changes. A version published before a change in how the hash\nis computed keeps the hash it froze with; a publish that finds the draft\nunchanged realigns the live version's hash instead of creating an\nidentical version. Superseded versions keep their frozen hash.",
         "security": [
           {
             "BearerAuth": []
@@ -5420,18 +5413,10 @@
                       "title": "Published At",
                       "type": "string"
                     },
-                    "rolled_back_from": {
-                      "anyOf": [
-                        {
-                          "type": "integer"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "description": "The version this one was restored from when it came from a rollback; null for versions published normally.",
-                      "title": "Rolled Back From"
+                    "is_live": {
+                      "description": "Whether this is the version new sessions run. Exactly one version of an agent is live, and after a rollback it is not necessarily the highest version_number.",
+                      "title": "Is Live",
+                      "type": "boolean"
                     },
                     "config": {
                       "$ref": "#/components/schemas/PublicAgentConfigEntity",
@@ -5442,6 +5427,7 @@
                     "version_number",
                     "config_hash",
                     "published_at",
+                    "is_live",
                     "config"
                   ],
                   "type": "object"
@@ -5652,24 +5638,17 @@
                       "title": "Published At",
                       "type": "string"
                     },
-                    "rolled_back_from": {
-                      "anyOf": [
-                        {
-                          "type": "integer"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "description": "The version this one was restored from when it came from a rollback; null for versions published normally.",
-                      "title": "Rolled Back From"
+                    "is_live": {
+                      "description": "Whether this is the version new sessions run. Exactly one version of an agent is live, and after a rollback it is not necessarily the highest version_number.",
+                      "title": "Is Live",
+                      "type": "boolean"
                     }
                   },
                   "required": [
                     "version_number",
                     "config_hash",
-                    "published_at"
+                    "published_at",
+                    "is_live"
                   ],
                   "type": "object"
                 }
@@ -5840,7 +5819,7 @@
     "/v1/agent/agents/{agent_id}/versions/{version_number}/rollback": {
       "post": {
         "summary": "Roll Back To Version",
-        "description": "Restore the agent to a published version: the draft is overwritten with\nthat version's configuration, discarding any unpublished edits, and the\nresult is published as a new version whose `rolled_back_from` is the\nversion you restored. The overwrite and the publish are one atomic step.\n\nThe response has the same shape as Publish Agent, and `created` tells\nwhether a new version was made. If the restored content matches the live\nversion, no version is created: the live version comes back unchanged\n(its own title, description and `rolled_back_from`, which may differ from\nthe version in the path), `created` is `false`, and the draft is still\noverwritten.\n\nThe restored content can differ slightly from the original snapshot:\nknowledge sources are resolved again against today's sources, so archived\nor deleted ones drop out. More than 100 knowledge attachments is a 400.\nWebhook secrets and the custom LLM key come back from the version\nitself, and read back as `has_secret` / `null`.\n\nThe body is optional:\n- `expected_config_hash` rolls back only while the draft still has that\n  config_hash. Take it from Get Draft Config. On a mismatch the call\n  returns 409 with `reason: \"draft_changed\"` and the draft's current\n  `config_hash`. Nothing is written.\n- `version_title` defaults to `Rollback to v<version_number>`;\n  `version_description` defaults to none. Both are ignored when no new\n  version is created.",
+        "description": "Make a published version the live one: the version new sessions run. The\ntarget can be older or newer than the current live version, so the same\ncall switches back to the latest version after a rollback.\n\nNothing is created and the draft is not touched: it keeps its current\ncontent, including unpublished edits (`GET /config` shows a `config_hash`\ndifferent from the live version's if they differ). Sessions in progress\nkeep the version they started on; new sessions and incoming calls use the\ntarget at once. Agent-level settings (name, description, public access,\nallowed origins, overridable fields) and data retention are not part of a\nversion and do not move.\n\nPublishing after a rollback publishes the draft: if it differs from the\nlive version, a new version is created with the next version_number.\n\nThe response is `version` (the live version, `is_live: true`),\n`previous_version_number` and `changed`. If the target is already live,\nnothing is written and `changed` is `false`. Every change is recorded: see\nList Deployments.\n\nThe body is optional:\n- `expected_live_version` switches only while that is the live version\n  number. Take it from List Agent Versions. Otherwise the call returns 409\n  with `reason: \"live_changed\"` and `live_version_number`. Nothing is\n  written.\n- `reason` is stored on the deployment record.\n\n409 with `reason: \"missing_references\"` means the target version uses\nsomething that no longer exists: a knowledge source (deleted or archived,\nor its pinned revision) or an integration connection (deleted). `missing`\nlists each as `{type, id}`. Restore it or choose another version; the live\nversion stays.",
         "security": [
           {
             "BearerAuth": []
@@ -5878,109 +5857,25 @@
               "application/json": {
                 "schema": {
                   "properties": {
-                    "version_number": {
-                      "title": "Version Number",
+                    "version": {
+                      "$ref": "#/components/schemas/PublicAgentVersionSummary",
+                      "description": "The version that is live now (`is_live: true`)."
+                    },
+                    "previous_version_number": {
+                      "description": "The version that was live before the call.",
+                      "title": "Previous Version Number",
                       "type": "integer"
                     },
-                    "version_title": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Version Title"
-                    },
-                    "version_description": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Version Description"
-                    },
-                    "config_hash": {
-                      "title": "Config Hash",
-                      "type": "string"
-                    },
-                    "published_at": {
-                      "format": "date-time",
-                      "title": "Published At",
-                      "type": "string"
-                    },
-                    "rolled_back_from": {
-                      "anyOf": [
-                        {
-                          "type": "integer"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "description": "The version this one was restored from when it came from a rollback; null for versions published normally.",
-                      "title": "Rolled Back From"
-                    },
-                    "config": {
-                      "$ref": "#/components/schemas/PublicAgentConfigEntity",
-                      "description": "The immutable configuration snapshot this version pinned at publish time."
-                    },
-                    "created": {
-                      "description": "Whether this call created a new version. False when the draft already matched the live version, which is returned unchanged.",
-                      "title": "Created",
+                    "changed": {
+                      "description": "Whether the live version moved. False when the target was already live; nothing is written then.",
+                      "title": "Changed",
                       "type": "boolean"
                     }
                   },
                   "required": [
-                    "version_number",
-                    "config_hash",
-                    "published_at",
-                    "config",
-                    "created"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request syntax or unsupported method",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
+                    "version",
+                    "previous_version_number",
+                    "changed"
                   ],
                   "type": "object"
                 }
@@ -6180,7 +6075,7 @@
           {
             "lang": "bash",
             "label": "Roll Back",
-            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/agent/agents/<agent-id>/versions/2/rollback \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --data '{\n    \"version_title\": \"Revert the broken greeting\",\n    \"expected_config_hash\": \"<config_hash from Get Draft Config>\"\n  }'"
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/agent/agents/<agent-id>/versions/2/rollback \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --data '{\n    \"expected_live_version\": 3,\n    \"reason\": \"The new booking tool returns 404 until the backend ships\"\n  }'"
           }
         ],
         "requestBody": {
@@ -6191,27 +6086,322 @@
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
-                  "version_title": {
-                    "type": "string",
-                    "maxLength": 120,
-                    "description": "Label for the new version. Defaults to `Rollback to v<version_number>`."
+                  "expected_live_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Switch only while this is the live version number. Otherwise 409 with reason `live_changed` and nothing is written."
                   },
-                  "version_description": {
+                  "reason": {
                     "type": "string",
-                    "maxLength": 2000,
-                    "description": "Optional longer note for the new version."
-                  },
-                  "expected_config_hash": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 128,
-                    "description": "Roll back only while the draft has this config_hash. Otherwise 409 with reason `draft_changed` and nothing is written."
+                    "maxLength": 500,
+                    "description": "Why the live version is moving. Kept on the deployment record."
                   }
                 }
               }
             }
           }
         }
+      }
+    },
+    "/v1/agent/agents/{agent_id}/deployments": {
+      "get": {
+        "summary": "List Deployments",
+        "description": "Every change of the agent's live version, newest first: each publish that\ncreated a version and each rollback. Use it to see what was live when,\nand who or what moved it (`source`: `console`, `api`, or `unknown` for\nchanges from before deployments were recorded).\n\nPaginate with `cursor` (from `next_cursor`) or `page`; the two are mutually\nexclusive.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent_id",
+            "description": "",
+            "required": true,
+            "schema": {
+              "title": "Agent Id",
+              "type": "string"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "description": "",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Cursor"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "description": "1-based page number; mutually exclusive with cursor.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Page"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "include_total",
+            "description": "",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Total",
+              "type": "boolean"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "description": "",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "deployments": {
+                      "items": {
+                        "$ref": "#/components/schemas/PublicAgentDeployment"
+                      },
+                      "title": "Deployments",
+                      "type": "array"
+                    },
+                    "has_more": {
+                      "title": "Has More",
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Next Cursor"
+                    },
+                    "total": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Total"
+                    }
+                  },
+                  "required": [
+                    "deployments",
+                    "has_more"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agents"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "List Deployments",
+            "source": "curl --request GET \\\n  --url 'https://api.fish.audio/v1/agent/agents/<agent-id>/deployments?page_size=10' \\\n  --header 'Authorization: Bearer <token>'"
+          }
+        ]
       }
     },
     "/v1/agent/agents/{agent_id}/tests/{test_id}": {
@@ -31402,7 +31592,43 @@
             "title": "Published At",
             "type": "string"
           },
-          "rolled_back_from": {
+          "is_live": {
+            "description": "Whether this is the version new sessions run. Exactly one version of an agent is live, and after a rollback it is not necessarily the highest version_number.",
+            "title": "Is Live",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "version_number",
+          "config_hash",
+          "published_at",
+          "is_live"
+        ],
+        "title": "PublicAgentVersionSummary",
+        "type": "object"
+      },
+      "PublicAgentDeployment": {
+        "description": "One change of the live version.",
+        "properties": {
+          "deployment_id": {
+            "title": "Deployment Id",
+            "type": "string"
+          },
+          "action": {
+            "description": "`publish`: a published draft became a new version and went live. `rollback`: the live version moved to an existing version.",
+            "enum": [
+              "publish",
+              "rollback"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "version_number": {
+            "description": "The version that went live.",
+            "title": "Version Number",
+            "type": "integer"
+          },
+          "previous_version_number": {
             "anyOf": [
               {
                 "type": "integer"
@@ -31412,16 +31638,46 @@
               }
             ],
             "default": null,
-            "description": "The version this one was restored from when it came from a rollback; null for versions published normally.",
-            "title": "Rolled Back From"
+            "description": "The version that was live before; null on the first publish.",
+            "title": "Previous Version Number"
+          },
+          "source": {
+            "description": "Where the change was made. `unknown` marks changes from before deployments were recorded.",
+            "enum": [
+              "console",
+              "api",
+              "unknown"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The `reason` given on a rollback; null otherwise.",
+            "title": "Reason"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
           }
         },
         "required": [
+          "deployment_id",
+          "action",
           "version_number",
-          "config_hash",
-          "published_at"
+          "source",
+          "created_at"
         ],
-        "title": "PublicAgentVersionSummary",
+        "title": "PublicAgentDeployment",
         "type": "object"
       },
       "PublicAgentVersionUpdatePayload": {

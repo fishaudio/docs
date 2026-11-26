@@ -31,19 +31,19 @@ The exceptions to that shape:
 
 ## Status codes
 
-| Status | Meaning                                                                  | What to do                                                                                                       |
-| ------ | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `400`  | The request is well-formed JSON but semantically wrong                   | Read the `message`; it names the field or rule.                                                                 |
-| `401`  | Missing, invalid, or expired API key                                     | Send `Authorization: Bearer <key>`; check it on [API Keys](https://fish.audio/app/api-keys).                     |
+| Status | Meaning                                                                  | What to do                                                                                                         |
+| ------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `400`  | The request is well-formed JSON but semantically wrong                   | Read the `message`; it names the field or rule.                                                                    |
+| `401`  | Missing, invalid, or expired API key                                     | Send `Authorization: Bearer <key>`; check it on [API Keys](https://fish.audio/app/api-keys).                       |
 | `402`  | Out of API credit                                                        | Top up. Only session creation and phone-number purchase charge up front, so a `402` never leaves a partial charge. |
-| `403`  | The action is not allowed for this caller                                | See [403 causes](#403-what-was-refused) below.                                                                   |
-| `404`  | The resource doesn't exist, or isn't yours                              | Cross-team access returns the same `404` as a missing id, so treat both identically.                             |
-| `409`  | A state conflict blocks the action                                       | See [409 conflicts](#409-conflicts) below.                                                                       |
-| `415`  | Missing body or wrong `Content-Type`                                     | JSON endpoints need `application/json`; knowledge-source uploads need `multipart/form-data`.                     |
-| `422`  | Field-level validation failed                                            | Fix the fields listed in the error array.                                                                        |
-| `429`  | Public session creation is rate limited                                  | Back off and retry; per-agent and per-IP windows apply to [public agents](/agents/deploy/public-agents) only.    |
-| `502`  | An upstream dependency (conversation gateway, telephony provider) failed | Retry; for a failed phone-number purchase the row stays visible with status `error` and is safe to release.      |
-| `503`  | A platform dependency is temporarily unavailable                         | Retry with backoff.                                                                                              |
+| `403`  | The action is not allowed for this caller                                | See [403 causes](#403-what-was-refused) below.                                                                     |
+| `404`  | The resource doesn't exist, or isn't yours                               | Cross-team access returns the same `404` as a missing id, so treat both identically.                               |
+| `409`  | A state conflict blocks the action                                       | See [409 conflicts](#409-conflicts) below.                                                                         |
+| `415`  | Missing body or wrong `Content-Type`                                     | JSON endpoints need `application/json`; knowledge-source uploads need `multipart/form-data`.                       |
+| `422`  | Field-level validation failed                                            | Fix the fields listed in the error array.                                                                          |
+| `429`  | Public session creation is rate limited                                  | Back off and retry; per-agent and per-IP windows apply to [public agents](/agents/deploy/public-agents) only.      |
+| `502`  | An upstream dependency (conversation gateway, telephony provider) failed | Retry; for a failed phone-number purchase the row stays visible with status `error` and is safe to release.        |
+| `503`  | A platform dependency is temporarily unavailable                         | Retry with backoff.                                                                                                |
 
 ## 400 vs 422
 
@@ -56,13 +56,13 @@ Two quirks worth coding around:
 
 ## 403: what was refused
 
-| Message                                                                                | Cause                                                                                                                 |
-| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `Agent is not public`                                                                  | Anonymous session/widget request against an agent whose public switch is off.                                         |
-| `Origin header is required for public agents`                                          | Anonymous request without an `Origin` header to an agent that restricts origins. Browsers send it automatically, curl must set it.                      |
-| `Origin not allowed`                                                                   | The agent [restricts origins](/agents/deploy/public-agents#restrict-origins) and the page's origin is not on the list. |
-| `Agent is unavailable`                                                                 | The agent's owner can't serve public sessions right now for a reason other than credit (that is `402`); visitors deliberately can't tell why. |
-| `Phone number limit reached for this team (N)`                                         | The team holds its maximum of live numbers; release one first.                                                        |
+| Message                                        | Cause                                                                                                                                         |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Agent is not public`                          | Anonymous session/widget request against an agent whose public switch is off.                                                                 |
+| `Origin header is required for public agents`  | Anonymous request without an `Origin` header to an agent that restricts origins. Browsers send it automatically, curl must set it.            |
+| `Origin not allowed`                           | The agent [restricts origins](/agents/deploy/public-agents#restrict-origins) and the page's origin is not on the list.                        |
+| `Agent is unavailable`                         | The agent's owner can't serve public sessions right now for a reason other than credit (that is `402`); visitors deliberately can't tell why. |
+| `Phone number limit reached for this team (N)` | The team holds its maximum of live numbers; release one first.                                                                                |
 
 ## 404: anti-enumeration
 
@@ -72,12 +72,14 @@ The recording endpoint adds one more meaning: `Recording not found` on a real se
 
 ## 409: conflicts
 
-| Message                                       | Cause and fix                                                                                                                                      |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Agent has no published version`              | Session creation against a never-published agent: [publish](/agents/deploy/versions-publishing) first.                                            |
-| `Knowledge source is attached to N agent(s)…` | Deletion is blocked while any agent references the source in its draft **or published** config: detach everywhere, republish, then delete.        |
-| `Tool is attached to N agent(s)…`             | Deletion is blocked while any agent's **draft** references the tool (published snapshots are frozen copies and don't block): detach, then delete. |
-| `This number is already on the platform`      | The number is held by a team already; pick another from [search](/api-reference/endpoint/agent/search-available-phone-numbers).                   |
+| Message                                                          | Cause and fix                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Agent has no published version`                                 | Session creation against a never-published agent: [publish](/agents/deploy/versions-publishing) first.                                                                                                                                                                                          |
+| `Live version does not match expected_live_version…`             | Roll back with a stale `expected_live_version` (`reason: "live_changed"`, with `live_version_number`): [read the versions again](/agents/deploy/versions-publishing#switch-only-if-nobody-else-has) and decide. Nothing was written.                                                            |
+| `The version references resources that are no longer available…` | Roll back to a version whose integration connection or knowledge source is gone (`reason: "missing_references"`, with a `missing` list): [restore it or pick another version](/agents/deploy/versions-publishing#when-the-target-version-needs-something-that-is-gone). The live version stays. |
+| `Knowledge source is attached to N agent(s)…`                    | Deletion is blocked while any agent references the source in its draft **or published** config: detach everywhere, republish, then delete.                                                                                                                                                      |
+| `Tool is attached to N agent(s)…`                                | Deletion is blocked while any agent's **draft** references the tool (published snapshots are frozen copies and don't block): detach, then delete.                                                                                                                                               |
+| `This number is already on the platform`                         | The number is held by a team already; pick another from [search](/api-reference/endpoint/agent/search-available-phone-numbers).                                                                                                                                                                 |
 
 ## Billing and rate limits
 
