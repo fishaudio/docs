@@ -131,17 +131,15 @@ const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 
 const paths = ["speech.wav"]; // add more file paths here
 const language = "en";
-const options = {
-  headers: { model: "transcribe-1-pro" },
-  timeoutInSeconds: 900, // long recordings can take several minutes
-};
+const options = { timeoutInSeconds: 900 }; // long recordings can take several minutes
 
 const results = [];
 for (const path of paths) {
   try {
     const audio = new File([await readFile(path)], path);
     const transcript = await client.speechToText.convert(
-      { audio, language },
+      // model requires fish-audio 0.2.0 or later
+      { audio, language, model: "transcribe-1-pro" },
       options
     );
     results.push({

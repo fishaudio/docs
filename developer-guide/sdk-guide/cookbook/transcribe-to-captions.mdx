@@ -189,11 +189,9 @@ const result = await client.speechToText.convert(
   {
     audio: new File([await readFile("speech.wav")], "speech.wav"),
     ignore_timestamps: false,
+    model: "transcribe-1-pro", // requires fish-audio 0.2.0 or later
   },
-  {
-    headers: { model: "transcribe-1-pro" },
-    timeoutInSeconds: 900, // long recordings can take several minutes
-  }
+  { timeoutInSeconds: 900 } // long recordings can take several minutes
 );
 
 const cues = groupCues(result.segments);

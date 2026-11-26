@@ -132,9 +132,9 @@ audio = client.tts.convert(
 ```
 
 <Warning>
-  If you inject your own `httpx_client`, the client-level `timeout`,
-  `base_url`, and `Authorization` header are **not** applied to it. Configure
-  those on the client you pass in.
+  If you inject your own `httpx_client`, the client-level `timeout` and
+  `base_url` are **not** applied to it. Configure those on the client you pass
+  in. The SDK still adds the `Authorization` header to every request.
 </Warning>
 
 ## Related

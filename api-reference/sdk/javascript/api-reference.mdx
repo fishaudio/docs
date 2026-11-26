@@ -1,18 +1,45 @@
 ---
 title: "JavaScript SDK Reference"
 sidebarTitle: "Reference"
-description: "Complete reference for Fish Audio JavaScript SDK"
+description: "Complete reference for the Fish Audio JavaScript and TypeScript SDK (fish-audio on npm)"
 icon: "book"
 ---
+
+This page describes `fish-audio` 0.2.0. Release notes are on [GitHub](https://github.com/fishaudio/fish-audio-typescript/releases/tag/v0.2.0).
+
+## Install
+
+```bash
+npm install fish-audio
+```
+
+The SDK requires Node.js 20 or later. It ships ES module and CommonJS builds with type declarations for both, so `import` and `require` work:
+
+<CodeGroup>
+
+```typescript ES module
+import { FishAudioClient } from "fish-audio";
+```
+
+```javascript CommonJS
+const { FishAudioClient } = require("fish-audio");
+```
+
+</CodeGroup>
+
+The WebSocket methods, `textToSpeech.convertRealtime()` and `speechToText.convertRealtime()`, run in Node.js only: browsers cannot set the `Authorization` header on a WebSocket.
 
 ## Client
 
 Import and initialize the client:
 
 ```typescript
-import { FishAudioClient, type Backends } from "fish-audio";
+import { FishAudioClient } from "fish-audio";
+
 const fishAudio = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 ```
+
+Without `apiKey`, the client reads `FISH_API_KEY` from the environment. Pass `baseUrl` to send requests to another address, such as a proxy.
 
 ## Text to Speech
 
@@ -20,10 +47,10 @@ const fishAudio = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 Generate speech from text.
 
 ```typescript
-const audio = await fishAudio.textToSpeech.convert({ text: "Hello" }, "s2.1-pro-free" as Backends);
+const audio = await fishAudio.textToSpeech.convert({ text: "Hello" }, "s2.1-pro-free");
 ```
 
-Parameters: `request` (TTSRequest), `model?` (Backends) <br />
+Parameters: `request` (TTSRequest), `model?` (Backends, default `"s2.1-pro"`), `requestOptions?` <br />
 Returns: `Promise<ReadableStream<Uint8Array>>`
 
 ### convertRealtime()
@@ -31,11 +58,11 @@ Realtime streaming TTS over WebSocket.
 
 ```typescript
 async function* textStream() { yield "Hello, "; yield "world!"; }
-const conn = await fishAudio.textToSpeech.convertRealtime({ text: "" }, textStream(), "s2.1-pro-free" as Backends);
+const conn = await fishAudio.textToSpeech.convertRealtime({ text: "" }, textStream(), "s2.1-pro-free");
 ```
 
-Parameters: `request` (TTSRequest with `text: ""`), `textStream` (`AsyncIterable<string>`), `backend?` (Backends) <br />
-Returns: `RealtimeConnection` (`EventEmitter`-like connection) emitting `RealtimeEvents`
+Parameters: `request` (TTSRequest with `text: ""`), `textStream` (`Iterable<string>` or `AsyncIterable<string>`), `backend?` (Backends, default `"s2.1-pro"`) <br />
+Returns: `Promise<RealtimeConnection>` (`EventEmitter`-like connection) emitting `RealtimeEvents`
 
 ## Speech to Text
 
@@ -43,17 +70,174 @@ Returns: `RealtimeConnection` (`EventEmitter`-like connection) emitting `Realtim
 Transcribe audio to text.
 
 ```typescript
-const res = await fishAudio.speechToText.convert(
-  { audio: myAudio },
-  { headers: { model: "transcribe-1-pro" } }
-);
+const res = await fishAudio.speechToText.convert({ audio: myAudio, model: "transcribe-1-pro" });
 console.log(res.text);
 ```
 
-Parameters: `request` (STTRequest), `requestOptions?` (for example `headers` and `timeoutInSeconds`) <br />
+Parameters: `request` (STTRequest), `requestOptions?` (for example `timeoutInSeconds`) <br />
 Returns: `STTResponse`
 
-Select the model with the `model` header in `requestOptions.headers`. Without it, the request is served and billed as `transcribe-1`. See [Speech to Text](/features/speech-to-text).
+`model` is sent as the `model` header. Without it, and without a `model` header in `requestOptions.headers`, the request is served and billed as `transcribe-1`. See [Speech to Text](/features/speech-to-text).
+
+### convertRealtime()
+Transcribe live audio with `transcribe-stream-1` (Preview) over a WebSocket, turn by turn. Send 16-bit little-endian mono PCM in chunks of 20–40 ms as you capture it. The SDK opens the session, sends each chunk as the audio source yields it, and ends the session when the source is exhausted. It runs in Node.js only.
+
+```typescript
+import { createReadStream } from "node:fs";
+import { FishAudioClient } from "fish-audio";
+
+const fishAudio = new FishAudioClient();
+
+// Raw 16-bit mono PCM at 16 kHz, 40 ms (1280 bytes) per chunk.
+// From a file this sends faster than real time; a microphone yields chunks as it captures them.
+async function* audioChunks() {
+  yield* createReadStream("speech.pcm", { highWaterMark: 1280 });
+}
+
+const stream = fishAudio.speechToText.convertRealtime(
+  { sample_rate: 16000, drafts: true, diarize: false },
+  audioChunks(),
+);
+
+for await (const event of stream) {
+  if (event.type === "draft") {
+    console.log("...", event.text); // live text of the open turn, not final
+  } else if (event.type === "committed") {
+    console.log(event.text); // final transcript of the turn
+  }
+}
+```
+
+To make `speech.pcm` from a recording, run `ffmpeg -i input.mp3 -ac 1 -ar 16000 -f s16le speech.pcm`.
+
+Parameters: `request` (RealtimeSTTRequest, `{}` is valid), `audioStream` (`Iterable` or `AsyncIterable` of `Buffer`, typed array or `ArrayBuffer` chunks), `requestOptions?` (`abortSignal`, and `timeoutInSeconds` for opening the connection, default 30) <br />
+Returns: `RealtimeSTTStream`, synchronously. Iterate it with `for await` to read events; the loop ends after `session_done`.
+
+`RealtimeSTTRequest` fields:
+
+| Field | Default | Meaning |
+| --- | --- | --- |
+| `sample_rate` | `16000` | Sample rate of your audio: 8000, 12000, 16000, 22050, 24000, 32000, 44100 or 48000 Hz. The server converts it. |
+| `turn_detection` | `"auto"` | `"auto"`, `"vad"` or `"manual"`, or an object with `mode`, `eager` and `silence_timeout_ms`. |
+| `eager` | `false` | Send `eager_end_of_turn` in `auto` mode, so a voice agent can prepare its reply early. |
+| `drafts` | `false` | Send live `draft` events while a turn is open. |
+| `diarize` | `true` | Speaker tags at the start of the text. `false` gives plain text. |
+| `terms` | none | Names, products and jargon to recognize, up to 100 terms of up to 32 characters. |
+| `results` | none | Every result setting of the protocol, such as `tag_audio_events` and `ignore_timestamps`. |
+| `context` | none | `history` (earlier conversation) and `terms`. |
+| `client_reference_id` | none | Your own ID for the session, recorded with it. |
+| `model` | `"transcribe-stream-1"` | The realtime model. |
+
+A top-level field (`eager`, `drafts`, `diarize`, `terms`) wins over the same setting in `turn_detection`, `results` or `context`. By default each transcript starts with a speaker tag such as `<|speaker:0|>`; pass `diarize: false` for plain text.
+
+Events are narrowed by `type`. Their fields use the protocol's snake_case names, such as `turn_index` and `audio_end_ms`:
+
+| `type` | When |
+| --- | --- |
+| `session_started` | The session is ready. Carries `session_id` and `request_id`. |
+| `speech_start` | A turn opened on voice activity. In `auto` mode it can be noise or another voice. |
+| `user_turn_taken` | `auto` mode: the user is taking the turn. A speaking voice agent stops here. |
+| `draft` | With `drafts: true`: the whole turn so far, not final. |
+| `eager_end_of_turn` | With `eager: true`: the turn has probably ended. Its `text` is what `committed` will say unless `turn_resumed` follows. |
+| `turn_resumed` | The speaker went on after `eager_end_of_turn`. |
+| `user_backchannel` | `auto` mode, while your agent speaks: the user only acknowledged. |
+| `committed` | The final transcript of the turn, with `text`, `user_turn`, `reason`, `audio_start_ms` and `audio_end_ms`. Every turn has exactly one. |
+| `vad`, `eot_prob` | With `results.vad_events` or `results.eot_events`. |
+| `configured` | The reply to `configure()`. |
+| `progress` | Audio positions, every 5 seconds while you send nothing. |
+| `error` | An error the session survives (`recoverable: true`). |
+| `session_done` | The last event, after the audio source is exhausted. Carries `stats`. |
+
+See [Realtime Speech to Text](/features/speech-to-text/realtime) for how turns work and [the WebSocket reference](/api-reference/endpoint/websocket/asr-realtime) for every field.
+
+#### Control methods
+
+`RealtimeSTTStream` sends control messages while the session runs:
+
+```typescript
+await stream.finalize(); // commit the open turn now (push-to-talk, with turn_detection: "manual")
+await stream.agentSpeaking(true); // voice agents: your agent started speaking
+await stream.addContext([{ role: "assistant", text: "Which day works for you?" }]);
+await stream.configure({ turn_detection: { mode: "vad", silence_timeout_ms: 900 } });
+await stream.keepalive(); // a session closes after 30 seconds without any client message
+await stream.close(); // end the session and close the connection
+```
+
+`send(message)` sends any control message, and a control message such as `{ type: "agent_speaking", speaking: true }` yielded by the audio source is sent at that position in the audio. The SDK does not send keepalives for you.
+
+#### Errors
+
+Errors are thrown from the `for await` loop:
+
+- `RealtimeSTTError` when the server ends the session or the connection is lost. It carries `errorType` (such as `unsupported_audio`; match on this field), `statusCode`, `requestId`, `closeCode` and `recoverable`. `statusCode` and `closeCode` are optional: a lost connection has no HTTP status, so they can be `undefined`.
+- When the connection is refused: `BadRequestError` (400), `UnauthorizedError` (401), `ForbiddenError` (403) or `NotFoundError` (404), and `FishAudioError` with a `statusCode` for any other status, such as 402 or 429. All of them extend `FishAudioError`, so `err.statusCode` works for each.
+- The audio source's own error when the audio source throws.
+
+```typescript
+import { FishAudioError, RealtimeSTTError } from "fish-audio";
+
+try {
+  for await (const event of stream) {
+    if (event.type === "committed") console.log(event.text);
+  }
+} catch (err) {
+  if (err instanceof RealtimeSTTError) {
+    console.error(err.errorType, err.statusCode, err.closeCode, err.requestId);
+  } else if (err instanceof FishAudioError) {
+    console.error("connection refused:", err.statusCode, err.body);
+  } else {
+    throw err;
+  }
+}
+```
+
+#### Close the session and stop the audio source
+
+Leaving the loop early, or calling `stream.close()`, closes the connection. When the session ends for any reason, the stream calls `return()` on the audio source's iterator and does not wait for it, so `close()` never hangs on the source.
+
+An async generator that is suspended on a read cannot be interrupted this way: its `return()` only runs after that read settles. If your source can block, such as a microphone, give it an `AbortSignal` and abort it when you are done with the session:
+
+```typescript
+async function* microphone(signal: AbortSignal) {
+  const recorder = openRecorder(); // your own capture code
+  try {
+    while (!signal.aborted) {
+      let stop!: () => void;
+      const aborted = new Promise<undefined>((resolve) => {
+        stop = () => resolve(undefined);
+      });
+      signal.addEventListener("abort", stop, { once: true });
+      let chunk: Uint8Array | undefined;
+      try {
+        // read() resolves with the next 20–40 ms of PCM.
+        chunk = await Promise.race([recorder.read(), aborted]);
+      } finally {
+        signal.removeEventListener("abort", stop);
+      }
+      if (chunk === undefined) {
+        break; // aborted while waiting for audio
+      }
+      yield chunk;
+    }
+  } finally {
+    recorder.close(); // releases the device, and a read that is still pending
+  }
+}
+
+const controller = new AbortController();
+const stream = fishAudio.speechToText.convertRealtime({ diarize: false }, microphone(controller.signal));
+try {
+  for await (const event of stream) {
+    if (event.type === "committed") console.log(event.text);
+  }
+} finally {
+  controller.abort(); // stops the microphone, however the loop ended
+}
+```
+
+Racing the read only stops the generator from waiting; `recorder.close()` in the `finally` block stops the capture, so release your device there. `controller.abort()` on its own ends the audio: the session then finishes with `session_done`, as it does when the source is exhausted.
+
+To end the session itself from outside the loop, pass `{ abortSignal }` as the third argument of `convertRealtime()`: when the signal aborts, the stream closes and throws the signal's reason.
 
 ## Voices
 
@@ -81,7 +265,7 @@ Returns: `ModelEntity`
 Create a new voice model from audio samples.
 
 ```typescript
-const res = await fishAudio.voices.ivc.create({ title, voices: [file], cover_image: file });
+const res = await fishAudio.voices.ivc.create({ title: "My voice", voices: [file], cover_image: image });
 ```
 
 Parameters: `request` (ModelCreateRequest) <br />
@@ -136,49 +320,65 @@ Text-to-speech parameters.
 {
   text: "Hello",
   reference_id: "model_id",
-  references: [ { audio: File, text: "sample" } ],
   format: "mp3",
   prosody: { speed: 1.0, volume: 0 },
 }
 ```
 
-Fields: `text`, `reference_id`, `references`, `format`, `mp3_bitrate`, `opus_bitrate`, `sample_rate`, `prosody`, `latency`, `chunk_length`, `normalize`, `temperature`, `top_p`
+Fields: `text`, `reference_id`, `references`, `format`, `mp3_bitrate`, `opus_bitrate`, `sample_rate`, `prosody`, `latency`, `chunk_length`, `normalize`, `temperature`, `top_p`, `max_new_tokens`, `repetition_penalty`, `min_chunk_length`, `condition_on_previous_chunks`, `early_stop_threshold`, `features`
+
+- `opus_bitrate` is in bits per second: `-1000` (automatic), `24000`, `32000`, `48000` or `64000`.
+- `latency` is `"low"`, `"normal"` or `"balanced"`.
+- For multi-speaker dialogue (S2 family only), pass an array of voice IDs as `reference_id` and mark the turns in the text:
+
+```typescript
+const audio = await fishAudio.textToSpeech.convert({
+  text: "<|speaker:0|>Hello!<|speaker:1|>Hi there!",
+  reference_id: ["speaker-a-id", "speaker-b-id"],
+});
+```
 
 ### STTRequest
 Speech-to-text parameters.
 
 ```typescript
-{ audio: File, language?: "en", ignore_timestamps?: boolean }
+{ audio: File, model?: "transcribe-1-pro", language?: "en", ignore_timestamps?: boolean }
 ```
 
-Fields: `audio`, `language?`, `ignore_timestamps?`
+Fields: `audio`, `model?`, `language?`, `ignore_timestamps?`
 
 ### ReferenceAudio
-Reference audio for voice cloning.
+Reference audio for zero-shot voice cloning. `audio` is typed as `File`. At runtime the SDK also accepts a `Blob`, but TypeScript rejects one, so wrap a `Blob` or a `Buffer` in a `File` (`new File([blob], "reference.wav")`):
 
 ```typescript
-{ audio: File, text: "spoken text" }
+import { readFile } from "node:fs/promises";
+import type { ReferenceAudio } from "fish-audio";
+
+const sample: ReferenceAudio = {
+  audio: new File([await readFile("reference.wav")], "reference.wav"),
+  text: "The words spoken in the clip.",
+};
 ```
 
-Fields: `audio`, `text`
+Fields: `audio`, `text`. Pass a flat array as `references` for one speaker, or one array per speaker for multi-speaker dialogue.
 
 ### Prosody
-Speed and volume control.
+Speed and volume control (`ProsodyControl`).
 
 ```typescript
 { speed: 1.2, volume: 5 }
 ```
 
-Fields: `speed` (0.5–2.0), `volume` (-20 to 20)
+Fields: `speed` (0.5–2.0), `volume` (-20 to 20), `normalize_loudness?` (S2 family only)
 
 ### Backends
-The backend model to use.
+The TTS model, sent as the `model` header.
 
 ```typescript
-Backends = 's1' | 's2-pro';
+type Backends = "s1" | "s2-pro" | "s2.1-pro" | "s2.1-pro-free" | "drama-3" | (string & {});
 ```
 
-The API also accepts `s2.1-pro` and `s2.1-pro-free`; the SDK's `Backends` type has not been updated yet, so pass them with a type assertion (for example `'s2.1-pro' as Backends`) or call the [REST API](/api-reference/endpoint/openapi-v1/text-to-speech) directly.
+The default is `s2.1-pro`. Any other string is accepted, so a model released after this SDK version works without an update. `s1` is deprecated and retires on December 31, 2026; see [Migrate from S1](/developer-guide/models-pricing/migrate-from-s1).
 
 ## Response Classes
 
@@ -199,7 +399,7 @@ Fields: `text` (string), `start` (number, seconds), `end` (number, seconds)
 ### ModelEntity
 Voice model information.
 
-Fields: `_id`, `title`, `description`, `visibility`, `created_at`, `updated_at`, `tags`
+Fields: `_id`, `title`, `description`, `state`, `visibility`, `created_at`, `updated_at`, `tags`
 
 ### ModelListResponse
 List response for voices.
@@ -219,7 +419,7 @@ Fields: `user_id` (string), `type` (string), `total` (number), `balance` (number
 ## WebSocket Classes
 
 ### RealtimeEvents
-Events emitted by `convertRealtime` connections.
+Events emitted by `textToSpeech.convertRealtime()` connections.
 
 | Event         | Meaning                          |
 |---------------|----------------------------------|
@@ -227,6 +427,9 @@ Events emitted by `convertRealtime` connections.
 | `AUDIO_CHUNK` | Audio chunk received             |
 | `ERROR`       | Error occurred                   |
 | `CLOSE`       | Connection closed                |
+
+### RealtimeSTTStream
+The session returned by `speechToText.convertRealtime()`: an async iterable of `RealtimeSTTEvent`, with the [control methods](#control-methods) above.
 
 ## Event Classes
 
@@ -253,7 +456,22 @@ Fields: `event` ("stop")
 ## Exceptions
 
 ### FishAudioError
-Generic error with status code, body, rawResponse.
+Generic error with `statusCode`, `body`, `rawResponse`.
 
 ### FishAudioTimeoutError
 Connection timeout error.
+
+### RealtimeSTTError
+A realtime speech-to-text session failed. Extends `FishAudioError` with `errorType`, `requestId`, `closeCode` and `recoverable`.
+
+## Upgrade notes
+
+Upgrading from 0.1.0 to 0.2.0:
+
+- **The default TTS model is now `s2.1-pro`**, for `textToSpeech.convert()` and `textToSpeech.convertRealtime()`. The published 0.1.0 package sent the deprecated `s1` when you passed no model. To use another model, pass it: `convert(request, "s2-pro")`.
+- **`opus_bitrate` is in bits per second.** Code that passes `24`, `32`, `48` or `64` no longer compiles: multiply the value by 1000.
+- **`ReferenceAudio.audio` must be a `File`** (a `Blob` also works at runtime, but the TypeScript type is `File`). A `Buffer` or `Uint8Array` passed with a type cast now fails with `ref.audio.arrayBuffer is not a function`. Wrap it: `new File([buffer], "sample.mp3")`.
+- **Model names are no longer cast.** `Backends` names `s2.1-pro`, `s2.1-pro-free` and `drama-3` and accepts any other string, so remove `as Backends` casts. `speech-1.5`, `speech-1.6`, `agent-x0` and `s1-mini` no longer autocomplete.
+- **Node.js 20 or later is required.**
+- **`require("fish-audio")` works.** In 0.1.0 it threw `ReferenceError: exports is not defined in ES module scope`.
+- **Select the speech-to-text model with `model`.** `convert({ audio, model: "transcribe-1-pro" })` replaces `{ headers: { model: "transcribe-1-pro" } }`, which still works.

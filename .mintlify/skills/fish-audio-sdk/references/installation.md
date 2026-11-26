@@ -17,7 +17,9 @@ npm install fish-audio
 # or: pnpm add fish-audio  / yarn add fish-audio
 ```
 
-- Requires Node.js 18+ (uses the global `fetch` / Web Streams).
+- Requires Node.js 20+ (uses the global `fetch`, `File` and Web Streams).
+- Ships ES module and CommonJS builds: `import { FishAudioClient } from "fish-audio"` and `const { FishAudioClient } = require("fish-audio")` both work (`require` needs `fish-audio` 0.2.0+).
+- The WebSocket methods (`textToSpeech.convertRealtime`, `speechToText.convertRealtime`) are Node.js only.
 
 ## Authentication
 
@@ -52,7 +54,7 @@ Never hardcode a key in source. If neither the argument nor `FISH_API_KEY` is se
 | Request timeout    | `timeout=240.0` (seconds)           | per-call `requestOptions.timeoutInSeconds` |
 | Custom HTTP client | `httpx_client=`                     | (not exposed)                              |
 
-> Python caveat: if you pass your own `httpx_client`, the SDK uses it **as-is**. Your `base_url`, `timeout`, and the `Authorization` header are **not** applied to it. Pre-configure those on the client you inject.
+> Python caveat: if you pass your own `httpx_client`, your `base_url` and `timeout` are **not** applied to it. Pre-configure those on the client you inject. The SDK still adds the `Authorization` header to every request.
 
 There is no client-level `max_retries` or `default_headers` option in Python. Per-request headers go through `request_options`. See [errors.md](errors.md) for retry/timeout behavior.
 

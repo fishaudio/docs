@@ -67,10 +67,11 @@ import { readFile } from "fs/promises";
 
 const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 
-const result = await client.speechToText.convert(
-  { audio: new File([await readFile("speech.wav")], "speech.wav") },
-  { headers: { model: "transcribe-1-pro" } }
-);
+// model requires fish-audio 0.2.0 or later
+const result = await client.speechToText.convert({
+  audio: new File([await readFile("speech.wav")], "speech.wav"),
+  model: "transcribe-1-pro",
+});
 console.log(result.text);
 ```
 
