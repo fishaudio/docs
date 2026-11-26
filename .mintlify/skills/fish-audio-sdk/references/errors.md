@@ -100,13 +100,13 @@ What the JS client actually throws for ordinary HTTP requests (`convert`, `voice
 
 Realtime speech-to-text (`speechToText.convertRealtime`) throws from the `for await` loop:
 
-| Error                                                                        | When                                                                                                          |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `BadRequestError` / `UnauthorizedError` / `ForbiddenError` / `NotFoundError` | the WebSocket handshake was refused with 400 / 401 / 403 / 404 (an invalid API key gives `UnauthorizedError`) |
-| `FishAudioError`                                                             | the handshake was refused with any other status, such as 402 or 429; read `.statusCode` and `.body`           |
-| `RealtimeSTTError` (extends `FishAudioError`)                                | the session failed or the connection was lost; read `.errorType`, `.statusCode`, `.closeCode`, `.requestId`   |
+| Error                                                                        | When                                                                                                                           |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `BadRequestError` / `UnauthorizedError` / `ForbiddenError` / `NotFoundError` | the WebSocket handshake was refused with 400 / 401 / 403 / 404 (an invalid API key gives `UnauthorizedError`)                  |
+| `FishAudioError`                                                             | the handshake was refused with any other status, such as 402 or 429; read `.statusCode` and `.body`                            |
+| `RealtimeSTTError` (extends `FishAudioError`)                                | the session failed or the connection was lost; read `.errorType`, `.closeCode`, `.requestId`, and `.statusCode` when it is set |
 
-All of these extend `FishAudioError`, so `err.statusCode` works for each of them.
+All of these extend `FishAudioError`. `err.statusCode` is set when the handshake is refused. On a `RealtimeSTTError` it can be `undefined`: a lost connection has a `closeCode` but no HTTP status, so handle connection errors without relying on a status.
 
 ### Retries & timeouts (JavaScript)
 

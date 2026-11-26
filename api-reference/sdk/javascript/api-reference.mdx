@@ -77,7 +77,7 @@ console.log(res.text);
 Parameters: `request` (STTRequest), `requestOptions?` (for example `timeoutInSeconds`) <br />
 Returns: `STTResponse`
 
-`model` is sent as the `model` header. Without it, the request is served and billed as `transcribe-1`. See [Speech to Text](/features/speech-to-text).
+`model` is sent as the `model` header. Without it, and without a `model` header in `requestOptions.headers`, the request is served and billed as `transcribe-1`. See [Speech to Text](/features/speech-to-text).
 
 ### convertRealtime()
 Transcribe live audio with `transcribe-stream-1` (Preview) over a WebSocket, turn by turn. Send 16-bit little-endian mono PCM in chunks of 20–40 ms as you capture it. The SDK opens the session, sends each chunk as the audio source yields it, and ends the session when the source is exhausted. It runs in Node.js only.
@@ -169,7 +169,7 @@ await stream.close(); // end the session and close the connection
 
 Errors are thrown from the `for await` loop:
 
-- `RealtimeSTTError` when the server ends the session or the connection is lost. It carries `errorType` (such as `unsupported_audio`; match on this field), `statusCode`, `requestId`, `closeCode` and `recoverable`.
+- `RealtimeSTTError` when the server ends the session or the connection is lost. It carries `errorType` (such as `unsupported_audio`; match on this field), `statusCode`, `requestId`, `closeCode` and `recoverable`. `statusCode` and `closeCode` are optional: a lost connection has no HTTP status, so they can be `undefined`.
 - When the connection is refused: `BadRequestError` (400), `UnauthorizedError` (401), `ForbiddenError` (403) or `NotFoundError` (404), and `FishAudioError` with a `statusCode` for any other status, such as 402 or 429. All of them extend `FishAudioError`, so `err.statusCode` works for each.
 - The audio source's own error when the audio source throws.
 
