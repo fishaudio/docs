@@ -18,6 +18,14 @@ iconType: "solid"
   timeline editing.
 </Note>
 
+<Tip>
+  The Python SDK (`fish-audio-sdk` 1.6.0 or later) parses this stream for you:
+  `client.tts.convert_with_timestamps()` and
+  `client.tts.stream_with_timestamps()` return the audio with every segment
+  already on the complete audio timeline. See [Word
+  timestamps](/features/text-to-speech#word-timestamps).
+</Tip>
+
 ## How the Stream Works
 
 The response is a Server-Sent Events stream. Every event includes:
