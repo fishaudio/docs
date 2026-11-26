@@ -87,6 +87,7 @@ Under **Conversation**, click **Add message** to build the history, and set each
 | Expectation                  | `expectation`, required                                                             |
 | Success and failure examples | `success_examples` and `failure_examples`, lists of strings                         |
 | Channel                      | `channel`: `web_voice`, `phone_inbound`, or `phone_outbound`. Omit it for Web voice |
+| Judge model                  | `judge` with `model` and `reasoning_level`, or `null` to use the workspace default  |
 
 ```json
 {
@@ -369,6 +370,8 @@ Every Simulation field lives under `simulation`. An optional `conversation`, up 
 | Current date and time             | `context.current_time`: `true` or `false`, default `false`                               |
 | Repeat                            | `repeat_count`, 1 to 20                                                                  |
 
+The judge is the test's own `judge` field, outside `simulation`, as on Single Turn tests (see [Judge model](#judge-model)).
+
 Tools are referenced by `id`, `name`, and `type`, as in Tool tests, and integration tools use the `<provider_key>:<tool_name>` ids that [List Test Tools](/api-reference/endpoint/agent/list-test-tools) returns. Assertions can name system tools, a mock entry and `real_tools` cannot. Parameter conditions (`when` on a mock entry, `params` on a required call) map a parameter name to `{"type": "exact" | "regex" | "any", "value": "..."}`.
 
 ```json
@@ -420,6 +423,45 @@ Tools are referenced by `id`, `name`, and `type`, as in Tool tests, and integrat
 </Tabs>
 
 The [rescheduling tutorial](/agents/test/simulation-tutorial) walks through a larger example with conditional mocks, an injected error, and forbidden tools.
+
+## Judge model
+
+A judge is one model at one reasoning level. It scores Single Turn and Simulation tests, Tool tests have none. Its tokens are billed at that model's rate.
+
+A test without its own judge uses the workspace default. A workspace that hasn't set one uses the platform default, currently Claude Sonnet 5.5 at very high reasoning. The platform default can change, so set a model yourself if you need a fixed judge.
+
+<Tabs className="console-api">
+<Tab title="Console" icon="browser">
+
+Click **Test settings** on the **Tests** page of the library or of an agent, and pick the workspace's **Default judge model**, plus its **Reasoning** level when it has more than one. Each model shows its estimated cost per Single Turn run and how fast it answers.
+
+On a test, **Judge model** picks its own judge, and **Workspace default** follows the workspace. Each run's result names the model and level that judged it.
+
+</Tab>
+<Tab title="API" icon="code">
+
+[List LLM Models](/api-reference/endpoint/agent/list-llm-models) marks the models you can pick with `test_judge`, with their `reasoning_levels` and the `default` one.
+
+Set a test's `judge` to an object with `model` and `reasoning_level` when you [create](/api-reference/endpoint/agent/create-test) or [update](/api-reference/endpoint/agent/update-test) it. A `null` level uses the model's default level. A `null` or missing `judge` follows the workspace.
+
+[Get Test Settings](/api-reference/endpoint/agent/get-test-settings) and [Update Test Settings](/api-reference/endpoint/agent/update-test-settings) read and set the workspace default under `judge`, and `null` goes back to the platform default. Pass `workspace_id` if your team has more than one workspace.
+
+```bash
+curl --request PATCH \
+  --url https://api.fish.audio/v1/agent/test-settings \
+  --header 'Authorization: Bearer <token>' \
+  --header 'Content-Type: application/json' \
+  --data '{"judge": {"model": "anthropic/claude-opus-5.5", "reasoning_level": "medium"}}'
+```
+
+Each run's `judge` names the model and level that judged it.
+
+</Tab>
+</Tabs>
+
+A run keeps the judge it started with. Judges can disagree on the same conversation, so after you switch, compare a few runs before you read a change in pass rate as your agent's.
+
+If a verdict looks wrong, try a more capable judge model, or add success and failure examples to the test to show the judge what passes and what fails.
 
 ## Attach tests to agents
 
