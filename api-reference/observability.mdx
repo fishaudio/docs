@@ -436,13 +436,92 @@ curl --request POST https://api.fish.audio/v1/tts \
 x-fish-trace-id: 4bf92f3577b34da6a3ce929d0e0e4736
 ```
 
+### Read It with the SDKs
+
+{/* TODO before publishing: replace each VERSION with the first release that includes this. */}
+
+What an SDK call returns carries the response headers, so you can read the
+trace ID of a request that succeeded, or of a stream that broke after it
+started. A header the API did not send reads as missing (`None`, `null`, `""`).
+
+<Tabs>
+  <Tab title="Python">
+
+    Requires `fish-audio-sdk` VERSION or later.
+
+    ```python
+    from fishaudio import FishAudio
+
+    client = FishAudio()
+
+    stream = client.tts.stream(text="Hello from a traced request.")
+    try:
+        audio = stream.collect()
+    finally:
+        trace_id = stream.headers.get("x-fish-trace-id")
+    ```
+
+    The same `headers` attribute is on the streams of
+    `tts.stream_with_timestamps` and `asr.stream_websocket` (empty until the
+    connection opens on the first iteration), and on the results of
+    `tts.convert_with_timestamps` and `asr.transcribe`. `tts.convert` returns
+    only the audio; use `tts.stream` as above. `tts.stream_websocket` does not
+    expose the headers yet.
+
+  </Tab>
+  <Tab title="TypeScript">
+
+    HTTP calls work with any version; `stream.rawResponse` requires
+    `fish-audio` VERSION or later.
+
+    ```typescript
+    import { FishAudioClient } from "fish-audio";
+
+    const client = new FishAudioClient();
+
+    const { data: audio, rawResponse } = await client.textToSpeech
+      .convert({ text: "Hello from a traced request." })
+      .withRawResponse();
+    const traceId = rawResponse.headers.get("x-fish-trace-id");
+    ```
+
+    `speechToText.convert` works the same way. The stream that
+    `speechToText.convertRealtime` returns has the handshake response as
+    `stream.rawResponse` once the first event has arrived.
+    `textToSpeech.convertRealtime` does not expose it yet.
+
+  </Tab>
+  <Tab title="Go">
+
+    Requires `fish-audio-go` VERSION or later.
+
+    ```go
+    stream, err := client.TTS.Stream(ctx, &fishaudio.StreamParams{
+    	Text: "Hello from a traced request.",
+    })
+    if err != nil {
+    	log.Fatal(err)
+    }
+    audio, err := stream.Collect()
+    traceID := stream.Header.Get("x-fish-trace-id") // also set when Collect fails
+    ```
+
+    The stream that `TTS.StreamWebSocket` returns has the same `Header` field,
+    and `ASR.Transcribe` returns the headers as `result.Header`. `TTS.Convert`
+    returns only the audio; use `TTS.Stream` and `Collect` as above.
+
+  </Tab>
+</Tabs>
+
 ## Speech-to-Text Request IDs
 
 `transcribe-1-pro` responses from `POST /v1/asr` include a `request_id` field
 in the JSON body, on success and on its own error responses, and the same value
 in the `x-request-id` response header. Platform errors, such as authentication,
 credit, and concurrency errors, and errors from the network edge do not carry
-it. Include it when you contact support about a transcription request. See
+it. Include it when you contact support about a transcription request. The
+SDKs return it as `request_id` (Python, TypeScript) or `RequestID` (Go) on the
+transcription result. See
 [Speech to Text](/api-reference/endpoint/openapi-v1/speech-to-text#read-the-response).
 
 ## Enterprise Performance Analysis
