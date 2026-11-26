@@ -87,6 +87,7 @@ Under **Conversation**, click **Add message** to build the history, and set each
 | Expectation                  | `expectation`, required                                                             |
 | Success and failure examples | `success_examples` and `failure_examples`, lists of strings                         |
 | Channel                      | `channel`: `web_voice`, `phone_inbound`, or `phone_outbound`. Omit it for Web voice |
+| Judge model                  | `judge` with `model` and `reasoning_level`, or `null` to use the workspace default  |
 
 ```json
 {
@@ -369,6 +370,8 @@ Every Simulation field lives under `simulation`. An optional `conversation`, up 
 | Current date and time             | `context.current_time`: `true` or `false`, default `false`                               |
 | Repeat                            | `repeat_count`, 1 to 20                                                                  |
 
+The judge is the test's own `judge` field, outside `simulation`, as on Single Turn tests (see [Judge model](#judge-model)).
+
 Tools are referenced by `id`, `name`, and `type`, as in Tool tests, and integration tools use the `<provider_key>:<tool_name>` ids that [List Test Tools](/api-reference/endpoint/agent/list-test-tools) returns. Assertions can name system tools, a mock entry and `real_tools` cannot. Parameter conditions (`when` on a mock entry, `params` on a required call) map a parameter name to `{"type": "exact" | "regex" | "any", "value": "..."}`.
 
 ```json
@@ -420,6 +423,43 @@ Tools are referenced by `id`, `name`, and `type`, as in Tool tests, and integrat
 </Tabs>
 
 The [rescheduling tutorial](/agents/test/simulation-tutorial) walks through a larger example with conditional mocks, an injected error, and forbidden tools.
+
+## Judge model
+
+Single Turn and Simulation tests are judged by one model at one reasoning level. A test that doesn't pick its own judge uses your workspace's default judge, which is Claude Sonnet 5.5 at very high reasoning until you change it. The judge's tokens are billed at the rate of the model that judged the run, so a smaller model or a lower level makes each run cheaper. Tool tests have no judge.
+
+<Tabs className="console-api">
+<Tab title="Console" icon="browser">
+
+To change the default for every test in the workspace, click **Test settings** on the **Tests** page of the library or of an agent, and pick a **Default judge model**. Each model is listed with the estimated cost of a Single Turn run and how fast the judge answers. When the model offers more than one reasoning level, pick one under **Reasoning**.
+
+To pick a judge for one test, open it and choose a **Judge model**. **Workspace default** follows the workspace setting.
+
+The result of each run names the model that judged it and its reasoning level.
+
+</Tab>
+<Tab title="API" icon="code">
+
+The models you can pick are the ones [List LLM Models](/api-reference/endpoint/agent/list-llm-models) returns with a `test_judge`. Its `reasoning_levels` are the levels you can pick for that model, and the one marked `default` applies when you name no level.
+
+Set a test's own judge with `judge` when you [create](/api-reference/endpoint/agent/create-test) or [update](/api-reference/endpoint/agent/update-test) it, an object with `model` and `reasoning_level`. A `reasoning_level` of `null` uses the model's default level. A `judge` of `null` follows the workspace default, and a test you create without it starts there.
+
+Read and change the workspace default with [Get Test Settings](/api-reference/endpoint/agent/get-test-settings) and [Update Test Settings](/api-reference/endpoint/agent/update-test-settings), under `judge`. Send `null` to go back to the platform default. If your team has more than one workspace, pass `workspace_id`.
+
+```bash
+curl --request PATCH \
+  --url https://api.fish.audio/v1/agent/test-settings \
+  --header 'Authorization: Bearer <token>' \
+  --header 'Content-Type: application/json' \
+  --data '{"judge": {"model": "anthropic/claude-opus-5.5", "reasoning_level": "medium"}}'
+```
+
+Each run's `judge` is the model that judged it and the level it judged at.
+
+</Tab>
+</Tabs>
+
+A run takes its judge when it starts, so a change does not reach runs that have already started. Judges do not always agree on the same conversation. After you switch, a change in your pass rate can come from the judge rather than from your agent, so compare a few runs before you act on it.
 
 ## Attach tests to agents
 
