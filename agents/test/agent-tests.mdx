@@ -426,7 +426,7 @@ The [rescheduling tutorial](/agents/test/simulation-tutorial) walks through a la
 
 ## Judge model
 
-Single Turn and Simulation tests are judged by one model at one reasoning level. A test that doesn't pick its own judge uses your workspace's default judge, which is Claude Sonnet 5.5 at very high reasoning until you change it. The judge's tokens are billed at the rate of the model that judged the run, so a smaller model or a lower level makes each run cheaper. Tool tests have no judge.
+Single Turn and Simulation tests are judged by one model at one reasoning level. A test that doesn't pick its own judge uses your workspace's default judge. Until you set one, the workspace follows the platform default, currently Claude Sonnet 5.5 at very high reasoning. The platform default can change. If you need a fixed judge, set a model yourself, as the workspace default or on the test. The judge's tokens are billed at the rate of the model that judged the run, so a smaller model or a lower level makes each run cheaper. Tool tests have no judge.
 
 <Tabs className="console-api">
 <Tab title="Console" icon="browser">
