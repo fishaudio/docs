@@ -272,7 +272,7 @@ Details worth knowing:
 
 ### Interrupted replies and audio position
 
-An `assistant` message that was cut off before it finished has `interrupted: true`, and its `content` is only the part that was actually spoken. `interrupted_by` says what cut it off:
+An `assistant` message that was cut off before it finished has `interrupted: true`, and its `content` is roughly the part that was spoken: it can run a few words past the point where playback stopped. `interrupted_by` says what cut it off:
 
 | `interrupted_by` | What cut the reply off                                                   |
 | ---------------- | ------------------------------------------------------------------------ |
@@ -284,7 +284,7 @@ An `assistant` message that was cut off before it finished has `interrupted: tru
 
 New values may be added, so treat a value you don't know as an unspecified cause. `interrupted` is `null` on complete replies, on `user` messages, and on sessions recorded before the field existed. It is never `false`. `interrupted_by` is `null` whenever `interrupted` is, and on older cut-off replies that did not record a cause.
 
-`audio_start_ms` and `audio_end_ms` locate a message in the [recording](#download-recordings), in milliseconds from the start of the speaker's own track: the `agent` track for `assistant` messages, the `user` track for `user` messages. Each speaker has a separate track, so the numbers are not relative to the session start or to one mixed file. To play a reply, take the `agent` track's URL from the recording response and seek to `audio_start_ms`. Both fields are `null` when the session has no recording, when the position cannot be told, and for `assistant` messages when the agent has more than one `agent` track (an agent with a [background sound](/agents/build/background-sound-voice-effect#recordings)).
+`audio_start_ms` and `audio_end_ms` locate a message in the [recording](#download-recordings), in milliseconds from the start of the speaker's own track: the `agent` track for `assistant` messages, the `user` track for `user` messages. Each speaker has a separate track, so the numbers are not relative to the session start or to one mixed file. To play a reply, take the `agent` track's URL from the recording response and seek to `audio_start_ms`. The positions are approximate: the start is reliable, but the end of a reply that played to the finish can be a few seconds late, and a `user` message can be offset, or `null` when one turn holds several user messages. Both fields are `null` when the session has no recording, when the position cannot be told, and for `assistant` messages when the agent has more than one `agent` track (an agent with a [background sound](/agents/build/background-sound-voice-effect#recordings)).
 
 ### Latency and knowledge retrievals
 

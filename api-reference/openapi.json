@@ -27262,7 +27262,7 @@
               }
             ],
             "default": null,
-            "description": "True when this assistant reply was cut off before it finished; `content` is then only the part that was actually spoken. Null on complete replies, on user messages and on messages from before the field existed (it is never false).",
+            "description": "True when this assistant reply was cut off before it finished; `content` is then roughly the part that was spoken and may run a few words past the point where playback stopped. Null on complete replies, on user messages and on messages from before the field existed (it is never false).",
             "title": "Interrupted"
           },
           "interrupted_by": {
@@ -27288,7 +27288,7 @@
               }
             ],
             "default": null,
-            "description": "Where this message starts, in milliseconds from the start of the speaker's own recording track in `GET /v1/agent/sessions/{session_id}/recording` (`tracks[]`): the track with `role: agent` for assistant messages, `role: user` for user messages. Null when there is no recording or the position cannot be told.",
+            "description": "Where this message starts, in milliseconds from the start of the speaker's own recording track in `GET /v1/agent/sessions/{session_id}/recording` (`tracks[]`): the track with `role: agent` for assistant messages, `role: user` for user messages. An approximate position: the start is reliable, while the end of a reply that played to the finish can be a few seconds late, and a user message can be offset or null when one turn holds several. Null when there is no recording or the position cannot be told.",
             "title": "Audio Start Ms"
           },
           "audio_end_ms": {
@@ -27301,7 +27301,7 @@
               }
             ],
             "default": null,
-            "description": "Where this message ends, on the same track as `audio_start_ms`.",
+            "description": "Where this message ends, on the same track as `audio_start_ms`; approximate in the same way.",
             "title": "Audio End Ms"
           }
         },
