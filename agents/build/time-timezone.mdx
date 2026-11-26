@@ -64,7 +64,14 @@ curl --request POST https://api.fish.audio/v1/agent/sessions \
 
 ## Turn it on or off
 
-**For the whole agent**, switch **Current date & time** in the Builder (**Configuration**, under the time zone) or set `context.current_time` through the [config API](/agents/build/configuration#current-date-and-time). This is the default for every session of the agent on every channel, and the only switch for phone calls, which the platform creates without a session request. Publish the agent for the change to reach live traffic. Turn it off when the agent must not know the real date and time: a role-play agent set on a fictional date, a prompt that states its own date, or a test that must be reproducible.
+**For the whole agent**, switch **Current date & time** in the Builder (**Configuration**, under the time zone) or set `context.current_time` through the [config API](/agents/build/configuration#current-date-and-time). This is the default for every session of the agent on every channel, and the only switch for phone calls, which the platform creates without a session request. Publish the agent for the change to reach live traffic. New agents start with it on.
+
+Turn it off when the agent must not know the real date and time: a role-play agent set on a fictional date, a prompt that states its own date, or a test that must be reproducible. With it off:
+
+- The platform does not give the agent the date or the time.
+- The agent is told not to say, guess, or hint at the date, the day of the week, the year, or the time. Some models know the real date from their provider even when the prompt has none, and this keeps them from saying it.
+- A date or time written in the agent's own prompt takes precedence over this rule.
+- When a caller asks for the date or time and the prompt has none, the agent says it doesn't know.
 
 **For one session**, send `context.current_time` when creating it. An explicit value overrides the agent's setting in either direction: `false` withholds the date and time from an agent that has them on, `true` injects them for one session of an agent that has them off. The older `world_context` field (`worldContext` in the SDK) is still accepted as an alias.
 
