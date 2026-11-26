@@ -426,25 +426,25 @@ The [rescheduling tutorial](/agents/test/simulation-tutorial) walks through a la
 
 ## Judge model
 
-Single Turn and Simulation tests are judged by one model at one reasoning level. A test that doesn't pick its own judge uses your workspace's default judge. Until you set one, the workspace follows the platform default, currently Claude Sonnet 5.5 at very high reasoning. The platform default can change. If you need a fixed judge, set a model yourself, as the workspace default or on the test. The judge's tokens are billed at the rate of the model that judged the run, so a smaller model or a lower level makes each run cheaper. Tool tests have no judge.
+A judge is one model at one reasoning level. It scores Single Turn and Simulation tests, Tool tests have none. Its tokens are billed at that model's rate, so a smaller model or a lower level costs less.
+
+A test without its own judge uses the workspace default. A workspace that hasn't set one uses the platform default, currently Claude Sonnet 5.5 at very high reasoning. The platform default can change, so set a model yourself if you need a fixed judge.
 
 <Tabs className="console-api">
 <Tab title="Console" icon="browser">
 
-To change the default for every test in the workspace, click **Test settings** on the **Tests** page of the library or of an agent, and pick a **Default judge model**. Each model is listed with the estimated cost of a Single Turn run and how fast the judge answers. When the model offers more than one reasoning level, pick one under **Reasoning**.
+Click **Test settings** on the **Tests** page of the library or of an agent, and pick the workspace's **Default judge model**, plus its **Reasoning** level when it has more than one. Each model shows its estimated cost per Single Turn run and how fast it answers.
 
-To pick a judge for one test, open it and choose a **Judge model**. **Workspace default** follows the workspace setting.
-
-The result of each run names the model that judged it and its reasoning level.
+On a test, **Judge model** picks its own judge, and **Workspace default** follows the workspace. Each run's result names the model and level that judged it.
 
 </Tab>
 <Tab title="API" icon="code">
 
-The models you can pick are the ones [List LLM Models](/api-reference/endpoint/agent/list-llm-models) returns with a `test_judge`. Its `reasoning_levels` are the levels you can pick for that model, and the one marked `default` applies when you name no level.
+[List LLM Models](/api-reference/endpoint/agent/list-llm-models) marks the models you can pick with `test_judge`, with their `reasoning_levels` and the `default` one.
 
-Set a test's own judge with `judge` when you [create](/api-reference/endpoint/agent/create-test) or [update](/api-reference/endpoint/agent/update-test) it, an object with `model` and `reasoning_level`. A `reasoning_level` of `null` uses the model's default level. A `judge` of `null` follows the workspace default, and a test you create without it starts there.
+Set a test's `judge` to an object with `model` and `reasoning_level` when you [create](/api-reference/endpoint/agent/create-test) or [update](/api-reference/endpoint/agent/update-test) it. A `null` level uses the model's default level. A `null` or missing `judge` follows the workspace.
 
-Read and change the workspace default with [Get Test Settings](/api-reference/endpoint/agent/get-test-settings) and [Update Test Settings](/api-reference/endpoint/agent/update-test-settings), under `judge`. Send `null` to go back to the platform default. If your team has more than one workspace, pass `workspace_id`.
+[Get Test Settings](/api-reference/endpoint/agent/get-test-settings) and [Update Test Settings](/api-reference/endpoint/agent/update-test-settings) read and set the workspace default under `judge`, and `null` goes back to the platform default. Pass `workspace_id` if your team has more than one workspace.
 
 ```bash
 curl --request PATCH \
@@ -454,12 +454,12 @@ curl --request PATCH \
   --data '{"judge": {"model": "anthropic/claude-opus-5.5", "reasoning_level": "medium"}}'
 ```
 
-Each run's `judge` is the model that judged it and the level it judged at.
+Each run's `judge` names the model and level that judged it.
 
 </Tab>
 </Tabs>
 
-A run takes its judge when it starts, so a change does not reach runs that have already started. Judges do not always agree on the same conversation. After you switch, a change in your pass rate can come from the judge rather than from your agent, so compare a few runs before you act on it.
+A run keeps the judge it started with. Judges can disagree on the same conversation, so after you switch, compare a few runs before you read a change in pass rate as your agent's.
 
 ## Attach tests to agents
 
