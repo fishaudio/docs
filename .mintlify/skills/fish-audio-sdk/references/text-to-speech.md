@@ -21,24 +21,24 @@ audio = client.tts.convert(
 )
 
 # Pick a model and adjust speed
-audio = client.tts.convert(text="Speaking faster.", model="s2-pro", speed=1.5)
+audio = client.tts.convert(text="Speaking faster.", model="s2.1-pro", speed=1.5)
 ```
 
 ### `tts.convert` parameters
 
 All keyword-only:
 
-| Param             | Type                                | Default       | Notes                                                                                                                                                                                                                                                                                                                                                  |
-| ----------------- | ----------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `text`            | `str`                               | — (required)  | Text to synthesize.                                                                                                                                                                                                                                                                                                                                    |
-| `reference_id`    | `str \| None`                       | `None`        | Voice model id to speak with.                                                                                                                                                                                                                                                                                                                          |
-| `references`      | `list[ReferenceAudio] \| None`      | `None`        | Inline clone samples; see [voice-cloning.md](voice-cloning.md).                                                                                                                                                                                                                                                                                        |
-| `format`          | `"mp3" \| "wav" \| "pcm" \| "opus"` | `"mp3"`       | Output format.                                                                                                                                                                                                                                                                                                                                         |
-| `latency`         | `"normal" \| "balanced"`            | `"balanced"`  | `normal` = higher quality, `balanced` = faster. (No `"low"`.)                                                                                                                                                                                                                                                                                          |
-| `speed`           | `float`                             | —             | Shortcut for prosody speed (0.5–2.0).                                                                                                                                                                                                                                                                                                                  |
-| `config`          | `TTSConfig`                         | `TTSConfig()` | Reusable bundle of the settings below.                                                                                                                                                                                                                                                                                                                 |
-| `model`           | `"s2-pro" \| "s1"`                  | `"s2-pro"`    | Synthesis model per current SDK typing. The API also accepts `"s2.1-pro"` / `"s2.1-pro-free"`, forwarded fine at runtime, but add `# type: ignore` for static checkers. `s1` is deprecated and will be retired on December 31, 2026; after that date, requests that specify `s1` are served by `s2.1-pro`. `speech-1.5` / `speech-1.6` are deprecated. |
-| `request_options` | `RequestOptions \| None`            | `None`        | Per-request timeout / headers; see [errors.md](errors.md).                                                                                                                                                                                                                                                                                             |
+| Param             | Type                                | Default       | Notes                                                            |
+| ----------------- | ----------------------------------- | ------------- | ---------------------------------------------------------------- |
+| `text`            | `str`                               | — (required)  | Text to synthesize.                                              |
+| `reference_id`    | `str \| None`                       | `None`        | Voice model id to speak with.                                    |
+| `references`      | `list[ReferenceAudio] \| None`      | `None`        | Inline clone samples; see [voice-cloning.md](voice-cloning.md). |
+| `format`          | `"mp3" \| "wav" \| "pcm" \| "opus"` | `"mp3"`       | Output format.                                                   |
+| `latency`         | `"normal" \| "balanced"`            | `"balanced"`  | `normal` = higher quality, `balanced` = faster. (No `"low"`.)    |
+| `speed`           | `float`                             | —             | Shortcut for prosody speed (0.5–2.0).                            |
+| `config`          | `TTSConfig`                         | `TTSConfig()` | Reusable bundle of the settings below.                           |
+| `model`           | `"s2.1-pro" \| "s2.1-pro-free" \| "s2-pro" \| "drama-3" \| "s1"` or any `str` | `"s2.1-pro"`  | Synthesis model (`fish-audio-sdk` 1.4.0 and later; 1.3.0 and earlier defaulted to `"s2-pro"`). `s1` is deprecated and will be retired on December 31, 2026; after that date, requests that specify `s1` are served by `s2.1-pro`. `speech-1.5` / `speech-1.6` are deprecated. |
+| `request_options` | `RequestOptions \| None`            | `None`        | Per-request timeout / headers; see [errors.md](errors.md).      |
 
 Direct params (`reference_id`, `format`, `latency`, `speed`) override the matching field on `config` when set.
 
@@ -76,6 +76,30 @@ audio = client.tts.stream(text="Hello!").collect()
 
 Async: every method mirrors onto `AsyncFishAudio`; `await client.tts.convert(...)`, and `client.tts.stream(...)` must be awaited before iterating with `async for`.
 
+### Word timestamps (`fish-audio-sdk` 1.6.0+)
+
+`convert_with_timestamps()` / `stream_with_timestamps()` take the same keyword arguments as `convert()` / `stream()` and call `POST /v1/tts/stream/with-timestamp`.
+
+```python
+result = client.tts.convert_with_timestamps(text="Hello! Welcome to Fish Audio.")
+result.audio      # bytes, complete audio
+result.segments   # list[TTSTimestampSegment(text, start, end)], seconds from the start of result.audio
+result.duration   # float | None, length reported by the API
+
+with client.tts.stream_with_timestamps(text="Long passage...", format="opus") as stream:
+    for event in stream:         # TTSTimestampEvent
+        sink.write(event.audio)  # may be b"" on a closing event that only corrects timings
+        show(stream.segments)    # timings so far on the full-audio timeline; re-read after every event
+```
+
+- Segments are words without punctuation; Chinese/Japanese come back one character per segment; numbers follow the spoken reading (`$42.50` → `42`, `50`). Never match segments against the input text.
+- Text the API can't time (only punctuation, or only a tag like `[sigh]`): audio is complete, `segments == []`, `duration is None`. Guard before formatting `duration`.
+- `stream.collect()` returns the same `TTSTimestampResult`; call it instead of iterating. After iteration has started it raises `RuntimeError`.
+- Leaving the `with` block (e.g. `break`) closes the connection; without `with`, call `stream.close()` (`await stream.aclose()` async).
+- Async: `await client.tts.convert_with_timestamps(...)`; `async with await client.tts.stream_with_timestamps(...) as stream: async for event in stream: ...`.
+- Do not add `event.chunk_audio_offset_sec` to `stream.segments` or `result.segments`: they are already global. (`event.alignment` is the raw per-chunk snapshot, chunk-local times, `None` when absent.)
+- No timestamps from `stream_websocket()`, and the JS SDK has no timestamp method; use the HTTP/WebSocket endpoints from the `fish-audio-api` skill.
+
 ## JavaScript: `client.textToSpeech`
 
 `convert(request, backend?, requestOptions?)` resolves to a `ReadableStream<Uint8Array>` you can `play()` or pipe to a file. `backend` is the **second positional** argument, **not** a named option. It defaults to `"s2.1-pro"` in `fish-audio` 0.2.0 (0.1.0 defaulted to the deprecated `"s1"`, so pass it explicitly if a project is still on 0.1.0).
@@ -112,5 +136,5 @@ await writeFile("out.mp3", audio2);
 
 ## Model & expression notes
 
-- `s2.1-pro` is recommended for production; `s2-pro` is the Python SDK default. `s1` is the previous generation: S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro`. Migration: `https://docs.fish.audio/developer-guide/models-pricing/migrate-from-s1`.
+- `s2.1-pro` is recommended for production and is the Python SDK default (`fish-audio-sdk` 1.4.0 and later). `s1` is the previous generation: S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro`. Migration: `https://docs.fish.audio/developer-guide/models-pricing/migrate-from-s1`.
 - Emotion/expression is controlled inline in `text` (S2-Pro uses free-form `[bracket]` tags; the deprecated S1 uses legacy `(parenthesis)` tags, and the API does not convert between them); there is no separate SDK parameter. Full tag list: `https://docs.fish.audio/api-reference/emotion-reference`.

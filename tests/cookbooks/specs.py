@@ -105,6 +105,27 @@ SPECS = [
         ],
     },
     {
+        "slug": "speech-with-captions",
+        "path": f"{COOKBOOK}/speech-with-captions.mdx",
+        "cases": [
+            {
+                "name": "TTS with SRT/VTT captions",
+                "block": 0,
+                "file": ("narration.mp3", "mp3"),
+                # Cues are grouped words in order, each ending after it starts, none overlapping the
+                # next, the last no later than MIN_MS past the reported duration; both caption files are written.
+                "postamble": (
+                    "assert cues and all(c['end'] > c['start'] for c in cues), cues\n"
+                    "assert all(a['start'] <= b['start'] for a, b in zip(cues, cues[1:])), cues\n"
+                    "assert all(a['end'] <= b['start'] for a, b in zip(cues, cues[1:])), cues\n"
+                    "assert result.duration is None or cues[-1]['end'] <= round(result.duration * 1000) + MIN_MS, (cues[-1], result.duration)\n"
+                    "assert open('narration.srt', encoding='utf-8').read().startswith('1\\n')\n"
+                    "assert open('narration.vtt', encoding='utf-8').read().startswith('WEBVTT\\n')"
+                ),
+            }
+        ],
+    },
+    {
         "slug": "clone-and-wait-until-ready",
         "path": f"{COOKBOOK}/clone-and-wait-until-ready.mdx",
         "cases": [

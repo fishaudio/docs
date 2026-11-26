@@ -18,7 +18,7 @@ If the user wants raw `curl` / HTTP / WebSocket without installing an SDK, use t
 
 - **Auth:** both SDKs read the API key from the `FISH_API_KEY` environment variable automatically. Get keys at `https://fish.audio/app/api-keys`. Never hardcode a key.
 - **Base URL:** `https://api.fish.audio` (override with `base_url=` in Python / `baseUrl:` in JS).
-- **TTS models:** the API supports `s1` (deprecated), `s2-pro`, `s2.1-pro` (recommended for production), and `s2.1-pro-free` (free tier). Do not choose `s1` for new code: S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro` (migration: `https://docs.fish.audio/developer-guide/models-pricing/migrate-from-s1`). However, the Python SDK types `model` as only `s1` and `s2-pro` (plus the deprecated `speech-1.x`), default `s2-pro`; it forwards the value without runtime validation, so `"s2.1-pro"` works over the wire but type checkers flag it (add `# type: ignore`, or use the `fish-audio-api` skill for raw calls). The JS SDK (`fish-audio` 0.2.0) defaults to `"s2.1-pro"`, and its `Backends` type names `s2.1-pro`, `s2.1-pro-free`, `drama-3`, `s2-pro`, `s1` and accepts any other string, so no cast is needed. `fish-audio` 0.1.0 defaulted to the deprecated `"s1"`; if a project is on 0.1.0, upgrade it or pass the model explicitly. `speech-1.5` / `speech-1.6` are **deprecated**. In Python pass `model="s2-pro"` (keyword); in JS pass the **positional** `backend` argument.
+- **TTS models:** the API supports `s1` (deprecated), `s2-pro`, `s2.1-pro` (recommended for production), and `s2.1-pro-free` (free tier). Do not choose `s1` for new code: S1 is deprecated and will be retired on December 31, 2026. After that date, requests that specify `s1` are served by `s2.1-pro` (migration: `https://docs.fish.audio/developer-guide/models-pricing/migrate-from-s1`). The Python SDK (`fish-audio-sdk` 1.4.0 and later) defaults to `s2.1-pro`; its `Model` type names `s1`, `s2-pro`, `s2.1-pro`, `s2.1-pro-free` and `drama-3` and accepts any other string, so no `# type: ignore` is needed (1.3.0 and earlier defaulted to `s2-pro` and typed only `s1` / `s2-pro`). The JS SDK (`fish-audio` 0.2.0) defaults to `"s2.1-pro"`, and its `Backends` type names `s2.1-pro`, `s2.1-pro-free`, `drama-3`, `s2-pro`, `s1` and accepts any other string, so no cast is needed. `fish-audio` 0.1.0 defaulted to the deprecated `"s1"`; if a project is on 0.1.0, upgrade it or pass the model explicitly. `speech-1.5` / `speech-1.6` are **deprecated**. In Python pass `model="s2.1-pro"` (keyword); in JS pass the **positional** `backend` argument.
 - **ASR models:** use `transcribe-1-pro` (recommended: speaker turns, long recordings, emotion cues). It is selected by the `model` HTTP header: in JS pass `model: "transcribe-1-pro"` in the `convert()` request (`fish-audio` 0.2.0+), in Python send the header with `RequestOptions(additional_headers=...)`. A request without it is served and billed as `transcribe-1`, the model for short recordings. See [references/speech-to-text.md](references/speech-to-text.md).
 - **Audio formats:** `mp3` (default), `wav`, `pcm`, `opus`.
 - **Playback in examples:** `play()` shells out to a system audio tool: Python uses **ffmpeg/ffplay** (or `mpv`), JS uses **ffplay**. It is for local/desktop use; in a server, `save()` to a file or stream the bytes instead. See [references/installation.md](references/installation.md).
@@ -97,6 +97,7 @@ The two SDKs do **not** use the same names. Use this map when porting code betwe
 | Text-to-Speech        | `client.tts.convert(text=...)` → `bytes`          | `client.textToSpeech.convert({ text })`                    |
 | TTS HTTP stream       | `client.tts.stream(...)` → `AudioStream`          | (use `convert`; realtime streaming is `convertRealtime`)   |
 | Realtime WebSocket    | `client.tts.stream_websocket(text_stream)`        | `client.textToSpeech.convertRealtime(request, textStream)` |
+| TTS + word timestamps | `client.tts.convert_with_timestamps(text=...)`    | not in the SDK; call the HTTP endpoint                     |
 | Speech-to-Text        | `client.asr.transcribe(audio=...)`                | `client.speechToText.convert({ audio })`                   |
 | Realtime STT          | see the Python SDK reference                      | `client.speechToText.convertRealtime(request, audio)`      |
 | List voice models     | `client.voices.list()`                            | `client.voices.search()`                                   |
@@ -105,12 +106,13 @@ The two SDKs do **not** use the same names. Use this map when porting code betwe
 | Update / delete voice | `client.voices.update(id, ...)` / `delete(id)`    | `client.voices.update(id, ...)` / `delete(id)`             |
 | Credit balance        | `client.account.get_credits()`                    | `client.user.get_api_credit()`                             |
 | Subscription package  | `client.account.get_package()`                    | `client.user.get_package()`                                |
-| Choose model          | `model="s2-pro"` keyword arg                      | positional `backend` arg, e.g. `convert(req, "s2-pro")`    |
+| Choose model          | `model="s2.1-pro"` keyword arg                    | positional `backend` arg, e.g. `convert(req, "s2-pro")`    |
 | ASR model (header)    | `RequestOptions(additional_headers=...)`          | `convert({ audio, model: "transcribe-1-pro" })`            |
 
 ## Decision shortcuts
 
 - **Audio from text** → `tts.convert` (Python) / `textToSpeech.convert` (JS).
+- **Audio plus the time of each word (captions, highlighting)** → `tts.convert_with_timestamps` / `tts.stream_with_timestamps` (Python, `fish-audio-sdk` 1.6.0+). See "Word timestamps" in `references/text-to-speech.md`.
 - **Reuse a saved voice** → pass `reference_id` (the voice model `id`).
 - **Clone a voice instantly from a clip** → pass `references=[ReferenceAudio(audio=..., text=...)]` (Python) / `references: [{ audio, text }]` (JS). See [voice-cloning](references/voice-cloning.md).
 - **Persistent custom voice to reuse** → create a voice model, then use its `id` as `reference_id`.
