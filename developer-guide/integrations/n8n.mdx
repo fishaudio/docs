@@ -42,14 +42,14 @@ On n8n Cloud, open the nodes panel, search for **Fish Audio**, and install the n
 
 The node supports:
 
-- **Text-to-Speech**: Generate audio from text using any voice model. Choose the model: new nodes use `s2.1-pro`, and `s2.1-pro-free` and `drama-3` are also in the list. Under **Additional Options**, **Language** sets the language used to read out numbers, dates, units and symbols; see [Supported normalization languages](/features/text-to-speech#supported-normalization-languages).
+- **Text-to-Speech**: Generate audio from text using any voice model. Choose the model: new nodes use `s2.1-pro`, and `s2.1-pro-free` and `drama-3` are also in the list. Under **Additional Options**, **Language** sets the language used to read out numbers, dates, units and symbols while **Normalize Text** is on; see [Supported normalization languages](/features/text-to-speech#supported-normalization-languages).
 - **Speech-to-Text**: Transcribe audio files. New nodes use `transcribe-1-pro`.
 - **Voice Models**: List, get, create, and delete custom voices
 - **Account**: Check credit balance
 
 The node is also available as an AI tool for use with n8n's AI Agent nodes.
 
-When a request fails, the error shows the Fish Audio trace ID and error code if the API returned them. Include them when you contact support.
+When a request fails and stops the workflow, the error's description shows the Fish Audio trace ID and error code if the API returned them. Include them when you contact support. With **Continue On Fail**, the output item carries only the error message.
 
 These model choices, the **Language** option, and the trace ID in errors require version 0.5.0 or later of the node.
 
