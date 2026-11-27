@@ -4,7 +4,7 @@ Stream text in and get audio out as it's generated, ideal for piping an LLM's to
 
 ## Python: `client.tts.stream_websocket`
 
-The first argument is an **iterable of text chunks** (plain `str`, or `TextEvent` / `FlushEvent` for fine control). The sync method returns an `Iterator[bytes]`; the async method must be awaited and returns an `AsyncIterator[bytes]`.
+The first argument is an **iterable of text chunks** (plain `str`, or `TextEvent` / `FlushEvent` for fine control). The sync method returns an `Iterator[bytes]`; the async method is an async generator: iterate it with `async for`, without `await` on the call.
 
 ### Sync
 
@@ -39,7 +39,7 @@ async def text_chunks():
 
 async def main():
     async with AsyncFishAudio() as client:
-        audio_stream = await client.tts.stream_websocket(text_chunks())
+        audio_stream = client.tts.stream_websocket(text_chunks())
         with open("out.mp3", "wb") as f:
             async for chunk in audio_stream:
                 f.write(chunk)

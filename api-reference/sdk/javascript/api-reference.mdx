@@ -41,6 +41,27 @@ const fishAudio = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 
 Without `apiKey`, the client reads `FISH_API_KEY` from the environment. Pass `baseUrl` to send requests to another address, such as a proxy.
 
+### Request options
+
+Every HTTP method takes a `requestOptions` object as its last argument. Of the realtime WebSocket methods, `speechToText.convertRealtime()` takes only `abortSignal` and `timeoutInSeconds` (there, the time to connect, 30 seconds by default), and `textToSpeech.convertRealtime()` takes none.
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `timeoutInSeconds` | `240` | Time to wait for the response to start, for each attempt. When it runs out, the call throws a `FishAudioError` with no `statusCode`, or `FishAudioTimeoutError`; see [Exceptions](#exceptions). |
+| `maxRetries` | `2` | Retries after a `408`, `429`, or `5xx` response, with exponential backoff. The SDK follows a `Retry-After` header, up to 60 seconds. `0` turns retries off. |
+| `abortSignal` | none | An `AbortSignal` that cancels the request. |
+| `headers` | none | Extra headers for this request. |
+| `queryParams` | none | Extra query string parameters for this request. |
+| `apiKey` | none | An API key for this request instead of the client's. |
+
+```typescript
+const audio = await fishAudio.textToSpeech.convert(
+  { text: "Hello!" },
+  "s2.1-pro-free",
+  { timeoutInSeconds: 30, maxRetries: 0 },
+);
+```
+
 ## Text to Speech
 
 ### convert()
@@ -342,7 +363,7 @@ const audio = await fishAudio.textToSpeech.convert({
 Speech-to-text parameters.
 
 ```typescript
-{ audio: File, model?: "transcribe-1-pro", language?: "en", ignore_timestamps?: boolean }
+{ audio: File, model?: "transcribe-1" | "transcribe-1-pro" | string, language?: string, ignore_timestamps?: boolean }
 ```
 
 Fields: `audio`, `model?`, `language?`, `ignore_timestamps?`
@@ -456,10 +477,13 @@ Fields: `event` ("stop")
 ## Exceptions
 
 ### FishAudioError
-Generic error with `statusCode`, `body`, `rawResponse`.
+Generic error with `statusCode`, `body`, `rawResponse`. `statusCode` is `undefined` when the SDK has no usable response, such as after a timeout or a network error.
+
+### UnprocessableEntityError
+Thrown for `422` (invalid parameters). Extends `FishAudioError`; `body.detail`, when the API sends it, lists the fields that failed. It is the only error class tied to a status that the HTTP methods throw: every other status is a plain `FishAudioError`, so branch on `statusCode`.
 
 ### FishAudioTimeoutError
-Connection timeout error.
+Exported for request timeouts; it extends `Error`, not `FishAudioError`. In `fish-audio` 0.2.0 with the `fetch` built into Node.js, a request that times out reaches you as a `FishAudioError` with no `statusCode` instead, so handle both.
 
 ### RealtimeSTTError
 A realtime speech-to-text session failed. Extends `FishAudioError` with `errorType`, `requestId`, `closeCode` and `recoverable`.

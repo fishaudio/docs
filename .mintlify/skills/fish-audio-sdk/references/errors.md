@@ -65,7 +65,6 @@ audio = client.tts.convert(
 import {
   FishAudioClient,
   FishAudioError,
-  FishAudioTimeoutError,
 } from "fish-audio";
 import { UnprocessableEntityError } from "fish-audio"; // re-exported from the package root
 
@@ -77,11 +76,14 @@ try {
   });
 } catch (err) {
   if (err instanceof UnprocessableEntityError) {
-    console.error("422 validation:", err.body?.detail); // [{ loc, msg, type }]
-  } else if (err instanceof FishAudioTimeoutError) {
-    console.error("request timed out");
+    const body = err.body as { detail?: unknown } | undefined;
+    console.error("422 validation:", body?.detail); // [{ loc, msg, type }]
   } else if (err instanceof FishAudioError) {
-    console.error(err.statusCode, err.body); // branch on err.statusCode (401/403/404/...)
+    if (err.statusCode === undefined) {
+      console.error("no status:", err.message); // a timeout or a network error
+    } else {
+      console.error(err.statusCode, err.body); // branch on err.statusCode (401/403/404/...)
+    }
   } else {
     throw err;
   }
@@ -94,7 +96,7 @@ What the JS client actually throws for ordinary HTTP requests (`convert`, `voice
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | `UnprocessableEntityError` (extends `FishAudioError`) | 422, the **only** typed HTTP subclass thrown; `.body` is `{ detail: [{ loc, msg, type }] }` |
 | `FishAudioError`                                      | every other non-2xx response; read `.statusCode`, `.body`, `.rawResponse`                   |
-| `FishAudioTimeoutError`                               | request exceeded the timeout                                                                |
+| `FishAudioError` with no `statusCode`                 | no usable response: the request exceeded the timeout or the network failed. with Node.js's built-in `fetch`, 0.2.0 does not throw the exported `FishAudioTimeoutError`; a `fetch` that rejects with `AbortError` does |
 
 > For HTTP requests, the package also exports `BadRequestError`, `UnauthorizedError`, `ForbiddenError`, `NotFoundError`, and `TooEarlyError`, but the client throws a generic `FishAudioError` for those statuses. **Branch on `err.statusCode`** rather than relying on `instanceof NotFoundError`.
 
@@ -111,7 +113,7 @@ All of these extend `FishAudioError`. `err.statusCode` is set when the handshake
 ### Retries & timeouts (JavaScript)
 
 - **Automatic retries are built in.** The client retries `408`, `429`, and `>= 500` with exponential backoff (≈1 s base, 60 s cap) plus jitter, honoring `Retry-After`. You don't need to hand-roll a 429 loop.
-- Tune per call via `requestOptions` (the trailing argument on every method):
+- Tune per call via `requestOptions` (the trailing argument on every HTTP method; `speechToText.convertRealtime` takes only `abortSignal` and `timeoutInSeconds`, and `textToSpeech.convertRealtime` takes none):
 
 ```ts
 const audio = await client.textToSpeech.convert({ text: "Hello!" }, "s2-pro", {
@@ -126,7 +128,7 @@ const audio = await client.textToSpeech.convert({ text: "Hello!" }, "s2-pro", {
 
 ## Inspecting raw responses (JS)
 
-Every method returns an awaitable that also exposes the raw response:
+Every HTTP method returns an awaitable that also exposes the raw response (the realtime WebSocket methods do not):
 
 ```ts
 const { data, rawResponse } = await client.textToSpeech
