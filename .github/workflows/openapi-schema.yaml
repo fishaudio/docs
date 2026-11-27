@@ -15,7 +15,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # The pull_request checkout is the merge commit, so HEAD^1 is the tip
+      # of main and depth 2 is enough to see what this PR changes.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - uses: actions/setup-node@v6
         with:
@@ -24,14 +28,45 @@ jobs:
 
       - run: npm ci
 
-      - name: Pull latest OpenAPI schema
-        run: npm run update:openapi
+      - name: Check whether this PR changes the schema
+        id: changed
+        run: |
+          if git diff --quiet HEAD^1 HEAD -- api-reference/openapi.json; then
+            echo "schema=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "schema=true" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Validate OpenAPI schema
+      - name: Validate committed OpenAPI schema
         run: npm run check:openapi
 
+      # A PR that leaves the schema alone must not fail because the live API
+      # moved on; the update-openapi job opens a PR for that.
+      - name: Pull latest OpenAPI schema
+        id: pull
+        continue-on-error: ${{ steps.changed.outputs.schema != 'true' }}
+        run: npm run update:openapi
+
       - name: Ensure committed schema is current
-        run: git diff --exit-code -- api-reference/openapi.json
+        if: steps.pull.outcome == 'success'
+        env:
+          SCHEMA_CHANGED: ${{ steps.changed.outputs.schema }}
+        run: |
+          if git diff --quiet -- api-reference/openapi.json; then
+            echo "api-reference/openapi.json matches the live API schema."
+            exit 0
+          fi
+          git --no-pager diff --stat -- api-reference/openapi.json
+          if [ "$SCHEMA_CHANGED" = "true" ]; then
+            echo "::error file=api-reference/openapi.json::This PR changes api-reference/openapi.json, but the file differs from https://api.fish.audio/openapi.json. Run 'npm run update:openapi' and commit the result, or wait until the API change is live."
+            git --no-pager diff -- api-reference/openapi.json | head -n 200
+            exit 1
+          fi
+          echo "::warning file=api-reference/openapi.json::main is behind https://api.fish.audio/openapi.json. This PR does not change the schema, so it is not blocked; the 'chore: update OpenAPI schema' PR brings main up to date."
+
+      - name: Report that the live schema could not be fetched
+        if: steps.pull.outcome == 'failure'
+        run: echo "::warning::Could not fetch https://api.fish.audio/openapi.json, so the staleness check was skipped. This PR does not change the schema."
 
   update-openapi:
     if: github.event_name != 'pull_request'

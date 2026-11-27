@@ -75,7 +75,7 @@ curl --request POST https://api.fish.audio/v1/agent/agents \
   }'
 ```
 
-- `system_prompt`: write it from the purpose and the business facts the user gave. For business facts still missing, tell the agent to say the staff will confirm them, and list in your reply what the user should send you. It is capped at 32,000 tokens; keep it under 2,000 for latency and cost. See `agents/build/configuration`.
+- `system_prompt`: write it from the purpose and the business facts the user gave. For business facts still missing, tell the agent to say the staff will confirm them, and list in your reply what the user should send you. It is capped at 64,000 tokens (32,000 on `google/gemma-4-26b-a4b-it`). Keep it under 2,000 for latency and cost. See `agents/build/configuration`.
 - `first_message_mode: fixed` speaks `first_message` word for word.
 - `speaking_language`: a language code such as `en`, `es`, `ja`, `zh`. The supported list is in `agents/build/voice-language`.
 - `voice_id`: any public voice model id. `802e3bc2b27e49c2995d23ef70e6ac89` is an English voice. For another language, pick a voice from the Voice Library in that language (no key needed):
@@ -250,7 +250,7 @@ Errors come back as JSON `{ "status": ..., "message": ... }`. A `422` is a list 
 | `404` | Missing id, or one that belongs to another team | Treat both the same. Check the id came from this account. |
 | `409` | `Agent has no published version` | Publish (step 4), then create the session again. |
 | `409` | `This number is already on the platform` | Pick another number from the search. |
-| `422` | Field errors (`loc` names the field) | Fix those fields. Common causes: `system_prompt` over 32,000 tokens; an explicit `null` in a `PATCH` (omit the field to keep it, send `""` to clear text); an unknown field. |
+| `422` | Field errors (`loc` names the field) | Fix those fields. Common causes: `system_prompt` over its model's cap (64,000 tokens, 32,000 on `google/gemma-4-26b-a4b-it`); an explicit `null` in a `PATCH` (omit the field to keep it, send `""` to clear text); an unknown field. |
 | `422` on `/phone-calls` | `reason` such as `destination_not_allowed` | The destination is refused. See `agents/telephony/outbound-calls`, section Errors. |
 | `502`, `503` | An upstream or platform dependency failed | Retry with backoff. A failed number purchase leaves a row with status `error` that is safe to release. |
 

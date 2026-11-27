@@ -4155,7 +4155,7 @@
       },
       "patch": {
         "summary": "Update Draft Config",
-        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 32000 tokens (422 beyond); keeping it\nunder 2000 tokens is recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default) or\n`fish_audio:transcribe-stream-1` (Fish realtime recognition, which\nalso decides end of turn and whether the caller is interrupting).\nIts former id `fish_audio:transcribe-1-pro-realtime` is still accepted\nand reads back as the current id.\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best.\n`voice.background_sound` sets a looping ambience the worker mixes under\nthe agent's voice: `preset` is `off` (default) or one of `office`,\n`call_center`, `restaurant`, `cafe`, `city_street`, `phone_line`, `phone_line_digital`,\n`custom`. `volume` (0-1, default 0.15) is the\nambience's gain relative to the voice. `custom_asset_id` names a clip\nuploaded through `POST /v1/agent/background-sounds`; required with\n`preset: \"custom\"`, refused otherwise (422). Replaces the whole object;\nan explicit null resets it to off. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null. `llm.fallback` sets what the agent tries after its\nmodel fails: `platform` (default), `manual` (`models` in order, 1 to 3)\nor `off`. In `manual`, each model and `primary` (the agent's own model)\ntake optional `ttft_timeout_ms` (500-30000, default 5000 ms, i.e. 5\nseconds, when not set) and `total_timeout_ms` (1000-120000, at least\n`ttft_timeout_ms` when both are set, no limit when not set), and the\nfirst model can set\n`parallel.kick_in_ms` (300-10000, default 1500) to run alongside the\nagent's own model.\n\nThe response is the draft as stored, which can differ from the request:\n- Every field comes back. Omitted fields keep their value or default.\n- `asr.keyterms` and `voice.pronunciation_dictionary_ids` are trimmed\n  and de-duplicated in order. `tool_ids` is de-duplicated in order.\n- A tool that was archived drops out of `tool_ids` at the next tools\n  write.\n- `conversation.interruption_ignore_phrases` collapses inner spaces and\n  drops case-insensitive duplicates.\n- `conversation.timezone`, transfer phone numbers and transfer text\n  fields are trimmed.\n- `conversation.eagerness` and `conversation.response_wait_ms` move\n  together. The wait wins when both are sent, and the tier is derived\n  from it.\n- `conversation.response_max_wait_ms: 0` reads back as `null`\n  (automatic).\n- `conversation.backchannel` keeps the fields you omit.\n  `strength: null` goes back to the speech engine's own setting.\n- `conversation.reengage` keeps the fields you omit, and\n  `conversation.reengage.schedule` reads back as\n  `conversation.reengage.steps`.\n- `conversation` also returns `reengage_enabled`, copied from\n  `reengage.enabled`. It is deprecated.\n- `knowledge_base.enabled` becomes `true` when you attach sources and\n  omit it.\n- `llm.custom.base_url` drops a trailing `/` and `/chat/completions`.\n  `llm.custom.model` is trimmed. Setting `llm.custom` resets `llm.model`\n  to the platform default.\n- Secrets read back as `has_secret`, and `llm.custom.api_key` as `null`.\n- `voice.voice_id` reads back as the name while the agent speaks one of\n  the `live3` voices. Switching `voice.engine` to `fish_tts` returns it\n  to the agent's Voice Library voice, and switching back to `live3`\n  restores the name. A new agent, and one still on the default voice\n  when it switches to `live3`, starts on `clara`.\n- `voice.live3_voice` is deprecated and mirrors that name capitalized\n  (`Clara`), `null` when `voice.voice_id` is a Voice Library voice.\n- `voice` also returns `keyterms`, `multilingual_asr` and `asr_model`\n  copied from `asr`. They are deprecated.\n- `config_hash` and `updated_at` are set by the server.\n\nCompare against this response, or against `config_hash`, rather than the\nrequest body. Publishing never rewrites these values.",
+        "description": "Patch the draft configuration section by section; omitted sections keep\ntheir value. Changes only affect live sessions after the next publish.\n`prompt.system_prompt` is limited to 64000 tokens, 32000 when `llm.model`\nis `google/gemma-4-26b-a4b-it` (422 beyond); keeping it under 2000 tokens\nis recommended for latency and cost.\n`voice.voice_id` accepts any public voice model id.\n`voice.speaking_language` accepts any of the 52 supported ISO 639-1 codes\n(the same set the console offers, see the Voice & language docs); anything else is 422. `voice.expressive` (default `true`) enables richer\nexpressive delivery (emotion steering, laughter and sounds, pauses); off\nkeeps the standard delivery. The `asr` section configures speech\nrecognition. `asr.model` picks the model: `deepgram:nova-3` (default) or\n`fish_audio:transcribe-stream-1` (Fish realtime recognition, which\nalso decides end of turn and whether the caller is interrupting).\nIts former id `fish_audio:transcribe-1-pro-realtime` is still accepted\nand reads back as the current id.\n`asr.multilingual` (default `false`) lets recognition follow callers who\nswitch language mid-call, off tells the recognizer to expect\n`voice.speaking_language` (models other than `deepgram:nova-3` may still\ntranscribe clear speech in another language). `asr.strict_language`\n(default `false`) enforces `voice.speaking_language` whatever\n`asr.multilingual` says: speech recognized as another language reaches the\nagent as `[unintelligible speech]`. Language is detected per utterance, so\na short or heavily accented phrase in the speaking language can\noccasionally be detected as another language and replaced too. Only\nenable it when you explicitly need to stop the agent from understanding\nother languages.\n`asr.keyterms` is a recognition\nvocabulary of up to 50 plain terms (brand names, product terms, personal\nnames), each at most 100 characters with no commas or semicolons. `[]`\nclears it and 20-50 focused terms work best.\n`voice.background_sound` sets a looping ambience the worker mixes under\nthe agent's voice: `preset` is `off` (default) or one of `office`,\n`call_center`, `restaurant`, `cafe`, `city_street`, `phone_line`, `phone_line_digital`,\n`custom`. `volume` (0-1, default 0.15) is the\nambience's gain relative to the voice. `custom_asset_id` names a clip\nuploaded through `POST /v1/agent/background-sounds`; required with\n`preset: \"custom\"`, refused otherwise (422). Replaces the whole object;\nan explicit null resets it to off. `tool_ids` and\n`knowledge_source_ids` replace their attachment lists wholesale and every\nid must resolve, else 422. `llm.custom` points the agent at your own\nOpenAI-compatible endpoint; mutually exclusive with `llm.model`, cleared\nwith an explicit null. `llm.fallback` sets what the agent tries after its\nmodel fails: `platform` (default), `manual` (`models` in order, 1 to 3)\nor `off`. In `manual`, each model and `primary` (the agent's own model)\ntake optional `ttft_timeout_ms` (500-30000, default 5000 ms, i.e. 5\nseconds, when not set) and `total_timeout_ms` (1000-120000, at least\n`ttft_timeout_ms` when both are set, no limit when not set), and the\nfirst model can set\n`parallel.kick_in_ms` (300-10000, default 1500) to run alongside the\nagent's own model.\n\nThe response is the draft as stored, which can differ from the request:\n- Every field comes back. Omitted fields keep their value or default.\n- `asr.keyterms` and `voice.pronunciation_dictionary_ids` are trimmed\n  and de-duplicated in order. `tool_ids` is de-duplicated in order.\n- A tool that was archived drops out of `tool_ids` at the next tools\n  write.\n- `conversation.interruption_ignore_phrases` collapses inner spaces and\n  drops case-insensitive duplicates.\n- `conversation.timezone`, transfer phone numbers and transfer text\n  fields are trimmed.\n- `conversation.eagerness` and `conversation.response_wait_ms` move\n  together. The wait wins when both are sent, and the tier is derived\n  from it.\n- `conversation.response_max_wait_ms: 0` reads back as `null`\n  (automatic).\n- `conversation.backchannel` keeps the fields you omit.\n  `strength: null` goes back to the speech engine's own setting.\n- `conversation.reengage` keeps the fields you omit, and\n  `conversation.reengage.schedule` reads back as\n  `conversation.reengage.steps`.\n- `conversation` also returns `reengage_enabled`, copied from\n  `reengage.enabled`. It is deprecated.\n- `knowledge_base.enabled` becomes `true` when you attach sources and\n  omit it.\n- `llm.custom.base_url` drops a trailing `/` and `/chat/completions`.\n  `llm.custom.model` is trimmed. Setting `llm.custom` resets `llm.model`\n  to the platform default.\n- Secrets read back as `has_secret`, and `llm.custom.api_key` as `null`.\n- `voice.voice_id` reads back as the name while the agent speaks one of\n  the `live3` voices. Switching `voice.engine` to `fish_tts` returns it\n  to the agent's Voice Library voice, and switching back to `live3`\n  restores the name. A new agent, and one still on the default voice\n  when it switches to `live3`, starts on `clara`.\n- `voice.live3_voice` is deprecated and mirrors that name capitalized\n  (`Clara`), `null` when `voice.voice_id` is a Voice Library voice.\n- `voice` also returns `keyterms`, `multilingual_asr` and `asr_model`\n  copied from `asr`. They are deprecated.\n- `config_hash` and `updated_at` are set by the server.\n\nCompare against this response, or against `config_hash`, rather than the\nrequest body. Publishing never rewrites these values.",
         "security": [
           {
             "BearerAuth": []
@@ -12387,6 +12387,18 @@
                       },
                       "title": "Dynamic Variables",
                       "type": "object"
+                    },
+                    "judge": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentTestJudge"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The judge of a `next_reply` or `simulation` test. Null follows the workspace's Tests settings (`GET /v1/agent/test-settings`). A `tool` test has no judge, it is null there."
                     }
                   },
                   "required": [
@@ -12729,6 +12741,18 @@
                       },
                       "title": "Dynamic Variables",
                       "type": "object"
+                    },
+                    "judge": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentTestJudge"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The judge of a `next_reply` or `simulation` test. Null follows the workspace's Tests settings (`GET /v1/agent/test-settings`). A `tool` test has no judge, it is null there."
                     }
                   },
                   "required": [
@@ -13035,6 +13059,18 @@
                       },
                       "title": "Dynamic Variables",
                       "type": "object"
+                    },
+                    "judge": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentTestJudge"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The judge of a `next_reply` or `simulation` test. Null follows the workspace's Tests settings (`GET /v1/agent/test-settings`). A `tool` test has no judge, it is null there."
                     }
                   },
                   "required": [
@@ -13827,6 +13863,18 @@
                       "title": "Error",
                       "type": "string"
                     },
+                    "judge": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentTestJudge"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The model that judged the run and the reasoning level it judged at. Null on a `tool` test, which has no judge, on a run that ended before its judge was asked, and on `next_reply` runs from before the field existed. Simulation runs from before the judge could be chosen have a null level."
+                    },
                     "usage": {
                       "$ref": "#/components/schemas/PublicAgentTestRunUsage"
                     },
@@ -13997,6 +14045,487 @@
           },
           "404": {
             "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
+        ]
+      }
+    },
+    "/v1/agent/test-settings": {
+      "get": {
+        "summary": "Get Test Settings",
+        "description": "Get the Tests settings of a workspace, the defaults every test in it\nuses unless the test sets its own. `judge` judges the Single Turn and\nSimulation tests without a `judge` of their own.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace_id",
+            "description": "The workspace whose settings to use. Required when your team has more than one workspace.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Workspace Id"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "The Tests settings of a workspace, shared by every test in it.",
+                  "properties": {
+                    "workspace_id": {
+                      "description": "The workspace these settings belong to.",
+                      "title": "Workspace Id",
+                      "type": "string"
+                    },
+                    "judge": {
+                      "$ref": "#/components/schemas/AgentTestJudge",
+                      "description": "The judge of a Single Turn or Simulation test that names no `judge` of its own, with the reasoning level it judges at. Always the judge such a test is judged by."
+                    },
+                    "judge_is_default": {
+                      "description": "True while the workspace has not set `judge` and reads the platform default.",
+                      "title": "Judge Is Default",
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "workspace_id",
+                    "judge",
+                    "judge_is_default"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
+        ]
+      },
+      "patch": {
+        "summary": "Update Test Settings",
+        "description": "Change the Tests settings of a workspace. Only the fields you send\nchange. A test run picks its judge when it starts, so runs already\nstarted keep the judge they started with.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace_id",
+            "description": "The workspace whose settings to use. Required when your team has more than one workspace.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Workspace Id"
+            },
+            "deprecated": false
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentTestSettingsPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "The Tests settings of a workspace, shared by every test in it.",
+                  "properties": {
+                    "workspace_id": {
+                      "description": "The workspace these settings belong to.",
+                      "title": "Workspace Id",
+                      "type": "string"
+                    },
+                    "judge": {
+                      "$ref": "#/components/schemas/AgentTestJudge",
+                      "description": "The judge of a Single Turn or Simulation test that names no `judge` of its own, with the reasoning level it judges at. Always the judge such a test is judged by."
+                    },
+                    "judge_is_default": {
+                      "description": "True while the workspace has not set `judge` and reads the platform default.",
+                      "title": "Judge Is Default",
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "workspace_id",
+                    "judge",
+                    "judge_is_default"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
             "headers": {},
             "content": {
               "application/json": {
@@ -26189,7 +26718,7 @@
               }
             ],
             "default": null,
-            "description": "Limited to 32000 tokens (o200k_base), same budget as the configured prompt it replaces.",
+            "description": "Limited to 64000 tokens (o200k_base), 32000 when `llm.model` is `google/gemma-4-26b-a4b-it` (the agent's), same budget as the configured prompt it replaces.",
             "title": "System Prompt"
           },
           "voice_id": {
@@ -29060,7 +29589,8 @@
                 "enum": [
                   "low",
                   "balanced",
-                  "high"
+                  "high",
+                  "immediate"
                 ],
                 "type": "string"
               },
@@ -29069,6 +29599,7 @@
               }
             ],
             "default": null,
+            "description": "How much caller speech counts as an interruption while the agent speaks. With `low` the agent stops only for a firm, worded interjection and talks through background noise and short acknowledgements. `balanced` (default) interrupts on normal speech. With `high` the agent stops on the caller's first word. With `immediate` the agent stops at the caller's first sound, so backchannels such as \"okay\" and \"yeah\" stop it too, and it picks up where it stopped when the caller was only backchanneling or did not take the turn. `immediate` is only available to teams it has been enabled for, other teams get a 403 when they set it.",
             "title": "Interruption Sensitivity"
           },
           "interruption_ignore_phrases": {
@@ -29699,7 +30230,7 @@
               }
             ],
             "default": null,
-            "description": "Limited to 32000 tokens (o200k_base); keeping it under 2000 tokens is recommended for latency and cost.",
+            "description": "Limited to 64000 tokens (o200k_base), 32000 when `llm.model` is `google/gemma-4-26b-a4b-it`; keeping it under 2000 tokens is recommended for latency and cost.",
             "title": "System Prompt"
           },
           "first_message_mode": {
@@ -30740,10 +31271,12 @@
           },
           "interruption_sensitivity": {
             "default": "balanced",
+            "description": "How much caller speech counts as an interruption while the agent speaks. With `low` the agent stops only for a firm, worded interjection and talks through background noise and short acknowledgements. `balanced` (default) interrupts on normal speech. With `high` the agent stops on the caller's first word. With `immediate` the agent stops at the caller's first sound, so backchannels such as \"okay\" and \"yeah\" stop it too, and it picks up where it stopped when the caller was only backchanneling or did not take the turn. `immediate` is only available to teams it has been enabled for, other teams get a 403 when they set it.",
             "enum": [
               "low",
               "balanced",
-              "high"
+              "high",
+              "immediate"
             ],
             "title": "Interruption Sensitivity",
             "type": "string"
@@ -32291,6 +32824,44 @@
         "title": "AgentTestConditionResult",
         "type": "object"
       },
+      "AgentTestJudge": {
+        "additionalProperties": false,
+        "description": "The model that judges a `next_reply` or `simulation` test, and how much\nit reasons before its verdict.",
+        "properties": {
+          "model": {
+            "description": "One of the models `GET /v1/agent/llm-models` lists with `test_judge`.",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "reasoning_level": {
+            "anyOf": [
+              {
+                "enum": [
+                  "off",
+                  "low",
+                  "medium",
+                  "high",
+                  "very_high"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "One of the levels `test_judge.reasoning_levels` lists for the model. Null reasons at the model's default level.",
+            "title": "Reasoning Level"
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "title": "AgentTestJudge",
+        "type": "object"
+      },
       "AgentTestMockGap": {
         "description": "Calls of one tool the test prepared no answer for. A run with a\ngap never passes cleanly: it fails with needs_review.",
         "properties": {
@@ -32656,6 +33227,18 @@
             "default": "",
             "title": "Error",
             "type": "string"
+          },
+          "judge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTestJudge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The model that judged the run and the reasoning level it judged at. Null on a `tool` test, which has no judge, on a run that ended before its judge was asked, and on `next_reply` runs from before the field existed. Simulation runs from before the judge could be chosen have a null level."
           },
           "usage": {
             "$ref": "#/components/schemas/PublicAgentTestRunUsage"
@@ -34589,6 +35172,18 @@
             "title": "Dynamic Variables",
             "type": "object"
           },
+          "judge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTestJudge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The judge of a `next_reply` or `simulation` test. Null follows the workspace's Tests settings (`GET /v1/agent/test-settings`). A `tool` test has no judge, it is null there."
+          },
           "agent_ids": {
             "description": "Agents to attach the test to. They must all be in one workspace, and the test is created there. Without agents the test goes into the API key owner's default workspace.",
             "items": {
@@ -34813,6 +35408,18 @@
             ],
             "default": null,
             "title": "Dynamic Variables"
+          },
+          "judge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTestJudge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The judge of a `next_reply` or `simulation` test. Null follows the workspace's Tests settings (`GET /v1/agent/test-settings`). A `tool` test has no judge, it is null there. Left out, the test keeps its judge."
           }
         },
         "title": "PublicAgentTestUpdatePayload",
@@ -34881,6 +35488,18 @@
             "title": "Error",
             "type": "string"
           },
+          "judge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTestJudge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The model that judged the run and the reasoning level it judged at. Null on a `tool` test, which has no judge, on a run that ended before its judge was asked, and on `next_reply` runs from before the field existed. Simulation runs from before the judge could be chosen have a null level."
+          },
           "usage": {
             "$ref": "#/components/schemas/PublicAgentTestRunUsage"
           },
@@ -34925,6 +35544,26 @@
           "created_at"
         ],
         "title": "PublicAgentTestRunSummary",
+        "type": "object"
+      },
+      "AgentTestSettingsPatch": {
+        "additionalProperties": false,
+        "description": "Only the fields sent change.",
+        "properties": {
+          "judge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTestJudge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Null goes back to the platform default. Left out, unchanged."
+          }
+        },
+        "title": "AgentTestSettingsPatch",
         "type": "object"
       },
       "PublicPhoneNumberEntity": {
@@ -35629,6 +36268,22 @@
             ],
             "description": "A reference time to the model's first token on a voice turn, in milliseconds. It is a measured median for comparing models, and the latency of a call varies with its prompt and the time of day. Null when the model has no measurement.",
             "title": "Reference Latency Ms"
+          },
+          "max_system_prompt_tokens": {
+            "description": "The longest `prompt.system_prompt` an agent on this model can save, in o200k_base tokens. A longer one is rejected with 422.",
+            "title": "Max System Prompt Tokens",
+            "type": "integer"
+          },
+          "test_judge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicLLMTestJudge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How the model judges `next_reply` and `simulation` tests, as the `judge` of a test or of a workspace's Tests settings. Null when it cannot judge them."
           }
         },
         "required": [
@@ -35636,9 +36291,54 @@
           "included_in_conversation_rate",
           "usd_per_million_tokens",
           "long_context",
-          "reference_latency_ms"
+          "reference_latency_ms",
+          "max_system_prompt_tokens",
+          "test_judge"
         ],
         "title": "PublicLLMModel",
+        "type": "object"
+      },
+      "PublicLLMTestJudge": {
+        "properties": {
+          "reasoning_levels": {
+            "description": "The reasoning levels a judge of this model may name.",
+            "items": {
+              "$ref": "#/components/schemas/PublicLLMTestJudgeLevel"
+            },
+            "title": "Reasoning Levels",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reasoning_levels"
+        ],
+        "title": "PublicLLMTestJudge",
+        "type": "object"
+      },
+      "PublicLLMTestJudgeLevel": {
+        "properties": {
+          "level": {
+            "enum": [
+              "off",
+              "low",
+              "medium",
+              "high",
+              "very_high"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "default": {
+            "type": "boolean",
+            "description": "The level the model judges at when a judge names none.",
+            "title": "Default"
+          }
+        },
+        "required": [
+          "level",
+          "default"
+        ],
+        "title": "PublicLLMTestJudgeLevel",
         "type": "object"
       },
       "PublicLLMTokenRates": {
@@ -36591,7 +37291,7 @@
             "type": "integer"
           },
           "latency": {
-            "default": "normal",
+            "default": "balanced",
             "description": "Latency-quality trade-off. normal: best quality, balanced: reduced latency, low: lowest latency.",
             "enum": [
               "low",
@@ -36844,7 +37544,7 @@
             "type": "integer"
           },
           "latency": {
-            "default": "normal",
+            "default": "balanced",
             "description": "Latency-quality trade-off. normal: best quality, balanced: reduced latency, low: lowest latency.",
             "enum": [
               "low",
