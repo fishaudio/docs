@@ -28,6 +28,24 @@ except websockets.InvalidStatus as e:
     raise
 """
 
+# The same for a recipe that uses the SDK's client.asr.stream_websocket().
+SDK_REALTIME_RUN = """
+import builtins
+import pytest
+from fishaudio import APIError
+_lines = []
+def print(*args, **kwargs):
+    _lines.append(" ".join(str(a) for a in args))
+    builtins.print(*args, **kwargs)
+def _run(recipe):
+    try:
+        recipe()
+    except APIError as e:
+        if e.status == 403:
+            pytest.skip("realtime speech to text is not enabled for this key's team")
+        raise
+"""
+
 SPECS = [
     {
         "slug": "streaming-to-file",
@@ -67,7 +85,7 @@ SPECS = [
         ],
     },
     # ---- recipes authored by the cookbook workflow (one live-tested primary block each) ----
-    # The speech-to-text recipes select transcribe-1-pro with the `model` header.
+    # The speech-to-text recipes select transcribe-1-pro with the SDK's `model` argument.
     {
         "slug": "transcribe-to-captions",
         "path": f"{COOKBOOK}/transcribe-to-captions.mdx",
@@ -171,7 +189,20 @@ SPECS = [
         "slug": "realtime-transcription",
         "path": f"{COOKBOOK}/realtime-transcription.mdx",
         "cases": [
-            {"name": "stream a wav file", "block": 0, "postamble": REALTIME_RUN + """
+            {"name": "stream a wav file (sdk, sync)", "block": 0, "postamble": SDK_REALTIME_RUN + """
+_run(lambda: main("speech.wav"))
+assert any(line.startswith("session ") for line in _lines), _lines
+assert any(line.startswith("  draft ") for line in _lines), _lines
+assert any(line.startswith("committed") for line in _lines), _lines
+assert any(line.startswith("done: ") for line in _lines), _lines
+"""},
+            {"name": "stream a wav file (sdk, async)", "block": 1, "postamble": SDK_REALTIME_RUN + """
+import asyncio
+_run(lambda: asyncio.run(main("speech.wav")))
+assert any(line.startswith("committed") for line in _lines), _lines
+assert any(line.startswith("done: ") for line in _lines), _lines
+"""},
+            {"name": "stream a wav file (websocket)", "block": 3, "postamble": REALTIME_RUN + """
 assert any(line.startswith("session ") for line in _lines), _lines
 assert any(line.startswith("committed") for line in _lines), _lines
 assert any(line.startswith("done: ") for line in _lines), _lines
