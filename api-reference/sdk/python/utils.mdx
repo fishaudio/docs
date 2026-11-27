@@ -127,7 +127,7 @@ simultaneously captures it to return the complete audio buffer.
     from fishaudio import FishAudio, stream
 
     client = FishAudio(api_key="...")
-    audio_stream = client.tts.convert(text="Hello world")
+    audio_stream = client.tts.stream(text="Hello world")
 
     # Stream and play in real-time, get complete audio
     complete_audio = stream(audio_stream)
@@ -136,4 +136,3 @@ simultaneously captures it to return the complete audio buffer.
     with open("output.mp3", "wb") as f:
         f.write(complete_audio)
     ```
-

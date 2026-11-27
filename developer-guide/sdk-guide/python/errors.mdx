@@ -23,6 +23,7 @@ Every SDK error inherits from [`FishAudioError`](/api-reference/sdk/python/excep
 | `ServerError` | `5xx` | Transient server-side failure |
 | `APIError` | any other non-2xx | Base for the above; `status == 422` for invalid parameters |
 | `WebSocketError` | realtime stream failed mid-session | Reconnect rather than retrying the same socket |
+| `ASRRealtimeError` | a realtime speech-to-text session ended with an error | Subclass of `WebSocketError`; carries `.error_type`, `.code`, `.request_id`, and `.close_code`, each `None` when not sent |
 | `DependencyError` | a required system tool is missing (e.g. ffmpeg for `play()`) | Carries `.dependency` and `.install_command` |
 
 <Warning>
