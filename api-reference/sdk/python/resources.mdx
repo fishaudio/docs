@@ -1398,9 +1398,10 @@ with config=ASRRealtimeConfig(results=ASRResults(tag_audio_events=False)).
             print(event.text)
 
     # Voice agent: answer the user's turns, and tell the server while you speak.
-    # audio_chunks() must keep yielding audio, as a live microphone does: once
-    # it ends, the session finishes and control methods can no longer be sent.
-    with client.asr.stream_websocket(audio_chunks(), eager=True) as stream:
+    # microphone_chunks() stands for your live audio source. It must keep
+    # yielding audio: once the source ends, the session finishes and control
+    # methods can no longer be sent.
+    with client.asr.stream_websocket(microphone_chunks(), eager=True) as stream:
         for event in stream:
             if event.type == "committed" and event.user_turn:
                 stream.agent_speaking(True)
@@ -1569,9 +1570,10 @@ with config=ASRRealtimeConfig(results=ASRResults(tag_audio_events=False)).
             print(event.text)
 
     # Voice agent: answer the user's turns, and tell the server while you speak.
-    # audio_chunks() must keep yielding audio, as a live microphone does: once
-    # it ends, the session finishes and control methods can no longer be sent.
-    async with client.asr.stream_websocket(audio_chunks(), eager=True) as stream:
+    # microphone_chunks() stands for your live audio source. It must keep
+    # yielding audio: once the source ends, the session finishes and control
+    # methods can no longer be sent.
+    async with client.asr.stream_websocket(microphone_chunks(), eager=True) as stream:
         async for event in stream:
             if event.type == "committed" and event.user_turn:
                 await stream.agent_speaking(True)
