@@ -65,7 +65,6 @@ audio = client.tts.convert(
 import {
   FishAudioClient,
   FishAudioError,
-  FishAudioTimeoutError,
 } from "fish-audio";
 import { UnprocessableEntityError } from "fish-audio"; // re-exported from the package root
 
@@ -78,10 +77,12 @@ try {
 } catch (err) {
   if (err instanceof UnprocessableEntityError) {
     console.error("422 validation:", err.body?.detail); // [{ loc, msg, type }]
-  } else if (err instanceof FishAudioTimeoutError) {
-    console.error("request timed out");
   } else if (err instanceof FishAudioError) {
-    console.error(err.statusCode, err.body); // branch on err.statusCode (401/403/404/...)
+    if (err.statusCode === undefined) {
+      console.error("no response:", err.message); // "timeout", or a network error
+    } else {
+      console.error(err.statusCode, err.body); // branch on err.statusCode (401/403/404/...)
+    }
   } else {
     throw err;
   }
@@ -94,7 +95,7 @@ What the JS client actually throws for ordinary HTTP requests (`convert`, `voice
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | `UnprocessableEntityError` (extends `FishAudioError`) | 422, the **only** typed HTTP subclass thrown; `.body` is `{ detail: [{ loc, msg, type }] }` |
 | `FishAudioError`                                      | every other non-2xx response; read `.statusCode`, `.body`, `.rawResponse`                   |
-| `FishAudioTimeoutError`                               | request exceeded the timeout                                                                |
+| `FishAudioError` with no `statusCode`                 | no response: the request exceeded the timeout (message `"timeout"`) or the network failed. 0.2.0 does not throw the exported `FishAudioTimeoutError` |
 
 > For HTTP requests, the package also exports `BadRequestError`, `UnauthorizedError`, `ForbiddenError`, `NotFoundError`, and `TooEarlyError`, but the client throws a generic `FishAudioError` for those statuses. **Branch on `err.statusCode`** rather than relying on `instanceof NotFoundError`.
 

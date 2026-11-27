@@ -47,7 +47,7 @@ Every HTTP method takes a `requestOptions` object as its last argument. Of the r
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `timeoutInSeconds` | `240` | Time to wait for a response before the call throws `FishAudioTimeoutError`. |
+| `timeoutInSeconds` | `240` | Time to wait for a response. When it runs out, the call throws a `FishAudioError` with no `statusCode` and the message `"timeout"`. |
 | `maxRetries` | `2` | Retries after a `408`, `429`, or `5xx` response, with exponential backoff. The SDK waits as long as a `Retry-After` header asks, up to 60 seconds. `0` turns retries off. |
 | `abortSignal` | none | An `AbortSignal` that cancels the request. |
 | `headers` | none | Extra headers for this request. |
@@ -477,13 +477,13 @@ Fields: `event` ("stop")
 ## Exceptions
 
 ### FishAudioError
-Generic error with `statusCode`, `body`, `rawResponse`.
+Generic error with `statusCode`, `body`, `rawResponse`. `statusCode` is `undefined` when there was no response, such as a timeout or a network error.
 
 ### UnprocessableEntityError
 Thrown for `422` (invalid parameters). Extends `FishAudioError`; `body.detail` lists the fields that failed. It is the only typed error the HTTP methods throw: every other status is a plain `FishAudioError`, so branch on `statusCode`.
 
 ### FishAudioTimeoutError
-An HTTP request got no response within the timeout. It extends `Error`, not `FishAudioError`, so catch it separately.
+Exported for request timeouts; it extends `Error`, not `FishAudioError`. In `fish-audio` 0.2.0 a request that times out reaches you as a `FishAudioError` with no `statusCode` and the message `"timeout"` instead, so check for that.
 
 ### RealtimeSTTError
 A realtime speech-to-text session failed. Extends `FishAudioError` with `errorType`, `requestId`, `closeCode` and `recoverable`.

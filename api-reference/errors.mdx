@@ -28,7 +28,7 @@ Some endpoints add fields. For example, `transcribe-1-pro` speech-to-text errors
 
 ## Retries
 
-Retry `429` and `5xx` with exponential backoff. Don't retry other `4xx` codes; they won't succeed without a change to the request. The JavaScript SDK does this for you: it retries `408`, `429`, and `5xx` twice by default (see [Request options](/api-reference/sdk/javascript/api-reference#request-options)). The Python SDK does not retry, so add a loop like this one:
+Retry `429` and `5xx` with exponential backoff. Don't retry other `4xx` codes; they won't succeed without a change to the request. The JavaScript SDK retries by itself: `408`, `429`, and `5xx` responses, twice by default (see [Request options](/api-reference/sdk/javascript/api-reference#request-options)). The Python SDK does not retry, so add a loop like this one:
 
 Install the Python SDK first: `pip install fish-audio-sdk`.
 
@@ -54,7 +54,7 @@ for attempt in range(5):
 
 ## Handling errors in the SDKs
 
-The Python SDK raises a typed exception for each kind of failure. The JavaScript SDK throws `UnprocessableEntityError` for `422` and a plain `FishAudioError` for every other HTTP error, so branch on `err.statusCode`. Both carry the status and the response body: in Python, `e.body` is the raw text; in JavaScript, `err.body` is the parsed JSON.
+The Python SDK raises a typed exception for each kind of failure. The JavaScript SDK throws `UnprocessableEntityError` for `422` and a plain `FishAudioError` for every other HTTP error, so branch on `err.statusCode`. Both carry the status and the response body: in Python, `e.body` is the raw text; in JavaScript, `err.body` is the parsed JSON when the response is JSON, and otherwise the text or `undefined`.
 
 <CodeGroup>
 ```python Python
@@ -80,8 +80,7 @@ except APIError as e:
 
 ```javascript JavaScript
 import {
-  FishAudioError,            // every HTTP error; has .statusCode and .body
-  FishAudioTimeoutError,     // the request timed out; not a FishAudioError
+  FishAudioError,            // every failed request; has .statusCode and .body
   UnprocessableEntityError,  // 422, a FishAudioError
 } from "fish-audio";
 
@@ -89,17 +88,17 @@ try {
   await client.textToSpeech.convert({ text: "Hello!" });
 } catch (err) {
   if (err instanceof UnprocessableEntityError) {
-    console.error(err.body.detail); // invalid parameters
+    console.error(err.body?.detail); // invalid parameters
   } else if (err instanceof FishAudioError) {
-    if (err.statusCode === 401) {
+    if (err.statusCode === undefined) {
+      // no response: a timeout or a network error; see err.message
+    } else if (err.statusCode === 401) {
       // invalid or missing key
     } else if (err.statusCode === 429) {
       // still rate limited after the SDK's own retries
     } else {
       console.error(err.statusCode, err.body);
     }
-  } else if (err instanceof FishAudioTimeoutError) {
-    // no response within the timeout
   } else {
     throw err;
   }
