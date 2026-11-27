@@ -1,0 +1,197 @@
+---
+title: "Anam"
+description: "Build real-time video agents with Fish Audio and Anam using LiveKit"
+icon: "video"
+---
+
+[Anam](https://anam.ai?utm_source=fishaudio&utm_medium=referral&utm_content=anam_integration_docs) is a real-time AI avatar platform that lets you add a face to your voice agents. Its Cara-4.1 Express model turns speech into expressive avatar video with natural facial movement and lip sync.
+
+This guide shows you how to connect Fish Audio and Anam through LiveKit to build an interactive video agent. Fish Audio handles speech recognition and speech generation, Anam renders the avatar, and LiveKit streams synchronized audio and video to your app.
+
+## Prerequisites
+
+- A [Fish Audio account](https://fish.audio) with an [API key](https://fish.audio/app/api-keys)
+- An [Anam API key](https://lab.anam.ai/api-keys?utm_source=fishaudio&utm_medium=referral&utm_content=anam_integration_docs)
+- A [LiveKit Cloud](https://cloud.livekit.io) project with Inference and billing enabled for the LLM
+- Python 3.11
+
+## Installation
+
+Install LiveKit Agents with Fish Audio and Anam support in your Python environment:
+
+```bash
+pip install "livekit-agents[anam,fishaudio,silero]"
+```
+
+## Configuration
+
+Set your API keys and LiveKit credentials as environment variables:
+
+```bash
+export FISH_API_KEY=your_fish_audio_api_key
+
+export ANAM_API_KEY=your_anam_api_key
+
+export LIVEKIT_URL=wss://your-project.livekit.cloud
+export LIVEKIT_API_KEY=your_livekit_api_key
+export LIVEKIT_API_SECRET=your_livekit_api_secret
+```
+
+The example defaults to Mia (stock Anam avatar) and Sarah (female American English voice). To choose a different [Fish Audio voice](https://fish.audio/discovery) or [Anam avatar](https://lab.anam.ai/avatars?utm_source=fishaudio&utm_medium=referral&utm_content=anam_integration_docs), optionally set these overrides:
+
+```bash
+export FISH_VOICE_ID=your_fish_audio_voice_id  # Default: Sarah, female American English (933563129e564b19a115bedd57b7406a).
+export ANAM_AVATAR_ID=your_anam_avatar_id  # Default: Mia, stock Anam avatar (edf6fdcb-acab-44b8-b974-ded72665ee26).
+```
+
+Leave these variables unset or empty to use the defaults.
+
+<Note>
+  Keep API keys and secrets on the server, and use a publicly reachable LiveKit
+  URL so Anam can join the room. These exports apply only to the current
+  terminal and its child processes. Run the worker in that same terminal, or
+  export the values again in a new terminal. A `.env` file is not loaded by this
+  example.
+</Note>
+
+## Basic usage
+
+Create `agent.py` with Fish Audio for speech recognition and text-to-speech, GPT-OSS-120B through LiveKit Inference for replies, and Anam for the avatar:
+
+```python
+import logging
+import os
+
+from livekit import agents
+from livekit.agents import Agent, AgentServer, AgentSession, inference, room_io
+from livekit.plugins import anam, fishaudio, silero
+
+server = AgentServer()
+logger = logging.getLogger("fish-audio-anam")
+
+
+@server.rtc_session(agent_name="fish-audio-anam")
+async def entrypoint(ctx: agents.JobContext):
+    fish_key = os.environ["FISH_API_KEY"]
+    voice_id = os.getenv("FISH_VOICE_ID") or "933563129e564b19a115bedd57b7406a"  # Default: Sarah, female American English.
+    anam_key = os.environ["ANAM_API_KEY"]
+    avatar_id = os.getenv("ANAM_AVATAR_ID") or "edf6fdcb-acab-44b8-b974-ded72665ee26"  # Default: Mia, studio avatar.
+
+    await ctx.connect()
+    visitor = await ctx.wait_for_participant()
+
+    session = AgentSession(
+        stt=fishaudio.STT(
+            api_key=fish_key,
+            model="transcribe-stream-1",
+        ),
+        llm=inference.LLM(model="openai/gpt-oss-120b"),
+        tts=fishaudio.TTS(
+            api_key=fish_key,
+            model="drama-3",
+            voice_id=voice_id,
+        ),
+        vad=silero.VAD.load(),
+    )
+    avatar = anam.AvatarSession(
+        api_key=anam_key,
+        persona_config=anam.PersonaConfig(
+            name="Fish Audio avatar",
+            avatarId=avatar_id,
+            avatarModel="cara-4.1-express",
+        ),
+    )
+
+    try:
+        # Set up synchronized avatar output before the agent starts speaking.
+        await avatar.start(session, room=ctx.room)
+        await session.start(
+            room=ctx.room,
+            agent=Agent(
+                instructions=(
+                    "You're a helpful AI avatar powered by Anam's Cara-4.1 Express real-time avatar model "
+                    "for face rendering and Fish Audio for speech recognition "
+                    "(transcribe-stream-1) and speech generation (Drama 3). Keep replies short "
+                    "and conversational. Use plain speech without Markdown. "
+                    "If users ask many detailed questions about Anam or Fish Audio, "
+                    "direct them to anam.ai or fish.audio, respectively."
+                ),
+            ),
+            room_options=room_io.RoomOptions(
+                participant_identity=visitor.identity,
+                close_on_disconnect=True,
+            ),
+        )
+        await session.say("Hello! What would you like to talk about?")
+    except Exception:
+        logger.exception("Could not start the avatar conversation")
+        session.shutdown(drain=False)
+        ctx.shutdown(reason="Conversation startup failed")
+        raise
+
+
+if __name__ == "__main__":
+    agents.cli.run_app(server)
+```
+
+Start `avatar.start()` before `session.start()` so speech is routed through Anam from the first greeting. The visitor's identity binds microphone input to the user, and the session closes when that visitor disconnects.
+
+### Key parameters
+
+| Parameter                        | Description                                                                                                                                                  |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `fishaudio.STT.model`            | Speech recognition model; this example uses [`transcribe-stream-1`](/features/speech-to-text/realtime) (Preview)                                             |
+| `fishaudio.TTS.model`            | Speech generation model; this example uses [`drama-3`](/features/text-to-speech/drama-3)                                                                     |
+| `fishaudio.TTS.voice_id`         | Defaults to Sarah, female American English (`933563129e564b19a115bedd57b7406a`); override with `FISH_VOICE_ID`. The Fish Audio API calls this `reference_id` |
+| `anam.AvatarSession.api_key`     | Your Anam API key, supplied from `ANAM_API_KEY`                                                                                                              |
+| `anam.PersonaConfig.avatarId`    | Defaults to Mia, studio avatar (`edf6fdcb-acab-44b8-b974-ded72665ee26`); override with `ANAM_AVATAR_ID`                                                      |
+| `anam.PersonaConfig.avatarModel` | Avatar model; this example uses `cara-4.1-express`                                                                                                           |
+
+### Running the example
+
+Download the model assets and start the worker from the terminal where you set the environment variables:
+
+```bash
+python -m livekit.agents download-files
+python agent.py start
+```
+
+### Connect the React starter
+
+Keep the Python worker running. In a second terminal, clone the [LiveKit React starter](https://github.com/livekit-examples/agent-starter-react) to talk to your agent and see its avatar. You'll need Node.js 24, which includes npm.
+
+```bash
+git clone https://github.com/livekit-examples/agent-starter-react.git
+cd agent-starter-react
+npm install
+cp .env.example .env.local
+```
+
+Edit the starter's `.env.local` with the same LiveKit project credentials used by your Python worker. Set `AGENT_NAME` to dispatch your agent. These credentials let the starter generate tokens through its included token endpoint; `LIVEKIT_TOKEN_SERVER_ID` is not required and can remain unset.
+
+```dotenv
+LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_API_KEY=your_livekit_api_key
+LIVEKIT_API_SECRET=your_livekit_api_secret
+AGENT_NAME=fish-audio-anam
+```
+
+Start the frontend:
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000), start a session, and allow microphone access. You should hear Sarah's voice and see Mia speaking in sync, unless you set voice or avatar overrides.
+
+## Troubleshooting
+
+If the worker reports `ws_url is required, or set LIVEKIT_URL environment variable`, check that `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` are exported in the terminal running the worker. Use your actual LiveKit Cloud project credentials, then restart the worker. The Python example does not load `.env` files automatically.
+
+## Resources
+
+- [Anam + Fish Audio demo](https://anam.ai/integrations/fishaudio?utm_source=fishaudio&utm_medium=referral&utm_content=anam_integration_docs)
+- [Anam integration guide](https://anam.ai/docs/integrations/fish-audio/overview?utm_source=fishaudio&utm_medium=referral&utm_content=anam_integration_docs)
+- [Anam LiveKit plugin reference](https://docs.livekit.io/agents/models/avatar/plugins/anam/)
+- [Fish Audio LiveKit plugin reference](https://docs.livekit.io/agents/models/tts/fishaudio/#plugin)
+- [Fish Audio Voice Library](https://fish.audio/discovery)
