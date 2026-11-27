@@ -83,7 +83,7 @@ const audio = await client.textToSpeech.convert(
 | Install, auth, playback deps, verify a key                                | [references/installation.md](references/installation.md)     |
 | Text-to-Speech (convert, stream, formats, prosody, model select)          | [references/text-to-speech.md](references/text-to-speech.md) |
 | Voice cloning (instant references + persistent voice models)              | [references/voice-cloning.md](references/voice-cloning.md)   |
-| Speech-to-Text (models, timestamps, fields the SDK drops, realtime in JS) | [references/speech-to-text.md](references/speech-to-text.md) |
+| Speech-to-Text (models, timestamps, response fields by SDK version, realtime in JS) | [references/speech-to-text.md](references/speech-to-text.md) |
 | Realtime WebSocket TTS (stream text → audio)                              | [references/websocket.md](references/websocket.md)           |
 | Errors, retries, and timeouts (the **real** exception types)              | [references/errors.md](references/errors.md)                 |
 
@@ -125,4 +125,4 @@ The two SDKs do **not** use the same names. Use this map when porting code betwe
 - Python `latency` accepts only **`"normal"` or `"balanced"`** (default `"balanced"`); there is no `"low"`.
 - The Python client has **no `max_retries`** and does **not** auto-retry; the JS client **does** auto-retry (configurable via per-call `requestOptions.maxRetries`). See [errors](references/errors.md).
 - Python defines a `ValidationError` class but **never raises it**, so don't catch it expecting validation failures; a 422 surfaces as `APIError`. The JS SDK throws `UnprocessableEntityError` on 422.
-- ASR segment `start` / `end` and `duration` are all in **seconds**. The Python SDK's `ASRResponse` docstring says milliseconds; that is wrong. See [speech-to-text](references/speech-to-text.md).
+- ASR segment `start` / `end` and `duration` are all in **seconds**. In `fish-audio-sdk` 1.3.0 and earlier, the `ASRResponse` docstring says milliseconds; that is wrong. See [speech-to-text](references/speech-to-text.md).
