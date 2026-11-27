@@ -166,14 +166,18 @@ Every payload carries the `event` name, a unique `event_id`, and a `session` obj
       "role": "assistant",
       "content": "Hi, this is Acme support. How can I help?",
       "turn_id": 1,
-      "created_at": "2026-07-23T12:01:13Z"
+      "created_at": "2026-07-23T12:01:15.940000+00:00",
+      "started_at": "2026-07-23T12:01:13.210000+00:00",
+      "ended_at": "2026-07-23T12:01:15.900000+00:00"
     },
     {
       "type": "message",
       "role": "user",
       "content": "My order SO-1042 hasn't arrived yet.",
       "turn_id": 2,
-      "created_at": "2026-07-23T12:01:18Z"
+      "created_at": "2026-07-23T12:01:19.630000+00:00",
+      "started_at": "2026-07-23T12:01:16.850000+00:00",
+      "ended_at": "2026-07-23T12:01:18.540000+00:00"
     }
   ]
 }
@@ -222,7 +226,7 @@ Every payload carries the `event` name, a unique `event_id`, and a `session` obj
 
 `event_id` is `evt_` followed by 32 hex characters. It identifies one event. Every endpoint and every retry of that event gets the same value, and it is also sent in the `X-Fish-Webhook-Id` header. Use it to drop duplicates. See [Idempotency](#idempotency).
 
-`items` on `call.analyzed` is the same timeline as `items` in [`GET /v1/agent/sessions/{session_id}`](/agents/monitor/conversation-history#get-a-session): messages, tool calls, tool results, and transfers, in the order they happened. See [Item types](/agents/monitor/conversation-history#item-types) for the fields. `items` is `[]` when the session's content was already deleted by data retention, and `null` when it could not be read. In that case, fetch the session from the sessions API.
+`items` on `call.analyzed` is the same timeline as `items` in [`GET /v1/agent/sessions/{session_id}`](/agents/monitor/conversation-history#get-a-session): messages, tool calls, tool results, and transfers, in the order they happened. See [Item types](/agents/monitor/conversation-history#item-types) for the fields. The times inside `items` are written as the sessions API writes them, with a numeric offset (`+00:00`), not with the `Z` suffix the rest of the payload uses. `items` is `[]` when the session's content was already deleted by data retention, and `null` when it could not be read. In that case, fetch the session from the sessions API.
 
 `ended_reason` is the same value as `session.end_reason` and uses the [sessions API vocabulary](/agents/monitor/conversation-history#status-and-end-reason): `user_hangup`, `agent_hangup`, `escalated`, `conversation_timeout`, `heartbeat_timeout`, `agent_join_timeout`, `internal_error`, or `llm_endpoint_failure`. `call.ended` is only sent for sessions in which a participant connected, so the never-connected reasons (`room_join_timeout`, `cancelled`, `dial_failed`) do not appear here; query the sessions API with `status=failed` for those. A caller who connected and waited for an agent that never joined does produce `call.ended`, with `session.status` set to `failed` and `ended_reason` set to `agent_join_timeout`. In the rare case the reason is not settled yet at delivery time, both fields are `null`. New values may be added; treat unrecognized values as informational rather than rejecting the event.
 
