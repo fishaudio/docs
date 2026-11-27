@@ -15,14 +15,22 @@ import { AudioTranscript } from '/snippets/audio-transcript.jsx';
 
 ## Installation
 
-Install from n8n community nodes:
+On self-hosted n8n, install from n8n community nodes:
 
 1. Go to **Settings** > **Community Nodes**
 2. Select **Install**
-3. Enter `n8n-nodes-fishaudio`
+3. Enter `@fishaudio/n8n-nodes-fishaudio`
 4. Accept the risks and install
 
 See the [n8n community nodes guide](https://docs.n8n.io/integrations/community-nodes/installation/) for details.
+
+On n8n Cloud, open the nodes panel, search for **Fish Audio**, and install the node from there. n8n Cloud offers only the community nodes and versions that n8n has verified, so the node there can be an earlier version, published under the previous name `n8n-nodes-fishaudio`.
+
+<Note>
+  The package was previously published as `n8n-nodes-fishaudio`. Workflows that
+  use it keep working. To switch a workflow to `@fishaudio/n8n-nodes-fishaudio`,
+  see [Move from n8n-nodes-fishaudio](https://github.com/fishaudio/fish-audio-n8n#move-from-n8n-nodes-fishaudio).
+</Note>
 
 ## Configuration
 
@@ -34,15 +42,23 @@ See the [n8n community nodes guide](https://docs.n8n.io/integrations/community-n
 
 The node supports:
 
-- **Text-to-Speech**: Generate audio from text using any voice model
-- **Speech-to-Text**: Transcribe audio files
-- **Voice Models**: List, create, and manage custom voices
+- **Text-to-Speech**: Generate audio from text using any voice model. Choose the model: new nodes use `s2.1-pro`, and `s2.1-pro-free` and `drama-3` are also in the list. Under **Additional Options**, **Language** sets the language used to read out numbers, dates, units and symbols; see [Supported normalization languages](/features/text-to-speech#supported-normalization-languages).
+- **Speech-to-Text**: Transcribe audio files. New nodes use `transcribe-1-pro`.
+- **Voice Models**: List, get, create, and delete custom voices
 - **Account**: Check credit balance
 
 The node is also available as an AI tool for use with n8n's AI Agent nodes.
 
+When a request fails, the error shows the Fish Audio trace ID and error code if the API returned them. Include them when you contact support.
+
+These model choices, the **Language** option, and the trace ID in errors require version 0.5.0 or later of the node.
+
+## Workflow templates
+
+The node's repository has [workflow templates](https://github.com/fishaudio/fish-audio-n8n#workflow-templates) you can import: a text-to-speech webhook, a form that transcribes an uploaded recording, and a form that re-voices a recording. They need `@fishaudio/n8n-nodes-fishaudio` 0.5.0 or later.
+
 ## Resources
 
-- [npm package](https://www.npmjs.com/package/n8n-nodes-fishaudio)
+- [npm package](https://www.npmjs.com/package/@fishaudio/n8n-nodes-fishaudio)
 - [GitHub](https://github.com/fishaudio/fish-audio-n8n)
 - [n8n Community Nodes](https://docs.n8n.io/integrations/community-nodes/)
