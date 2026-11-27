@@ -151,12 +151,14 @@ Two modes, mutually exclusive (combining them returns `400`):
 
 ## Get a session
 
-`GET /v1/agent/sessions/{session_id}` returns the session facts plus a single `items` timeline: messages and tool activity merged in the order they actually happened. It also carries what the platform measured: [startup and per-turn latency](#latency-and-knowledge-retrievals) and the [knowledge lookups](#latency-and-knowledge-retrievals) the agent made.
+`GET /v1/agent/sessions/{session_id}` returns the session facts plus a single `items` timeline: messages and tool activity merged in the order they actually happened. Add `include=turns` to also get each turn's [latency](#turn-latency).
 
 ```bash API (curl)
-curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
+curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID?include=turns" \
   --header "Authorization: Bearer $FISH_API_KEY"
 ```
+
+`include` takes a comma-separated list of extra sections. `turns` is the only value for now; any other value is rejected with `422`. Without `include`, `turns` is `null`.
 
 ```json
 {
@@ -210,7 +212,6 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
       "audio_end_ms": 18600
     }
   ],
-  "startup_ms": 1310,
   "turns": [
     {
       "turn_id": 3,
@@ -218,24 +219,10 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID" \
         "eou_ms": 290,
         "llm_ms": 610,
         "tts_ms": 240,
-        "voice_to_voice_ms": 1210,
-        "voice_to_voice_heard_ms": null
-      },
-      "timings": {
-        "eou_delay_ms": 290,
-        "llm_ttft_ms": 610,
-        "tts_ttfb_ms": 240,
-        "speaking_after_speech_stop_ms": 1210,
-        "speech_duration_ms": 1800,
-        "llm_duration_ms": 940,
-        "tts_duration_ms": 1530,
-        "tts_audio_duration_ms": 3290,
-        "voice_to_voice_heard_ms": null
-      },
-      "knowledge_retrievals": []
+        "voice_to_voice_ms": 1210
+      }
     }
   ],
-  "unattributed_knowledge_retrievals": [],
   "analysis": {
     "status": "completed",
     "summary": "…",
@@ -286,24 +273,11 @@ New values may be added, so treat a value you don't know as an unspecified cause
 
 `audio_start_ms` and `audio_end_ms` locate a message in the [recording](#download-recordings), in milliseconds from the start of the speaker's own track: the `agent` track for `assistant` messages, the `user` track for `user` messages. Each speaker has a separate track, so the numbers are not relative to the session start or to one mixed file. To play a reply, take the `agent` track's URL from the recording response and seek to `audio_start_ms`. The positions are approximate: the start is reliable, but the end of a reply that played to the finish can be a few seconds late, and a `user` message can be offset, or `null` when one turn holds several user messages. Both fields are `null` when the session has no recording, when the position cannot be told, and for `assistant` messages when the agent has more than one `agent` track (an agent with a [background sound](/agents/build/background-sound-voice-effect#recordings)).
 
-### Latency and knowledge retrievals
+### Turn latency
 
-`startup_ms`, `turns` and `unattributed_knowledge_retrievals` are on the session detail. `turns` and `unattributed_knowledge_retrievals` are empty lists on a session that never recorded them.
+With `include=turns`, `turns` has one entry per conversation turn, ascending by `turn_id`. The `turn_id` is the one on the `items` of that turn, so you can put a turn's messages and its latency together. Without `include=turns`, `turns` is `null`; with it, `turns` is an empty list on a session that never recorded any.
 
-- **`startup_ms`**: how long the session took to start, in whole milliseconds, from the request that created it until the agent was ready to talk. It is `null` when either end was not recorded, for example while the session is still starting.
-- **`turns`**: one entry per conversation turn, ascending by `turn_id`. The `turn_id` is the one on the `items` of that turn, so you can put a turn's messages and its measurements together.
-- **`unattributed_knowledge_retrievals`**: knowledge lookups that belong to no turn.
-
-Each entry of `turns` has:
-
-| Field                  | What it is                                                                                                                       |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `turn_id`              | The turn number, as on `items`                                                                                                   |
-| `latency_summary`      | The turn's first-response latency, in whole milliseconds. Each value is `null` when it could not be measured                    |
-| `timings`              | The turn's timing steps in milliseconds. When a step was reported more than once, the latest value is shown                      |
-| `knowledge_retrievals` | The knowledge lookups the agent made in this turn                                                                                |
-
-`latency_summary` is a short, stable summary of the turn. Use it for dashboards and alerts. It has these fields:
+Each entry has the `turn_id` and a `latency_summary`, the turn's first-response latency in whole milliseconds. Use it for dashboards and alerts. Each value is `null` when it could not be measured.
 
 | Field                     | What it measures                                                                                                           |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -311,75 +285,6 @@ Each entry of `turns` has:
 | `llm_ms`                  | LLM time to first token                                                                                                    |
 | `tts_ms`                  | Speech synthesis time to first audio byte                                                                                  |
 | `voice_to_voice_ms`       | From the caller finishing speaking to the first agent audio                                                                |
-| `voice_to_voice_heard_ms` | The same interval as the caller's browser heard it. Only web sessions whose client reported playback timing have it         |
-
-`timings` has a fixed set of keys, all durations in whole milliseconds. A step the turn has no measurement for is `null`. Steps that do not apply to a session (the `client_*` ones exist only for web sessions) are `null` too.
-
-| Key                                       | What it measures                                                                         |
-| ----------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `eou_delay_ms`                            | Delay of the end-of-utterance decision after the caller stopped speaking                 |
-| `llm_ttft_ms`                             | Time from the LLM request to its first token                                             |
-| `tts_ttfb_ms`                             | Time from the speech request to the first audio byte                                     |
-| `speaking_after_speech_stop_ms`           | From the caller finishing speaking to the agent's first audio (voice to voice)           |
-| `speech_duration_ms`                      | How long the caller spoke in this turn                                                   |
-| `transcription_delay_ms`                  | Delay before the caller's speech was transcribed                                         |
-| `on_user_turn_completed_delay_ms`         | Time spent in the step that runs before the LLM request                                  |
-| `thinking_after_transcript_ms`            | Time from the finished transcript until the agent started to think                       |
-| `thinking_to_speaking_ms`                 | Time from the agent starting to think until it started to speak                          |
-| `llm_duration_ms`                         | How long the LLM took to finish its reply                                                |
-| `tts_first_byte_after_eou_ms`             | Time from the end-of-utterance decision to the first audio byte                          |
-| `tts_duration_ms`                         | How long speech synthesis took                                                           |
-| `tts_audio_duration_ms`                   | Length of the audio that was synthesized                                                 |
-| `assistant_complete_after_speech_stop_ms` | From the caller finishing speaking to the agent's reply being complete                   |
-| `voice_to_voice_heard_ms`                 | Voice to voice as the caller's browser heard it. Only web sessions whose client reported playback timing have it |
-| `client_delay_estimate_ms`                | The caller's own estimate of playback delay, from WebRTC statistics                      |
-| `client_rtt_ms`                           | Round trip time between the caller and the platform's edge                               |
-| `client_jitter_buffer_ms`                 | The caller's jitter buffer                                                               |
-
-New steps may be added as new keys over time, so read `timings` by key and ignore the keys you do not know.
-
-A knowledge lookup in `knowledge_retrievals` or `unattributed_knowledge_retrievals` has the `query` the agent searched for, the `hits` it got back, and an `error` that is set when the lookup failed (the `hits` are then empty and the turn ran without the knowledge). A hit carries `knowledge_source_id`, `revision_id`, `chunk_id`, `chunk_index`, `score`, `source_name` and `file_name`. `knowledge_source_id` is the id of the source in the [knowledge APIs](/api-reference/endpoint/agent/list-knowledge-sources). To read the text of a hit, see [Read a knowledge chunk](#read-a-knowledge-chunk).
-
-```json
-{
-  "query": "return policy",
-  "hits": [
-    {
-      "knowledge_source_id": "ks_8f2…",
-      "revision_id": "rev_41c…",
-      "chunk_id": "chunk_77d…",
-      "chunk_index": 3,
-      "score": 0.83,
-      "source_name": "Help center",
-      "file_name": "returns-policy.md"
-    }
-  ],
-  "error": null
-}
-```
-
-### Read a knowledge chunk
-
-A hit names a chunk but not its text. `GET /v1/agent/sessions/{session_id}/knowledge-chunks/{chunk_id}` returns the text, so you can see what the agent was given. Take `chunk_id` from a hit, and pass the hit's `knowledge_source_id` and `revision_id` as the two required query parameters.
-
-```bash API (curl)
-curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID/knowledge-chunks/CHUNK_ID?knowledge_source_id=KNOWLEDGE_SOURCE_ID&revision_id=REVISION_ID" \
-  --header "Authorization: Bearer $FISH_API_KEY"
-```
-
-```json
-{
-  "knowledge_source_id": "ks_8f2…",
-  "revision_id": "rev_41c…",
-  "chunk_id": "chunk_77d…",
-  "chunk_index": 3,
-  "file_name": "returns-policy.md",
-  "content": "Returns. You can return any item within 30 days of delivery for a full refund. …",
-  "truncated": false
-}
-```
-
-`content` is cut at 4000 characters, and `truncated` is `true` when the chunk is longer. Both query parameters are required. The endpoint only reads chunks that this session's own retrievals returned: any other combination of ids answers `404`, and so does a chunk that has since been removed from the knowledge base. It returns `410` when the session's content was already deleted by data retention. See the [endpoint reference](/api-reference/endpoint/agent/get-agent-session-knowledge-chunk).
 
 ### LLM endpoint errors
 

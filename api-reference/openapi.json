@@ -1502,7 +1502,7 @@
     "/v1/agent/sessions/{session_id}": {
       "get": {
         "summary": "Get Agent Session",
-        "description": "Fetch one session's full detail: status, timing, and the conversation\ntimeline (transcript turns interleaved with tool calls, in order).",
+        "description": "Fetch one session's full detail: status, timing, and the conversation\ntimeline (transcript turns interleaved with tool calls, in order). Add\n`include=turns` for each turn's latency; it is not returned by default.",
         "security": [
           {
             "BearerAuth": []
@@ -1517,6 +1517,25 @@
             "schema": {
               "title": "Session Id",
               "type": "string"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "include",
+            "description": "Comma-separated extra sections to return. Allowed values: `turns` (per-turn latency; without it `turns` is null). Any other value answers 422.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Include"
             },
             "deprecated": false
           }
@@ -1933,34 +1952,21 @@
                       "title": "Engine Fallbacks",
                       "type": "array"
                     },
-                    "startup_ms": {
+                    "turns": {
                       "anyOf": [
                         {
-                          "type": "integer"
+                          "items": {
+                            "$ref": "#/components/schemas/AgentSessionTurn"
+                          },
+                          "type": "array"
                         },
                         {
                           "type": "null"
                         }
                       ],
                       "default": null,
-                      "description": "How long the session took to start, in milliseconds: from the request that created the session until the agent was ready to talk. Null when either end was not recorded, for example while the session is still starting.",
-                      "title": "Startup Ms"
-                    },
-                    "turns": {
-                      "description": "Per-turn timings and knowledge retrievals, ascending by `turn_id`. A turn's messages and tool calls are in `items` with the same `turn_id`.",
-                      "items": {
-                        "$ref": "#/components/schemas/AgentSessionTurn"
-                      },
-                      "title": "Turns",
-                      "type": "array"
-                    },
-                    "unattributed_knowledge_retrievals": {
-                      "description": "Knowledge lookups that belong to no turn.",
-                      "items": {
-                        "$ref": "#/components/schemas/AgentSessionKnowledgeRetrieval"
-                      },
-                      "title": "Unattributed Knowledge Retrievals",
-                      "type": "array"
+                      "description": "Per-turn latency, ascending by `turn_id`. Only returned when `include=turns` is set; null otherwise. A turn's messages and tool calls are in `items` with the same `turn_id`.",
+                      "title": "Turns"
                     }
                   },
                   "required": [
@@ -2016,6 +2022,43 @@
           },
           "404": {
             "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
             "headers": {},
             "content": {
               "application/json": {
@@ -2229,307 +2272,6 @@
                     "session_id",
                     "status",
                     "tracks"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No permission -- see authorization schemes",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Nothing matches the given URI",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "410": {
-            "description": "URI no longer exists and has been permanently removed",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "Invalid responses from another server/proxy",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The server cannot process the request due to a high load",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Agent Sessions"
-        ]
-      }
-    },
-    "/v1/agent/sessions/{session_id}/knowledge-chunks/{chunk_id}": {
-      "get": {
-        "summary": "Get Agent Session Knowledge Chunk",
-        "description": "Read the text of a knowledge chunk the session retrieved, cut at 4000\ncharacters (`truncated` says whether it was). Only chunks the session's\nknowledge retrievals returned can be read; any other id answers 404.\nTake `chunk_id`, `knowledge_source_id` and `revision_id` from a hit in the\nsession detail.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "session_id",
-            "description": "",
-            "required": true,
-            "schema": {
-              "title": "Session Id",
-              "type": "string"
-            },
-            "deprecated": false
-          },
-          {
-            "in": "path",
-            "name": "chunk_id",
-            "description": "",
-            "required": true,
-            "schema": {
-              "title": "Chunk Id",
-              "type": "string"
-            },
-            "deprecated": false
-          },
-          {
-            "in": "query",
-            "name": "knowledge_source_id",
-            "description": "The `knowledge_source_id` of the hit, as in the session detail's knowledge retrievals.",
-            "required": true,
-            "schema": {
-              "title": "Knowledge Source Id",
-              "type": "string"
-            },
-            "deprecated": false
-          },
-          {
-            "in": "query",
-            "name": "revision_id",
-            "description": "The `revision_id` of the hit, as in the session detail's knowledge retrievals.",
-            "required": true,
-            "schema": {
-              "title": "Revision Id",
-              "type": "string"
-            },
-            "deprecated": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Request fulfilled, document follows",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "description": "The text of one knowledge chunk the session retrieved.",
-                  "properties": {
-                    "knowledge_source_id": {
-                      "description": "The knowledge source's id, as in the knowledge APIs.",
-                      "title": "Knowledge Source Id",
-                      "type": "string"
-                    },
-                    "revision_id": {
-                      "title": "Revision Id",
-                      "type": "string"
-                    },
-                    "chunk_id": {
-                      "title": "Chunk Id",
-                      "type": "string"
-                    },
-                    "chunk_index": {
-                      "title": "Chunk Index",
-                      "type": "integer"
-                    },
-                    "file_name": {
-                      "title": "File Name",
-                      "type": "string"
-                    },
-                    "content": {
-                      "description": "The chunk's text, cut at 4000 characters.",
-                      "title": "Content",
-                      "type": "string"
-                    },
-                    "truncated": {
-                      "description": "True when the chunk is longer than `content` shows.",
-                      "title": "Truncated",
-                      "type": "boolean"
-                    }
-                  },
-                  "required": [
-                    "knowledge_source_id",
-                    "revision_id",
-                    "chunk_id",
-                    "chunk_index",
-                    "file_name",
-                    "content",
-                    "truncated"
                   ],
                   "type": "object"
                 }
@@ -26762,83 +26504,6 @@
         "title": "AgentSessionEngineRef",
         "type": "object"
       },
-      "AgentSessionKnowledgeHit": {
-        "properties": {
-          "knowledge_source_id": {
-            "description": "The knowledge source's id, as in the knowledge APIs.",
-            "title": "Knowledge Source Id",
-            "type": "string"
-          },
-          "revision_id": {
-            "title": "Revision Id",
-            "type": "string"
-          },
-          "chunk_id": {
-            "title": "Chunk Id",
-            "type": "string"
-          },
-          "chunk_index": {
-            "title": "Chunk Index",
-            "type": "integer"
-          },
-          "score": {
-            "title": "Score",
-            "type": "number"
-          },
-          "source_name": {
-            "title": "Source Name",
-            "type": "string"
-          },
-          "file_name": {
-            "title": "File Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "knowledge_source_id",
-          "revision_id",
-          "chunk_id",
-          "chunk_index",
-          "score",
-          "source_name",
-          "file_name"
-        ],
-        "title": "AgentSessionKnowledgeHit",
-        "type": "object"
-      },
-      "AgentSessionKnowledgeRetrieval": {
-        "description": "One knowledge-base lookup the agent made. A failed lookup has no hits\nand an `error`.",
-        "properties": {
-          "query": {
-            "title": "Query",
-            "type": "string"
-          },
-          "hits": {
-            "items": {
-              "$ref": "#/components/schemas/AgentSessionKnowledgeHit"
-            },
-            "title": "Hits",
-            "type": "array"
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Error"
-          }
-        },
-        "required": [
-          "query"
-        ],
-        "title": "AgentSessionKnowledgeRetrieval",
-        "type": "object"
-      },
       "AgentSessionLatencySummary": {
         "description": "First-response latency of one turn, in whole milliseconds; null when\nit could not be measured.",
         "properties": {
@@ -26893,19 +26558,6 @@
             "default": null,
             "description": "From the caller finishing speaking to the first agent audio.",
             "title": "Voice To Voice Ms"
-          },
-          "voice_to_voice_heard_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "The same interval as the caller's browser heard it. Only web sessions whose client reported playback timing have it.",
-            "title": "Voice To Voice Heard Ms"
           }
         },
         "title": "AgentSessionLatencySummary",
@@ -27896,7 +27548,7 @@
         "type": "object"
       },
       "AgentSessionTurn": {
-        "description": "What the platform measured and retrieved for one conversation turn. The\nturn's messages are in `items`, matched by `turn_id`.",
+        "description": "What the platform measured for one conversation turn. The turn's\nmessages are in `items`, matched by `turn_id`.",
         "properties": {
           "turn_id": {
             "title": "Turn Id",
@@ -27904,264 +27556,12 @@
           },
           "latency_summary": {
             "$ref": "#/components/schemas/AgentSessionLatencySummary"
-          },
-          "timings": {
-            "$ref": "#/components/schemas/AgentSessionTurnTimings",
-            "description": "The turn's timing steps in milliseconds. When the turn reported a step several times, the latest value is shown."
-          },
-          "knowledge_retrievals": {
-            "items": {
-              "$ref": "#/components/schemas/AgentSessionKnowledgeRetrieval"
-            },
-            "title": "Knowledge Retrievals",
-            "type": "array"
           }
         },
         "required": [
           "turn_id"
         ],
         "title": "AgentSessionTurn",
-        "type": "object"
-      },
-      "AgentSessionTurnTimings": {
-        "description": "The timing steps of one turn, in whole milliseconds, the same ones the\nconsole's latency popover shows. A step the turn has no measure for is\nnull. A new step is added as a new field.",
-        "properties": {
-          "eou_delay_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Delay of the end-of-utterance decision after the caller stopped speaking.",
-            "title": "Eou Delay Ms"
-          },
-          "llm_ttft_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Time from the LLM request to its first token.",
-            "title": "Llm Ttft Ms"
-          },
-          "tts_ttfb_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Time from the speech request to the first audio byte.",
-            "title": "Tts Ttfb Ms"
-          },
-          "speaking_after_speech_stop_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "From the caller finishing speaking to the agent's first audio (voice to voice).",
-            "title": "Speaking After Speech Stop Ms"
-          },
-          "speech_duration_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "How long the caller spoke in this turn.",
-            "title": "Speech Duration Ms"
-          },
-          "transcription_delay_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Delay before the caller's speech was transcribed.",
-            "title": "Transcription Delay Ms"
-          },
-          "on_user_turn_completed_delay_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Time spent in the step that runs before the LLM request.",
-            "title": "On User Turn Completed Delay Ms"
-          },
-          "thinking_after_transcript_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Time from the finished transcript until the agent started to think.",
-            "title": "Thinking After Transcript Ms"
-          },
-          "thinking_to_speaking_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Time from the agent starting to think until it started to speak.",
-            "title": "Thinking To Speaking Ms"
-          },
-          "llm_duration_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "How long the LLM took to finish its reply.",
-            "title": "Llm Duration Ms"
-          },
-          "tts_first_byte_after_eou_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Time from the end-of-utterance decision to the first audio byte.",
-            "title": "Tts First Byte After Eou Ms"
-          },
-          "tts_duration_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "How long speech synthesis took.",
-            "title": "Tts Duration Ms"
-          },
-          "tts_audio_duration_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Length of the audio that was synthesised.",
-            "title": "Tts Audio Duration Ms"
-          },
-          "assistant_complete_after_speech_stop_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "From the caller finishing speaking to the agent's reply being complete.",
-            "title": "Assistant Complete After Speech Stop Ms"
-          },
-          "voice_to_voice_heard_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Voice to voice as the caller's browser heard it. Only web sessions whose client reported playback timing have it.",
-            "title": "Voice To Voice Heard Ms"
-          },
-          "client_delay_estimate_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "The caller's own estimate of playback delay, from WebRTC statistics.",
-            "title": "Client Delay Estimate Ms"
-          },
-          "client_rtt_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Round trip time between the caller and the platform's edge.",
-            "title": "Client Rtt Ms"
-          },
-          "client_jitter_buffer_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "The caller's jitter buffer.",
-            "title": "Client Jitter Buffer Ms"
-          }
-        },
-        "title": "AgentSessionTurnTimings",
         "type": "object"
       },
       "LLMMessageTokenCost": {
