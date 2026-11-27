@@ -12387,6 +12387,18 @@
                       },
                       "title": "Dynamic Variables",
                       "type": "object"
+                    },
+                    "judge": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentTestJudge"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The judge of a `next_reply` or `simulation` test. Null follows the workspace's Tests settings (`GET /v1/agent/test-settings`). A `tool` test has no judge, it is null there."
                     }
                   },
                   "required": [
@@ -12729,6 +12741,18 @@
                       },
                       "title": "Dynamic Variables",
                       "type": "object"
+                    },
+                    "judge": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentTestJudge"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The judge of a `next_reply` or `simulation` test. Null follows the workspace's Tests settings (`GET /v1/agent/test-settings`). A `tool` test has no judge, it is null there."
                     }
                   },
                   "required": [
@@ -13035,6 +13059,18 @@
                       },
                       "title": "Dynamic Variables",
                       "type": "object"
+                    },
+                    "judge": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentTestJudge"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The judge of a `next_reply` or `simulation` test. Null follows the workspace's Tests settings (`GET /v1/agent/test-settings`). A `tool` test has no judge, it is null there."
                     }
                   },
                   "required": [
@@ -13827,6 +13863,18 @@
                       "title": "Error",
                       "type": "string"
                     },
+                    "judge": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentTestJudge"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The model that judged the run and the reasoning level it judged at. Null on a `tool` test, which has no judge, on a run that ended before its judge was asked, and on `next_reply` runs from before the field existed. Simulation runs from before the judge could be chosen have a null level."
+                    },
                     "usage": {
                       "$ref": "#/components/schemas/PublicAgentTestRunUsage"
                     },
@@ -13997,6 +14045,487 @@
           },
           "404": {
             "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
+        ]
+      }
+    },
+    "/v1/agent/test-settings": {
+      "get": {
+        "summary": "Get Test Settings",
+        "description": "Get the Tests settings of a workspace, the defaults every test in it\nuses unless the test sets its own. `judge` judges the Single Turn and\nSimulation tests without a `judge` of their own.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace_id",
+            "description": "The workspace whose settings to use. Required when your team has more than one workspace.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Workspace Id"
+            },
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "The Tests settings of a workspace, shared by every test in it.",
+                  "properties": {
+                    "workspace_id": {
+                      "description": "The workspace these settings belong to.",
+                      "title": "Workspace Id",
+                      "type": "string"
+                    },
+                    "judge": {
+                      "$ref": "#/components/schemas/AgentTestJudge",
+                      "description": "The judge of a Single Turn or Simulation test that names no `judge` of its own, with the reasoning level it judges at. Always the judge such a test is judged by."
+                    },
+                    "judge_is_default": {
+                      "description": "True while the workspace has not set `judge` and reads the platform default.",
+                      "title": "Judge Is Default",
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "workspace_id",
+                    "judge",
+                    "judge_is_default"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server cannot process the request due to a high load",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Agent Tests"
+        ]
+      },
+      "patch": {
+        "summary": "Update Test Settings",
+        "description": "Change the Tests settings of a workspace. Only the fields you send\nchange. A test run picks its judge when it starts, so runs already\nstarted keep the judge they started with.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace_id",
+            "description": "The workspace whose settings to use. Required when your team has more than one workspace.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Workspace Id"
+            },
+            "deprecated": false
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentTestSettingsPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "The Tests settings of a workspace, shared by every test in it.",
+                  "properties": {
+                    "workspace_id": {
+                      "description": "The workspace these settings belong to.",
+                      "title": "Workspace Id",
+                      "type": "string"
+                    },
+                    "judge": {
+                      "$ref": "#/components/schemas/AgentTestJudge",
+                      "description": "The judge of a Single Turn or Simulation test that names no `judge` of its own, with the reasoning level it judges at. Always the judge such a test is judged by."
+                    },
+                    "judge_is_default": {
+                      "description": "True while the workspace has not set `judge` and reads the platform default.",
+                      "title": "Judge Is Default",
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "workspace_id",
+                    "judge",
+                    "judge_is_default"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No permission -- see authorization schemes",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing matches the given URI",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
             "headers": {},
             "content": {
               "application/json": {
@@ -29060,7 +29589,8 @@
                 "enum": [
                   "low",
                   "balanced",
-                  "high"
+                  "high",
+                  "immediate"
                 ],
                 "type": "string"
               },
@@ -29069,6 +29599,7 @@
               }
             ],
             "default": null,
+            "description": "How much caller speech counts as an interruption while the agent speaks. With `low` the agent stops only for a firm, worded interjection and talks through background noise and short acknowledgements. `balanced` (default) interrupts on normal speech. With `high` the agent stops on the caller's first word. With `immediate` the agent stops at the caller's first sound, so backchannels such as \"okay\" and \"yeah\" stop it too, and it picks up where it stopped when the caller was only backchanneling or did not take the turn. `immediate` is only available to teams it has been enabled for, other teams get a 403 when they set it.",
             "title": "Interruption Sensitivity"
           },
           "interruption_ignore_phrases": {
@@ -30740,10 +31271,12 @@
           },
           "interruption_sensitivity": {
             "default": "balanced",
+            "description": "How much caller speech counts as an interruption while the agent speaks. With `low` the agent stops only for a firm, worded interjection and talks through background noise and short acknowledgements. `balanced` (default) interrupts on normal speech. With `high` the agent stops on the caller's first word. With `immediate` the agent stops at the caller's first sound, so backchannels such as \"okay\" and \"yeah\" stop it too, and it picks up where it stopped when the caller was only backchanneling or did not take the turn. `immediate` is only available to teams it has been enabled for, other teams get a 403 when they set it.",
             "enum": [
               "low",
               "balanced",
-              "high"
+              "high",
+              "immediate"
             ],
             "title": "Interruption Sensitivity",
             "type": "string"
@@ -32291,6 +32824,44 @@
         "title": "AgentTestConditionResult",
         "type": "object"
       },
+      "AgentTestJudge": {
+        "additionalProperties": false,
+        "description": "The model that judges a `next_reply` or `simulation` test, and how much\nit reasons before its verdict.",
+        "properties": {
+          "model": {
+            "description": "One of the models `GET /v1/agent/llm-models` lists with `test_judge`.",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "reasoning_level": {
+            "anyOf": [
+              {
+                "enum": [
+                  "off",
+                  "low",
+                  "medium",
+                  "high",
+                  "very_high"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "One of the levels `test_judge.reasoning_levels` lists for the model. Null reasons at the model's default level.",
+            "title": "Reasoning Level"
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "title": "AgentTestJudge",
+        "type": "object"
+      },
       "AgentTestMockGap": {
         "description": "Calls of one tool the test prepared no answer for. A run with a\ngap never passes cleanly: it fails with needs_review.",
         "properties": {
@@ -32656,6 +33227,18 @@
             "default": "",
             "title": "Error",
             "type": "string"
+          },
+          "judge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTestJudge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The model that judged the run and the reasoning level it judged at. Null on a `tool` test, which has no judge, on a run that ended before its judge was asked, and on `next_reply` runs from before the field existed. Simulation runs from before the judge could be chosen have a null level."
           },
           "usage": {
             "$ref": "#/components/schemas/PublicAgentTestRunUsage"
@@ -34589,6 +35172,18 @@
             "title": "Dynamic Variables",
             "type": "object"
           },
+          "judge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTestJudge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The judge of a `next_reply` or `simulation` test. Null follows the workspace's Tests settings (`GET /v1/agent/test-settings`). A `tool` test has no judge, it is null there."
+          },
           "agent_ids": {
             "description": "Agents to attach the test to. They must all be in one workspace, and the test is created there. Without agents the test goes into the API key owner's default workspace.",
             "items": {
@@ -34813,6 +35408,18 @@
             ],
             "default": null,
             "title": "Dynamic Variables"
+          },
+          "judge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTestJudge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The judge of a `next_reply` or `simulation` test. Null follows the workspace's Tests settings (`GET /v1/agent/test-settings`). A `tool` test has no judge, it is null there. Left out, the test keeps its judge."
           }
         },
         "title": "PublicAgentTestUpdatePayload",
@@ -34881,6 +35488,18 @@
             "title": "Error",
             "type": "string"
           },
+          "judge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTestJudge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The model that judged the run and the reasoning level it judged at. Null on a `tool` test, which has no judge, on a run that ended before its judge was asked, and on `next_reply` runs from before the field existed. Simulation runs from before the judge could be chosen have a null level."
+          },
           "usage": {
             "$ref": "#/components/schemas/PublicAgentTestRunUsage"
           },
@@ -34925,6 +35544,26 @@
           "created_at"
         ],
         "title": "PublicAgentTestRunSummary",
+        "type": "object"
+      },
+      "AgentTestSettingsPatch": {
+        "additionalProperties": false,
+        "description": "Only the fields sent change.",
+        "properties": {
+          "judge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTestJudge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Null goes back to the platform default. Left out, unchanged."
+          }
+        },
+        "title": "AgentTestSettingsPatch",
         "type": "object"
       },
       "PublicPhoneNumberEntity": {
@@ -35634,6 +36273,17 @@
             "description": "The longest `prompt.system_prompt` an agent on this model can save, in o200k_base tokens. A longer one is rejected with 422.",
             "title": "Max System Prompt Tokens",
             "type": "integer"
+          },
+          "test_judge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicLLMTestJudge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How the model judges `next_reply` and `simulation` tests, as the `judge` of a test or of a workspace's Tests settings. Null when it cannot judge them."
           }
         },
         "required": [
@@ -35642,9 +36292,53 @@
           "usd_per_million_tokens",
           "long_context",
           "reference_latency_ms",
-          "max_system_prompt_tokens"
+          "max_system_prompt_tokens",
+          "test_judge"
         ],
         "title": "PublicLLMModel",
+        "type": "object"
+      },
+      "PublicLLMTestJudge": {
+        "properties": {
+          "reasoning_levels": {
+            "description": "The reasoning levels a judge of this model may name.",
+            "items": {
+              "$ref": "#/components/schemas/PublicLLMTestJudgeLevel"
+            },
+            "title": "Reasoning Levels",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reasoning_levels"
+        ],
+        "title": "PublicLLMTestJudge",
+        "type": "object"
+      },
+      "PublicLLMTestJudgeLevel": {
+        "properties": {
+          "level": {
+            "enum": [
+              "off",
+              "low",
+              "medium",
+              "high",
+              "very_high"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "default": {
+            "type": "boolean",
+            "description": "The level the model judges at when a judge names none.",
+            "title": "Default"
+          }
+        },
+        "required": [
+          "level",
+          "default"
+        ],
+        "title": "PublicLLMTestJudgeLevel",
         "type": "object"
       },
       "PublicLLMTokenRates": {
@@ -36597,7 +37291,7 @@
             "type": "integer"
           },
           "latency": {
-            "default": "normal",
+            "default": "balanced",
             "description": "Latency-quality trade-off. normal: best quality, balanced: reduced latency, low: lowest latency.",
             "enum": [
               "low",
@@ -36850,7 +37544,7 @@
             "type": "integer"
           },
           "latency": {
-            "default": "normal",
+            "default": "balanced",
             "description": "Latency-quality trade-off. normal: best quality, balanced: reduced latency, low: lowest latency.",
             "enum": [
               "low",
