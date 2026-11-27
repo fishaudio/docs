@@ -84,6 +84,27 @@ class WebSocketError(FishAudioError)
 
 Raised when WebSocket connection or streaming fails.
 
+<a id="fishaudio.exceptions.ASRRealtimeError"></a>
+
+## ASRRealtimeError Objects
+
+```python
+class ASRRealtimeError(WebSocketError)
+```
+
+Raised when a realtime speech-to-text session ends with an error.
+
+**Attributes**:
+
+- `message` - A short English description, for humans
+- `error_type` - Machine-readable error type from the server's error event
+  (e.g., "invalid_config", "idle_timeout"). None if the connection closed
+  without one
+- `code` - HTTP-style status from the server's error event. None if not sent
+- `request_id` - Identifier of the request; quote it when reporting a problem
+- `close_code` - WebSocket close code (e.g., 4400, 4408, 1012). None if the error
+  was raised before the connection closed
+
 <a id="fishaudio.exceptions.ValidationError"></a>
 
 ## ValidationError Objects
@@ -103,4 +124,3 @@ class DependencyError(FishAudioError)
 ```
 
 Raised when a required dependency is missing.
-
