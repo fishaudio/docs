@@ -111,7 +111,7 @@ All of these extend `FishAudioError`. `err.statusCode` is set when the handshake
 ### Retries & timeouts (JavaScript)
 
 - **Automatic retries are built in.** The client retries `408`, `429`, and `>= 500` with exponential backoff (≈1 s base, 60 s cap) plus jitter, honoring `Retry-After`. You don't need to hand-roll a 429 loop.
-- Tune per call via `requestOptions` (the trailing argument on every method):
+- Tune per call via `requestOptions` (the trailing argument on every HTTP method; `speechToText.convertRealtime` takes only `abortSignal` and `timeoutInSeconds`, and `textToSpeech.convertRealtime` takes none):
 
 ```ts
 const audio = await client.textToSpeech.convert({ text: "Hello!" }, "s2-pro", {
@@ -126,7 +126,7 @@ const audio = await client.textToSpeech.convert({ text: "Hello!" }, "s2-pro", {
 
 ## Inspecting raw responses (JS)
 
-Every method returns an awaitable that also exposes the raw response:
+Every HTTP method returns an awaitable that also exposes the raw response (the realtime WebSocket methods do not):
 
 ```ts
 const { data, rawResponse } = await client.textToSpeech

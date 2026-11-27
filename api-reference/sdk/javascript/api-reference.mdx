@@ -41,6 +41,27 @@ const fishAudio = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 
 Without `apiKey`, the client reads `FISH_API_KEY` from the environment. Pass `baseUrl` to send requests to another address, such as a proxy.
 
+### Request options
+
+Every HTTP method takes a `requestOptions` object as its last argument. Of the realtime WebSocket methods, `speechToText.convertRealtime()` takes only `abortSignal` and `timeoutInSeconds`, and `textToSpeech.convertRealtime()` takes none.
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `timeoutInSeconds` | `240` | Time to wait for a response before the call throws `FishAudioTimeoutError`. |
+| `maxRetries` | `2` | Retries after a `408`, `429`, or `5xx` response, with exponential backoff. The SDK waits as long as a `Retry-After` header asks, up to 60 seconds. `0` turns retries off. |
+| `abortSignal` | none | An `AbortSignal` that cancels the request. |
+| `headers` | none | Extra headers for this request. |
+| `queryParams` | none | Extra query string parameters for this request. |
+| `apiKey` | none | An API key for this request instead of the client's. |
+
+```typescript
+const audio = await fishAudio.textToSpeech.convert(
+  { text: "Hello!" },
+  "s2.1-pro-free",
+  { timeoutInSeconds: 30, maxRetries: 0 },
+);
+```
+
 ## Text to Speech
 
 ### convert()
@@ -342,7 +363,7 @@ const audio = await fishAudio.textToSpeech.convert({
 Speech-to-text parameters.
 
 ```typescript
-{ audio: File, model?: "transcribe-1-pro", language?: "en", ignore_timestamps?: boolean }
+{ audio: File, model?: "transcribe-1" | "transcribe-1-pro" | string, language?: string, ignore_timestamps?: boolean }
 ```
 
 Fields: `audio`, `model?`, `language?`, `ignore_timestamps?`
@@ -458,8 +479,11 @@ Fields: `event` ("stop")
 ### FishAudioError
 Generic error with `statusCode`, `body`, `rawResponse`.
 
+### UnprocessableEntityError
+Thrown for `422` (invalid parameters). Extends `FishAudioError`; `body.detail` lists the fields that failed. It is the only typed error the HTTP methods throw: every other status is a plain `FishAudioError`, so branch on `statusCode`.
+
 ### FishAudioTimeoutError
-Connection timeout error.
+An HTTP request got no response within the timeout. It extends `Error`, not `FishAudioError`, so catch it separately.
 
 ### RealtimeSTTError
 A realtime speech-to-text session failed. Extends `FishAudioError` with `errorType`, `requestId`, `closeCode` and `recoverable`.

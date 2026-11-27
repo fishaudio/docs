@@ -67,12 +67,9 @@ import { writeFile } from "fs/promises";
 
 const client = new FishAudioClient({ apiKey: process.env.FISH_API_KEY });
 
-// Pass the model explicitly: the current npm release (`fish-audio` 0.1.0)
-// defaults to `s1`, which is deprecated and retires on December 31, 2026.
-const stream = await client.textToSpeech.convert(
-  { text: "Hello from Fish Audio!" },
-  "s2-pro",
-);
+const stream = await client.textToSpeech.convert({
+  text: "Hello from Fish Audio!",
+});
 
 const chunks = [];
 for await (const chunk of stream) chunks.push(Buffer.from(chunk));
