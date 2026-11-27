@@ -58,7 +58,7 @@ seg.start              # float: seconds
 seg.end                # float: seconds (can equal start)
 ```
 
-`duration`, `start`, and `end` are all in **seconds**. The SDK's `ASRResponse` docstring says milliseconds; that is wrong, so do not divide by 1000.
+`duration`, `start`, and `end` are all in **seconds**. In `fish-audio-sdk` 1.3.0 and earlier, the `ASRResponse` docstring says milliseconds; that is wrong, so do not divide by 1000.
 
 Segment text has no punctuation, speaker markers, or cues, and can be normalized (for example `35` for `3.5`), so it does not always match `text` character for character. Segments are not speaker turns.
 

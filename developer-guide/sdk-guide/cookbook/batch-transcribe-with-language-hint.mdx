@@ -172,7 +172,7 @@ if (failed.length > 0) {
 
 </CodeGroup>
 
-Each call returns an [`ASRResponse`](/api-reference/sdk/python/types#asrresponse-objects) with `.text` and `.duration` (seconds). With `transcribe-1-pro`, `text` can contain inline speaker markers such as `<|speaker:0|>` and cues such as `[laughter]`; see [Speaker markers](/features/speech-to-text#speaker-markers) to split it into turns. This recipe skips timestamps; pass `include_timestamps=True` (Python) or `ignore_timestamps: false` (JavaScript) for word-level `.segments`. The detected language is in `.language_code` (Python, `fish-audio-sdk` 1.4.0 or later).
+Each call returns an [`ASRResponse`](/api-reference/sdk/python/types#asrresponse-objects) with `.text` and `.duration` (seconds). With `transcribe-1-pro`, `text` can contain inline speaker markers such as `<|speaker:0|>` and cues such as `[laughter]`; see [Speaker markers](/features/speech-to-text#speaker-markers) to split it into turns. This recipe skips timestamps; pass `include_timestamps=True` (Python) or `ignore_timestamps: false` (JavaScript) for word-level `.segments`. In Python, `.language_code` holds the detected language, or your hint when the language cannot be determined (`fish-audio-sdk` 1.4.0 or later).
 
 A file that fails is recorded with its error, and the loop continues. After the summary, the script exits with a non-zero status if any file failed, so a scheduled job does not report success. A file that failed with 429, a 5xx status, or a network error such as a timeout is worth retrying later with backoff; for other 4xx errors, fix the file or the request first.
 

@@ -103,7 +103,7 @@ A field that is not returned is absent from the JSON, never `null`. Do not depen
   `{ headers: { model: "transcribe-1-pro" } }` as the second argument to
   `speechToText.convert()`. Neither SDK can send `tag_audio_events`,
   `diarize`, or the speaker-count hints. To use them, call the API directly, as
-  in the examples above. The Python SDK returns every response field
+  in the examples above. The Python SDK returns the fields listed above
   (`fish-audio-sdk` 1.4.0 or later; earlier versions keep only `text`,
   `duration`, and `segments`). The JavaScript SDK returns the whole response body,
   but its `STTResponse` type declares only `text`, `duration`, and `segments`.

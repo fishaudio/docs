@@ -83,7 +83,7 @@ const audio = await client.textToSpeech.convert(
 | Install, auth, playback deps, verify a key                                | [references/installation.md](references/installation.md)     |
 | Text-to-Speech (convert, stream, formats, prosody, model select)          | [references/text-to-speech.md](references/text-to-speech.md) |
 | Voice cloning (instant references + persistent voice models)              | [references/voice-cloning.md](references/voice-cloning.md)   |
-| Speech-to-Text (models, timestamps, fields the SDK drops, realtime in JS) | [references/speech-to-text.md](references/speech-to-text.md) |
+| Speech-to-Text (models, timestamps, response fields by SDK version, realtime in JS) | [references/speech-to-text.md](references/speech-to-text.md) |
 | Realtime WebSocket TTS (stream text → audio)                              | [references/websocket.md](references/websocket.md)           |
 | Errors, retries, and timeouts (the **real** exception types)              | [references/errors.md](references/errors.md)                 |
 
