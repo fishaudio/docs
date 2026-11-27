@@ -4,7 +4,10 @@ description: "Fish Audio Python SDK for text-to-speech and voice cloning"
 icon: "python"
 ---
 
-![python.png](https://raw.githubusercontent.com/fishaudio/fish-audio-python/refs/heads/main/.github/assets/python.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/fishaudio/fish-audio-python/refs/heads/main/.github/assets/banner-dark.svg" />
+  <img alt="Fish Audio Python SDK" src="https://raw.githubusercontent.com/fishaudio/fish-audio-python/refs/heads/main/.github/assets/banner-light.svg" />
+</picture>
 
 # Fish Audio Python SDK
 
@@ -39,7 +42,7 @@ pip install "fish-audio-sdk[utils]"
 
 ## Authentication
 
-Get your API key from [Get Started](https://fish.audio/app/developers/get-started/?utm_source=docs&utm_medium=python-sdk&utm_content=get-api-key):
+Get your API key from [fish.audio/app/api-keys](https://fish.audio/app/api-keys/?utm_source=github&utm_medium=sdk-readme&utm_content=python):
 
 ```bash
 export FISH_API_KEY=your_api_key_here
@@ -55,8 +58,6 @@ client = FishAudio(api_key="your_api_key")
 
 ## Quick Start
 
-Most examples on this page pass `model="s2.1-pro-free"`, the free model, so they work before you add API credit. Without `model=`, the SDK uses a paid model.
-
 **Synchronous:**
 
 ```python
@@ -66,7 +67,7 @@ from fishaudio.utils import play, save
 client = FishAudio()
 
 # Generate audio
-audio = client.tts.convert(text="Hello, world!", model="s2.1-pro-free")
+audio = client.tts.convert(text="Hello, world!")
 
 # Play or save
 play(audio)
@@ -82,7 +83,7 @@ from fishaudio.utils import play, save
 
 async def main():
     client = AsyncFishAudio()
-    audio = await client.tts.convert(text="Hello, world!", model="s2.1-pro-free")
+    audio = await client.tts.convert(text="Hello, world!")
     play(audio)
     save(audio, "output.mp3")
 
@@ -93,14 +94,35 @@ asyncio.run(main())
 
 ### Text-to-Speech
 
+**Selecting a model:**
+
+```python
+# Recommended for production
+production_audio = client.tts.convert(
+    text="Production speech",
+    model="s2.1-pro",
+)
+
+# Free to use, including on a new account with no API credit
+free_audio = client.tts.convert(
+    text="Free speech",
+    model="s2.1-pro-free",
+)
+
+# Drama 3: our most expressive model (uses API credit)
+drama_audio = client.tts.convert(
+    text="Expressive speech",
+    model="drama-3",
+)
+```
+
 **With custom voice:**
 
 ```python
 # Use a specific voice by ID
 audio = client.tts.convert(
     text="Custom voice",
-    reference_id="9a9cf47702da476aa4629e2506d4a857",
-    model="s2.1-pro-free",
+    reference_id="802e3bc2b27e49c2995d23ef70e6ac89"
 )
 ```
 
@@ -109,8 +131,7 @@ audio = client.tts.convert(
 ```python
 audio = client.tts.convert(
     text="Speaking faster!",
-    speed=1.5,  # 1.5x speed
-    model="s2.1-pro-free",
+    speed=1.5  # 1.5x speed
 )
 ```
 
@@ -127,64 +148,67 @@ config = TTSConfig(
 )
 
 # Reuse across generations
-audio1 = client.tts.convert(text="First message", config=config, model="s2.1-pro-free")
-audio2 = client.tts.convert(text="Second message", config=config, model="s2.1-pro-free")
+audio1 = client.tts.convert(text="First message", config=config)
+audio2 = client.tts.convert(text="Second message", config=config)
 ```
 
 **Chunk-by-chunk processing:**
 
 ```python
 # Stream and process chunks as they arrive
-for chunk in client.tts.stream(text="Long content...", model="s2.1-pro-free"):
+for chunk in client.tts.stream(text="Long content..."):
     send_to_websocket(chunk)
 
 # Or collect all chunks
-audio = client.tts.stream(text="Hello!", model="s2.1-pro-free").collect()
+audio = client.tts.stream(text="Hello!").collect()
 ```
 
-**Word-level timestamps** (`fish-audio-sdk` 1.6.0 or later):
+**Word-level timestamps:**
 
 ```python
-from fishaudio.utils import save
-
-# Audio plus the start and end time of every word
-result = client.tts.convert_with_timestamps(
-    text="Hello! Welcome to Fish Audio.",
-    model="s2.1-pro-free",
-)
+# Audio plus the start and end time of every word, for captions, highlighting or lip-sync
+result = client.tts.convert_with_timestamps(text="Hello! Welcome to Fish Audio.")
 save(result.audio, "output.mp3")
 
 for segment in result.segments:
     print(f"{segment.start:.2f}s - {segment.end:.2f}s  {segment.text}")
+
+# Or use audio and timings while they arrive
+with client.tts.stream_with_timestamps(text="Long content...", format="opus") as stream:
+    for event in stream:
+        send_to_player(event.audio)
+        update_captions(stream.segments)  # timings so far, in seconds from the start
 ```
 
-`client.tts.stream_with_timestamps()` yields audio and timings while they arrive.
+Text without words (only punctuation, or a sound tag such as `[sigh]`) still produces audio, but the API has no timings for it: `segments` is then empty and `result.duration` is `None`.
 
-[Learn more](https://docs.fish.audio/features/text-to-speech)
+[Learn more](https://docs.fish.audio/developer-guide/sdk-guide/python/text-to-speech)
 
 ### Speech-to-Text
 
 ```python
-# Transcribe audio with transcribe-1-pro (recommended).
-# Without model, the request runs on transcribe-1.
-# The model argument requires fish-audio-sdk 1.5.0 or later.
-with open("audio.wav", "rb") as f:
-    result = client.asr.transcribe(
-        audio=f.read(),
-        language="en",
-        model="transcribe-1-pro",
-    )
+# transcribe-1-pro is the recommended model; without model, the request runs on transcribe-1.
+with open("meeting.wav", "rb") as f:
+    result = client.asr.transcribe(audio=f.read(), model="transcribe-1-pro")
 
+# On transcribe-1-pro, text keeps <|speaker:N|> markers; speaker_turns has clean text per speaker.
 print(result.text)
 
-# Access timestamped segments
+# Word-level timestamps
 for segment in result.segments:
     print(f"[{segment.start:.2f}s - {segment.end:.2f}s] {segment.text}")
+
+# Speaker turns (transcribe-1-pro, returned with timestamps)
+for turn in result.speaker_turns or []:
+    print(f"[{turn.start:.2f}s - {turn.end:.2f}s] {turn.speaker}: {turn.text}")
+
+# Language of the transcript, when the API returns it
+print(result.language_code)  # e.g. "en"
 ```
 
-[Learn more](https://docs.fish.audio/features/speech-to-text)
+[Learn more](https://docs.fish.audio/developer-guide/sdk-guide/python/speech-to-text)
 
-**Realtime (Preview)** (`fish-audio-sdk` 1.5.0 or later): stream 16-bit mono PCM to `transcribe-stream-1` in 20 to 40 ms chunks and read the transcript turn by turn.
+**Realtime (Preview):** stream live audio to `transcribe-stream-1` and get the transcript turn by turn. Send 16-bit mono PCM in 20–40 ms chunks as you capture it:
 
 ```python
 import wave
@@ -194,7 +218,7 @@ def audio_chunks():
         while chunk := wav.readframes(640):  # 40 ms
             yield chunk
 
-# diarize=False removes the speaker tag that the text starts with by default
+# diarize=False gives plain text; by default it starts with a speaker tag: "<|speaker:0|> Hello."
 for event in client.asr.stream_websocket(
     audio_chunks(), sample_rate=16000, drafts=True, diarize=False
 ):
@@ -203,6 +227,8 @@ for event in client.asr.stream_websocket(
     elif event.type == "committed":  # final transcript of the turn
         print(event.text)
 ```
+
+With `AsyncFishAudio`, pass an async iterator and use `async for`. The returned stream also sends control messages during the session, such as `stream.finalize()` for push-to-talk and `stream.agent_speaking(True)` for voice agents.
 
 [Learn more](https://docs.fish.audio/features/speech-to-text/realtime)
 
@@ -218,7 +244,7 @@ def text_chunks():
     yield "this is "
     yield "streaming!"
 
-audio_stream = client.tts.stream_websocket(text_chunks(), latency="balanced", model="s2.1-pro-free")
+audio_stream = client.tts.stream_websocket(text_chunks(), latency="balanced")
 play(audio_stream)
 ```
 
@@ -234,17 +260,17 @@ async def text_chunks():
     yield "streaming!"
 
 async def main():
-    async with AsyncFishAudio() as client:
-        # stream_websocket is an async generator: iterate it, don't await the call
-        audio_stream = client.tts.stream_websocket(text_chunks(), latency="balanced", model="s2.1-pro-free")
-        with open("out.mp3", "wb") as f:
-            async for chunk in audio_stream:
-                f.write(chunk)
+    client = AsyncFishAudio()
+    # stream_websocket is an async generator: iterate it, don't await the call
+    audio_stream = client.tts.stream_websocket(text_chunks(), latency="balanced")
+    with open("output.mp3", "wb") as f:
+        async for chunk in audio_stream:
+            f.write(chunk)
 
 asyncio.run(main())
 ```
 
-[Learn more](https://docs.fish.audio/features/realtime-streaming)
+[Learn more](https://docs.fish.audio/developer-guide/sdk-guide/python/websocket)
 
 ### Voice Cloning
 
@@ -260,8 +286,7 @@ with open("reference.wav", "rb") as f:
         references=[ReferenceAudio(
             audio=f.read(),
             text="Text spoken in reference"
-        )],
-        model="s2.1-pro-free",
+        )]
     )
 ```
 
@@ -283,7 +308,7 @@ audio = client.tts.convert(
 )
 ```
 
-[Learn more](https://docs.fish.audio/features/voice-cloning)
+[Learn more](https://docs.fish.audio/developer-guide/sdk-guide/python/voice-cloning)
 
 ## Resource Clients
 
@@ -300,23 +325,20 @@ audio = client.tts.convert(
 from fishaudio.exceptions import (
     AuthenticationError,
     RateLimitError,
-    NotFoundError,
-    APIError,
-    FishAudioError,
+    ValidationError,
+    FishAudioError
 )
 
 try:
-    audio = client.tts.convert(text="Hello!", model="s2.1-pro-free")
+    audio = client.tts.convert(text="Hello!")
 except AuthenticationError:
     print("Invalid API key")
 except RateLimitError:
     print("Rate limit exceeded")
-except NotFoundError:
-    print("Voice model not found")
-except APIError as e:
-    print(f"API error {e.status}: {e.message}")  # any other HTTP error, including 422 validation
+except ValidationError as e:
+    print(f"Invalid request: {e}")
 except FishAudioError as e:
-    print(f"SDK error: {e}")
+    print(f"API error: {e}")
 ```
 
 ## Resources
