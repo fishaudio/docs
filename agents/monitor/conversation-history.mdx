@@ -125,7 +125,7 @@ The same values appear on the [`call.ended` webhook](/agents/monitor/webhooks) a
 | `call_sid`                         | Exact match on `call_sid`, for looking up the session behind an [inbound call webhook](/agents/monitor/webhooks#inbound-call-webhook) request |
 | `created_after` / `created_before` | ISO 8601 timestamps                                                                                   |
 
-Values inside one comma-separated filter combine with "or": `conversation_status=missed,error` returns the sessions that are either one. Different filters combine with "and": a session has to match every filter you pass, so `status=failed&conversation_status=error` returns only failed sessions whose conversation status is `error`. An unknown value in `conversation_status` returns `400`.
+Values inside one comma-separated filter combine with "or": `conversation_status=missed,error` returns the sessions that are either one. Different filters combine with "and": a session has to match every filter you pass, so `status=failed&conversation_status=error` returns only failed sessions whose conversation status is `error`. An unknown value in `conversation_status` returns `400`. Pass `conversation_status` once and comma-separate the values, as in the example below: repeating the parameter (`conversation_status=missed&conversation_status=error`) is a `422` validation error.
 
 ```bash API (curl)
 curl "https://api.fish.audio/v1/agent/sessions?conversation_status=missed,error&page_size=50" \
@@ -158,7 +158,7 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID?include=turns" \
   --header "Authorization: Bearer $FISH_API_KEY"
 ```
 
-`include` takes a comma-separated list of extra sections. `turns` is the only value for now; any other value is rejected with `422`. Without `include`, `turns` is `null`.
+`include` takes a comma-separated list of extra sections. `turns` is the only value for now; any other value is rejected with `400`. Pass `include` once and separate several values with commas: `include=turns`, not two `include` parameters, which is a `422` validation error. Without `include`, `turns` is `null`.
 
 ```json
 {
@@ -174,9 +174,7 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID?include=turns" \
       "turn_id": 3,
       "created_at": "2026-07-22T09:14:05Z",
       "interrupted": null,
-      "interrupted_by": null,
-      "audio_start_ms": 13200,
-      "audio_end_ms": 14200
+      "interrupted_by": null
     },
     {
       "type": "tool_call",
@@ -207,9 +205,7 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID?include=turns" \
       "turn_id": 3,
       "created_at": "2026-07-22T09:14:07Z",
       "interrupted": null,
-      "interrupted_by": null,
-      "audio_start_ms": 15310,
-      "audio_end_ms": 18600
+      "interrupted_by": null
     }
   ],
   "turns": [
@@ -241,7 +237,7 @@ curl "https://api.fish.audio/v1/agent/sessions/SESSION_ID?include=turns" \
 
 | `type`        | What it is                                                                                                                                                 |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `message`     | One utterance. `role` is `user` or `assistant` (system prompt content is never exposed). `turn_id` groups items belonging to the same conversational turn. `fallback_reason` is `"llm_error"` on a fixed line the agent spoke because its LLM failed, and `null` otherwise. `answered_by_model` names the model that wrote an `assistant` message, the agent's own or an [LLM fallback](/agents/build/llm-fallback). It is `null` on `user` items and on sessions from before the field existed. `interrupted`, `interrupted_by`, `audio_start_ms` and `audio_end_ms` tell you whether a reply was cut off and where the message sits in the recording: see [Interrupted replies and audio position](#interrupted-replies-and-audio-position). |
+| `message`     | One utterance. `role` is `user` or `assistant` (system prompt content is never exposed). `turn_id` groups items belonging to the same conversational turn. `fallback_reason` is `"llm_error"` on a fixed line the agent spoke because its LLM failed, and `null` otherwise. `answered_by_model` names the model that wrote an `assistant` message, the agent's own or an [LLM fallback](/agents/build/llm-fallback). It is `null` on `user` items and on sessions from before the field existed. `interrupted` and `interrupted_by` tell you whether a reply was cut off: see [Interrupted replies](#interrupted-replies). `created_at` is when the message was written to the session record, which is the order of the items; `started_at` and `ended_at` say when it was said, see [Message times](#message-times). |
 | `tool_call`   | A tool invocation as it started. `input` is a JSON string, stored in full with no truncation.                                                              |
 | `tool_result` | The paired outcome, matched by `call_id`. `status` is `completed` or `failed`. `latency_ms` is the execution time.                                         |
 | `transfer`    | One [call transfer](/agents/telephony/transfers) attempt, successful or not. See [Transfer items](#transfer-items).                                        |
@@ -257,7 +253,7 @@ Details worth knowing:
 - **`rejected_by`**: on a `tool_result`, `"parameter_validation"` when the tool [validates its parameters](/agents/build/webhook-tools#parameters-and-validation) and refused the call before it ran, so `status` is `failed` and `error` is the rejection the model was shown. `null` for every other result, including a tool that ran and failed. New values may be added.
 - **`error_detail`**: on a failed `tool_result`, the structured reason beside the `error` text: `status_code`, a stable code to count and match on; `sip_status`, the carrier's SIP response code, or `null`; and `status_message`, a readable explanation. Only `_transfer_call` sets it so far; see [reason codes on the tool result](/agents/telephony/transfers#reason-codes-on-the-tool-result) for its codes. `null` on completed results, on tools that only set `error`, and on results recorded before the field existed.
 
-### Interrupted replies and audio position
+### Interrupted replies
 
 An `assistant` message that was cut off before it finished has `interrupted: true`, and its `content` is roughly the part that was spoken: it can run a few words past the point where playback stopped. `interrupted_by` says what cut it off:
 
@@ -271,7 +267,15 @@ An `assistant` message that was cut off before it finished has `interrupted: tru
 
 New values may be added, so treat a value you don't know as an unspecified cause. `interrupted` is `null` on complete replies, on `user` messages, and on sessions recorded before the field existed. It is never `false`. `interrupted_by` is `null` whenever `interrupted` is, and on older cut-off replies that did not record a cause.
 
-`audio_start_ms` and `audio_end_ms` locate a message in the [recording](#download-recordings), in milliseconds from the start of the speaker's own track: the `agent` track for `assistant` messages, the `user` track for `user` messages. Each speaker has a separate track, so the numbers are not relative to the session start or to one mixed file. To play a reply, take the `agent` track's URL from the recording response and seek to `audio_start_ms`. The positions are approximate: the start is reliable, but the end of a reply that played to the finish can be a few seconds late, and a `user` message can be offset, or `null` when one turn holds several user messages. Both fields are `null` when the session has no recording, when the position cannot be told, and for `assistant` messages when the agent has more than one `agent` track (an agent with a [background sound](/agents/build/background-sound-voice-effect#recordings)).
+### Message times
+
+`created_at` is when a message was written to the session record, not when it was said: an `assistant` message is written once the agent has finished saying it, and a `user` message about a second after the caller stopped speaking. `started_at` and `ended_at` are when the message was said.
+
+- **`assistant` messages**: `started_at` is the moment the platform began to play the first audio of the reply (for a reply sent as text, the moment its first text was sent). `ended_at` is the end of its audio, which includes the short silence the voice leaves at the end, or the moment its sound stopped when the reply was interrupted.
+- **`user` messages**: `started_at` is the first sound the platform heard in the caller's turn, which can be several seconds before the words of the message, for example a short "okay" or a "hello" as they picked up. Do not use it to measure how long the caller spoke. `ended_at` is the caller's last sound before the platform decided their turn was over.
+- **Wait for the agent**: the agent message's `started_at` minus the `ended_at` of the `user` message before it.
+
+Either of the two can be `null`: on a `user` message that was typed or entered on the keypad, on a line the agent did not say through its voice or its reply stream, and on sessions recorded before the fields existed. See the [API reference](/api-reference/endpoint/agent/get-agent-session) for the exact definitions.
 
 ### Turn latency
 

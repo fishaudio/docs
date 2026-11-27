@@ -1523,7 +1523,7 @@
           {
             "in": "query",
             "name": "include",
-            "description": "Comma-separated extra sections to return. Allowed values: `turns` (per-turn latency; without it `turns` is null). Any other value answers 422.",
+            "description": "Comma-separated extra sections to return. Allowed values: `turns` (per-turn latency; without it `turns` is null). Any other value answers 400.",
             "required": false,
             "schema": {
               "anyOf": [
@@ -1983,6 +1983,43 @@
               }
             }
           },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
           "401": {
             "description": "No permission -- see authorization schemes",
             "headers": {},
@@ -2022,43 +2059,6 @@
           },
           "404": {
             "description": "Nothing matches the given URI",
-            "headers": {},
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "status": {
-                      "title": "Status",
-                      "type": "integer"
-                    },
-                    "message": {
-                      "title": "Message",
-                      "type": "string"
-                    },
-                    "reason": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "default": null,
-                      "title": "Reason"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "",
             "headers": {},
             "content": {
               "application/json": {
@@ -26112,6 +26112,51 @@
             "default": null,
             "title": "First Message Prompt"
           },
+          "first_message_start": {
+            "anyOf": [
+              {
+                "enum": [
+                  "agent_first",
+                  "wait_for_caller"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "When the opener plays in this session instead of the agent's `prompt.first_message_start`: `agent_first` or `wait_for_caller`. Rides the same `first_message` override switch. `wait_for_caller` is rejected with 422 when the agent's opener is off and the session brings no `first_message` or `first_message_prompt`.",
+            "title": "First Message Start"
+          },
+          "first_message_max_wait_ms": {
+            "anyOf": [
+              {
+                "maximum": 5000,
+                "minimum": 1000,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Milliseconds (1000-5000) a `wait_for_caller` session waits before it speaks anyway, instead of the agent's `prompt.first_message_max_wait_ms`.",
+            "title": "First Message Max Wait Ms"
+          },
+          "first_message_interruptible": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Whether the caller can cut the opener off in this session, instead of the agent's `prompt.first_message_interruptible`. `false` protects it: it always plays to the end and what the caller says meanwhile is dropped. Omit it or send `null` to keep the agent's value.",
+            "title": "First Message Interruptible"
+          },
           "system_prompt": {
             "anyOf": [
               {
@@ -26123,7 +26168,7 @@
               }
             ],
             "default": null,
-            "description": "Limited to 32000 tokens (o200k_base), same budget as the configured prompt it replaces.",
+            "description": "Limited to 64000 tokens (o200k_base), 32000 when `llm.model` is `google/gemma-4-26b-a4b-it` (the agent's), same budget as the configured prompt it replaces.",
             "title": "System Prompt"
           },
           "voice_id": {
@@ -26902,7 +26947,34 @@
               }
             ],
             "default": null,
+            "description": "When the message was written to the session record, which is the order of the items. It is not when the message was said. An agent message is written once the agent has finished saying it, and a user message about a second after the user stopped speaking, once the platform has decided that their turn is over. `started_at` and `ended_at` are when the message was said.",
             "title": "Created At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "When the message started to be said. Agent messages: the moment the platform began to play its first audio (for a reply sent as text, the moment its first text was sent). User messages: the first sound the platform heard in the user's turn. That can be several seconds before the words of the message, for example when the user said a short \"okay\" first, or \"hello\" as they picked up, which is not part of the message's text. Do not use it to measure how long the user spoke. On a session whose `voice.engine` is `live3`, an agent message starts where the user began to hear the agent answer after they stopped speaking: a short word of the voice's own (\"Okay,\") counts, even with a pause before the message's text, so it can be up to 2 seconds before that text. Null on a user message that was typed or entered on the keypad, on a line the agent did not say through its voice or its reply stream, on the messages of a `live3` session that the fallback voice said or that were sent as text, and on sessions recorded before the field existed.",
+            "title": "Started At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "When the message stopped being said. Agent messages: the end of its audio, which includes the short silence the voice leaves at the end (about half a second, up to a second after a very long reply), or the moment its sound stopped when the message was interrupted. On a session whose `voice.engine` is `live3` it is the end of the agent's last sound, which fades out, so 0.1 to 0.5 seconds of it can be too faint to hear. User messages: the user's last sound before the platform decided that their turn was over. How long a user waited for the agent is the agent message's `started_at` minus the `ended_at` of the user message before it. Null in the same cases as `started_at`, and either of the two can be null on its own.",
+            "title": "Ended At"
           },
           "interrupted": {
             "anyOf": [
@@ -26929,32 +27001,6 @@
             "default": null,
             "description": "What cut the reply off, set together with `interrupted`: `user_speech` (the caller talked over it), `user_message` (the user typed a message), `keypad` (a key press), `client` (your client sent an interrupt), `session_end` (the session ended mid-reply, for example the caller hung up). New values may be added, so treat unknown values as an unspecified cause. Null when `interrupted` is null, and on older cut-off replies that did not record a cause.",
             "title": "Interrupted By"
-          },
-          "audio_start_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Where this message starts, in milliseconds from the start of the speaker's own recording track in `GET /v1/agent/sessions/{session_id}/recording` (`tracks[]`): the track with `role: agent` for assistant messages, `role: user` for user messages. An approximate position: the start is reliable, while the end of a reply that played to the finish can be a few seconds late, and a user message can be offset or null when one turn holds several. Null when there is no recording or the position cannot be told.",
-            "title": "Audio Start Ms"
-          },
-          "audio_end_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Where this message ends, on the same track as `audio_start_ms`; approximate in the same way.",
-            "title": "Audio End Ms"
           }
         },
         "required": [
@@ -27537,7 +27583,34 @@
               }
             ],
             "default": null,
+            "description": "When the line was written to the session record. An `assistant` line is written once the agent has finished saying it, so this is after the end of its speech: `started_at` is when the agent started to speak.",
             "title": "Created At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "`assistant` lines: when the agent started to say it on the consult call, the moment the platform began to play its first audio. Measure the wait between the transfer's `answered_at` and the agent's briefing to this time, not to `created_at`. Null on `transfer_target` lines and on sessions recorded before the field existed.",
+            "title": "Started At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "`assistant` lines: when the agent stopped saying it, the end of its audio, which includes the short silence the voice leaves at the end (about half a second), or the moment its sound stopped when it was interrupted. Null in the same cases as `started_at`.",
+            "title": "Ended At"
           }
         },
         "required": [

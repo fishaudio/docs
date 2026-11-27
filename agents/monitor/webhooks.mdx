@@ -173,9 +173,7 @@ Every payload carries the `event` name, a unique `event_id`, and a `session` obj
       "turn_id": 1,
       "created_at": "2026-07-23T12:01:13Z",
       "interrupted": null,
-      "interrupted_by": null,
-      "audio_start_ms": null,
-      "audio_end_ms": null
+      "interrupted_by": null
     },
     {
       "type": "message",
@@ -184,9 +182,7 @@ Every payload carries the `event` name, a unique `event_id`, and a `session` obj
       "turn_id": 2,
       "created_at": "2026-07-23T12:01:18Z",
       "interrupted": null,
-      "interrupted_by": null,
-      "audio_start_ms": 6200,
-      "audio_end_ms": 7200
+      "interrupted_by": null
     }
   ]
 }
@@ -231,7 +227,7 @@ Every payload carries the `event` name, a unique `event_id`, and a `session` obj
 
 `event_id` is `evt_` followed by 32 hex characters. It identifies one event. Every endpoint and every retry of that event gets the same value, and it is also sent in the `X-Fish-Webhook-Id` header. Use it to drop duplicates. See [Idempotency](#idempotency).
 
-`items` on `call.analyzed` is the same timeline as `items` in [`GET /v1/agent/sessions/{session_id}`](/agents/monitor/conversation-history#get-a-session): messages, tool calls, tool results, and transfers, in the order they happened. See [Item types](/agents/monitor/conversation-history#item-types) for the fields. Each `message` carries `interrupted` and `interrupted_by` (set when an agent reply was cut off before it finished, with what cut it off) and `audio_start_ms` and `audio_end_ms` (where the message sits in the speaker's own recording track); see [Interrupted replies and audio position](/agents/monitor/conversation-history#interrupted-replies-and-audio-position). Per-turn latency and knowledge lookups are not in the webhook: fetch the session to get them. `items` is `[]` when the session's content was already deleted by data retention, and `null` when it could not be read. In that case, fetch the session from the sessions API.
+`items` on `call.analyzed` is the same timeline as `items` in [`GET /v1/agent/sessions/{session_id}`](/agents/monitor/conversation-history#get-a-session): messages, tool calls, tool results, and transfers, in the order they happened. See [Item types](/agents/monitor/conversation-history#item-types) for the fields. Each `message` carries `interrupted` and `interrupted_by` (set when an agent reply was cut off before it finished, with what cut it off) and `started_at` and `ended_at` (when the message was said, as opposed to `created_at`, when it was written to the session record); see [Interrupted replies](/agents/monitor/conversation-history#interrupted-replies) and [Message times](/agents/monitor/conversation-history#message-times). Per-turn latency is not in the webhook: fetch the session with `include=turns` to get it. `items` is `[]` when the session's content was already deleted by data retention, and `null` when it could not be read. In that case, fetch the session from the sessions API.
 
 The `analysis` object on `call.analyzed` has the same fields as the `analysis` object in the [session detail](/agents/monitor/post-call-analysis#read-the-results), and these five mean the same thing in both:
 
