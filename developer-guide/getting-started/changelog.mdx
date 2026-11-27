@@ -35,7 +35,7 @@ rss: true
 <Update label="Python SDK 1.5.0: realtime speech to text" description="November 24, 2026" tags={["Fish Audio"]}>
   ## Python SDK 1.5.0: realtime speech to text
 
-  `fish-audio-sdk` 1.5.0 adds realtime speech to text with `transcribe-stream-1` (Preview). `client.asr.stream_websocket()` takes an iterator of raw audio chunks, signed 16-bit little-endian mono PCM, (an async iterator in the async client) and yields the session's events, such as the final transcript of each turn and, with `drafts=True`, live drafts. `client.asr.transcribe()` takes a `model` argument: `model="transcribe-1-pro"` sets the `model` request header for you.
+  `fish-audio-sdk` 1.5.0 adds realtime speech to text with `transcribe-stream-1` (Preview). `client.asr.stream_websocket()` takes an iterator (an async iterator in the async client) of raw audio chunks in signed 16-bit little-endian mono PCM, and yields the session's events, such as the final transcript of each turn and, with `drafts=True`, live drafts. `client.asr.transcribe()` takes a `model` argument: `model="transcribe-1-pro"` sets the `model` request header for you.
 
   `client.tts.stream()` now yields HTTP audio as it arrives instead of after the whole response has been received.
 
