@@ -2,16 +2,16 @@
 openapi: post /v1/agent/agents/{agent_id}/llm/custom/test
 title: "Test Voice Agent Custom LLM Endpoint"
 sidebarTitle: "Test Custom LLM"
-description: "Check that an OpenAI-compatible endpoint works for this agent before you save it as llm.custom"
+description: "Check that the custom LLM saved on the agent's draft works before you publish"
 icon: "plug"
 iconType: "solid"
 ---
 
-Fish sends one streamed chat-completions turn to your `base_url` with the agent's draft system prompt and tools, and reports what came back. Use it to check an endpoint before you save it as `llm.custom`.
+Fish sends one streamed chat-completions turn to the endpoint saved in the agent's draft `llm.custom`, using its `base_url`, `model`, API key and headers, with the draft's system prompt and tools, and reports what came back. The request has no body.
+
+The test reads the draft, so a change you save with [Update Voice Agent Draft Config](/api-reference/endpoint/agent/update-draft-config) can be tested right away. Calls use the published version, so [publish](/api-reference/endpoint/agent/publish-agent) once the test passes. To test a different endpoint, save it to `llm.custom` first. An agent with no custom LLM, or one saved without an API key, returns `422`, and so does a request body with any field.
 
 A problem with your endpoint is not an HTTP error. An unreachable or blocked host, a timeout, a non-2xx reply, or a reply that isn't a server-sent-event stream all return `200`; read `error` and `status_code` to see what went wrong, not the HTTP status. To branch on the outcome, use `type` and `reason`. They take the same values as `llm_endpoint_errors` in [Get Voice Agent Session](/api-reference/endpoint/agent/get-agent-session), so an error you find here is the one you would see on a call. `error` is a readable explanation that can change, so don't match on its text.
-
-Omit `api_key`, or send `null`, to reuse the key saved in the draft's `llm.custom`. That works only while `base_url` is the saved endpoint's address. For any other address the call returns `422` and nothing is sent, so a stored key never travels to a new host. Saved headers follow the same rule.
 
 The test sends one turn and doesn't retry. It waits up to 10 seconds for the response headers and 10 seconds for the first content, gives up after 20 seconds in total, reads at most 256 KB of the reply, and doesn't follow redirects. Your key and custom headers are never logged or returned; if your endpoint's reply quotes them, they are masked in `error`.
 

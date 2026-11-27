@@ -112,7 +112,7 @@ To set it up in the console:
 - Whether it accepted the tools.
 - The time to first token.
 
-Over the API, [Test Custom LLM](/api-reference/endpoint/agent/test-custom-llm) runs the same check from your agent's draft. A problem with your endpoint comes back as `200` with the reason in `error`, not as an HTTP error.
+Over the API, [Test Custom LLM](/api-reference/endpoint/agent/test-custom-llm) runs the same check on the custom LLM saved in your agent's draft: save `llm.custom` first, test it, then publish. A problem with your endpoint comes back as `200` with the reason in `error`, not as an HTTP error.
 
 The saved endpoint appears under **Custom** in the selector. You can edit or remove it there. If you pick a platform model again, the endpoint, the stored key and any headers are removed.
 

@@ -4787,7 +4787,7 @@
     "/v1/agent/agents/{agent_id}/llm/custom/test": {
       "post": {
         "summary": "Test Custom LLM Endpoint",
-        "description": "Check that an OpenAI-compatible endpoint works for this agent before you\nsave it as `llm.custom`. Fish sends one streamed chat-completions turn to\n`base_url` with the agent's draft system prompt, a fixed user message and\nthe draft's tools, and reports what came back.\n\nProblems with your endpoint (unreachable or blocked host, timeout, a\nnon-2xx status, a reply that is not a server-sent-event stream) are not\nHTTP errors: the call returns 200 and `error` says what went wrong. To\nbranch on the outcome, read `type` and `reason`: they use the same values\nas `llm_endpoint_errors` in the session detail, so an error found here is\nthe one you would see on a call. `error` stays as a readable explanation.\n\nOmit `api_key` (or send null) to reuse the key saved in the draft's\n`llm.custom`. That works only while `base_url` is the saved endpoint's\naddress; for any other address the call returns 422 and nothing is sent,\nso a stored key never travels to a new host. Saved headers follow the same\nrule. Unknown request fields return 422.\n\nThe test itself has fixed limits. It sends one turn and does not retry.\nFish waits up to 10 seconds for the response headers and up to 10 seconds\nfor the first content, and gives up after 20 seconds in total. It reads at\nmost 256 KB of the response and does not follow redirects. The API key and\nyour custom headers are never written to logs or echoed back; where your\nendpoint's reply quotes them, they are masked in `error`.\n\nEach team can make 30 of these calls per minute; the 31st within the same\nminute returns 429 and the count starts again the next minute.",
+        "description": "Check that the agent's saved custom LLM works. Fish sends one streamed\nchat-completions turn to the endpoint saved in the draft's `llm.custom`,\nusing its `base_url`, `model`, API key and headers, with the draft's\nsystem prompt, a fixed user message and the draft's tools, and reports\nwhat came back. There is no request body.\n\nThe test reads the draft, so a change saved with\n`PATCH /v1/agent/agents/{agent_id}/config` can be tested right away. Calls use the published version: publish once the\ntest passes. To test a different endpoint, save it to `llm.custom` first.\nAn agent with no custom LLM, or one saved without an API key, returns 422.\nAny request body field also returns 422.\n\nProblems with your endpoint (unreachable or blocked host, timeout, a\nnon-2xx status, a reply that is not a server-sent-event stream) are not\nHTTP errors: the call returns 200 and `error` says what went wrong. To\nbranch on the outcome, read `type` and `reason`: they use the same values\nas `llm_endpoint_errors` in the session detail, so an error found here is\nthe one you would see on a call. `error` stays as a readable explanation.\n\nThe test itself has fixed limits. It sends one turn and does not retry.\nFish waits up to 10 seconds for the response headers and up to 10 seconds\nfor the first content, and gives up after 20 seconds in total. It reads at\nmost 256 KB of the response and does not follow redirects. The API key and\nyour custom headers are never written to logs or echoed back; where your\nendpoint's reply quotes them, they are masked in `error`.\n\nEach team can make 30 of these calls per minute; the 31st within the same\nminute returns 429 and the count starts again the next minute.",
         "security": [
           {
             "BearerAuth": []
@@ -4806,16 +4806,6 @@
             "deprecated": false
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PublicAgentLLMCustomTestPayload"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Request fulfilled, document follows",
@@ -5133,7 +5123,7 @@
           {
             "lang": "bash",
             "label": "Test Custom LLM Endpoint",
-            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/agent/agents/<agent-id>/llm/custom/test \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --data '{\n    \"base_url\": \"https://llm.example.com/v1\",\n    \"model\": \"my-model\",\n    \"api_key\": \"<endpoint-api-key>\"\n  }'"
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/agent/agents/<agent-id>/llm/custom/test \\\n  --header 'Authorization: Bearer <token>'"
           }
         ]
       }
@@ -32640,63 +32630,6 @@
           "url"
         ],
         "title": "PublicPostCallWebhook",
-        "type": "object"
-      },
-      "PublicAgentLLMCustomTestPayload": {
-        "additionalProperties": false,
-        "description": "One test request to an OpenAI-compatible endpoint. Unknown fields are\nrejected, so a misspelled `api_key` never falls back to the saved key.",
-        "properties": {
-          "base_url": {
-            "description": "Base URL of your OpenAI-compatible endpoint, such as `https://llm.example.com/v1`. It must use https and point to a public host, with no credentials or query string in it. A trailing `/` or `/chat/completions` is removed; the request goes to `{base_url}/chat/completions`.",
-            "maxLength": 2000,
-            "minLength": 1,
-            "title": "Base Url",
-            "type": "string"
-          },
-          "model": {
-            "description": "Model name sent to your endpoint in the request.",
-            "maxLength": 256,
-            "minLength": 1,
-            "title": "Model",
-            "type": "string"
-          },
-          "api_key": {
-            "anyOf": [
-              {
-                "maxLength": 4096,
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Bearer token sent to your endpoint. Omit it, or send null, to reuse the key saved in the agent's draft `llm.custom`. That works only while `base_url` is the address saved there; for any other address the call returns 422 and nothing is sent.",
-            "title": "Api Key"
-          },
-          "headers": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "type": "string"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Extra HTTP headers sent to your endpoint, at most 20; reserved headers such as `Authorization` and `Content-Type` are not allowed. Omit it, or send null, to reuse the headers saved in the agent's draft `llm.custom`, under the same rule as `api_key`. Send `{}` to send none.",
-            "title": "Headers"
-          }
-        },
-        "required": [
-          "base_url",
-          "model"
-        ],
-        "title": "PublicAgentLLMCustomTestPayload",
         "type": "object"
       },
       "PublicAgentConfigEntity": {
