@@ -4,8 +4,6 @@
 
 Voice management namespace client.
 
-Install the Python SDK first: `pip install fish-audio-sdk`.
-
 <a id="fishaudio.resources.voices.VoicesClient"></a>
 
 ## VoicesClient Objects
@@ -313,164 +311,6 @@ async def delete(voice_id: str,
 ```
 
 Delete a voice (async). See sync version for details.
-
-<a id="fishaudio.resources.account"></a>
-
-# fishaudio.resources.account
-
-Account namespace client for billing and credits.
-
-<a id="fishaudio.resources.account.AccountClient"></a>
-
-## AccountClient Objects
-
-```python
-class AccountClient()
-```
-
-Synchronous account operations.
-
-<a id="fishaudio.resources.account.AccountClient.get_credits"></a>
-
-#### get\_credits
-
-```python
-def get_credits(*,
-                check_free_credit: Optional[bool] = OMIT,
-                request_options: Optional[RequestOptions] = None) -> Credits
-```
-
-Get API credit balance.
-
-**Arguments**:
-
-- `check_free_credit` - Whether to check free credit availability
-- `request_options` - Request-level overrides
-  
-
-**Returns**:
-
-  Credits information
-  
-
-**Example**:
-
-    ```python
-    client = FishAudio(api_key="...")
-    credits = client.account.get_credits()
-    print(f"Available credits: {float(credits.credit)}")
-
-    # Check free credit availability
-    credits = client.account.get_credits(check_free_credit=True)
-    if credits.has_free_credit:
-        print("Free credits available!")
-    ```
-
-<a id="fishaudio.resources.account.AccountClient.get_package"></a>
-
-#### get\_package
-
-```python
-def get_package(*,
-                request_options: Optional[RequestOptions] = None) -> Package
-```
-
-Get package information.
-
-**Arguments**:
-
-- `request_options` - Request-level overrides
-  
-
-**Returns**:
-
-  Package information
-  
-
-**Example**:
-
-    ```python
-    client = FishAudio(api_key="...")
-    package = client.account.get_package()
-    print(f"Balance: {package.balance}/{package.total}")
-    ```
-
-<a id="fishaudio.resources.account.AsyncAccountClient"></a>
-
-## AsyncAccountClient Objects
-
-```python
-class AsyncAccountClient()
-```
-
-Asynchronous account operations.
-
-<a id="fishaudio.resources.account.AsyncAccountClient.get_credits"></a>
-
-#### get\_credits
-
-```python
-async def get_credits(
-        *,
-        check_free_credit: Optional[bool] = OMIT,
-        request_options: Optional[RequestOptions] = None) -> Credits
-```
-
-Get API credit balance (async).
-
-**Arguments**:
-
-- `check_free_credit` - Whether to check free credit availability
-- `request_options` - Request-level overrides
-  
-
-**Returns**:
-
-  Credits information
-  
-
-**Example**:
-
-    ```python
-    client = AsyncFishAudio(api_key="...")
-    credits = await client.account.get_credits()
-    print(f"Available credits: {float(credits.credit)}")
-
-    # Check free credit availability
-    credits = await client.account.get_credits(check_free_credit=True)
-    if credits.has_free_credit:
-        print("Free credits available!")
-    ```
-
-<a id="fishaudio.resources.account.AsyncAccountClient.get_package"></a>
-
-#### get\_package
-
-```python
-async def get_package(*,
-                      request_options: Optional[RequestOptions] = None
-                      ) -> Package
-```
-
-Get package information (async).
-
-**Arguments**:
-
-- `request_options` - Request-level overrides
-  
-
-**Returns**:
-
-  Package information
-  
-
-**Example**:
-
-    ```python
-    client = AsyncFishAudio(api_key="...")
-    package = await client.account.get_package()
-    print(f"Balance: {package.balance}/{package.total}")
-    ```
 
 <a id="fishaudio.resources.tts"></a>
 
@@ -1231,6 +1071,164 @@ Unknown events are ignored and iteration continues.
 
 - `WebSocketError` - On disconnect or error finish event
 
+<a id="fishaudio.resources.account"></a>
+
+# fishaudio.resources.account
+
+Account namespace client for billing and credits.
+
+<a id="fishaudio.resources.account.AccountClient"></a>
+
+## AccountClient Objects
+
+```python
+class AccountClient()
+```
+
+Synchronous account operations.
+
+<a id="fishaudio.resources.account.AccountClient.get_credits"></a>
+
+#### get\_credits
+
+```python
+def get_credits(*,
+                check_free_credit: Optional[bool] = OMIT,
+                request_options: Optional[RequestOptions] = None) -> Credits
+```
+
+Get API credit balance.
+
+**Arguments**:
+
+- `check_free_credit` - Whether to check free credit availability
+- `request_options` - Request-level overrides
+  
+
+**Returns**:
+
+  Credits information
+  
+
+**Example**:
+
+    ```python
+    client = FishAudio(api_key="...")
+    credits = client.account.get_credits()
+    print(f"Available credits: {float(credits.credit)}")
+
+    # Check free credit availability
+    credits = client.account.get_credits(check_free_credit=True)
+    if credits.has_free_credit:
+        print("Free credits available!")
+    ```
+
+<a id="fishaudio.resources.account.AccountClient.get_package"></a>
+
+#### get\_package
+
+```python
+def get_package(*,
+                request_options: Optional[RequestOptions] = None) -> Package
+```
+
+Get package information.
+
+**Arguments**:
+
+- `request_options` - Request-level overrides
+  
+
+**Returns**:
+
+  Package information
+  
+
+**Example**:
+
+    ```python
+    client = FishAudio(api_key="...")
+    package = client.account.get_package()
+    print(f"Balance: {package.balance}/{package.total}")
+    ```
+
+<a id="fishaudio.resources.account.AsyncAccountClient"></a>
+
+## AsyncAccountClient Objects
+
+```python
+class AsyncAccountClient()
+```
+
+Asynchronous account operations.
+
+<a id="fishaudio.resources.account.AsyncAccountClient.get_credits"></a>
+
+#### get\_credits
+
+```python
+async def get_credits(
+        *,
+        check_free_credit: Optional[bool] = OMIT,
+        request_options: Optional[RequestOptions] = None) -> Credits
+```
+
+Get API credit balance (async).
+
+**Arguments**:
+
+- `check_free_credit` - Whether to check free credit availability
+- `request_options` - Request-level overrides
+  
+
+**Returns**:
+
+  Credits information
+  
+
+**Example**:
+
+    ```python
+    client = AsyncFishAudio(api_key="...")
+    credits = await client.account.get_credits()
+    print(f"Available credits: {float(credits.credit)}")
+
+    # Check free credit availability
+    credits = await client.account.get_credits(check_free_credit=True)
+    if credits.has_free_credit:
+        print("Free credits available!")
+    ```
+
+<a id="fishaudio.resources.account.AsyncAccountClient.get_package"></a>
+
+#### get\_package
+
+```python
+async def get_package(*,
+                      request_options: Optional[RequestOptions] = None
+                      ) -> Package
+```
+
+Get package information (async).
+
+**Arguments**:
+
+- `request_options` - Request-level overrides
+  
+
+**Returns**:
+
+  Package information
+  
+
+**Example**:
+
+    ```python
+    client = AsyncFishAudio(api_key="...")
+    package = await client.account.get_package()
+    print(f"Balance: {package.balance}/{package.total}")
+    ```
+
 <a id="fishaudio.resources.asr"></a>
 
 # fishaudio.resources.asr
@@ -1344,7 +1342,7 @@ with config=ASRRealtimeConfig(results=ASRResults(tag_audio_events=False)).
   (overrides config.turn_detection.eager if provided)
 - `drafts` - Send live draft events (overrides config.results.drafts if provided)
 - `diarize` - Speaker tags such as ``<|speaker:0|>`` in the transcript text. The
-  server adds them by default; pass False for text without speaker tags
+  server adds them by default; pass False for plain text
   (overrides config.results.diarize if provided)
 - `terms` - Names, products and jargon to recognize
   (overrides config.context.terms if provided)
@@ -1397,11 +1395,8 @@ with config=ASRRealtimeConfig(results=ASRResults(tag_audio_events=False)).
         elif event.type == "committed":
             print(event.text)
 
-    # Voice agent: answer the user's turns, and tell the server while you speak.
-    # microphone_chunks() stands for your live audio source. It must keep
-    # yielding audio: once the source ends, the session finishes and control
-    # methods can no longer be sent.
-    with client.asr.stream_websocket(microphone_chunks(), eager=True) as stream:
+    # Voice agent: answer the user's turns, and tell the server while you speak
+    with client.asr.stream_websocket(audio_chunks(), eager=True) as stream:
         for event in stream:
             if event.type == "committed" and event.user_turn:
                 stream.agent_speaking(True)
@@ -1516,7 +1511,7 @@ with config=ASRRealtimeConfig(results=ASRResults(tag_audio_events=False)).
   (overrides config.turn_detection.eager if provided)
 - `drafts` - Send live draft events (overrides config.results.drafts if provided)
 - `diarize` - Speaker tags such as ``<|speaker:0|>`` in the transcript text. The
-  server adds them by default; pass False for text without speaker tags
+  server adds them by default; pass False for plain text
   (overrides config.results.diarize if provided)
 - `terms` - Names, products and jargon to recognize
   (overrides config.context.terms if provided)
@@ -1569,11 +1564,8 @@ with config=ASRRealtimeConfig(results=ASRResults(tag_audio_events=False)).
         elif event.type == "committed":
             print(event.text)
 
-    # Voice agent: answer the user's turns, and tell the server while you speak.
-    # microphone_chunks() stands for your live audio source. It must keep
-    # yielding audio: once the source ends, the session finishes and control
-    # methods can no longer be sent.
-    async with client.asr.stream_websocket(microphone_chunks(), eager=True) as stream:
+    # Voice agent: answer the user's turns, and tell the server while you speak
+    async with client.asr.stream_websocket(audio_chunks(), eager=True) as stream:
         async for event in stream:
             if event.type == "committed" and event.user_turn:
                 await stream.agent_speaking(True)
@@ -1615,6 +1607,26 @@ def decode_event(message: bytes) -> Optional[ASRRealtimeEvent]
 ```
 
 Parse a server message. Returns None for message types this SDK does not know.
+
+<a id="fishaudio.resources.asr_realtime._Link"></a>
+
+## \_Link Objects
+
+```python
+class _Link()
+```
+
+The open connection, shared by the audio sender thread and control methods.
+
+<a id="fishaudio.resources.asr_realtime._Link.close"></a>
+
+#### close
+
+```python
+def close() -> None
+```
+
+End the link. Does not wait for a write that is blocked.
 
 <a id="fishaudio.resources.asr_realtime.ASRRealtimeStream"></a>
 
@@ -1837,3 +1849,4 @@ async def keepalive() -> None
 ```
 
 Keep an idle session open. Rarely needed: WebSocket pings count as activity.
+

@@ -57,7 +57,7 @@ Represents a TTS voice that can be used for synthesis.
 - `description` - Detailed description of the voice model
 - `cover_image` - URL to the voice model's cover image
 - `train_mode` - Training mode used. Options: "fast"
-- `state` - Current model state: "created", "training", "trained", or "failed"
+- `state` - Current model state (e.g., "ready", "training", "failed")
 - `tags` - List of tags for categorization (e.g., ["male", "english", "young"])
 - `samples` - List of audio samples demonstrating the voice
 - `created_at` - Timestamp when the model was created
@@ -73,52 +73,36 @@ Represents a TTS voice that can be used for synthesis.
 - `marked` - Whether the current user has bookmarked this model. Default: False
 - `author` - Information about the voice model's creator
 
-<a id="fishaudio.types.account"></a>
+<a id="fishaudio.types.shared"></a>
 
-# fishaudio.types.account
+# fishaudio.types.shared
 
-Account-related types (credits, packages, etc.).
+Shared types used across the SDK.
 
-<a id="fishaudio.types.account.Credits"></a>
+<a id="fishaudio.types.shared.PaginatedResponse"></a>
 
-## Credits Objects
+## PaginatedResponse Objects
 
 ```python
-class Credits(BaseModel)
+class PaginatedResponse(BaseModel, Generic[T])
 ```
 
-User's API credit balance.
+Generic paginated response.
 
 **Attributes**:
 
-- `id` - Unique credits record identifier
-- `user_id` - User identifier
-- `credit` - Current credit balance (decimal for precise accounting)
-- `created_at` - Timestamp when the credits record was created
-- `updated_at` - Timestamp when the credits were last updated
-- `has_phone_sha256` - Whether the user has a verified phone number. Optional
-- `has_free_credit` - Whether the user has received free credits. Optional
+- `total` - Total number of items across all pages
+- `items` - List of items on the current page
 
-<a id="fishaudio.types.account.Package"></a>
+<a id="fishaudio.types.shared.warn_if_deprecated_model"></a>
 
-## Package Objects
+#### warn\_if\_deprecated\_model
 
 ```python
-class Package(BaseModel)
+def warn_if_deprecated_model(model: str) -> None
 ```
 
-User's prepaid package information.
-
-**Attributes**:
-
-- `id` - Unique package identifier
-- `user_id` - User identifier
-- `type` - Package type identifier
-- `total` - Total units in the package
-- `balance` - Remaining units in the package
-- `created_at` - Timestamp when the package was purchased
-- `updated_at` - Timestamp when the package was last updated
-- `finished_at` - Timestamp when the package was fully consumed. None if still active
+Emit a deprecation warning if a legacy model is used.
 
 <a id="fishaudio.types.tts"></a>
 
@@ -205,7 +189,7 @@ All parameters have sensible defaults.
 - `chunk_length` - Characters per generation chunk. Range: 100-300. Default: 200.
   Lower values = faster initial response, higher values = better quality
 - `latency` - Generation mode. Options: "normal" (higher quality), "balanced" (faster). Default: "balanced"
-- `reference_id` - Voice model ID from fish.audio (e.g., "9a9cf47702da476aa4629e2506d4a857").
+- `reference_id` - Voice model ID from fish.audio (e.g., "802e3bc2b27e49c2995d23ef70e6ac89").
   Find IDs in voice URLs or via voices.list()
 - `references` - List of reference audio samples for instant voice cloning. Default: []
 - `prosody` - Speech speed and volume settings. Default: None (uses natural prosody)
@@ -411,36 +395,52 @@ a long text can also be missing from `segments` for the same reason.
   timings. It is never measured from `audio`; decode the audio if you
   need its length in that case.
 
-<a id="fishaudio.types.shared"></a>
+<a id="fishaudio.types.account"></a>
 
-# fishaudio.types.shared
+# fishaudio.types.account
 
-Shared types used across the SDK.
+Account-related types (credits, packages, etc.).
 
-<a id="fishaudio.types.shared.PaginatedResponse"></a>
+<a id="fishaudio.types.account.Credits"></a>
 
-## PaginatedResponse Objects
+## Credits Objects
 
 ```python
-class PaginatedResponse(BaseModel, Generic[T])
+class Credits(BaseModel)
 ```
 
-Generic paginated response.
+User's API credit balance.
 
 **Attributes**:
 
-- `total` - Total number of items across all pages
-- `items` - List of items on the current page
+- `id` - Unique credits record identifier
+- `user_id` - User identifier
+- `credit` - Current credit balance (decimal for precise accounting)
+- `created_at` - Timestamp when the credits record was created
+- `updated_at` - Timestamp when the credits were last updated
+- `has_phone_sha256` - Whether the user has a verified phone number. Optional
+- `has_free_credit` - Whether the user has received free credits. Optional
 
-<a id="fishaudio.types.shared.warn_if_deprecated_model"></a>
+<a id="fishaudio.types.account.Package"></a>
 
-#### warn\_if\_deprecated\_model
+## Package Objects
 
 ```python
-def warn_if_deprecated_model(model: str) -> None
+class Package(BaseModel)
 ```
 
-Emit a deprecation warning if a legacy model is used.
+User's prepaid package information.
+
+**Attributes**:
+
+- `id` - Unique package identifier
+- `user_id` - User identifier
+- `type` - Package type identifier
+- `total` - Total units in the package
+- `balance` - Remaining units in the package
+- `created_at` - Timestamp when the package was purchased
+- `updated_at` - Timestamp when the package was last updated
+- `finished_at` - Timestamp when the package was fully consumed. None if still active
 
 <a id="fishaudio.types.asr"></a>
 
@@ -602,9 +602,8 @@ Configuration for a realtime speech-to-text session.
 
 **Attributes**:
 
-- `sample_rate` - Sample rate of the audio you send, in Hz: 8000, 12000, 16000,
-  22050, 24000, 32000, 44100 or 48000. The server converts these rates to 16000,
-  so audio at one of them needs no resampling. Default: 16000
+- `sample_rate` - Sample rate of the audio you send, in Hz. The server converts
+  other rates to 16000, so you never need to resample. Default: 16000
 - `turn_detection` - Turn detection settings. Default: None (server defaults)
 - `results` - Result settings. Default: None (server defaults)
 - `context` - Conversation history and custom vocabulary. Default: None
@@ -957,11 +956,9 @@ Audio watermarks, sent every 5 seconds while the client sends nothing.
 class ASRErrorEvent(_ServerEvent)
 ```
 
-A recoverable error: the session continues, except after ``server_restarting``,
-which the server follows by closing the connection (raised as ASRRealtimeError
-with close code 1012).
+A recoverable error: the session continues.
 
-Other errors that end the session are raised as ASRRealtimeError instead.
+Errors that end the session are raised as ASRRealtimeError instead.
 
 **Attributes**:
 
@@ -971,7 +968,7 @@ Other errors that end the session are raised as ASRRealtimeError instead.
 - `error_type` - Machine-readable error type, e.g. "invalid_request". Match on this
 - `message` - A short English description, for humans
 - `request_id` - Identifier of this request; quote it when reporting a problem
-- `recoverable` - True when the error does not end the session by itself
+- `recoverable` - True when the session continues
 
 <a id="fishaudio.types.asr_realtime.ASRSessionStats"></a>
 
@@ -1004,3 +1001,4 @@ The session ended normally. Always the last event.
 - `type` - Event type identifier, always "session_done"
 - `seq` - Sequence number
 - `stats` - Totals for the session
+

@@ -1,10 +1,146 @@
+<a id="fishaudio.core.websocket_options"></a>
+
+# fishaudio.core.websocket\_options
+
+WebSocket-level options for WebSocket connections.
+
+<a id="fishaudio.core.websocket_options.WebSocketOptions"></a>
+
+## WebSocketOptions Objects
+
+```python
+class WebSocketOptions()
+```
+
+Options for configuring WebSocket connections.
+
+These options are passed directly to httpx_ws's connect_ws/aconnect_ws functions.
+For complete documentation, see https://frankie567.github.io/httpx-ws/reference/httpx_ws/
+
+**Attributes**:
+
+- `keepalive_ping_timeout_seconds` - Maximum delay the client will wait for an answer
+  to its Ping event. If the delay is exceeded, WebSocketNetworkError will be
+  raised and the connection closed. Default: 20 seconds.
+- `keepalive_ping_interval_seconds` - Interval at which the client will automatically
+  send a Ping event to keep the connection alive. Set to None to disable this
+  mechanism. Default: 20 seconds.
+- `max_message_size_bytes` - Message size in bytes to receive from the server.
+- `Default` - 65536 bytes (64 KiB).
+- `queue_size` - Size of the queue where received messages will be held until they
+  are consumed. If the queue is full, the client will stop receiving messages
+  from the server until the queue has room available. Default: 512.
+  
+
+**Notes**:
+
+  Parameter descriptions adapted from httpx_ws documentation.
+
+<a id="fishaudio.core.websocket_options.WebSocketOptions.to_httpx_ws_kwargs"></a>
+
+#### to\_httpx\_ws\_kwargs
+
+```python
+def to_httpx_ws_kwargs() -> dict[str, Any]
+```
+
+Convert to kwargs dict for httpx_ws aconnect_ws/connect_ws.
+
+<a id="fishaudio.core._sse"></a>
+
+# fishaudio.core.\_sse
+
+Minimal Server-Sent Events decoder.
+
+<a id="fishaudio.core._sse.ServerSentEvent"></a>
+
+## ServerSentEvent Objects
+
+```python
+class ServerSentEvent(NamedTuple)
+```
+
+One dispatched SSE event.
+
+<a id="fishaudio.core._sse.SSEDecoder"></a>
+
+## SSEDecoder Objects
+
+```python
+class SSEDecoder()
+```
+
+Incrementally decode a Server-Sent Events byte stream.
+
+Feed raw response bytes with `feed()`; each call returns the events that
+were completed by those bytes. Lines end with CRLF, LF or CR, the three
+endings the SSE specification allows; other Unicode line separators stay
+inside the payload. An event left unterminated when the stream ends is
+dropped, as the specification requires.
+
+<a id="fishaudio.core._sse.SSEDecoder.feed"></a>
+
+#### feed
+
+```python
+def feed(chunk: bytes) -> list[ServerSentEvent]
+```
+
+Add bytes from the stream and return the events they complete.
+
+<a id="fishaudio.core.omit"></a>
+
+# fishaudio.core.omit
+
+OMIT sentinel for distinguishing None from not-provided parameters.
+
 <a id="fishaudio.core.client_wrapper"></a>
 
 # fishaudio.core.client\_wrapper
 
 HTTP client wrapper for managing requests and authentication.
 
-Install the Python SDK first: `pip install fish-audio-sdk`.
+<a id="fishaudio.core.client_wrapper.PRODUCT"></a>
+
+#### PRODUCT
+
+The SDK's product, ``fish-audio-<language>/<version>``: the format every Fish
+Audio SDK sends, so the API can tell which SDK and version made a request.
+
+<a id="fishaudio.core.client_wrapper.build_user_agent"></a>
+
+#### build\_user\_agent
+
+```python
+def build_user_agent(python_version: object, sys_platform: object) -> str
+```
+
+Return ``fish-audio-python/<version> (python <python version>; <os>)``.
+
+Only the runtime, its version and the OS family are included: nothing
+that identifies a person or machine.
+
+<a id="fishaudio.core.client_wrapper.USER_AGENT"></a>
+
+#### USER\_AGENT
+
+The User-Agent the SDK sends, computed once at import, e.g.
+``fish-audio-python/1.6.0 (python 3.12.1; linux)``.
+
+<a id="fishaudio.core.client_wrapper.user_agent"></a>
+
+#### user\_agent
+
+```python
+def user_agent(caller: Optional[str] = None) -> str
+```
+
+Return the User-Agent to send: the SDK's own, then ``caller`` if set.
+
+A caller's value is appended after the SDK's product and runtime comment
+rather than allowed to replace them, so an app can name itself without
+hiding which SDK made the request. A value that already starts with the
+SDK's User-Agent is not doubled.
 
 <a id="fishaudio.core.client_wrapper.BaseClientWrapper"></a>
 
@@ -26,6 +162,12 @@ def get_headers(
 ```
 
 Build headers including authentication and user agent.
+
+A name in ``additional_headers`` replaces the SDK's header of that
+name whatever its case, so the two are never sent side by side. The
+exception is ``User-Agent``: one in ``additional_headers`` (any
+casing), or else one set on a user-supplied httpx client, is appended
+to the SDK's own.
 
 <a id="fishaudio.core.client_wrapper.ClientWrapper"></a>
 
@@ -178,7 +320,7 @@ Options that can be provided on a per-request basis to override client defaults.
 **Attributes**:
 
 - `timeout` - Override the client's default timeout (in seconds)
-- `max_retries` - Accepted but not used: the client does not retry requests
+- `max_retries` - Override the client's default max retries
 - `additional_headers` - Additional headers to include in the request
 - `additional_query_params` - Additional query parameters to include
 
@@ -402,6 +544,31 @@ After calling this method, the iterator cannot be used again.
         f.write(audio)
     ```
 
+<a id="fishaudio.core.iterators._Timeline"></a>
+
+## \_Timeline Objects
+
+```python
+class _Timeline()
+```
+
+Keeps the newest timing snapshot of every text chunk.
+
+<a id="fishaudio.core.iterators._Timeline.duration"></a>
+
+#### duration
+
+```python
+@property
+def duration() -> Optional[float]
+```
+
+End of the last text chunk, or None when the API did not report it.
+
+The API reports audio length only inside timing snapshots. Without a
+snapshot for the last chunk, the end of the audio is unknown: earlier
+chunks would give a length that is too short, and no chunk gives none.
+
 <a id="fishaudio.core.iterators.TTSTimestampStream"></a>
 
 ## TTSTimestampStream Objects
@@ -617,56 +784,61 @@ and read `segments` when the stream ends.
 
 - `RuntimeError` - If iteration has already started
 
-<a id="fishaudio.core.websocket_options"></a>
+<a id="fishaudio.core._ws_utils"></a>
 
-# fishaudio.core.websocket\_options
+# fishaudio.core.\_ws\_utils
 
-WebSocket-level options for WebSocket connections.
+Internal helpers for synchronous httpx-ws sessions.
 
-<a id="fishaudio.core.websocket_options.WebSocketOptions"></a>
+<a id="fishaudio.core._ws_utils.interrupt_writes"></a>
 
-## WebSocketOptions Objects
-
-```python
-class WebSocketOptions()
-```
-
-Options for configuring WebSocket connections.
-
-These options are passed directly to httpx_ws's connect_ws/aconnect_ws functions.
-For complete documentation, see https://frankie567.github.io/httpx-ws/reference/httpx_ws/
-
-**Attributes**:
-
-- `keepalive_ping_timeout_seconds` - Maximum delay the client will wait for an answer
-  to its Ping event. If the delay is exceeded, WebSocketNetworkError will be
-  raised and the connection closed. Default: 20 seconds.
-- `keepalive_ping_interval_seconds` - Interval at which the client will automatically
-  send a Ping event to keep the connection alive. Default: 20 seconds. `None`
-  keeps the default; it does not turn the pings off.
-- `max_message_size_bytes` - Message size in bytes to receive from the server.
-  Default: 65536 bytes (64 KiB).
-- `queue_size` - Size of the queue where received messages will be held until they
-  are consumed. If the queue is full, the client will stop receiving messages
-  from the server until the queue has room available. Default: 512.
-  
-
-**Notes**:
-
-  Parameter descriptions adapted from httpx_ws documentation.
-
-<a id="fishaudio.core.websocket_options.WebSocketOptions.to_httpx_ws_kwargs"></a>
-
-#### to\_httpx\_ws\_kwargs
+#### interrupt\_writes
 
 ```python
-def to_httpx_ws_kwargs() -> dict[str, Any]
+def interrupt_writes(ws: Any) -> None
 ```
 
-Convert to kwargs dict for httpx_ws aconnect_ws/connect_ws.
+Make a socket write that is blocked in another thread fail now.
 
-<a id="fishaudio.core.omit"></a>
+A write blocks for as long as the peer does not read, and httpx-ws holds its
+write lock meanwhile, so nothing else can be sent either, not even the close
+frame. Shutting the socket down is the only way to end that from outside.
 
-# fishaudio.core.omit
+<a id="fishaudio.core._ws_utils.drain_reader"></a>
 
-OMIT sentinel for distinguishing None from not-provided parameters.
+#### drain\_reader
+
+```python
+def drain_reader(ws: Any) -> None
+```
+
+Send the close frame, shut the socket down, and wait for httpx-ws's reader
+thread to exit before the session's own ``close()`` frees the fd.
+
+Why this is needed (Linux only in practice):
+
+httpx-ws's sync ``WebSocketSession`` reads on a background thread and closes the
+socket from the calling thread. A read that has *not started yet* is harmless:
+CPython's ``SSLSocket._real_close`` sets ``_sslobj = None`` before closing the
+fd, so a later read falls through to ``socket.recv`` on fd ``-1`` and fails with
+``EBADF``. The problem is the read that is *already in flight*. On Linux,
+``close()`` does not interrupt a thread blocked in ``recv()``. OpenSSL (with
+read_ahead off) fetches a TLS record header and body with separate ``read(fd)``
+calls on the fd number cached in its BIO, so when the server's close-frame reply
+arrives the second ``read()`` can land on a brand-new connection that has since
+reused the same fd number, and that new session fails with
+``[SSL: WRONG_VERSION_NUMBER]`` or a similar TLS error. macOS wakes the blocked
+reader with ``EBADF`` on ``close()``, so it is unaffected.
+
+The fix is to end the in-flight read *before* the fd is freed: send the close
+frame (so the server still sees a clean 1000 close rather than 1006; a peer
+that has stopped reading does not get one, see below), then
+``shutdown(SHUT_RDWR)`` the socket, which wakes the blocked reader with EOF, and
+join the reader thread. The later ``close()`` sees ``LOCAL_CLOSING`` and skips
+sending a second frame.
+
+Residual risk: if httpx-ws has already closed the socket on one of its own error
+paths (keepalive ping timeout, or a sender ``WriteError`` triggering ``close()``),
+the fd is already freed, ``shutdown()`` fails with ``EBADF``, and the in-flight
+read can still race. That can only be fixed inside httpx-ws's ``close()``.
+
