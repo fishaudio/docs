@@ -3905,7 +3905,7 @@
     "/v1/agent/agents/{agent_id}/clone": {
       "post": {
         "summary": "Clone Agent",
-        "description": "Copy an agent into a new draft agent in the same workspace. The copy is\nnamed `<name> copy` (truncated to 120 characters) and keeps the source's\ndescription. It takes the source's draft configuration (including\nsecrets, tools, integration connections and the data retention setting)\nand any workspace knowledge sources. It starts unpublished: publish it\nbefore creating sessions with it. Public access, allowed origins and\nsession overrides start at their defaults.\n\nNot copied: the version history, agent-private knowledge sources, phone\nnumbers and tests. An archived source agent is a 404. Rename the copy with\n`PATCH /v1/agent/agents/{agent_id}`.",
+        "description": "Copy an agent into a new draft agent in the same workspace. The body is\noptional: `name` (1 to 120 characters, like Create Agent) names the copy;\nother fields are rejected with 422. Without a name the copy is named\n`<name> copy`, with the source name cut to 115 characters so the name stays\nwithin 120 and still ends in ` copy`. The copy keeps the source's\ndescription. It takes the source's draft configuration (including\nsecrets, tools, integration connections and the data retention setting)\nand any workspace knowledge sources. It starts unpublished: publish it\nbefore creating sessions with it. Public access, allowed origins and\nsession overrides start at their defaults.\n\nNot copied: the version history, agent-private knowledge sources, phone\nnumbers and tests. An archived source agent is a 404. Rename the copy with\n`PATCH /v1/agent/agents/{agent_id}`.",
         "security": [
           {
             "BearerAuth": []
@@ -3924,6 +3924,25 @@
             "deprecated": false
           }
         ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "description": "Name of the copy. Omitted, the copy is named `<source name> copy`."
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Document created, URL follows",
@@ -4098,6 +4117,43 @@
               }
             }
           },
+          "422": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The server cannot process the request due to a high load",
             "headers": {},
@@ -4143,7 +4199,7 @@
           {
             "lang": "bash",
             "label": "Clone Agent",
-            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/agent/agents/<agent-id>/clone \\\n  --header 'Authorization: Bearer <token>'"
+            "source": "curl --request POST \\\n  --url https://api.fish.audio/v1/agent/agents/<agent-id>/clone \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --data '{\"name\": \"Aria (Spanish)\"}'"
           }
         ]
       }

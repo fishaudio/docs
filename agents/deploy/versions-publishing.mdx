@@ -236,6 +236,8 @@ A version is a frozen snapshot, so a rollback runs it exactly as it was publishe
 
 Restore the resource, or choose another version.
 
+Tools do not block a rollback. A version freezes its webhook tools as they were when it was published, so a tool you deleted from the tool library afterwards still runs in that version exactly as published. Only the resources in the table above, the ones the version can no longer use at runtime, make a rollback return `409`.
+
 Rolling back from the console's version history works the same way: it moves the live version without creating a version or changing the draft.
 
 ### Publishing after a rollback
@@ -335,14 +337,22 @@ Page through the list with `page_size` (1 to 100, default 30) and either `cursor
 
 ## Clone an agent
 
-Cloning creates a new agent from an existing one's **draft** configuration. In the console, open the agents list and choose **Clone** from the agent's row menu. Over the API, send a `POST` with no body:
+Cloning creates a new agent from an existing one's **draft** configuration. In the console, open the agents list and choose **Clone** from the agent's row menu. Over the API, send a `POST`. The body is optional; send `name` to name the copy:
 
 ```bash Clone an agent
 curl --request POST "https://api.fish.audio/v1/agent/agents/$AGENT_ID/clone" \
-  --header "Authorization: Bearer $FISH_API_KEY"
+  --header "Authorization: Bearer $FISH_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{"name": "Aria (Spanish)"}'
 ```
 
-The response is the new agent, with status `201`. It is named `<name> copy` (truncated to 120 characters) and keeps the source's description. Rename it with [Update Agent](/api-reference/endpoint/agent/update-agent).
+The response is the new agent, with status `201`. It keeps the source's description; only the name differs.
+
+| Field  | Required | Description                                                                      |
+| ------ | -------- | -------------------------------------------------------------------------------- |
+| `name` | No       | The copy's name, 1 to 120 characters, the same range as when you create an agent |
+
+Without a `name`, or with no body or `{}`, the copy is named `<source name> copy`. If the source name is too long to fit, it is cut first so the copy's name stays within 120 characters and still ends in ` copy`. Any field other than `name`, or a `name` outside 1 to 120 characters, returns `422` and creates nothing. Rename the copy later with [Update Agent](/api-reference/endpoint/agent/update-agent).
 
 | Copied                                                                                        | Not copied                                                                           |
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
