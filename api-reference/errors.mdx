@@ -28,7 +28,7 @@ Some endpoints add fields. For example, `transcribe-1-pro` speech-to-text errors
 
 ## Retries
 
-Retry `429` and `5xx` with exponential backoff. Don't retry other `4xx` codes, apart from `408`; they won't succeed without a change to the request. The JavaScript SDK retries by itself: `429` and `5xx` responses, and also `408`, twice by default (see [Request options](/api-reference/sdk/javascript/api-reference#request-options)). The Python SDK does not retry, so add a loop like this one:
+Retry `429` and `5xx` with exponential backoff. Don't retry other `4xx` codes; they won't succeed without a change to the request. The JavaScript SDK retries by itself: `429` and `5xx` responses, and also `408`, twice by default (see [Request options](/api-reference/sdk/javascript/api-reference#request-options)). The Python SDK does not retry, so add a loop like this one:
 
 Install the Python SDK first: `pip install fish-audio-sdk`.
 
@@ -81,6 +81,7 @@ except APIError as e:
 ```javascript JavaScript
 import {
   FishAudioError,            // errors from the API and the network; has .statusCode and .body
+  FishAudioTimeoutError,     // a timeout, with some fetch implementations; not a FishAudioError
   UnprocessableEntityError,  // 422, a FishAudioError
 } from "fish-audio";
 
@@ -99,6 +100,8 @@ try {
     } else {
       console.error(err.statusCode, err.body);
     }
+  } else if (err instanceof FishAudioTimeoutError) {
+    // a timeout, when fetch reports it as an AbortError
   } else {
     throw err;
   }

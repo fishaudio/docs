@@ -47,7 +47,7 @@ Every HTTP method takes a `requestOptions` object as its last argument. Of the r
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `timeoutInSeconds` | `240` | Time to wait for the response to start, for each attempt. When it runs out, the call throws a `FishAudioError` with no `statusCode`. |
+| `timeoutInSeconds` | `240` | Time to wait for the response to start, for each attempt. When it runs out, the call throws a `FishAudioError` with no `statusCode`, or `FishAudioTimeoutError`; see [Exceptions](#exceptions). |
 | `maxRetries` | `2` | Retries after a `408`, `429`, or `5xx` response, with exponential backoff. The SDK follows a `Retry-After` header, up to 60 seconds. `0` turns retries off. |
 | `abortSignal` | none | An `AbortSignal` that cancels the request. |
 | `headers` | none | Extra headers for this request. |
@@ -483,7 +483,7 @@ Generic error with `statusCode`, `body`, `rawResponse`. `statusCode` is `undefin
 Thrown for `422` (invalid parameters). Extends `FishAudioError`; `body.detail`, when the API sends it, lists the fields that failed. It is the only error class tied to a status that the HTTP methods throw: every other status is a plain `FishAudioError`, so branch on `statusCode`.
 
 ### FishAudioTimeoutError
-Exported for request timeouts; it extends `Error`, not `FishAudioError`. In `fish-audio` 0.2.0 on Node.js, a request that times out reaches you as a `FishAudioError` with no `statusCode`, so check for that instead.
+Exported for request timeouts; it extends `Error`, not `FishAudioError`. In `fish-audio` 0.2.0 with the `fetch` built into Node.js, a request that times out reaches you as a `FishAudioError` with no `statusCode` instead, so handle both.
 
 ### RealtimeSTTError
 A realtime speech-to-text session failed. Extends `FishAudioError` with `errorType`, `requestId`, `closeCode` and `recoverable`.

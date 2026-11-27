@@ -96,7 +96,7 @@ What the JS client actually throws for ordinary HTTP requests (`convert`, `voice
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | `UnprocessableEntityError` (extends `FishAudioError`) | 422, the **only** typed HTTP subclass thrown; `.body` is `{ detail: [{ loc, msg, type }] }` |
 | `FishAudioError`                                      | every other non-2xx response; read `.statusCode`, `.body`, `.rawResponse`                   |
-| `FishAudioError` with no `statusCode`                 | no usable response: the request exceeded the timeout or the network failed. on Node.js, 0.2.0 does not throw the exported `FishAudioTimeoutError` |
+| `FishAudioError` with no `statusCode`                 | no usable response: the request exceeded the timeout or the network failed. with Node.js's built-in `fetch`, 0.2.0 does not throw the exported `FishAudioTimeoutError`; a `fetch` that rejects with `AbortError` does |
 
 > For HTTP requests, the package also exports `BadRequestError`, `UnauthorizedError`, `ForbiddenError`, `NotFoundError`, and `TooEarlyError`, but the client throws a generic `FishAudioError` for those statuses. **Branch on `err.statusCode`** rather than relying on `instanceof NotFoundError`.
 
