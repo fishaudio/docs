@@ -37,7 +37,7 @@ The exceptions to that shape:
 | ------ | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
 | `400`  | The request is well-formed JSON but semantically wrong                   | Read the `message`; it names the field or rule.                                                                 |
 | `401`  | Missing, invalid, or expired API key                                     | Send `Authorization: Bearer <key>`; check it on [API Keys](https://fish.audio/app/api-keys).                     |
-| `402`  | Out of API credit                                                        | Top up. Only session creation and phone-number purchase charge up front, so a `402` never leaves a partial charge. |
+| `402`  | Out of credit: no trial balance or API credit left                       | Top up. See [Billing and rate limits](#billing-and-rate-limits).                                                 |
 | `403`  | The action is not allowed for this caller                                | See [403 causes](#403-what-was-refused) below.                                                                   |
 | `404`  | The resource doesn't exist, or isn't yours                              | Cross-team access returns the same `404` as a missing id, so treat both identically.                             |
 | `409`  | A state conflict blocks the action                                       | See [409 conflicts](#409-conflicts) below.                                                                       |
@@ -60,7 +60,7 @@ Two quirks worth coding around:
 
 | Message                                                                                | Cause                                                                                                                 |
 | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `Agent is not public`                                                                  | Anonymous session/widget request against an agent whose public switch is off.                                         |
+| `Agent is not public`                                                                  | Anonymous session/widget request against an agent whose public switch is off. On session creation the message goes on to say how to send an API key: a request without the `Authorization: Bearer <key>` header is anonymous. Match on the start of the message. |
 | `Origin header is required for public agents`                                          | Anonymous request without an `Origin` header to an agent that restricts origins. Browsers send it automatically, curl must set it.                      |
 | `Origin not allowed`                                                                   | The agent [restricts origins](/agents/deploy/public-agents#restrict-origins) and the page's origin is not on the list. |
 | `Agent is unavailable`                                                                 | The agent's owner can't serve public sessions right now for a reason other than credit (that is `402`); visitors deliberately can't tell why. |
@@ -83,7 +83,14 @@ The recording endpoint adds one more meaning: `Recording not found` on a real se
 
 ## Billing and rate limits
 
-Exactly two endpoints charge before acting, and both can return `402 Out of API credit`: [`POST /v1/agent/sessions`](/api-reference/endpoint/agent/create-agent-session) (API-key and anonymous public callers alike) and [`POST /v1/agent/phone-numbers`](/api-reference/endpoint/agent/purchase-phone-number) (the first rental day). A public session whose agent owner is out of credit gets the same `402`, which the [Web SDK](/agents/deploy/web-sdk#errors) reports as `insufficient_credit`. Usage is settled after each call and never fails a request.
+`402 Out of API credit` means the account has no [trial balance](/agents/pricing#trial-balance) or API credit left. These requests check it before they start anything, so a `402` never leaves a partial charge:
+
+- [`POST /v1/agent/sessions`](/api-reference/endpoint/agent/create-agent-session), for API-key and anonymous public callers alike. A public session whose agent owner is out of credit gets the same `402`, which the [Web SDK](/agents/deploy/web-sdk#errors) reports as `insufficient_credit`.
+- [`POST /v1/agent/phone-calls`](/api-reference/endpoint/agent/create-phone-call), with `reason: insufficient_credit`.
+- [`POST /v1/agent/phone-numbers`](/api-reference/endpoint/agent/purchase-phone-number), which charges the first rental day up front.
+- [`POST /v1/agent/agents/{agent_id}/tests/run`](/api-reference/endpoint/agent/run-tests), when the batch contains a simulation test.
+
+Usage is settled after each call and never fails a request.
 
 `429` means a limit was reached. The first two are described under [Limits](/agents/pricing#limits).
 
@@ -92,6 +99,16 @@ Exactly two endpoints charge before acting, and both can return `402 Out of API 
 | Every concurrent line of the team is in use              | Session creation, outbound calls                                            | `code` or `reason` is `concurrency_limit_exceeded`, with `retry_after` |
 | Outbound calls started faster than the team's dial rate  | Outbound calls                                                              | `reason` is `cps_limit_exceeded`, with `retry_after`                   |
 | The fixed per-minute windows per agent and per client IP | Anonymous session creation on [public agents](/agents/deploy/public-agents) | `status` and `message`                                                 |
+
+On session creation, the concurrency `429` also has a `Retry-After` header and this body:
+
+```json
+{
+  "code": "concurrency_limit_exceeded",
+  "message": "Agent is busy, try again shortly",
+  "retry_after": 5
+}
+```
 
 Apart from these, API-key traffic is not rate limited on this surface.
 

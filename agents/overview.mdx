@@ -5,7 +5,7 @@ description: "Build voice agents in the console, ship them with the REST API and
 icon: "robot"
 ---
 
-Fish Agents is a hosted platform for real-time voice agents. Define an agent's prompt, voice, knowledge, and tools in the Builder console, publish it, and talk to it from your web app through the SDK, over a phone number, or anywhere the REST API reaches. Speech recognition, turn-taking, and speech synthesis are handled for you.
+Fish Agents is a hosted platform for real-time voice agents. Define an agent's prompt, voice, knowledge, and tools in the Builder console, publish it, and talk to it from your web app through the SDK, from the embeddable widget, or over a phone number. The REST API creates and manages agents and sessions. The conversation itself runs in a client. Speech recognition, turn-taking, and speech synthesis are handled for you.
 
 <CardGroup cols={3}>
   <Card title="Quickstart" icon="rocket" href="/agents/quickstart">
@@ -54,9 +54,13 @@ curl https://api.fish.audio/v1/agent/agents \
     configuration, so you can keep editing safely.
   </Step>
   <Step title="Integrate">
-    Drop the [web SDK](/agents/deploy/web-sdk) into your app, create sessions
-    over [REST](/agents/deploy/overview), or [bind a phone
+    Drop the [web SDK](/agents/deploy/web-sdk) or the
+    [widget](/agents/deploy/widget) into your app, or [bind a phone
     number](/agents/telephony/phone-numbers) so the agent answers inbound calls.
+    For private agents, your backend [creates each session over
+    REST](/agents/deploy/authenticated-sessions) and the client joins it. To
+    try a session before you write a frontend, open the `join_url` from the
+    response in your browser.
   </Step>
   <Step title="Monitor">
     Review transcripts, tool calls, and recordings in [conversation
