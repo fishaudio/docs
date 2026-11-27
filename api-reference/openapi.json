@@ -615,7 +615,7 @@
     "/v1/agent/sessions": {
       "get": {
         "summary": "List Agent Sessions",
-        "description": "List your team's sessions, newest first. Filter by agent, status, end\nreason, caller number, SIP Call-ID, end user ID, call_sid, or creation\ntime. Paginate with `cursor` (recommended; follow `next_cursor` while\n`has_more` is true) or with `page` for offset pagination with a `total`\ncount. The two are mutually exclusive.",
+        "description": "List your team's sessions, newest first. Filter by agent, status,\nconversation status, end reason, caller number, SIP Call-ID, end user ID, call_sid, or creation\ntime. Paginate with `cursor` (recommended; follow `next_cursor` while\n`has_more` is true) or with `page` for offset pagination with a `total`\ncount. The two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -676,6 +676,25 @@
               ],
               "default": null,
               "title": "End Reason"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "conversation_status",
+            "description": "Comma-separated filter on how the conversation went (active/resolved/escalated/missed/error); a session matches when it is any of the listed ones. Combines with the other filters: a session must match all of them. Each row reports its own `conversation_status`.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Conversation Status"
             },
             "deprecated": false
           },
@@ -1483,7 +1502,7 @@
     "/v1/agent/sessions/{session_id}": {
       "get": {
         "summary": "Get Agent Session",
-        "description": "Fetch one session's full detail: status, timing, and the conversation\ntimeline (transcript turns interleaved with tool calls, in order).",
+        "description": "Fetch one session's full detail: status, timing, and the conversation\ntimeline (transcript turns interleaved with tool calls, in order). Add\n`include=turns` for each turn's latency; it is not returned by default.",
         "security": [
           {
             "BearerAuth": []
@@ -1498,6 +1517,25 @@
             "schema": {
               "title": "Session Id",
               "type": "string"
+            },
+            "deprecated": false
+          },
+          {
+            "in": "query",
+            "name": "include",
+            "description": "Comma-separated extra sections to return. Allowed values: `turns` (per-turn latency; without it `turns` is null). Any other value answers 400.",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Include"
             },
             "deprecated": false
           }
@@ -1581,6 +1619,11 @@
                       ],
                       "default": null,
                       "title": "End Reason"
+                    },
+                    "conversation_status": {
+                      "description": "How the conversation went, derived from `status` and `end_reason`. Current values: `active` is still going; `resolved` ended normally, which does not mean the caller's problem was solved; `escalated` was transferred to a person; `missed` is a call nobody connected to; `error` is a conversation the platform ended because something failed. New values may be added, so treat an unknown value as a status you do not recognise rather than an error. Filter the list with `conversation_status`, which accepts only the values above.",
+                      "title": "Conversation Status",
+                      "type": "string"
                     },
                     "source": {
                       "enum": [
@@ -1908,6 +1951,22 @@
                       },
                       "title": "Engine Fallbacks",
                       "type": "array"
+                    },
+                    "turns": {
+                      "anyOf": [
+                        {
+                          "items": {
+                            "$ref": "#/components/schemas/AgentSessionTurn"
+                          },
+                          "type": "array"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Per-turn latency, ascending by `turn_id`. Only returned when `include=turns` is set; null otherwise. A turn's messages and tool calls are in `items` with the same `turn_id`.",
+                      "title": "Turns"
                     }
                   },
                   "required": [
@@ -1915,8 +1974,46 @@
                     "agent_id",
                     "agent_name",
                     "status",
+                    "conversation_status",
                     "source",
                     "created_at"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "title": "Status",
+                      "type": "integer"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Reason"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message"
                   ],
                   "type": "object"
                 }
@@ -2563,7 +2660,7 @@
     "/v1/agent/agents": {
       "get": {
         "summary": "List Agents",
-        "description": "List your team's agents, newest first. Paginate with `cursor` (follow\n`next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count — the two are mutually exclusive.",
+        "description": "List your team's agents, newest first. Paginate with `cursor` (follow\n`next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count \u2014 the two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -2855,7 +2952,7 @@
       },
       "post": {
         "summary": "Create Agent",
-        "description": "Create an agent, optionally with its full initial configuration inline —\none call provisions a ready-to-publish agent. The agent starts as a draft:\npublish it before creating sessions with it.",
+        "description": "Create an agent, optionally with its full initial configuration inline \u2014\none call provisions a ready-to-publish agent. The agent starts as a draft:\npublish it before creating sessions with it.",
         "security": [
           {
             "BearerAuth": []
@@ -3372,7 +3469,7 @@
       },
       "patch": {
         "summary": "Update Agent",
-        "description": "Update agent-level fields (name, description, status, public access and\nsession-override policy). Omitted fields keep their value. Conversation\nbehavior — voice, prompt, recording and the rest — is draft configuration:\nuse `PATCH /v1/agent/agents/{agent_id}/config`.",
+        "description": "Update agent-level fields (name, description, status, public access and\nsession-override policy). Omitted fields keep their value. Conversation\nbehavior \u2014 voice, prompt, recording and the rest \u2014 is draft configuration:\nuse `PATCH /v1/agent/agents/{agent_id}/config`.",
         "security": [
           {
             "BearerAuth": []
@@ -3840,7 +3937,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "Display config for the embeddable `<fish-agent>` widget.\n\nServed without authentication for public agents; HTML attributes on the\nembed tag override every field. Grows alongside the Builder widget tab\n(greeting, policy switches, styles) — additions only, never renames.",
+                  "description": "Display config for the embeddable `<fish-agent>` widget.\n\nServed without authentication for public agents; HTML attributes on the\nembed tag override every field. Grows alongside the Builder widget tab\n(greeting, policy switches, styles) \u2014 additions only, never renames.",
                   "properties": {
                     "agent_name": {
                       "title": "Agent Name",
@@ -3938,7 +4035,7 @@
     "/v1/agent/agents/{agent_id}/config": {
       "get": {
         "summary": "Get Draft Config",
-        "description": "Read the agent's current draft configuration — the state the next publish\nwill freeze. Sessions run the latest published version, not the draft; use\nthe versions endpoints to see what is live. Webhook signing secrets are\nwrite-only and reported as `has_secret`.",
+        "description": "Read the agent's current draft configuration \u2014 the state the next publish\nwill freeze. Sessions run the latest published version, not the draft; use\nthe versions endpoints to see what is live. Webhook signing secrets are\nwrite-only and reported as `has_secret`.",
         "security": [
           {
             "BearerAuth": []
@@ -5119,7 +5216,7 @@
     "/v1/agent/agents/{agent_id}/versions/{version_number}": {
       "get": {
         "summary": "Get Agent Version",
-        "description": "One published version with its full frozen configuration snapshot —\nincluding the current live version. Secrets inside the snapshot are\nredacted the same way as the draft config. The snapshot equals the draft\nit froze, except `config.updated_at`, which is the publish time.",
+        "description": "One published version with its full frozen configuration snapshot \u2014\nincluding the current live version. Secrets inside the snapshot are\nredacted the same way as the draft config. The snapshot equals the draft\nit froze, except `config.updated_at`, which is the publish time.",
         "security": [
           {
             "BearerAuth": []
@@ -7015,7 +7112,7 @@
     "/v1/agent/knowledge-sources": {
       "get": {
         "summary": "List Knowledge Sources",
-        "description": "List your team's knowledge sources, newest first. Paginate with `cursor`\n(follow `next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count — the two are mutually exclusive. Filter\nby folder with `folder_id=<id>`; with `folder_id=root` or no `folder_id`\nyou get every source, and the ones outside any folder have a null\n`folder_id`.",
+        "description": "List your team's knowledge sources, newest first. Paginate with `cursor`\n(follow `next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count \u2014 the two are mutually exclusive. Filter\nby folder with `folder_id=<id>`; with `folder_id=root` or no `folder_id`\nyou get every source, and the ones outside any folder have a null\n`folder_id`.",
         "security": [
           {
             "BearerAuth": []
@@ -7897,7 +7994,7 @@
       },
       "patch": {
         "summary": "Update Knowledge Source",
-        "description": "Rename the source and/or replace its content by uploading a new file in\n`source` (multipart). Replacing content increments `revision_number` while\nthe id stays stable, and every attached agent's draft picks it up\nimmediately; published versions pin the revision they were published with,\nso republish each affected agent to put the new content live — that\ntwo-step (sync content, republish) is the nightly content-sync recipe.\nSend `folder_id` to move the source into a knowledge folder, or\n`folder_id=root` to take it out of its folder; a move alone does not create\na revision.",
+        "description": "Rename the source and/or replace its content by uploading a new file in\n`source` (multipart). Replacing content increments `revision_number` while\nthe id stays stable, and every attached agent's draft picks it up\nimmediately; published versions pin the revision they were published with,\nso republish each affected agent to put the new content live \u2014 that\ntwo-step (sync content, republish) is the nightly content-sync recipe.\nSend `folder_id` to move the source into a knowledge folder, or\n`folder_id=root` to take it out of its folder; a move alone does not create\na revision.",
         "security": [
           {
             "BearerAuth": []
@@ -8258,7 +8355,7 @@
       },
       "delete": {
         "summary": "Delete Knowledge Source",
-        "description": "Delete a knowledge source. Returns 409 while any agent still references it\n— in its draft or in its currently published version (sessions resolve\nsources at call time, so deleting a published reference would change a\nrunning agent). Check `GET /v1/agent/knowledge-sources/{source_id}/agents`,\ndetach via the agent config, and republish if needed before deleting.",
+        "description": "Delete a knowledge source. Returns 409 while any agent still references it\n\u2014 in its draft or in its currently published version (sessions resolve\nsources at call time, so deleting a published reference would change a\nrunning agent). Check `GET /v1/agent/knowledge-sources/{source_id}/agents`,\ndetach via the agent config, and republish if needed before deleting.",
         "security": [
           {
             "BearerAuth": []
@@ -8439,7 +8536,7 @@
     "/v1/agent/knowledge-sources/{source_id}/agents": {
       "get": {
         "summary": "List Agents Using Knowledge Source",
-        "description": "Every agent that references this source in its draft or currently\npublished configuration — the pre-flight check before a delete.",
+        "description": "Every agent that references this source in its draft or currently\npublished configuration \u2014 the pre-flight check before a delete.",
         "security": [
           {
             "BearerAuth": []
@@ -8608,7 +8705,7 @@
     "/v1/agent/knowledge-folders": {
       "get": {
         "summary": "List Knowledge Folders",
-        "description": "List your team's knowledge folders across all workspaces, newest first.\nFolder names are unique per workspace, so two workspaces can each have a\n\"Support\" folder: tell them apart by `workspace_id`. Paginate with\n`cursor` (follow `next_cursor` while `has_more` is true) or with `page`\nfor offset pagination with a `total` count — the two are mutually\nexclusive. To list the sources in a folder, call\n`GET /v1/agent/knowledge-sources?folder_id=<folder_id>`; pass\n`include_total=true` there for a count.",
+        "description": "List your team's knowledge folders across all workspaces, newest first.\nFolder names are unique per workspace, so two workspaces can each have a\n\"Support\" folder: tell them apart by `workspace_id`. Paginate with\n`cursor` (follow `next_cursor` while `has_more` is true) or with `page`\nfor offset pagination with a `total` count \u2014 the two are mutually\nexclusive. To list the sources in a folder, call\n`GET /v1/agent/knowledge-sources?folder_id=<folder_id>`; pass\n`include_total=true` there for a count.",
         "security": [
           {
             "BearerAuth": []
@@ -9513,7 +9610,7 @@
     "/v1/agent/tools": {
       "get": {
         "summary": "List Tools",
-        "description": "List your team's tools, newest first. Filter with `agent_id` to see one\nagent's attached tools. Paginate with `cursor` (follow `next_cursor` while\n`has_more` is true) or with `page` for offset pagination with a `total`\ncount — the two are mutually exclusive.",
+        "description": "List your team's tools, newest first. Filter with `agent_id` to see one\nagent's attached tools. Paginate with `cursor` (follow `next_cursor` while\n`has_more` is true) or with `page` for offset pagination with a `total`\ncount \u2014 the two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -10143,7 +10240,7 @@
     "/v1/agent/tools/{tool_id}": {
       "get": {
         "summary": "Get Tool",
-        "description": "Fetch one tool's full definition. Credential header values are never\nreturned — each credential header (including a custom header whose name\nlooks like a credential) reports `has_secret` instead.",
+        "description": "Fetch one tool's full definition. Credential header values are never\nreturned \u2014 each credential header (including a custom header whose name\nlooks like a credential) reports `has_secret` instead.",
         "security": [
           {
             "BearerAuth": []
@@ -10448,7 +10545,7 @@
       },
       "patch": {
         "summary": "Update Tool",
-        "description": "Patch tool fields; omitted fields keep their value (null is rejected —\nsend an empty string to clear a text field). `headers` replaces the header\nlist wholesale — include credential values again whenever you send it,\nsince reads never return them. Attached agents' drafts pick up the change\nimmediately; published versions stay frozen until re-published, except\nfor credential values: a new authorization_bearer / authorization_basic\nvalue reaches published versions at their next session, as long as the\nheader keeps its name and kind. Calls already in progress keep the value\nthey started with.",
+        "description": "Patch tool fields; omitted fields keep their value (null is rejected \u2014\nsend an empty string to clear a text field). `headers` replaces the header\nlist wholesale \u2014 include credential values again whenever you send it,\nsince reads never return them. Attached agents' drafts pick up the change\nimmediately; published versions stay frozen until re-published, except\nfor credential values: a new authorization_bearer / authorization_basic\nvalue reaches published versions at their next session, as long as the\nheader keeps its name and kind. Calls already in progress keep the value\nthey started with.",
         "security": [
           {
             "BearerAuth": []
@@ -10837,7 +10934,7 @@
       },
       "delete": {
         "summary": "Delete Tool",
-        "description": "Delete a tool. Returns 409 while any agent's draft configuration still\nreferences it — check `GET /v1/agent/tools/{tool_id}/agents` and detach it\nvia the agent config first, so a delete can never silently change agent\nbehavior.",
+        "description": "Delete a tool. Returns 409 while any agent's draft configuration still\nreferences it \u2014 check `GET /v1/agent/tools/{tool_id}/agents` and detach it\nvia the agent config first, so a delete can never silently change agent\nbehavior.",
         "security": [
           {
             "BearerAuth": []
@@ -11715,7 +11812,7 @@
     "/v1/agent/tools/{tool_id}/agents": {
       "get": {
         "summary": "List Agents Using Tool",
-        "description": "Every agent whose draft configuration references this tool — the\npre-flight check before a delete. Published versions keep executing their\nfrozen tool snapshot, so only draft references block deletion.",
+        "description": "Every agent whose draft configuration references this tool \u2014 the\npre-flight check before a delete. Published versions keep executing their\nfrozen tool snapshot, so only draft references block deletion.",
         "security": [
           {
             "BearerAuth": []
@@ -14607,7 +14704,7 @@
     "/v1/agent/phone-numbers": {
       "get": {
         "summary": "List Phone Numbers",
-        "description": "List your team's phone numbers, newest first. Released numbers are gone\nfor good and never appear. Look an id up by E.164 with `phone_number`, or\nfilter with `agent_id` to see one agent's numbers. Paginate with `cursor`\n(follow `next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count — the two are mutually exclusive.",
+        "description": "List your team's phone numbers, newest first. Released numbers are gone\nfor good and never appear. Look an id up by E.164 with `phone_number`, or\nfilter with `agent_id` to see one agent's numbers. Paginate with `cursor`\n(follow `next_cursor` while `has_more` is true) or with `page` for offset\npagination with a `total` count \u2014 the two are mutually exclusive.",
         "security": [
           {
             "BearerAuth": []
@@ -15879,7 +15976,7 @@
       },
       "patch": {
         "summary": "Update Phone Number",
-        "description": "Change the label and/or repoint the number at another agent — the\ndeployment-pipeline move (rebind from the staging agent to the production\none). Send `agent_id: null` to unbind; unbound numbers ring busy. The\nagent must live in the number's workspace. Rebinding is a routing-table\nupdate resolved on the next inbound call; nothing about the number itself\nis reprovisioned.\n\nManaged `twilio` numbers also accept `transfer_caller_id`, which picks\nthe number a transfer target sees (cold and warm alike), and\n`retry_caller_id_sync` to re-apply it after a failed synchronization. Read\n`caller_id_sync_status` on the response. Imported `sip` numbers return 409\nfor either field because their carrier owns the setting.\n\nEvery field here is a number setting, not agent config: changes apply\nfrom the next call without publishing, and publishing or rolling back the\nagent never changes them. Cold-transfer caller ID applies once\n`caller_id_sync_status` is `synced`.",
+        "description": "Change the label and/or repoint the number at another agent \u2014 the\ndeployment-pipeline move (rebind from the staging agent to the production\none). Send `agent_id: null` to unbind; unbound numbers ring busy. The\nagent must live in the number's workspace. Rebinding is a routing-table\nupdate resolved on the next inbound call; nothing about the number itself\nis reprovisioned.\n\nManaged `twilio` numbers also accept `transfer_caller_id`, which picks\nthe number a transfer target sees (cold and warm alike), and\n`retry_caller_id_sync` to re-apply it after a failed synchronization. Read\n`caller_id_sync_status` on the response. Imported `sip` numbers return 409\nfor either field because their carrier owns the setting.\n\nEvery field here is a number setting, not agent config: changes apply\nfrom the next call without publishing, and publishing or rolling back the\nagent never changes them. Cold-transfer caller ID applies once\n`caller_id_sync_status` is `synced`.",
         "security": [
           {
             "BearerAuth": []
@@ -16344,7 +16441,7 @@
       },
       "delete": {
         "summary": "Release Phone Number",
-        "description": "Release a number back to the provider's inventory and stop its daily\nbilling. This is irreversible: anyone — including other platforms — can\nbuy the number afterwards, so callers who saved it may reach a stranger.\nThe number disappears from this API immediately. 409 while a SIP config\nupdate of an imported number is still running, retry shortly.",
+        "description": "Release a number back to the provider's inventory and stop its daily\nbilling. This is irreversible: anyone \u2014 including other platforms \u2014 can\nbuy the number afterwards, so callers who saved it may reach a stranger.\nThe number disappears from this API immediately. 409 while a SIP config\nupdate of an imported number is still running, retry shortly.",
         "security": [
           {
             "BearerAuth": []
@@ -18320,7 +18417,7 @@
     "/v1/audio/infill": {
       "post": {
         "summary": "Audio Infill",
-        "description": "Regenerate part of a recording with drama-3 and get the whole take back.\nUse it to apply a script change to existing audio without re-recording it:\nsend the take, the full revised `transcript` and the range to replace.\ndrama-3 regenerates that range in the speaker's voice, taken from the audio\naround it, and returns the take with the new span in place.\n\nA request takes one of two shapes. Mixing them is a 400.\n\n## Edit a take\n\nSend `audio` with where the span to replace starts and ends. Frames\n`[prefix_frames, suffix_frames)` are regenerated; the audio before and after\nthem is kept.\n\n- Give each position in frames (`prefix_frames`, `suffix_frames`) or in\n  seconds (`prefix_seconds`, `suffix_seconds`). Each side takes one of the\n  two; both for the same side is a 400, and so is a side left out.\n- Positions are absolute, counted from the start of the take, at 44100 /\n  2048 (about 21.53) frames per second. Seconds are rounded to the nearest\n  frame: `frames = round(seconds × 44100 / 2048)`.\n- `prefix_frames` equal to `suffix_frames` inserts new speech at that point.\n- Some original audio has to stay: `prefix_frames` 0 together with\n  `suffix_frames` at the end of the take is a 400. For the best results keep\n  at least 0.75 s on each side and replace at least 0.2 s.\n\n## Join two clips\n\nSend `prefix_audio` and, optionally, `suffix_audio`. drama-3 generates the\nspeech between them; with `prefix_audio` alone it continues the clip. No\npositions are needed. `suffix_audio` without `prefix_audio` is a 400.\n\n## Length of the new span\n\nThe model decides how long the regenerated span is, up to 1024 frames\n(about 47 s). There is no way to request an exact length yet, so the span\ncan come out shorter or longer than the speech it replaces.\n\n## Response\n\nThe whole take as one audio file in `format`. The kept parts are\nre-synthesized together with the new span rather than copied byte for byte.\n\nSend `Accept: text/event-stream` to receive server-sent events instead:\n`start` (with `middle_start_seconds`), then `audio.delta` events whose\nbase64 `audio` fields concatenate into the same file, then `done` (with\n`output_frames`, `middle_end_seconds` and `total_seconds`), then `[DONE]`.",
+        "description": "Regenerate part of a recording with drama-3 and get the whole take back.\nUse it to apply a script change to existing audio without re-recording it:\nsend the take, the full revised `transcript` and the range to replace.\ndrama-3 regenerates that range in the speaker's voice, taken from the audio\naround it, and returns the take with the new span in place.\n\nA request takes one of two shapes. Mixing them is a 400.\n\n## Edit a take\n\nSend `audio` with where the span to replace starts and ends. Frames\n`[prefix_frames, suffix_frames)` are regenerated; the audio before and after\nthem is kept.\n\n- Give each position in frames (`prefix_frames`, `suffix_frames`) or in\n  seconds (`prefix_seconds`, `suffix_seconds`). Each side takes one of the\n  two; both for the same side is a 400, and so is a side left out.\n- Positions are absolute, counted from the start of the take, at 44100 /\n  2048 (about 21.53) frames per second. Seconds are rounded to the nearest\n  frame: `frames = round(seconds \u00d7 44100 / 2048)`.\n- `prefix_frames` equal to `suffix_frames` inserts new speech at that point.\n- Some original audio has to stay: `prefix_frames` 0 together with\n  `suffix_frames` at the end of the take is a 400. For the best results keep\n  at least 0.75 s on each side and replace at least 0.2 s.\n\n## Join two clips\n\nSend `prefix_audio` and, optionally, `suffix_audio`. drama-3 generates the\nspeech between them; with `prefix_audio` alone it continues the clip. No\npositions are needed. `suffix_audio` without `prefix_audio` is a 400.\n\n## Length of the new span\n\nThe model decides how long the regenerated span is, up to 1024 frames\n(about 47 s). There is no way to request an exact length yet, so the span\ncan come out shorter or longer than the speech it replaces.\n\n## Response\n\nThe whole take as one audio file in `format`. The kept parts are\nre-synthesized together with the new span rather than copied byte for byte.\n\nSend `Accept: text/event-stream` to receive server-sent events instead:\n`start` (with `middle_start_seconds`), then `audio.delta` events whose\nbase64 `audio` fields concatenate into the same file, then `done` (with\n`output_frames`, `middle_end_seconds` and `total_seconds`), then `[DONE]`.",
         "security": [
           {
             "BearerAuth": []
@@ -19177,7 +19274,7 @@
           "Pronunciation Dictionaries"
         ],
         "summary": "List pronunciation dictionaries",
-        "description": "List the caller team's dictionaries, newest updated first. Archived dictionaries are excluded. Paginate with `cursor` (follow `next_cursor` while `has_more` is true) or with `page` for offset pagination with a `total` count — the two are mutually exclusive."
+        "description": "List the caller team's dictionaries, newest updated first. Archived dictionaries are excluded. Paginate with `cursor` (follow `next_cursor` while `has_more` is true) or with `page` for offset pagination with a `total` count \u2014 the two are mutually exclusive."
       },
       "post": {
         "security": [
@@ -20700,7 +20797,7 @@
           "Pronunciation Dictionaries"
         ],
         "summary": "List versions",
-        "description": "List the dictionary's published versions, newest first. Archived versions are excluded. Paginate with `cursor` (follow `next_cursor` while `has_more` is true) or with `page` for offset pagination with a `total` count — the two are mutually exclusive."
+        "description": "List the dictionary's published versions, newest first. Archived versions are excluded. Paginate with `cursor` (follow `next_cursor` while `has_more` is true) or with `page` for offset pagination with a `total` count \u2014 the two are mutually exclusive."
       },
       "post": {
         "security": [
@@ -22420,7 +22517,7 @@
                       "audio_base64": "SUQzBAAAAAAA...",
                       "chunk_audio_offset_sec": 0,
                       "chunk_seq": 0,
-                      "content": "I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start."
+                      "content": "I can\u2019t believe it\u2019s been this long. It feels like forever since we last really talked. I\u2019ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I\u2019ve thought about calling you so many times, but I never knew where to start."
                     },
                     {
                       "alignment": {
@@ -22681,7 +22778,7 @@
                       "audio_base64": "//uSxOAAF...",
                       "chunk_audio_offset_sec": 0,
                       "chunk_seq": 0,
-                      "content": "I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start."
+                      "content": "I can\u2019t believe it\u2019s been this long. It feels like forever since we last really talked. I\u2019ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I\u2019ve thought about calling you so many times, but I never knew where to start."
                     },
                     {
                       "alignment": {
@@ -22872,7 +22969,7 @@
                       "audio_base64": "//uSxImAl...",
                       "chunk_audio_offset_sec": 16.24,
                       "chunk_seq": 1,
-                      "content": "Seeing you again now makes me realize just how much I’ve missed you. We have so much to catch up on, and I don’t even know which part of my life to tell you about first."
+                      "content": "Seeing you again now makes me realize just how much I\u2019ve missed you. We have so much to catch up on, and I don\u2019t even know which part of my life to tell you about first."
                     }
                   ],
                   "properties": {
@@ -22923,15 +23020,15 @@
                 "examples": {
                   "first_event": {
                     "summary": "First text chunk event with alignment",
-                    "value": "data: {\"audio_base64\": \"SUQzBAAAAAAA...\", \"content\": \"I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start.\", \"alignment\": {\"segments\": [{\"text\": \"I\", \"start\": 0.0, \"end\": 0.16}, {\"text\": \"can't\", \"start\": 0.16, \"end\": 0.48}, {\"text\": \"believe\", \"start\": 0.48, \"end\": 0.8}, {\"text\": \"its\", \"start\": 0.8, \"end\": 1.12}, {\"text\": \"been\", \"start\": 1.2, \"end\": 1.44}, {\"text\": \"this\", \"start\": 1.44, \"end\": 1.76}, {\"text\": \"long\", \"start\": 1.76, \"end\": 2.48}, {\"text\": \"It\", \"start\": 2.56, \"end\": 2.64}, {\"text\": \"feels\", \"start\": 2.72, \"end\": 3.04}, {\"text\": \"like\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"forever\", \"start\": 3.36, \"end\": 4.0}, {\"text\": \"since\", \"start\": 4.0, \"end\": 4.32}, {\"text\": \"we\", \"start\": 4.32, \"end\": 4.48}, {\"text\": \"last\", \"start\": 4.48, \"end\": 4.96}, {\"text\": \"really\", \"start\": 4.96, \"end\": 5.28}, {\"text\": \"talked\", \"start\": 5.28, \"end\": 5.84}, {\"text\": \"Ive\", \"start\": 6.0, \"end\": 6.24}, {\"text\": \"missed\", \"start\": 6.24, \"end\": 6.64}, {\"text\": \"hearing\", \"start\": 6.64, \"end\": 6.96}, {\"text\": \"your\", \"start\": 6.96, \"end\": 7.2}, {\"text\": \"voice\", \"start\": 7.2, \"end\": 7.76}, {\"text\": \"your\", \"start\": 7.76, \"end\": 7.92}, {\"text\": \"stories\", \"start\": 7.92, \"end\": 8.48}, {\"text\": \"even\", \"start\": 8.48, \"end\": 8.72}, {\"text\": \"the\", \"start\": 8.72, \"end\": 8.8}, {\"text\": \"little\", \"start\": 8.8, \"end\": 9.2}, {\"text\": \"things\", \"start\": 9.2, \"end\": 9.52}, {\"text\": \"you\", \"start\": 9.52, \"end\": 9.68}, {\"text\": \"used\", \"start\": 9.68, \"end\": 10.0}, {\"text\": \"to\", \"start\": 10.0, \"end\": 10.08}, {\"text\": \"say\", \"start\": 10.08, \"end\": 10.64}, {\"text\": \"How\", \"start\": 10.64, \"end\": 10.96}, {\"text\": \"have\", \"start\": 10.96, \"end\": 11.12}, {\"text\": \"you\", \"start\": 11.12, \"end\": 11.36}, {\"text\": \"been\", \"start\": 11.36, \"end\": 11.92}, {\"text\": \"Ive\", \"start\": 12.0, \"end\": 12.24}, {\"text\": \"thought\", \"start\": 12.24, \"end\": 12.48}, {\"text\": \"about\", \"start\": 12.48, \"end\": 12.8}, {\"text\": \"calling\", \"start\": 12.8, \"end\": 13.2}, {\"text\": \"you\", \"start\": 13.2, \"end\": 13.36}, {\"text\": \"so\", \"start\": 13.36, \"end\": 13.68}, {\"text\": \"many\", \"start\": 13.68, \"end\": 13.92}, {\"text\": \"times\", \"start\": 13.92, \"end\": 14.56}, {\"text\": \"but\", \"start\": 14.56, \"end\": 14.72}, {\"text\": \"I\", \"start\": 14.72, \"end\": 14.88}, {\"text\": \"never\", \"start\": 14.88, \"end\": 15.2}, {\"text\": \"knew\", \"start\": 15.2, \"end\": 15.36}, {\"text\": \"where\", \"start\": 15.36, \"end\": 15.6}, {\"text\": \"to\", \"start\": 15.6, \"end\": 15.6}, {\"text\": \"start\", \"start\": 15.68, \"end\": 16.24}], \"audio_duration\": 16.24}, \"chunk_seq\": 0, \"chunk_audio_offset_sec\": 0.0}\n\n"
+                    "value": "data: {\"audio_base64\": \"SUQzBAAAAAAA...\", \"content\": \"I can\u2019t believe it\u2019s been this long. It feels like forever since we last really talked. I\u2019ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I\u2019ve thought about calling you so many times, but I never knew where to start.\", \"alignment\": {\"segments\": [{\"text\": \"I\", \"start\": 0.0, \"end\": 0.16}, {\"text\": \"can't\", \"start\": 0.16, \"end\": 0.48}, {\"text\": \"believe\", \"start\": 0.48, \"end\": 0.8}, {\"text\": \"its\", \"start\": 0.8, \"end\": 1.12}, {\"text\": \"been\", \"start\": 1.2, \"end\": 1.44}, {\"text\": \"this\", \"start\": 1.44, \"end\": 1.76}, {\"text\": \"long\", \"start\": 1.76, \"end\": 2.48}, {\"text\": \"It\", \"start\": 2.56, \"end\": 2.64}, {\"text\": \"feels\", \"start\": 2.72, \"end\": 3.04}, {\"text\": \"like\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"forever\", \"start\": 3.36, \"end\": 4.0}, {\"text\": \"since\", \"start\": 4.0, \"end\": 4.32}, {\"text\": \"we\", \"start\": 4.32, \"end\": 4.48}, {\"text\": \"last\", \"start\": 4.48, \"end\": 4.96}, {\"text\": \"really\", \"start\": 4.96, \"end\": 5.28}, {\"text\": \"talked\", \"start\": 5.28, \"end\": 5.84}, {\"text\": \"Ive\", \"start\": 6.0, \"end\": 6.24}, {\"text\": \"missed\", \"start\": 6.24, \"end\": 6.64}, {\"text\": \"hearing\", \"start\": 6.64, \"end\": 6.96}, {\"text\": \"your\", \"start\": 6.96, \"end\": 7.2}, {\"text\": \"voice\", \"start\": 7.2, \"end\": 7.76}, {\"text\": \"your\", \"start\": 7.76, \"end\": 7.92}, {\"text\": \"stories\", \"start\": 7.92, \"end\": 8.48}, {\"text\": \"even\", \"start\": 8.48, \"end\": 8.72}, {\"text\": \"the\", \"start\": 8.72, \"end\": 8.8}, {\"text\": \"little\", \"start\": 8.8, \"end\": 9.2}, {\"text\": \"things\", \"start\": 9.2, \"end\": 9.52}, {\"text\": \"you\", \"start\": 9.52, \"end\": 9.68}, {\"text\": \"used\", \"start\": 9.68, \"end\": 10.0}, {\"text\": \"to\", \"start\": 10.0, \"end\": 10.08}, {\"text\": \"say\", \"start\": 10.08, \"end\": 10.64}, {\"text\": \"How\", \"start\": 10.64, \"end\": 10.96}, {\"text\": \"have\", \"start\": 10.96, \"end\": 11.12}, {\"text\": \"you\", \"start\": 11.12, \"end\": 11.36}, {\"text\": \"been\", \"start\": 11.36, \"end\": 11.92}, {\"text\": \"Ive\", \"start\": 12.0, \"end\": 12.24}, {\"text\": \"thought\", \"start\": 12.24, \"end\": 12.48}, {\"text\": \"about\", \"start\": 12.48, \"end\": 12.8}, {\"text\": \"calling\", \"start\": 12.8, \"end\": 13.2}, {\"text\": \"you\", \"start\": 13.2, \"end\": 13.36}, {\"text\": \"so\", \"start\": 13.36, \"end\": 13.68}, {\"text\": \"many\", \"start\": 13.68, \"end\": 13.92}, {\"text\": \"times\", \"start\": 13.92, \"end\": 14.56}, {\"text\": \"but\", \"start\": 14.56, \"end\": 14.72}, {\"text\": \"I\", \"start\": 14.72, \"end\": 14.88}, {\"text\": \"never\", \"start\": 14.88, \"end\": 15.2}, {\"text\": \"knew\", \"start\": 15.2, \"end\": 15.36}, {\"text\": \"where\", \"start\": 15.36, \"end\": 15.6}, {\"text\": \"to\", \"start\": 15.6, \"end\": 15.6}, {\"text\": \"start\", \"start\": 15.68, \"end\": 16.24}], \"audio_duration\": 16.24}, \"chunk_seq\": 0, \"chunk_audio_offset_sec\": 0.0}\n\n"
                   },
                   "following_event": {
                     "summary": "Following audio event with latest alignment snapshot",
-                    "value": "data: {\"audio_base64\": \"//uSxOAAF...\", \"content\": \"I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start.\", \"alignment\": {\"segments\": [{\"text\": \"I\", \"start\": 0.0, \"end\": 0.16}, {\"text\": \"can't\", \"start\": 0.16, \"end\": 0.48}, {\"text\": \"believe\", \"start\": 0.48, \"end\": 0.8}, {\"text\": \"its\", \"start\": 0.8, \"end\": 1.12}, {\"text\": \"been\", \"start\": 1.2, \"end\": 1.44}, {\"text\": \"this\", \"start\": 1.44, \"end\": 1.76}, {\"text\": \"long\", \"start\": 1.76, \"end\": 2.48}, {\"text\": \"It\", \"start\": 2.56, \"end\": 2.64}, {\"text\": \"feels\", \"start\": 2.72, \"end\": 3.04}, {\"text\": \"like\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"forever\", \"start\": 3.36, \"end\": 4.0}, {\"text\": \"since\", \"start\": 4.0, \"end\": 4.32}, {\"text\": \"we\", \"start\": 4.32, \"end\": 4.48}, {\"text\": \"last\", \"start\": 4.48, \"end\": 4.96}, {\"text\": \"really\", \"start\": 4.96, \"end\": 5.28}, {\"text\": \"talked\", \"start\": 5.28, \"end\": 5.84}, {\"text\": \"Ive\", \"start\": 6.0, \"end\": 6.24}, {\"text\": \"missed\", \"start\": 6.24, \"end\": 6.64}, {\"text\": \"hearing\", \"start\": 6.64, \"end\": 6.96}, {\"text\": \"your\", \"start\": 6.96, \"end\": 7.2}, {\"text\": \"voice\", \"start\": 7.2, \"end\": 7.76}, {\"text\": \"your\", \"start\": 7.76, \"end\": 7.92}, {\"text\": \"stories\", \"start\": 7.92, \"end\": 8.48}, {\"text\": \"even\", \"start\": 8.48, \"end\": 8.72}, {\"text\": \"the\", \"start\": 8.72, \"end\": 8.8}, {\"text\": \"little\", \"start\": 8.8, \"end\": 9.2}, {\"text\": \"things\", \"start\": 9.2, \"end\": 9.52}, {\"text\": \"you\", \"start\": 9.52, \"end\": 9.68}, {\"text\": \"used\", \"start\": 9.68, \"end\": 10.0}, {\"text\": \"to\", \"start\": 10.0, \"end\": 10.08}, {\"text\": \"say\", \"start\": 10.08, \"end\": 10.64}, {\"text\": \"How\", \"start\": 10.64, \"end\": 10.96}, {\"text\": \"have\", \"start\": 10.96, \"end\": 11.12}, {\"text\": \"you\", \"start\": 11.12, \"end\": 11.36}, {\"text\": \"been\", \"start\": 11.36, \"end\": 11.92}, {\"text\": \"Ive\", \"start\": 12.0, \"end\": 12.24}, {\"text\": \"thought\", \"start\": 12.24, \"end\": 12.48}, {\"text\": \"about\", \"start\": 12.48, \"end\": 12.8}, {\"text\": \"calling\", \"start\": 12.8, \"end\": 13.2}, {\"text\": \"you\", \"start\": 13.2, \"end\": 13.36}, {\"text\": \"so\", \"start\": 13.36, \"end\": 13.68}, {\"text\": \"many\", \"start\": 13.68, \"end\": 13.92}, {\"text\": \"times\", \"start\": 13.92, \"end\": 14.56}, {\"text\": \"but\", \"start\": 14.56, \"end\": 14.72}, {\"text\": \"I\", \"start\": 14.72, \"end\": 14.88}, {\"text\": \"never\", \"start\": 14.88, \"end\": 15.2}, {\"text\": \"knew\", \"start\": 15.2, \"end\": 15.36}, {\"text\": \"where\", \"start\": 15.36, \"end\": 15.6}, {\"text\": \"to\", \"start\": 15.6, \"end\": 15.6}, {\"text\": \"start\", \"start\": 15.68, \"end\": 16.24}], \"audio_duration\": 16.24}, \"chunk_seq\": 0, \"chunk_audio_offset_sec\": 0.0}\n\n"
+                    "value": "data: {\"audio_base64\": \"//uSxOAAF...\", \"content\": \"I can\u2019t believe it\u2019s been this long. It feels like forever since we last really talked. I\u2019ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I\u2019ve thought about calling you so many times, but I never knew where to start.\", \"alignment\": {\"segments\": [{\"text\": \"I\", \"start\": 0.0, \"end\": 0.16}, {\"text\": \"can't\", \"start\": 0.16, \"end\": 0.48}, {\"text\": \"believe\", \"start\": 0.48, \"end\": 0.8}, {\"text\": \"its\", \"start\": 0.8, \"end\": 1.12}, {\"text\": \"been\", \"start\": 1.2, \"end\": 1.44}, {\"text\": \"this\", \"start\": 1.44, \"end\": 1.76}, {\"text\": \"long\", \"start\": 1.76, \"end\": 2.48}, {\"text\": \"It\", \"start\": 2.56, \"end\": 2.64}, {\"text\": \"feels\", \"start\": 2.72, \"end\": 3.04}, {\"text\": \"like\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"forever\", \"start\": 3.36, \"end\": 4.0}, {\"text\": \"since\", \"start\": 4.0, \"end\": 4.32}, {\"text\": \"we\", \"start\": 4.32, \"end\": 4.48}, {\"text\": \"last\", \"start\": 4.48, \"end\": 4.96}, {\"text\": \"really\", \"start\": 4.96, \"end\": 5.28}, {\"text\": \"talked\", \"start\": 5.28, \"end\": 5.84}, {\"text\": \"Ive\", \"start\": 6.0, \"end\": 6.24}, {\"text\": \"missed\", \"start\": 6.24, \"end\": 6.64}, {\"text\": \"hearing\", \"start\": 6.64, \"end\": 6.96}, {\"text\": \"your\", \"start\": 6.96, \"end\": 7.2}, {\"text\": \"voice\", \"start\": 7.2, \"end\": 7.76}, {\"text\": \"your\", \"start\": 7.76, \"end\": 7.92}, {\"text\": \"stories\", \"start\": 7.92, \"end\": 8.48}, {\"text\": \"even\", \"start\": 8.48, \"end\": 8.72}, {\"text\": \"the\", \"start\": 8.72, \"end\": 8.8}, {\"text\": \"little\", \"start\": 8.8, \"end\": 9.2}, {\"text\": \"things\", \"start\": 9.2, \"end\": 9.52}, {\"text\": \"you\", \"start\": 9.52, \"end\": 9.68}, {\"text\": \"used\", \"start\": 9.68, \"end\": 10.0}, {\"text\": \"to\", \"start\": 10.0, \"end\": 10.08}, {\"text\": \"say\", \"start\": 10.08, \"end\": 10.64}, {\"text\": \"How\", \"start\": 10.64, \"end\": 10.96}, {\"text\": \"have\", \"start\": 10.96, \"end\": 11.12}, {\"text\": \"you\", \"start\": 11.12, \"end\": 11.36}, {\"text\": \"been\", \"start\": 11.36, \"end\": 11.92}, {\"text\": \"Ive\", \"start\": 12.0, \"end\": 12.24}, {\"text\": \"thought\", \"start\": 12.24, \"end\": 12.48}, {\"text\": \"about\", \"start\": 12.48, \"end\": 12.8}, {\"text\": \"calling\", \"start\": 12.8, \"end\": 13.2}, {\"text\": \"you\", \"start\": 13.2, \"end\": 13.36}, {\"text\": \"so\", \"start\": 13.36, \"end\": 13.68}, {\"text\": \"many\", \"start\": 13.68, \"end\": 13.92}, {\"text\": \"times\", \"start\": 13.92, \"end\": 14.56}, {\"text\": \"but\", \"start\": 14.56, \"end\": 14.72}, {\"text\": \"I\", \"start\": 14.72, \"end\": 14.88}, {\"text\": \"never\", \"start\": 14.88, \"end\": 15.2}, {\"text\": \"knew\", \"start\": 15.2, \"end\": 15.36}, {\"text\": \"where\", \"start\": 15.36, \"end\": 15.6}, {\"text\": \"to\", \"start\": 15.6, \"end\": 15.6}, {\"text\": \"start\", \"start\": 15.68, \"end\": 16.24}], \"audio_duration\": 16.24}, \"chunk_seq\": 0, \"chunk_audio_offset_sec\": 0.0}\n\n"
                   },
                   "later_text_chunk_event": {
                     "summary": "Later text chunk event with another alignment",
-                    "value": "data: {\"audio_base64\": \"//uSxImAl...\", \"content\": \"Seeing you again now makes me realize just how much I’ve missed you. We have so much to catch up on, and I don’t even know which part of my life to tell you about first.\", \"alignment\": {\"segments\": [{\"text\": \"Seeing\", \"start\": 0.4, \"end\": 0.8}, {\"text\": \"you\", \"start\": 0.8, \"end\": 0.96}, {\"text\": \"again\", \"start\": 0.96, \"end\": 1.44}, {\"text\": \"now\", \"start\": 1.44, \"end\": 1.68}, {\"text\": \"makes\", \"start\": 1.68, \"end\": 2.08}, {\"text\": \"me\", \"start\": 2.08, \"end\": 2.24}, {\"text\": \"realize\", \"start\": 2.24, \"end\": 2.8}, {\"text\": \"just\", \"start\": 2.8, \"end\": 3.12}, {\"text\": \"how\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"much\", \"start\": 3.28, \"end\": 3.6}, {\"text\": \"Ive\", \"start\": 3.6, \"end\": 3.76}, {\"text\": \"missed\", \"start\": 3.84, \"end\": 4.24}, {\"text\": \"you\", \"start\": 4.24, \"end\": 4.56}, {\"text\": \"We\", \"start\": 4.64, \"end\": 4.8}, {\"text\": \"have\", \"start\": 4.8, \"end\": 5.04}, {\"text\": \"so\", \"start\": 5.04, \"end\": 5.36}, {\"text\": \"much\", \"start\": 5.36, \"end\": 5.76}, {\"text\": \"to\", \"start\": 5.76, \"end\": 5.76}, {\"text\": \"catch\", \"start\": 5.76, \"end\": 6.16}, {\"text\": \"up\", \"start\": 6.16, \"end\": 6.4}, {\"text\": \"on\", \"start\": 6.4, \"end\": 6.72}, {\"text\": \"and\", \"start\": 6.8, \"end\": 6.96}, {\"text\": \"I\", \"start\": 6.96, \"end\": 7.04}, {\"text\": \"dont\", \"start\": 7.04, \"end\": 7.36}, {\"text\": \"even\", \"start\": 7.36, \"end\": 7.6}, {\"text\": \"know\", \"start\": 7.6, \"end\": 7.84}, {\"text\": \"which\", \"start\": 7.84, \"end\": 8.08}, {\"text\": \"part\", \"start\": 8.08, \"end\": 8.4}, {\"text\": \"of\", \"start\": 8.4, \"end\": 8.48}, {\"text\": \"my\", \"start\": 8.56, \"end\": 8.72}, {\"text\": \"life\", \"start\": 8.72, \"end\": 8.96}, {\"text\": \"to\", \"start\": 9.12, \"end\": 9.12}, {\"text\": \"tell\", \"start\": 9.12, \"end\": 9.44}, {\"text\": \"you\", \"start\": 9.44, \"end\": 9.6}, {\"text\": \"about\", \"start\": 9.6, \"end\": 10.0}, {\"text\": \"first\", \"start\": 10.08, \"end\": 10.48}], \"audio_duration\": 10.48}, \"chunk_seq\": 1, \"chunk_audio_offset_sec\": 16.24}\n\n"
+                    "value": "data: {\"audio_base64\": \"//uSxImAl...\", \"content\": \"Seeing you again now makes me realize just how much I\u2019ve missed you. We have so much to catch up on, and I don\u2019t even know which part of my life to tell you about first.\", \"alignment\": {\"segments\": [{\"text\": \"Seeing\", \"start\": 0.4, \"end\": 0.8}, {\"text\": \"you\", \"start\": 0.8, \"end\": 0.96}, {\"text\": \"again\", \"start\": 0.96, \"end\": 1.44}, {\"text\": \"now\", \"start\": 1.44, \"end\": 1.68}, {\"text\": \"makes\", \"start\": 1.68, \"end\": 2.08}, {\"text\": \"me\", \"start\": 2.08, \"end\": 2.24}, {\"text\": \"realize\", \"start\": 2.24, \"end\": 2.8}, {\"text\": \"just\", \"start\": 2.8, \"end\": 3.12}, {\"text\": \"how\", \"start\": 3.12, \"end\": 3.28}, {\"text\": \"much\", \"start\": 3.28, \"end\": 3.6}, {\"text\": \"Ive\", \"start\": 3.6, \"end\": 3.76}, {\"text\": \"missed\", \"start\": 3.84, \"end\": 4.24}, {\"text\": \"you\", \"start\": 4.24, \"end\": 4.56}, {\"text\": \"We\", \"start\": 4.64, \"end\": 4.8}, {\"text\": \"have\", \"start\": 4.8, \"end\": 5.04}, {\"text\": \"so\", \"start\": 5.04, \"end\": 5.36}, {\"text\": \"much\", \"start\": 5.36, \"end\": 5.76}, {\"text\": \"to\", \"start\": 5.76, \"end\": 5.76}, {\"text\": \"catch\", \"start\": 5.76, \"end\": 6.16}, {\"text\": \"up\", \"start\": 6.16, \"end\": 6.4}, {\"text\": \"on\", \"start\": 6.4, \"end\": 6.72}, {\"text\": \"and\", \"start\": 6.8, \"end\": 6.96}, {\"text\": \"I\", \"start\": 6.96, \"end\": 7.04}, {\"text\": \"dont\", \"start\": 7.04, \"end\": 7.36}, {\"text\": \"even\", \"start\": 7.36, \"end\": 7.6}, {\"text\": \"know\", \"start\": 7.6, \"end\": 7.84}, {\"text\": \"which\", \"start\": 7.84, \"end\": 8.08}, {\"text\": \"part\", \"start\": 8.08, \"end\": 8.4}, {\"text\": \"of\", \"start\": 8.4, \"end\": 8.48}, {\"text\": \"my\", \"start\": 8.56, \"end\": 8.72}, {\"text\": \"life\", \"start\": 8.72, \"end\": 8.96}, {\"text\": \"to\", \"start\": 9.12, \"end\": 9.12}, {\"text\": \"tell\", \"start\": 9.12, \"end\": 9.44}, {\"text\": \"you\", \"start\": 9.44, \"end\": 9.6}, {\"text\": \"about\", \"start\": 9.6, \"end\": 10.0}, {\"text\": \"first\", \"start\": 10.08, \"end\": 10.48}], \"audio_duration\": 10.48}, \"chunk_seq\": 1, \"chunk_audio_offset_sec\": 16.24}\n\n"
                   }
                 }
               }
@@ -23056,7 +23153,7 @@
           {
             "lang": "bash",
             "label": "Stream With Timestamps",
-            "source": "curl --no-buffer --request POST \\\n  --url https://api.fish.audio/v1/tts/stream/with-timestamp \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2.1-pro-free' \\\n  --data '{\n    \"text\": \"[happy] I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start. Seeing you again now makes me realize just how much I’ve missed you. We have so much to catch up on, and I don’t even know which part of my life to tell you about first.\",\n    \"format\": \"opus\",\n    \"normalize\": true,\n    \"temperature\": 0.9,\n    \"chunk_length\": 100,\n    \"top_p\": 0.9,\n    \"latency\": \"balanced\",\n    \"sample_rate\": 48000,\n    \"reference_id\": \"fbe02f8306fc4d3d915e9871722a39d5\"\n  }'"
+            "source": "curl --no-buffer --request POST \\\n  --url https://api.fish.audio/v1/tts/stream/with-timestamp \\\n  --header 'Authorization: Bearer <token>' \\\n  --header 'Content-Type: application/json' \\\n  --header 'model: s2.1-pro-free' \\\n  --data '{\n    \"text\": \"[happy] I can\u2019t believe it\u2019s been this long. It feels like forever since we last really talked. I\u2019ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I\u2019ve thought about calling you so many times, but I never knew where to start. Seeing you again now makes me realize just how much I\u2019ve missed you. We have so much to catch up on, and I don\u2019t even know which part of my life to tell you about first.\",\n    \"format\": \"opus\",\n    \"normalize\": true,\n    \"temperature\": 0.9,\n    \"chunk_length\": 100,\n    \"top_p\": 0.9,\n    \"latency\": \"balanced\",\n    \"sample_rate\": 48000,\n    \"reference_id\": \"fbe02f8306fc4d3d915e9871722a39d5\"\n  }'"
           }
         ]
       }
@@ -23064,7 +23161,7 @@
     "/v1/tts/live/with-timestamp": {
       "get": {
         "summary": "Text to Speech Live with Timestamps (WebSocket)",
-        "description": "Streaming text-to-speech over a WebSocket that returns word-level timestamps\nalongside the audio. Connect to `wss://api.fish.audio/v1/tts/live/with-timestamp`;\nthis is a WebSocket upgrade, not a plain HTTP request.\n\nUse it when you need to feed text in as it is produced — an LLM token stream,\na live caption feed — and want word timings for lip-sync, subtitles or\nhighlighting. For a one-shot request use `POST /v1/tts/stream/with-timestamp`\ninstead.\n\n## Handshake\n\nSend the same headers as any other API call:\n\n- `Authorization: Bearer <your-api-key>`\n- `model: <model>` — optional, defaults to `s2.1-pro`.\n\n## Framing\n\nEvery frame in both directions is a MessagePack-encoded **binary** frame\nholding a map with an `event` key. Text frames are ignored by the server and\nshould be ignored by your client.\n\n## Client to server\n\nThe inbound protocol is identical to `/v1/tts/live`:\n\n- `start` — opens the session. Send it once per session, before any other\n  event. Carries a `request` object with the same fields as the\n  `POST /v1/tts` body; leave `text` empty and stream the words with `text`\n  events. After a `finish` you may send another `start` to run a new session\n  on the same socket.\n- `text` — appends a text fragment to the session buffer.\n- `flush` — forces buffered text through generation without waiting for the\n  chunk to fill. The session stays open.\n- `stop` — ends the session. The server drains the buffer and answers with a\n  final `finish` event.\n\n## Server to client\n\n- `audio` — one audio chunk. Beyond the `audio` bytes it carries `content`,\n  `alignment`, `chunk_seq` and `chunk_audio_offset_sec`; these last three are\n  what this endpoint adds over `/v1/tts/live`. Concatenate every `audio`\n  payload in arrival order to reconstruct the full audio. Note that `audio`\n  here is raw MessagePack `bin`, not the base64 string used by the SSE\n  endpoint.\n- `finish` — terminal event, with `reason` of `stop` or `error`.\n- `error` — a request-level failure such as an invalid `start` request or a\n  concurrency refusal; the socket closes afterwards.\n\n## Reading the alignment\n\n`alignment` is a **cumulative snapshot** for its `chunk_seq`, not a delta:\nwhen it is non-null, replace the alignment you stored for that chunk rather\nthan appending to it. A `null` alignment means nothing new has been committed\nfor the chunk yet, which is normal early on.\n\nSegment times inside `alignment` are relative to the start of their chunk.\n`chunk_audio_offset_sec` is the chunk's own start time within the full audio,\nso the absolute time of a word is `chunk_audio_offset_sec + segment.start`.\nBoth `chunk_seq` and `chunk_audio_offset_sec` are monotonically\nnon-decreasing. A frame may be labelled with the previous chunk's\n`chunk_seq` while carrying the next chunk's audio bytes, so never use\n`chunk_seq` to attribute audio bytes — only alignment.",
+        "description": "Streaming text-to-speech over a WebSocket that returns word-level timestamps\nalongside the audio. Connect to `wss://api.fish.audio/v1/tts/live/with-timestamp`;\nthis is a WebSocket upgrade, not a plain HTTP request.\n\nUse it when you need to feed text in as it is produced \u2014 an LLM token stream,\na live caption feed \u2014 and want word timings for lip-sync, subtitles or\nhighlighting. For a one-shot request use `POST /v1/tts/stream/with-timestamp`\ninstead.\n\n## Handshake\n\nSend the same headers as any other API call:\n\n- `Authorization: Bearer <your-api-key>`\n- `model: <model>` \u2014 optional, defaults to `s2.1-pro`.\n\n## Framing\n\nEvery frame in both directions is a MessagePack-encoded **binary** frame\nholding a map with an `event` key. Text frames are ignored by the server and\nshould be ignored by your client.\n\n## Client to server\n\nThe inbound protocol is identical to `/v1/tts/live`:\n\n- `start` \u2014 opens the session. Send it once per session, before any other\n  event. Carries a `request` object with the same fields as the\n  `POST /v1/tts` body; leave `text` empty and stream the words with `text`\n  events. After a `finish` you may send another `start` to run a new session\n  on the same socket.\n- `text` \u2014 appends a text fragment to the session buffer.\n- `flush` \u2014 forces buffered text through generation without waiting for the\n  chunk to fill. The session stays open.\n- `stop` \u2014 ends the session. The server drains the buffer and answers with a\n  final `finish` event.\n\n## Server to client\n\n- `audio` \u2014 one audio chunk. Beyond the `audio` bytes it carries `content`,\n  `alignment`, `chunk_seq` and `chunk_audio_offset_sec`; these last three are\n  what this endpoint adds over `/v1/tts/live`. Concatenate every `audio`\n  payload in arrival order to reconstruct the full audio. Note that `audio`\n  here is raw MessagePack `bin`, not the base64 string used by the SSE\n  endpoint.\n- `finish` \u2014 terminal event, with `reason` of `stop` or `error`.\n- `error` \u2014 a request-level failure such as an invalid `start` request or a\n  concurrency refusal; the socket closes afterwards.\n\n## Reading the alignment\n\n`alignment` is a **cumulative snapshot** for its `chunk_seq`, not a delta:\nwhen it is non-null, replace the alignment you stored for that chunk rather\nthan appending to it. A `null` alignment means nothing new has been committed\nfor the chunk yet, which is normal early on.\n\nSegment times inside `alignment` are relative to the start of their chunk.\n`chunk_audio_offset_sec` is the chunk's own start time within the full audio,\nso the absolute time of a word is `chunk_audio_offset_sec + segment.start`.\nBoth `chunk_seq` and `chunk_audio_offset_sec` are monotonically\nnon-decreasing. A frame may be labelled with the previous chunk's\n`chunk_seq` while carrying the next chunk's audio bytes, so never use\n`chunk_seq` to attribute audio bytes \u2014 only alignment.",
         "security": [
           {
             "BearerAuth": []
@@ -25782,7 +25879,7 @@
         "type": "object"
       },
       "AgentSessionSummary": {
-        "description": "One list row: lifecycle facts only — the conversation timeline lives on\nthe detail endpoint (Retell-style thin list).",
+        "description": "One list row: lifecycle facts only \u2014 the conversation timeline lives on\nthe detail endpoint (Retell-style thin list).",
         "properties": {
           "session_id": {
             "title": "Session Id",
@@ -25855,6 +25952,11 @@
             ],
             "default": null,
             "title": "End Reason"
+          },
+          "conversation_status": {
+            "description": "How the conversation went, derived from `status` and `end_reason`. Current values: `active` is still going; `resolved` ended normally, which does not mean the caller's problem was solved; `escalated` was transferred to a person; `missed` is a call nobody connected to; `error` is a conversation the platform ended because something failed. New values may be added, so treat an unknown value as a status you do not recognise rather than an error. Filter the list with `conversation_status`, which accepts only the values above.",
+            "title": "Conversation Status",
+            "type": "string"
           },
           "source": {
             "enum": [
@@ -26121,6 +26223,7 @@
           "agent_id",
           "agent_name",
           "status",
+          "conversation_status",
           "source",
           "created_at"
         ],
@@ -26903,7 +27006,7 @@
         "type": "object"
       },
       "AgentSessionAnalysisResult": {
-        "description": "Public trim of the post-call analysis record: outcomes only, no run\ninternals (model, tokens, config hash).",
+        "description": "The post-call analysis of the session.",
         "properties": {
           "status": {
             "enum": [
@@ -26941,6 +27044,50 @@
             },
             "title": "Criteria Results",
             "type": "array"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "error: why the analysis failed. Null for every other status.",
+            "title": "Error"
+          },
+          "transcript_incomplete": {
+            "default": false,
+            "description": "True when the transcript still looked cut short after the analysis waited for it, so the summary, data and criteria may rest on an incomplete conversation. Can be true for completed and skipped.",
+            "title": "Transcript Incomplete",
+            "type": "boolean"
+          },
+          "input_tokens": {
+            "default": 0,
+            "description": "Tokens the analysis read. 0 when no language model was called.",
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "output_tokens": {
+            "default": 0,
+            "description": "Tokens the analysis wrote. 0 when no language model was called.",
+            "title": "Output Tokens",
+            "type": "integer"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "When the analysis finished, as an RFC 3339 timestamp in UTC, for example `2026-07-20T06:05:07.250000Z`. Null while it has not finished.",
+            "title": "Finished At"
           }
         },
         "required": [
@@ -27053,6 +27200,65 @@
           "engine"
         ],
         "title": "AgentSessionEngineRef",
+        "type": "object"
+      },
+      "AgentSessionLatencySummary": {
+        "description": "First-response latency of one turn, in whole milliseconds; null when\nit could not be measured.",
+        "properties": {
+          "eou_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Delay of the end-of-utterance decision.",
+            "title": "Eou Ms"
+          },
+          "llm_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "LLM time to first token.",
+            "title": "Llm Ms"
+          },
+          "tts_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Speech synthesis time to first audio byte.",
+            "title": "Tts Ms"
+          },
+          "voice_to_voice_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "From the caller finishing speaking to the first agent audio.",
+            "title": "Voice To Voice Ms"
+          }
+        },
+        "title": "AgentSessionLatencySummary",
         "type": "object"
       },
       "AgentSessionLlmCustomRef": {
@@ -27394,7 +27600,60 @@
               }
             ],
             "default": null,
+            "description": "When the message was written to the session record, which is the order of the items. It is not when the message was said. An agent message is written once the agent has finished saying it, and a user message about a second after the user stopped speaking, once the platform has decided that their turn is over. `started_at` and `ended_at` are when the message was said.",
             "title": "Created At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "When the message started to be said. Agent messages: the moment the platform began to play its first audio (for a reply sent as text, the moment its first text was sent). User messages: the first sound the platform heard in the user's turn. That can be several seconds before the words of the message, for example when the user said a short \"okay\" first, or \"hello\" as they picked up, which is not part of the message's text. Do not use it to measure how long the user spoke. On a session whose `voice.engine` is `live3`, an agent message starts where the user began to hear the agent answer after they stopped speaking: a short word of the voice's own (\"Okay,\") counts, even with a pause before the message's text, so it can be up to 2 seconds before that text. Null on a user message that was typed or entered on the keypad, on a line the agent did not say through its voice or its reply stream, on the messages of a `live3` session that the fallback voice said or that were sent as text, and on sessions recorded before the field existed.",
+            "title": "Started At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "When the message stopped being said. Agent messages: the end of its audio, which includes the short silence the voice leaves at the end (about half a second, up to a second after a very long reply), or the moment its sound stopped when the message was interrupted. On a session whose `voice.engine` is `live3` it is the end of the agent's last sound, which fades out, so 0.1 to 0.5 seconds of it can be too faint to hear. User messages: the user's last sound before the platform decided that their turn was over. How long a user waited for the agent is the agent message's `started_at` minus the `ended_at` of the user message before it. Null in the same cases as `started_at`, and either of the two can be null on its own.",
+            "title": "Ended At"
+          },
+          "interrupted": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "True when this assistant reply was cut off before it finished; `content` is then roughly the part that was spoken and may run a few words past the point where playback stopped. Null on complete replies, on user messages and on messages from before the field existed (it is never false).",
+            "title": "Interrupted"
+          },
+          "interrupted_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "What cut the reply off, set together with `interrupted`: `user_speech` (the caller talked over it), `user_message` (the user typed a message), `keypad` (a key press), `client` (your client sent an interrupt), `session_end` (the session ended mid-reply, for example the caller hung up). New values may be added, so treat unknown values as an unspecified cause. Null when `interrupted` is null, and on older cut-off replies that did not record a cause.",
+            "title": "Interrupted By"
           }
         },
         "required": [
@@ -27977,7 +28236,34 @@
               }
             ],
             "default": null,
+            "description": "When the line was written to the session record. An `assistant` line is written once the agent has finished saying it, so this is after the end of its speech: `started_at` is when the agent started to speak.",
             "title": "Created At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "`assistant` lines: when the agent started to say it on the consult call, the moment the platform began to play its first audio. Measure the wait between the transfer's `answered_at` and the agent's briefing to this time, not to `created_at`. Null on `transfer_target` lines and on sessions recorded before the field existed.",
+            "title": "Started At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "`assistant` lines: when the agent stopped saying it, the end of its audio, which includes the short silence the voice leaves at the end (about half a second), or the moment its sound stopped when it was interrupted. Null in the same cases as `started_at`.",
+            "title": "Ended At"
           }
         },
         "required": [
@@ -27985,6 +28271,23 @@
           "content"
         ],
         "title": "AgentSessionTransferMessage",
+        "type": "object"
+      },
+      "AgentSessionTurn": {
+        "description": "What the platform measured for one conversation turn. The turn's\nmessages are in `items`, matched by `turn_id`.",
+        "properties": {
+          "turn_id": {
+            "title": "Turn Id",
+            "type": "integer"
+          },
+          "latency_summary": {
+            "$ref": "#/components/schemas/AgentSessionLatencySummary"
+          }
+        },
+        "required": [
+          "turn_id"
+        ],
+        "title": "AgentSessionTurn",
         "type": "object"
       },
       "LLMMessageTokenCost": {
@@ -30623,7 +30926,7 @@
               }
             ],
             "default": null,
-            "description": "A looping ambience the worker mixes under the agent's voice. volume is the ambience's gain relative to the agent's voice, 0–1 (default 0.15). custom_asset_id names an uploaded clip (POST /agent/background-sounds) and is required with preset \"custom\", refused otherwise. Replaces the whole object; null resets to off."
+            "description": "A looping ambience the worker mixes under the agent's voice. volume is the ambience's gain relative to the agent's voice, 0\u20131 (default 0.15). custom_asset_id names an uploaded clip (POST /agent/background-sounds) and is required with preset \"custom\", refused otherwise. Replaces the whole object; null resets to off."
           }
         },
         "title": "PublicAgentVoicePatch",
@@ -31177,7 +31480,7 @@
         "type": "object"
       },
       "AgentBackgroundSoundConfig": {
-        "description": "Stored/read shape. Lenient like the rest of voice: a broken shape (a\npairing a later write could never produce) reads as off rather than\nraising, so a row never fails to load. An asset later soft-deleted is not\na broken shape — the session build drops it and logs a warning, this\nconfig keeps naming it.",
+        "description": "Stored/read shape. Lenient like the rest of voice: a broken shape (a\npairing a later write could never produce) reads as off rather than\nraising, so a row never fails to load. An asset later soft-deleted is not\na broken shape \u2014 the session build drops it and logs a warning, this\nconfig keeps naming it.",
         "properties": {
           "preset": {
             "default": "off",
@@ -31921,7 +32224,7 @@
             "type": "string"
           },
           "first_message": {
-            "default": "Hi! Thanks for calling — how can I help you today?",
+            "default": "Hi! Thanks for calling \u2014 how can I help you today?",
             "title": "First Message",
             "type": "string"
           },
@@ -32509,7 +32812,7 @@
           },
           "background_sound": {
             "$ref": "#/components/schemas/AgentBackgroundSoundConfig",
-            "description": "A looping ambience the worker mixes under the agent's voice. volume is the ambience's gain relative to the agent's voice, 0–1 (default 0.15). custom_asset_id names an uploaded clip (POST /agent/background-sounds) and is required with preset \"custom\", refused otherwise. Replaces the whole object; null resets to off."
+            "description": "A looping ambience the worker mixes under the agent's voice. volume is the ambience's gain relative to the agent's voice, 0\u20131 (default 0.15). custom_asset_id names an uploaded clip (POST /agent/background-sounds) and is required with preset \"custom\", refused otherwise. Replaces the whole object; null resets to off."
           }
         },
         "required": [
@@ -36699,7 +37002,7 @@
           "value": {
             "description": "Replacement text (1-1024 characters). For phoneme rules this is the phonetic form without the `<|phoneme_start|>` / `<|phoneme_end|>` markers; for alias rules it is plain text. Neither may contain `<|` or `|>`.",
             "examples": [
-              "fɪʃ ˈɔːdi.oʊ"
+              "f\u026a\u0283 \u02c8\u0254\u02d0di.o\u028a"
             ],
             "maxLength": 1024,
             "minLength": 1,
@@ -36791,7 +37094,7 @@
           "value": {
             "description": "Replacement text. 1-1024 characters. For phoneme rules it is the phonetic form (without the `<|phoneme_start|>` / `<|phoneme_end|>` markers); for alias rules it is plain text. Neither type may contain `<|` or `|>`.",
             "examples": [
-              "fɪʃ ˈɔːdi.oʊ"
+              "f\u026a\u0283 \u02c8\u0254\u02d0di.o\u028a"
             ],
             "title": "Value",
             "type": "string"
@@ -36840,7 +37143,7 @@
           "value": {
             "description": "Value in the target version.",
             "examples": [
-              "fɪʃ"
+              "f\u026a\u0283"
             ],
             "title": "Value",
             "type": "string"
@@ -36925,7 +37228,7 @@
             "default": null,
             "description": "Value in the base version; only for changed, moved or removed rows.",
             "examples": [
-              "fɪʃ"
+              "f\u026a\u0283"
             ],
             "title": "Base Value"
           },
@@ -37022,7 +37325,7 @@
             "type": "string"
           },
           "version": {
-            "description": "Immutable version identifier for the dictionary. Version is required — there is no implicit `latest`.",
+            "description": "Immutable version identifier for the dictionary. Version is required \u2014 there is no implicit `latest`.",
             "pattern": "^[A-Za-z0-9_-]{1,128}$",
             "title": "Version",
             "type": "string"
@@ -37040,7 +37343,7 @@
         "description": "A single key/value entry in a pronunciation dictionary. The inference engine replaces every occurrence of `key` in the request text with `value` during synthesis. With the default `type: \"phoneme\"` the value is spoken as a phonetic form; with `type: \"alias\"` it is substituted as plain text.",
         "properties": {
           "key": {
-            "description": "Source substring to match. Pure substring match — no tokenization, no regex. Overlapping matches resolve leftmost-longest. For CJK text include enough context to disambiguate. For `type: \"alias\"` the key must not start or end with whitespace and must not contain control characters, `<`, `>`, `(`, `)`, `[` or `]`.",
+            "description": "Source substring to match. Pure substring match \u2014 no tokenization, no regex. Overlapping matches resolve leftmost-longest. For CJK text include enough context to disambiguate. For `type: \"alias\"` the key must not start or end with whitespace and must not contain control characters, `<`, `>`, `(`, `)`, `[` or `]`.",
             "maxLength": 256,
             "minLength": 1,
             "title": "Key",
@@ -37125,7 +37428,7 @@
         "type": "object"
       },
       "TTSRequest": {
-        "description": "Request body for text-to-speech synthesis. Supports single-speaker synthesis on all compatible TTS models. Multi-speaker dialogue synthesis is available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`) and `drama-3`, not `s1`.\n\n## Single Speaker\nProvide either `reference_id` (string) pointing to a voice model, or `references` (array of ReferenceAudio) for zero-shot cloning.\n\n## Multiple Speakers (Dialogue — S2 family and `drama-3`)\nFor multi-speaker synthesis, provide:\n- `reference_id`: array of voice model IDs, e.g., [\"speaker-0-id\", \"speaker-1-id\"]\n- `text`: use speaker tags `<|speaker:0|>`, `<|speaker:1|>`, etc. to indicate speaker changes, e.g., \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\"\n\nAlternatively, for zero-shot multi-speaker:\n- `references`: 2D array where each inner array contains references for one speaker\n- `reference_id`: array of identifiers (can be arbitrary strings for zero-shot)\n\n## Example (Multi-Speaker with Model IDs)\n```json\n{\n  \"text\": \"<|speaker:0|>Good morning!<|speaker:1|>Good morning! How are you?<|speaker:0|>I'm great, thanks!\",\n  \"reference_id\": [\"model-id-alice\", \"model-id-bob\"]\n}\n```",
+        "description": "Request body for text-to-speech synthesis. Supports single-speaker synthesis on all compatible TTS models. Multi-speaker dialogue synthesis is available with the S2 family (`s2-pro`, `s2.1-pro`, `s2.1-pro-free`) and `drama-3`, not `s1`.\n\n## Single Speaker\nProvide either `reference_id` (string) pointing to a voice model, or `references` (array of ReferenceAudio) for zero-shot cloning.\n\n## Multiple Speakers (Dialogue \u2014 S2 family and `drama-3`)\nFor multi-speaker synthesis, provide:\n- `reference_id`: array of voice model IDs, e.g., [\"speaker-0-id\", \"speaker-1-id\"]\n- `text`: use speaker tags `<|speaker:0|>`, `<|speaker:1|>`, etc. to indicate speaker changes, e.g., \"<|speaker:0|>Hello!<|speaker:1|>Hi there!\"\n\nAlternatively, for zero-shot multi-speaker:\n- `references`: 2D array where each inner array contains references for one speaker\n- `reference_id`: array of identifiers (can be arbitrary strings for zero-shot)\n\n## Example (Multi-Speaker with Model IDs)\n```json\n{\n  \"text\": \"<|speaker:0|>Good morning!<|speaker:1|>Good morning! How are you?<|speaker:0|>I'm great, thanks!\",\n  \"reference_id\": [\"model-id-alice\", \"model-id-bob\"]\n}\n```",
         "properties": {
           "text": {
             "description": "Text to convert to speech.",
@@ -37367,7 +37670,7 @@
               }
             ],
             "default": null,
-            "description": "Optional list of up to 3 pronunciation dictionaries to apply during synthesis. Provide either references to platform-managed dictionaries OR inline literal dictionaries (the two forms are mutually exclusive in a single request). The server resolves and merges the dictionaries, then forwards the full merged dictionary to the inference engine, which performs the substitution. Each entry sets `type` to `phoneme` (default: the value is spoken as a phonetic form) or `alias` (plain text replacement). Usage is billed on the text actually synthesized, with alias replacements counted: an alias that expands a key is billed for the longer text, one that shortens it is billed for the shorter text; phoneme rules never change billing. Matching is plain substring matching, leftmost-longest, and case-insensitive unless an entry sets `case_sensitive`. Missing or unresolvable references are silently dropped — the request still succeeds. Use `application/json` or `application/msgpack` content-type; nested arrays are not representable in `multipart/form-data`.",
+            "description": "Optional list of up to 3 pronunciation dictionaries to apply during synthesis. Provide either references to platform-managed dictionaries OR inline literal dictionaries (the two forms are mutually exclusive in a single request). The server resolves and merges the dictionaries, then forwards the full merged dictionary to the inference engine, which performs the substitution. Each entry sets `type` to `phoneme` (default: the value is spoken as a phonetic form) or `alias` (plain text replacement). Usage is billed on the text actually synthesized, with alias replacements counted: an alias that expands a key is billed for the longer text, one that shortens it is billed for the shorter text; phoneme rules never change billing. Matching is plain substring matching, leftmost-longest, and case-insensitive unless an entry sets `case_sensitive`. Missing or unresolvable references are silently dropped \u2014 the request still succeeds. Use `application/json` or `application/msgpack` content-type; nested arrays are not representable in `multipart/form-data`.",
             "title": "Pronunciation Dictionary"
           }
         },
@@ -37620,7 +37923,7 @@
               }
             ],
             "default": null,
-            "description": "Optional list of up to 3 pronunciation dictionaries to apply during synthesis. Provide either references to platform-managed dictionaries OR inline literal dictionaries (the two forms are mutually exclusive in a single request). The server resolves and merges the dictionaries, then forwards the full merged dictionary to the inference engine, which performs the substitution. Each entry sets `type` to `phoneme` (default: the value is spoken as a phonetic form) or `alias` (plain text replacement). Usage is billed on the text actually synthesized, with alias replacements counted: an alias that expands a key is billed for the longer text, one that shortens it is billed for the shorter text; phoneme rules never change billing. Matching is plain substring matching, leftmost-longest, and case-insensitive unless an entry sets `case_sensitive`. Missing or unresolvable references are silently dropped — the request still succeeds. Use `application/json` or `application/msgpack` content-type; nested arrays are not representable in `multipart/form-data`.",
+            "description": "Optional list of up to 3 pronunciation dictionaries to apply during synthesis. Provide either references to platform-managed dictionaries OR inline literal dictionaries (the two forms are mutually exclusive in a single request). The server resolves and merges the dictionaries, then forwards the full merged dictionary to the inference engine, which performs the substitution. Each entry sets `type` to `phoneme` (default: the value is spoken as a phonetic form) or `alias` (plain text replacement). Usage is billed on the text actually synthesized, with alias replacements counted: an alias that expands a key is billed for the longer text, one that shortens it is billed for the shorter text; phoneme rules never change billing. Matching is plain substring matching, leftmost-longest, and case-insensitive unless an entry sets `case_sensitive`. Missing or unresolvable references are silently dropped \u2014 the request still succeeds. Use `application/json` or `application/msgpack` content-type; nested arrays are not representable in `multipart/form-data`.",
             "title": "Pronunciation Dictionary"
           }
         },
@@ -37680,7 +37983,7 @@
         "type": "object"
       },
       "TTSLiveErrorEvent": {
-        "description": "Request-level failure raised before or instead of synthesis — an invalid `start` request, a missing voice reference, or a concurrency refusal. The socket closes afterwards.",
+        "description": "Request-level failure raised before or instead of synthesis \u2014 an invalid `start` request, a missing voice reference, or a concurrency refusal. The socket closes afterwards.",
         "examples": [
           {
             "error": "Concurrency limit exceeded",
@@ -38040,7 +38343,7 @@
             "audio": "<raw audio bytes>",
             "chunk_audio_offset_sec": 0,
             "chunk_seq": 0,
-            "content": "I can’t believe it’s been this long. It feels like forever since we last really talked. I’ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I’ve thought about calling you so many times, but I never knew where to start.",
+            "content": "I can\u2019t believe it\u2019s been this long. It feels like forever since we last really talked. I\u2019ve missed hearing your voice, your stories, even the little things you used to say. How have you been? I\u2019ve thought about calling you so many times, but I never knew where to start.",
             "event": "audio",
             "time": 812.5
           },
@@ -38233,7 +38536,7 @@
             "audio": "<raw audio bytes>",
             "chunk_audio_offset_sec": 16.24,
             "chunk_seq": 1,
-            "content": "Seeing you again now makes me realize just how much I’ve missed you. We have so much to catch up on, and I don’t even know which part of my life to tell you about first.",
+            "content": "Seeing you again now makes me realize just how much I\u2019ve missed you. We have so much to catch up on, and I don\u2019t even know which part of my life to tell you about first.",
             "event": "audio",
             "time": 4210
           }
@@ -38245,7 +38548,7 @@
             "type": "string"
           },
           "audio": {
-            "description": "Raw audio chunk, carried as a MessagePack `bin` value — not base64, unlike the SSE `/v1/tts/stream/with-timestamp` endpoint. Concatenate every chunk in arrival order to reconstruct the full audio. May be empty on a trailing frame whose only purpose is to deliver a final `alignment` correction.",
+            "description": "Raw audio chunk, carried as a MessagePack `bin` value \u2014 not base64, unlike the SSE `/v1/tts/stream/with-timestamp` endpoint. Concatenate every chunk in arrival order to reconstruct the full audio. May be empty on a trailing frame whose only purpose is to deliver a final `alignment` correction.",
             "format": "binary",
             "title": "Audio",
             "type": "string"
@@ -38264,7 +38567,7 @@
                 "type": "null"
               }
             ],
-            "description": "Cumulative word-level alignment snapshot for `chunk_seq`, with segment times relative to the start of that chunk. Always present on the wire; `null` means the alignment for this chunk has not changed yet (normal early in a chunk, while the aligner is still committing words). When non-null, replace the snapshot you stored for `chunk_seq` — never append to it."
+            "description": "Cumulative word-level alignment snapshot for `chunk_seq`, with segment times relative to the start of that chunk. Always present on the wire; `null` means the alignment for this chunk has not changed yet (normal early in a chunk, while the aligner is still committing words). When non-null, replace the snapshot you stored for `chunk_seq` \u2014 never append to it."
           },
           "chunk_seq": {
             "description": "Sequence number of the text chunk that `alignment` and `content` describe. Monotonically non-decreasing. Bucket alignment snapshots by this value. Note that a frame may be labelled with the previous chunk's `chunk_seq` while carrying the next chunk's audio bytes, so do not use it to attribute audio.",
@@ -38273,7 +38576,7 @@
             "type": "integer"
           },
           "chunk_audio_offset_sec": {
-            "description": "Start time of this text chunk within the full audio, in seconds — the sum of the audio durations of every earlier chunk. Add it to a segment's `start`/`end` to get absolute timestamps. Monotonically non-decreasing.",
+            "description": "Start time of this text chunk within the full audio, in seconds \u2014 the sum of the audio durations of every earlier chunk. Add it to a segment's `start`/`end` to get absolute timestamps. Monotonically non-decreasing.",
             "minimum": 0,
             "title": "Chunk Audio Offset Sec",
             "type": "number"
