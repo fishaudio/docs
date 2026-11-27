@@ -602,8 +602,9 @@ Configuration for a realtime speech-to-text session.
 
 **Attributes**:
 
-- `sample_rate` - Sample rate of the audio you send, in Hz. The server converts
-  other rates to 16000, so you never need to resample. Default: 16000
+- `sample_rate` - Sample rate of the audio you send, in Hz: 8000, 12000, 16000,
+  22050, 24000, 32000, 44100 or 48000. The server converts these rates to 16000,
+  so audio at one of them needs no resampling. Default: 16000
 - `turn_detection` - Turn detection settings. Default: None (server defaults)
 - `results` - Result settings. Default: None (server defaults)
 - `context` - Conversation history and custom vocabulary. Default: None
@@ -956,9 +957,11 @@ Audio watermarks, sent every 5 seconds while the client sends nothing.
 class ASRErrorEvent(_ServerEvent)
 ```
 
-A recoverable error: the session continues.
+A recoverable error: the session continues, except after ``server_restarting``,
+which the server follows by closing the connection (raised as ASRRealtimeError
+with close code 1012).
 
-Errors that end the session are raised as ASRRealtimeError instead.
+Other errors that end the session are raised as ASRRealtimeError instead.
 
 **Attributes**:
 
@@ -968,7 +971,7 @@ Errors that end the session are raised as ASRRealtimeError instead.
 - `error_type` - Machine-readable error type, e.g. "invalid_request". Match on this
 - `message` - A short English description, for humans
 - `request_id` - Identifier of this request; quote it when reporting a problem
-- `recoverable` - True when the session continues
+- `recoverable` - True when the error does not end the session by itself
 
 <a id="fishaudio.types.asr_realtime.ASRSessionStats"></a>
 

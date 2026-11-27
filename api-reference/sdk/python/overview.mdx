@@ -194,7 +194,7 @@ def audio_chunks():
         while chunk := wav.readframes(640):  # 40 ms
             yield chunk
 
-# diarize=False gives plain text; by default it starts with a speaker tag
+# diarize=False removes the speaker tag that the text starts with by default
 for event in client.asr.stream_websocket(
     audio_chunks(), sample_rate=16000, drafts=True, diarize=False
 ):

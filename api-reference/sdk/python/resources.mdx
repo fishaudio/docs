@@ -1344,7 +1344,7 @@ with config=ASRRealtimeConfig(results=ASRResults(tag_audio_events=False)).
   (overrides config.turn_detection.eager if provided)
 - `drafts` - Send live draft events (overrides config.results.drafts if provided)
 - `diarize` - Speaker tags such as ``<|speaker:0|>`` in the transcript text. The
-  server adds them by default; pass False for plain text
+  server adds them by default; pass False for text without speaker tags
   (overrides config.results.diarize if provided)
 - `terms` - Names, products and jargon to recognize
   (overrides config.context.terms if provided)
@@ -1397,7 +1397,9 @@ with config=ASRRealtimeConfig(results=ASRResults(tag_audio_events=False)).
         elif event.type == "committed":
             print(event.text)
 
-    # Voice agent: answer the user's turns, and tell the server while you speak
+    # Voice agent: answer the user's turns, and tell the server while you speak.
+    # audio_chunks() must keep yielding audio, as a live microphone does: once
+    # it ends, the session finishes and control methods can no longer be sent.
     with client.asr.stream_websocket(audio_chunks(), eager=True) as stream:
         for event in stream:
             if event.type == "committed" and event.user_turn:
@@ -1513,7 +1515,7 @@ with config=ASRRealtimeConfig(results=ASRResults(tag_audio_events=False)).
   (overrides config.turn_detection.eager if provided)
 - `drafts` - Send live draft events (overrides config.results.drafts if provided)
 - `diarize` - Speaker tags such as ``<|speaker:0|>`` in the transcript text. The
-  server adds them by default; pass False for plain text
+  server adds them by default; pass False for text without speaker tags
   (overrides config.results.diarize if provided)
 - `terms` - Names, products and jargon to recognize
   (overrides config.context.terms if provided)
@@ -1566,7 +1568,9 @@ with config=ASRRealtimeConfig(results=ASRResults(tag_audio_events=False)).
         elif event.type == "committed":
             print(event.text)
 
-    # Voice agent: answer the user's turns, and tell the server while you speak
+    # Voice agent: answer the user's turns, and tell the server while you speak.
+    # audio_chunks() must keep yielding audio, as a live microphone does: once
+    # it ends, the session finishes and control methods can no longer be sent.
     async with client.asr.stream_websocket(audio_chunks(), eager=True) as stream:
         async for event in stream:
             if event.type == "committed" and event.user_turn:
