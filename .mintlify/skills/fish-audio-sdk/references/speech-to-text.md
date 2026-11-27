@@ -62,15 +62,15 @@ seg.end                # float: seconds (can equal start)
 
 Segment text has no punctuation, speaker markers, or cues, and can be normalized (for example `35` for `3.5`), so it does not always match `text` character for character. Segments are not speaker turns.
 
-### Fields the Python SDK does not expose
+### Fields the Python SDK exposes from 1.4.0
 
-In `fish-audio-sdk` 1.3.0, `ASRResponse` keeps only `text`, `duration`, and `segments`. It silently drops these response fields:
+`fish-audio-sdk` 1.4.0 and later return these response fields on `ASRResponse`, each `None` when the API does not send it. In 1.3.0 and earlier, `ASRResponse` keeps only `text`, `duration`, and `segments` and silently drops them:
 
 - `speaker_turns` (`transcribe-1-pro`, when timestamps are requested);
 - `request_id` (`transcribe-1-pro`), also sent as the `x-request-id` header;
 - `language` (English name, such as `English`) and `language_code` (ISO 639-1, such as `en`), returned when the language is known.
 
-`asr.transcribe()` also cannot send the `transcribe-1-pro` fields `tag_audio_events`, `diarize`, `num_speakers`, `min_speakers`, or `max_speakers`. For any of these, call the API directly. Field semantics are in the `fish-audio-api` skill (`POST /v1/asr`).
+`asr.transcribe()` cannot send the `transcribe-1-pro` fields `tag_audio_events`, `diarize`, `num_speakers`, `min_speakers`, or `max_speakers`. For any of these, call the API directly. Field semantics are in the `fish-audio-api` skill (`POST /v1/asr`).
 
 ```python
 import os

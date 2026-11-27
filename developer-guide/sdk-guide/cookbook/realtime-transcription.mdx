@@ -13,7 +13,7 @@ import Prerequisites from "/snippets/prerequisites.mdx";
 
 <Prerequisites />
 
-The SDKs do not wrap the realtime speech-to-text endpoint yet, so this recipe speaks the WebSocket protocol directly. Install a WebSocket client and a MessagePack library:
+This recipe speaks the WebSocket protocol directly, so it needs no SDK. The Python SDK (`fish-audio-sdk` 1.5.0 or later) also wraps this endpoint as `client.asr.stream_websocket()`, and the JavaScript SDK (`fish-audio` 0.2.0 or later, Node.js only) as [`client.speechToText.convertRealtime()`](/api-reference/sdk/javascript/api-reference#speech-to-text). Install a WebSocket client and a MessagePack library:
 
 <CodeGroup>
 

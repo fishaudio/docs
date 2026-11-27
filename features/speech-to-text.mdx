@@ -137,13 +137,15 @@ console.log(result.text);
 
 The response contains `text`, `duration` (seconds), `segments`, and `request_id`, plus [`speaker_turns`](#speaker-turns) when timestamps are requested, and `language_code` and `language` when the language is known. Do not depend on the order of keys in the JSON. If you use `transcribe-1`, rely on `text`, `duration`, `segments`, and the language fields.
 
-The Python SDK currently returns only `text`, `duration`, and `segments`. To read the other fields, call the API directly (see [Direct API](#direct-api-messagepack)).
+The Python SDK returns the same fields on the result, such as `result.request_id` and `result.language_code` (`fish-audio-sdk` 1.4.0 or later; earlier versions keep only `text`, `duration`, and `segments`).
 
 <Note>
-  The Python SDK selects Pro through `RequestOptions.additional_headers`;
-  `asr.transcribe()` has no `model` argument, and it cannot send the
-  `transcribe-1-pro` fields such as `diarize`. The JavaScript example calls the
-  REST API directly so the header is explicit. For multipart uploads, let your
+  In the Python SDK, `model="transcribe-1-pro"` sends the `model` header. The
+  argument requires `fish-audio-sdk` 1.5.0 or later; on earlier versions, pass
+  `request_options=RequestOptions(additional_headers={"model": "transcribe-1-pro"})`
+  instead. `asr.transcribe()` cannot send the `transcribe-1-pro` fields such as
+  `diarize`. The JavaScript example calls the REST API directly so the header is
+  explicit. For multipart uploads, let your
   HTTP client set `Content-Type` and its boundary.
 </Note>
 
