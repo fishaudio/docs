@@ -4,6 +4,16 @@ description: "Complete release history and version updates for all Fish Audio pr
 icon: "clock-rotate-left"
 rss: true
 ---
+<Update label="n8n node 0.5.0" description="November 27, 2026" tags={["Fish Audio"]}>
+  ## n8n node 0.5.0
+
+  The Fish Audio node for n8n adds the `s2.1-pro`, `s2.1-pro-free` and `drama-3` models, a Language option for text to speech, and a model choice for speech to text. New nodes use `s2.1-pro` and `transcribe-1-pro`; nodes already in your workflows keep their model. When a request fails and stops the workflow, the error shows the Fish Audio trace ID and error code if the API returned them.
+
+  The package is now published as `@fishaudio/n8n-nodes-fishaudio`. The previous package, `n8n-nodes-fishaudio`, keeps working.
+
+  [n8n integration](/developer-guide/integrations/n8n) | [Release notes](https://github.com/fishaudio/fish-audio-n8n/releases/tag/v0.5.0)
+</Update>
+
 <Update label="Python SDK 1.6.0: word timestamps" description="November 25, 2026" tags={["Fish Audio"]}>
   ## Python SDK 1.6.0: word timestamps
 
@@ -20,6 +30,16 @@ rss: true
   Upgrade notes: the default TTS model is now `s2.1-pro` (0.1.0 sent the deprecated `s1`), `opus_bitrate` is in bits per second, reference audio must be a `File`, and Node.js 20 or later is required.
 
   [JavaScript SDK reference](/api-reference/sdk/javascript/api-reference#upgrade-notes) | [Release notes](https://github.com/fishaudio/fish-audio-typescript/releases/tag/v0.2.0)
+</Update>
+
+<Update label="Python SDK 1.5.0: realtime speech to text" description="November 24, 2026" tags={["Fish Audio"]}>
+  ## Python SDK 1.5.0: realtime speech to text
+
+  `fish-audio-sdk` 1.5.0 adds realtime speech to text with `transcribe-stream-1` (Preview). `client.asr.stream_websocket()` takes an iterator (an async iterator in the async client) of raw audio chunks in signed 16-bit little-endian mono PCM, and yields the session's events, such as the final transcript of each turn and, with `drafts=True`, live drafts. `client.asr.transcribe()` takes a `model` argument: `model="transcribe-1-pro"` sets the `model` request header for you.
+
+  `client.tts.stream()` now yields HTTP audio as it arrives instead of after the whole response has been received.
+
+  [Release notes](https://github.com/fishaudio/fish-audio-python/releases/tag/fish-audio-sdk-v1.5.0)
 </Update>
 
 <Update label="Voice Agents React Native SDK and widget" description="November 21, 2026" tags={["Fish Audio"]}>
