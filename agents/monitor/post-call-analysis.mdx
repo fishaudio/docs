@@ -60,6 +60,12 @@ Structured values extracted from the transcript, up to **50 fields** per agent. 
 
 When the conversation doesn't contain the information, the field's value is `null` with a rationale explaining why.
 
+Analysis output has a length limit, so ask for short values.
+
+- A name, a number, or a sentence or two per field works well.
+- If many fields each ask for a long paragraph, the output can reach the limit before every item is written.
+- Items it did not reach come back with a `null` value (data fields) or an `unknown` verdict (criteria). Their rationale says the length limit was reached.
+
 ### Success criteria
 
 Up to **10 criteria** per agent, each a `name` plus a `description` (up to 500 characters) stating what a successful conversation looks like, such as "The agent resolved the caller's issue or set clear next steps."
