@@ -35,6 +35,19 @@
               "application/json": {
                 "schema": {
                   "properties": {
+                    "subscription_source": {
+                      "anyOf": [
+                        {
+                          "const": "contract",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "title": "Subscription Source"
+                    },
                     "user_id": {
                       "title": "User Id",
                       "type": "string"
@@ -376,6 +389,42 @@
               "application/json": {
                 "schema": {
                   "properties": {
+                    "has_billing_history": {
+                      "default": false,
+                      "title": "Has Billing History",
+                      "type": "boolean"
+                    },
+                    "balance_status": {
+                      "default": "normal",
+                      "enum": [
+                        "normal",
+                        "low",
+                        "empty",
+                        "zero"
+                      ],
+                      "title": "Balance Status",
+                      "type": "string"
+                    },
+                    "package_credit": {
+                      "default": "0",
+                      "title": "Package Credit",
+                      "type": "string"
+                    },
+                    "reserved_credit": {
+                      "default": "0",
+                      "title": "Reserved Credit",
+                      "type": "string"
+                    },
+                    "available_credit": {
+                      "default": "0",
+                      "title": "Available Credit",
+                      "type": "string"
+                    },
+                    "has_credit": {
+                      "default": false,
+                      "title": "Has Credit",
+                      "type": "boolean"
+                    },
                     "_id": {
                       "title": "Id",
                       "type": "string"
@@ -5712,7 +5761,7 @@
     "/v1/agent/agents/{agent_id}/tests/run": {
       "post": {
         "summary": "Run Tests",
-        "description": "Start a batch that runs the agent's attached tests against its current\ndraft, one run per test and repeat. A simulation test repeats\n`simulation.repeat_count` times, and a `repeat_count` in the body repeats\nevery selected test that many times instead. A batch starts at most 1000\nruns. Runs are queued and finish in the background, simulations take\nminutes. Poll `GET /v1/agent/agents/{agent_id}/test-batches/{batch_id}`\nuntil `completed` is true, then gate on `pass_rate`, which leaves out\n`error` runs.\n\nEach run that ends `passed` or `failed` is billed a platform fee per\nagent reply plus the LLM tokens it used. A `next_reply` or `tool` run is\none reply, with the tokens of the agent and, on `next_reply`, of the\njudge. A simulation run bills every agent reply, with the tokens of the\nagent, the simulated user and the judge. `error` runs are not billed. A\nbatch returns 402 when the account has no trial balance or API credit\nleft, and 403 when the team's agreement does not allow agent usage.",
+        "description": "Start a batch that runs the agent's attached tests against its current\ndraft, one run per test and repeat. A simulation test repeats\n`simulation.repeat_count` times, and a `repeat_count` in the body repeats\nevery selected test that many times instead. A batch starts at most 1000\nruns. Runs are queued and finish in the background, simulations take\nminutes. Poll `GET /v1/agent/agents/{agent_id}/test-batches/{batch_id}`\nuntil `completed` is true, then gate on `pass_rate`, which leaves out\n`error` runs.\n\nEach run that ends `passed` or `failed` is billed a platform fee per\nagent reply plus the LLM tokens it used. A `next_reply` or `tool` run is\none reply, with the tokens of the agent and, on `next_reply`, of the\njudge. A simulation run bills every agent reply, with the tokens of the\nagent, the simulated user and the judge. `error` runs are not billed. A\nbatch returns 402 when the team has no available Agent credit and does\nnot have an active, unsuspended contract or an Agent overdraft exemption.",
         "security": [
           {
             "BearerAuth": []
@@ -9832,7 +9881,7 @@
       },
       "post": {
         "summary": "Create Tool",
-        "description": "Create a workspace tool. `tool_type: webhook` calls your HTTP endpoint\nduring conversations; `tool_type: client` is executed by your own frontend\nthrough the SDK (no URL). Describe the call with `parameters` (a JSON\nSchema object, checked at call time under `parameter_mode: strict`) or\nthe older `arguments` list (every argument a required string, unchecked).\nAttach it to agents via the agent config's `tools.tool_ids`. Credential\nheaders (authorization_bearer / authorization_basic, and custom headers\nwhose name looks like a credential, such as `X-Api-Key` or\n`X-Webhook-Token`) are write-only and\nread back as `has_secret`.",
+        "description": "Create a workspace tool. `tool_type: webhook` calls your HTTP endpoint\nduring conversations; `tool_type: client` is executed by your own frontend\nthrough the SDK (no URL). Describe the call with `parameters` (a JSON\nSchema object, checked at call time under `parameter_mode: strict`) or\nthe older `arguments` list (every argument a required string, unchecked).\nAttach it to agents via the agent config's `tools.tool_ids`. Credential\nheaders (authorization_bearer / authorization_basic, and custom headers\nwhose name looks like a credential, such as `X-Api-Key` or\n`X-Webhook-Token`) are write-only and\nread back as `has_secret`.\n\nOnly what `body_template`, `url` and `headers` reference is sent to the\nendpoint. A non-GET tool with no `body_template` sends no body, so its\nparameters are lost unless the URL or headers use them; the response then\nlists them under `warnings` (as do Get Tool and Update Tool). The tool is\nstill saved.",
         "security": [
           {
             "BearerAuth": []
@@ -9995,6 +10044,14 @@
                     "signing": {
                       "$ref": "#/components/schemas/AgentWebhookToolSigningStatus",
                       "description": "Request signing state. Secrets are write-only: rotate returns the new one once."
+                    },
+                    "warnings": {
+                      "description": "Problems with a saved tool that do not stop it from being saved. Empty when there are none.",
+                      "items": {
+                        "$ref": "#/components/schemas/PublicAgentToolWarning"
+                      },
+                      "title": "Warnings",
+                      "type": "array"
                     }
                   },
                   "required": [
@@ -10309,6 +10366,14 @@
                     "signing": {
                       "$ref": "#/components/schemas/AgentWebhookToolSigningStatus",
                       "description": "Request signing state. Secrets are write-only: rotate returns the new one once."
+                    },
+                    "warnings": {
+                      "description": "Problems with a saved tool that do not stop it from being saved. Empty when there are none.",
+                      "items": {
+                        "$ref": "#/components/schemas/PublicAgentToolWarning"
+                      },
+                      "title": "Warnings",
+                      "type": "array"
                     }
                   },
                   "required": [
@@ -10624,6 +10689,14 @@
                     "signing": {
                       "$ref": "#/components/schemas/AgentWebhookToolSigningStatus",
                       "description": "Request signing state. Secrets are write-only: rotate returns the new one once."
+                    },
+                    "warnings": {
+                      "description": "Problems with a saved tool that do not stop it from being saved. Empty when there are none.",
+                      "items": {
+                        "$ref": "#/components/schemas/PublicAgentToolWarning"
+                      },
+                      "title": "Warnings",
+                      "type": "array"
                     }
                   },
                   "required": [
@@ -27394,7 +27467,34 @@
               }
             ],
             "default": null,
+            "description": "When the message was written to the session record, which is the order of the items. It is not when the message was said. An agent message is written once the agent has finished saying it, and a user message about a second after the user stopped speaking, once the platform has decided that their turn is over. `started_at` and `ended_at` are when the message was said.",
             "title": "Created At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "When the message started to be said. Agent messages: the moment the platform began to play its first audio (for a reply sent as text, the moment its first text was sent). User messages: the first sound the platform heard in the user's turn. That can be several seconds before the words of the message, for example when the user said a short \"okay\" first, or \"hello\" as they picked up, which is not part of the message's text. Do not use it to measure how long the user spoke. On a session whose `voice.engine` is `live3`, an agent message starts where the user began to hear the agent answer after they stopped speaking: a short word of the voice's own (\"Okay,\") counts, even with a pause before the message's text, so it can be up to 2 seconds before that text. Null on a user message that was typed or entered on the keypad, on a line the agent did not say through its voice or its reply stream, on the messages of a `live3` session that the fallback voice said or that were sent as text, and on sessions recorded before the field existed.",
+            "title": "Started At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "When the message stopped being said. Agent messages: the end of its audio, which includes the short silence the voice leaves at the end (about half a second, up to a second after a very long reply), or the moment its sound stopped when the message was interrupted. On a session whose `voice.engine` is `live3` it is the end of the agent's last sound, which fades out, so 0.1 to 0.5 seconds of it can be too faint to hear. User messages: the user's last sound before the platform decided that their turn was over. How long a user waited for the agent is the agent message's `started_at` minus the `ended_at` of the user message before it. Null in the same cases as `started_at`, and either of the two can be null on its own.",
+            "title": "Ended At"
           }
         },
         "required": [
@@ -27977,7 +28077,34 @@
               }
             ],
             "default": null,
+            "description": "When the line was written to the session record. An `assistant` line is written once the agent has finished saying it, so this is after the end of its speech: `started_at` is when the agent started to speak.",
             "title": "Created At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "`assistant` lines: when the agent started to say it on the consult call, the moment the platform began to play its first audio. Measure the wait between the transfer's `answered_at` and the agent's briefing to this time, not to `created_at`. Null on `transfer_target` lines and on sessions recorded before the field existed.",
+            "title": "Started At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "`assistant` lines: when the agent stopped saying it, the end of its audio, which includes the short silence the voice leaves at the end (about half a second), or the moment its sound stopped when it was interrupted. Null in the same cases as `started_at`.",
+            "title": "Ended At"
           }
         },
         "required": [
@@ -28054,6 +28181,19 @@
               }
             ],
             "title": "Cost Usd"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Occurred At"
           }
         },
         "required": [
@@ -34135,7 +34275,7 @@
           },
           "body_template": {
             "default": "",
-            "description": "Request body sent for non-GET calls. `{{argument}}`, `{{system.*}}` and custom session variable placeholders are filled in at call time; a missing value becomes empty. When the body's content type is JSON (the default `application/json`, any `+json` type, or a `Content-Type` header saying so), a placeholder inside a JSON string, such as `{\"note\": \"{{note}}\"}`, is JSON-escaped, so quotes, backslashes and newlines in the value keep the body valid JSON. A placeholder outside a string, such as `{\"count\": {{count}}}`, is inserted as is. Other content types are filled in as is.",
+            "description": "Request body sent for non-GET calls. `{{argument}}`, `{{system.*}}` and custom session variable placeholders are filled in at call time; a missing value becomes empty. When the body's content type is JSON (the default `application/json`, any `+json` type, or a `Content-Type` header saying so), a placeholder inside a JSON string, such as `{\"note\": \"{{note}}\"}`, is JSON-escaped, so quotes, backslashes and newlines in the value keep the body valid JSON. A placeholder outside a string, such as `{\"count\": {{count}}}`, is inserted as is. Other content types are filled in as is. The body is only this template: parameters are not added on their own. With an empty template a non-GET call sends no body, and a parameter that `url` and `headers` do not reference either never reaches the endpoint.",
             "maxLength": 100000,
             "title": "Body Template",
             "type": "string"
@@ -34242,6 +34382,35 @@
           }
         },
         "title": "AgentWebhookToolSigningStatus",
+        "type": "object"
+      },
+      "PublicAgentToolWarning": {
+        "properties": {
+          "code": {
+            "const": "parameters_not_sent",
+            "description": "`parameters_not_sent`: the tool sends a request body but has no `body_template`, and these parameters appear in neither `url` nor `headers`, so they never reach the endpoint.",
+            "title": "Code",
+            "type": "string"
+          },
+          "parameters": {
+            "description": "Names of the parameters the endpoint will not receive.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Parameters",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "parameters",
+          "message"
+        ],
+        "title": "PublicAgentToolWarning",
         "type": "object"
       },
       "PublicToolHeader": {
@@ -34422,7 +34591,7 @@
               }
             ],
             "default": null,
-            "description": "Request body sent for non-GET calls. `{{argument}}`, `{{system.*}}` and custom session variable placeholders are filled in at call time; a missing value becomes empty. When the body's content type is JSON (the default `application/json`, any `+json` type, or a `Content-Type` header saying so), a placeholder inside a JSON string, such as `{\"note\": \"{{note}}\"}`, is JSON-escaped, so quotes, backslashes and newlines in the value keep the body valid JSON. A placeholder outside a string, such as `{\"count\": {{count}}}`, is inserted as is. Other content types are filled in as is.",
+            "description": "Request body sent for non-GET calls. `{{argument}}`, `{{system.*}}` and custom session variable placeholders are filled in at call time; a missing value becomes empty. When the body's content type is JSON (the default `application/json`, any `+json` type, or a `Content-Type` header saying so), a placeholder inside a JSON string, such as `{\"note\": \"{{note}}\"}`, is JSON-escaped, so quotes, backslashes and newlines in the value keep the body valid JSON. A placeholder outside a string, such as `{\"count\": {{count}}}`, is inserted as is. Other content types are filled in as is. The body is only this template: parameters are not added on their own. With an empty template a non-GET call sends no body, and a parameter that `url` and `headers` do not reference either never reaches the endpoint.",
             "title": "Body Template"
           },
           "headers": {
