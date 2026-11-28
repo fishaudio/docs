@@ -49,7 +49,7 @@ A concise recap of the conversation, enabled by default.
 
 ### Data fields
 
-Structured values extracted from the transcript, up to **20 fields** per agent. Each field is:
+Structured values extracted from the transcript, up to **50 fields** per agent. Each field is:
 
 | Property       | Description                                                                                                |
 | -------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -59,6 +59,12 @@ Structured values extracted from the transcript, up to **20 fields** per agent. 
 | `enum_options` | For `enum` fields only: 2–20 allowed values                                                                |
 
 When the conversation doesn't contain the information, the field's value is `null` with a rationale explaining why.
+
+Analysis output has a length limit, so ask for short values.
+
+- A name, a number, or a sentence or two per field works well.
+- If many fields each ask for a long paragraph, the output can reach the limit before every item is written.
+- Items it did not reach come back with a `null` value (data fields) or an `unknown` verdict (criteria). Their rationale says the length limit was reached.
 
 ### Success criteria
 
