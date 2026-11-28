@@ -92,8 +92,9 @@ channels:
               type: string
               enum:
                 - transcribe-stream-1
+                - transcribe-stream-2
               default: transcribe-stream-1
-              description: Realtime speech-to-text model. Optional; `transcribe-stream-1` (Preview) is the default and the only realtime model. The legacy name `transcribe-1-pro-realtime` reaches the same model.
+              description: Realtime speech-to-text model. Optional; `transcribe-stream-1` (Preview) is the default. Without the header, or with any other value, the session runs on `transcribe-stream-1`. `session_started.config.model` names the session's model.
     description: |
       Realtime speech-to-text channel. Clients stream audio and receive
       transcripts turn by turn, with turn detection, optional live drafts and
@@ -102,6 +103,7 @@ channels:
       ## Connection Headers
       - `Authorization: Bearer <api_key>` - Required for authentication (see security section)
       - `model: transcribe-stream-1` (Preview) - Optional; the default
+      - `model: transcribe-stream-2` - Optional; the only model that takes `results.text_format`
 
       Every message in both directions is one MessagePack map in a binary
       frame, with a `type` field. Send `config` first, wait for
@@ -477,7 +479,7 @@ components:
             description: Same as the `x-request-id` response header. Include it when you contact support.
           config:
             type: object
-            description: The effective configuration, with defaults filled in.
+            description: The effective configuration, with defaults filled in. `model` names the session's model.
           limits:
             $ref: "#/components/schemas/AsrLimits"
       description: |
@@ -1180,6 +1182,21 @@ components:
           type: boolean
           default: true
           description: Sound tags such as `[laughter]` in the text; `false` removes them. Only `true` or `false`.
+        text_format:
+          oneOf:
+            - type: string
+              enum:
+                - spoken
+                - written
+            - type: "null"
+          default: written
+          description: |
+            `transcribe-stream-2` only; choose it in `config`, for the
+            whole session. The style for numbers, amounts and times:
+            `spoken` (words, the way they were said) or `written` (digits
+            and symbols). `null` is the same as leaving it out.
+            `transcribe-stream-1` refuses this field, whatever its value,
+            `null` included, with `invalid_config`.
         vad_events:
           type: boolean
           default: false
