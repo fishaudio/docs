@@ -15,7 +15,7 @@ import { AudioTranscript } from "/snippets/audio-transcript.jsx";
 
 ## API Pricing
 
-The Fish Audio API uses pay-as-you-go pricing based on actual usage. There are no subscription fees or monthly minimums for API access.
+The Fish Audio API bills by actual usage. You can pay as you go with no monthly minimum, or subscribe to a monthly plan for a higher [concurrency limit](#concurrent-request-limits). A plan's monthly fee becomes subscription credit of the same amount, which is used before your API credit and stays valid for its billing period and the next two.
 
 ### Text-to-Speech (TTS) Models
 
@@ -85,18 +85,22 @@ These limits help us ensure fair usage and maintain service quality for all user
 
 ### Concurrent Request Limits
 
-| Tier        | Spending Threshold | Concurrent Requests |
-| ----------- | ------------------ | ------------------- |
-| Starter     | < $100 paid        | 5 requests          |
-| Elevated    | ≥ $100 paid        | 15 requests         |
-| High Volume | ≥ $1,000 paid      | 50 requests         |
-| Enterprise  | Custom             | Custom limits       |
+Your concurrency limit follows your plan.
+
+| Plan          | Monthly Fee | Concurrent Requests |
+| ------------- | ----------- | ------------------- |
+| Pay as you go | $0          | 5 requests          |
+| Starter       | $20         | 10 requests         |
+| Growth        | $100        | 15 requests         |
+| Scale         | $500        | 50 requests         |
+| Enterprise    | Custom      | Custom limits       |
 
 <Tip>
-  Concurrency tiers unlock as soon as your total prepaid amount reaches the
-  threshold. You do not need to spend the full balance first. If your workload
-  needs a higher concurrency tier, you can top up in advance to unlock the next
-  tier immediately.
+  Topping up adds API credit but does not raise your concurrency limit. To get
+  more concurrency, upgrade on the [Plans
+  page](https://fish.audio/app/developers/billing/plans/). An upgrade applies as
+  soon as the payment succeeds. If your account already has a higher limit, you
+  keep it.
 </Tip>
 
 Speech-to-text requests count against the same concurrency limit as your other
